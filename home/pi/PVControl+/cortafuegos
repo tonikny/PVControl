@@ -1,0 +1,152 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides: cortafuegos
+# Required-Start: $syslog $remote_fs $network
+# Required-Stop: $syslog $remote_fs $network
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Description: Start firewall configuration
+### END INIT INFO
+
+
+
+# eth0 conectada a Internet/local
+
+## Habilitar forward para IPV4
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+## Politica por defecto
+/sbin/iptables -P FORWARD ACCEPT
+/sbin/iptables -P OUTPUT ACCEPT
+/sbin/iptables -P INPUT DROP
+
+## Permitir trafico local
+/sbin/iptables -t filter -A INPUT -i lo -j ACCEPT
+
+## Permitir ping
+/sbin/iptables -A INPUT -i wlan0 -p ICMP -j ACCEPT
+#/sbin/iptables -A INPUT -i eth1 -p ICMP -j ACCEPT
+/sbin/iptables -A INPUT -i tun+ -p ICMP -j ACCEPT
+
+## Permitir las conexiones ya establecidas
+/sbin/iptables -t filter -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+## Proxy SQUID Puerto 3128
+#/sbin/iptables -t filter -A INPUT -i eth0 -p tcp -s 0/0 --dport 3128 -j ACCEPT
+
+
+## T E S T
+#/sbin/iptables -A FORWARD -s 192.168.1.4 -j DROP
+
+
+## FTP
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 21 -j ACCEPT
+
+## SSH (desde local)
+/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.0.0/23 --dport 22 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 22 -j ACCEPT
+
+## ESCRITORIO REMOTO
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 3389 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 3350 -j ACCEPT
+
+## VNC
+/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.0.0/23 --dport 5900 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.0.0/23 --dport 5901 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 5900 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 5901 -j ACCEPT
+
+
+## MINECRAFT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 25565 -j ACCEPT
+
+## SMTP - SMTPS
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 25 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 465 -j ACCEPT
+
+## POP3 - POP3-SSL
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 110 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 995 -j ACCEPT
+
+## IMAP - IMAP-SSL
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 143 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 993 -j ACCEPT
+
+## SAMBA
+#/sbin/iptables -t filter -A INPUT -p udp -s 192.168.1.0/24 --dport 137 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p udp -s 192.168.1.0/24 --dport 138 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 139 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 445 -j ACCEPT
+
+## SAMBA-SWAT
+#/sbin/iptables -t filter -A INPUT -p tcp -i eth1 --dport 901 -j ACCEPT
+
+## OPENVPN (Solo desde red local)
+#/sbin/iptables -t filter -A INPUT -p udp -i eth0 --dport 2000 -j ACCEPT
+
+## PPTP (VPN)
+#/sbin/iptables -t filter -A INPUT -p tcp -i eth0 --dport 1723 -j ACCEPT
+
+
+## ORPort 9001// ORDir 9030
+#/sbin/iptables -t filter -A INPUT -p tcp --dport 9001 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 9030 -j ACCEPT
+
+## WEBMIN (Solo desde red local)
+/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.0.0/23 --dport 10000 -j ACCEPT
+
+## HTTP - HTTPS - DOMOTICZ
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 80 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 443 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 8081 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 1880 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 8080 -j ACCEPT
+
+## CUPS (Servicio de impresion - Solo desde red local)
+#/sbin/iptables -t filter -A INPUT -p tcp -i eth1 --dport 631 -j ACCEPT
+
+## TELNET MLDonkey_PORT (Solo desde red local)
+#/sbin/iptables -t filter -A INPUT -p tcp -i eth1 --dport 4000 -j ACCEPT
+
+## GUI MLDonkey_PORT (Solo desde red local)
+#/sbin/iptables -t filter -A INPUT -p tcp -i eth1 --dport 4001 -j ACCEPT
+
+## HTTP MLDonkey_PORT (Solo desde red local)
+#/sbin/iptables -t filter -A INPUT -p tcp -i eth1 --dport 4080 -j ACCEPT
+
+## MINIDLNA
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 8200 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p udp -s 192.168.1.0/24 --dport 1900 -j ACCEPT 
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 5200 -j ACCEPT
+
+## TRANSMISSION
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 59621 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p udp -s 0/0 --dport 59621 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.1.0/24 --dport 9091 -j ACCEPT
+
+## MYSQL
+/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.0.0/23 --dport 3306 -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p udp -s 192.168.0.0/23 --dport 3306 -j ACCEPT
+
+## MQTT - MOSQUITTO
+/sbin/iptables -t filter -A INPUT -p tcp -s 192.168.0.0/23 --dport 1883 -j ACCEPT
+
+## DNS
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 53 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p udp -s 0/0 --dport 53 -j ACCEPT
+
+## MLDONKEY
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 4662 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 6881 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p tcp -s 0/0 --dport 6882 -j ACCEPT
+#/sbin/iptables -t filter -A INPUT -p udp -s 0/0 --dport 4666 -j ACCEPT
+
+
+## TUNEL
+/sbin/iptables -t filter -A INPUT -i tun+ -j ACCEPT
+/sbin/iptables -t filter -A FORWARD -i tun+ -j ACCEPT
+/sbin/iptables -t filter -A INPUT -p udp --dport 1194 -j ACCEPT
+
+## POSTROUTING 
+/sbin/iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
