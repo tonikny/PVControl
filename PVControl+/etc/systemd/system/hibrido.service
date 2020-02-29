@@ -1,0 +1,11 @@
+[Unit]
+Description=Control Hibrido
+After=mysql.service
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/hibrido.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
