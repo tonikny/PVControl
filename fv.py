@@ -1096,7 +1096,7 @@ try:
                 elif Vbat <= Vflot-2: Tflot_bulk += 2 * t_muestra
                 elif Vbat <= Vflot-0.1: Tflot_bulk += t_muestra
 
-                if Tflot_bulk > 100: # Ver que tiempo se pone o si se pone como parametro
+                if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
                     Tflot_bulk = Tabs = flag_Abs= 0
                     cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
                     cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
