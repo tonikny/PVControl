@@ -160,23 +160,9 @@ $(function () {
                 rotation: 'auto'
               },
             title: {
-                y:20,//-30,
-                x:0,
-                reserveSpace:false,
-                style: {
-                   fontSize: '16px'
-                  },
-                text: '' //null //'V_BAT'
+                y:20,
+                text: null //'V_BAT'
                 },
-            subtitle: {
-                y:0,//-30,
-                x:-30,
-                style: {
-                   fontSize: '10px'
-                  },
-                text: 'pp' //null //'V_BAT'
-                },
-                
             plotBands: [{
                 from: 25.7,
                 to: 28.8,
@@ -209,7 +195,7 @@ $(function () {
           },
         series: [{
             name: 'Vbat',
-            data: [],//requestData(),
+            data: [],//requestData(),//[],
             dataLabels: {
                 enabled: true,
                 allowOverlap: true,
@@ -218,9 +204,9 @@ $(function () {
                 style: {
                    fontSize: '20px'
                   },
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " V"
-                    },
+                //formatter: function() {
+                //    return Highcharts.numberFormat(this.y,1) + " V"
+                //    },
               }
           }]
         });
@@ -235,7 +221,7 @@ $(function () {
             plotShadow: false
           },
         title: {
-            y:150,
+            y:140,
             floating: true,
             text: 'SOC',
           },
@@ -268,20 +254,9 @@ $(function () {
             lineWidth: 1,
             minorTickInterval: 1, //null,
             tickAmount: 9,
-            
-            //title: {
-            //    y: -30
-            // },
-             
             title: {
-                y:20,//-30,
-                x:0,
-                style: {
-                   fontSize: '20px'
-                  },
-                text: 'PP' //null //'V_BAT'
-                },
-            
+                y: -30
+             },
             labels: { // valores de la escala
                 y: 0,
                 min: 50,
@@ -296,7 +271,7 @@ $(function () {
         plotOptions: {
             solidgauge: {
                 dataLabels: {
-                    y: 35,    // Valor dato
+                    y: 20,    // Valor dato
                     borderWidth: 2,
                     useHTML: true
                   }
@@ -929,15 +904,10 @@ $(function () {
                 step: 1,
                 rotation: 'auto'
             },
-            title: {
-                y:20,//-30,
-                x:0,
-                style: {
-                   fontSize: '16px'
-                  },
-                text: '' //null 
-                },
-            
+            //title: {
+            //  y:20,
+            //    text: 'I_PLACA'
+            //},
         plotBands: [{
                     from: 500,
                     to: 3000,
@@ -1091,7 +1061,7 @@ $(function () {
             marginRight: 10,
             },
         title: {
-            text: '', //'Grafico Tiempo Real', //'Vbateria',
+            text: 'Grafico Tiempo Real', //'Vbateria',
             x:-0
             },
         //subtitle: {
@@ -1105,7 +1075,7 @@ $(function () {
             },
         yAxis: [{ // 1er yAxis (num0)
             gridLineWith: 0,
-            min: 11, //22
+            min: 21,
             max: 33,
             tickInterval:1,
             minorGridLineColor: 'transparent',
@@ -1348,53 +1318,34 @@ $(function () {
 
     function requestData() {
       $.ajax({
-        url: 'datos_fv.php',
+        url: 'data_fv.php',
         success: function(data) {
                         
-            chart_vbat.series[0].setData([data[0][3]]);
-            chart_vbat.yAxis[0].setTitle({
-              text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
-              //text:"The value "+data[0][8] 
-                });
-            
-            chart_soc.series[0].setData([data[0][4]]);
-            chart_soc.yAxis[0].setTitle({
-              text: data[0][16] // Mod_bat
-                });
-                
-            chart_temp.series[0].setData([data[0][14]]); //Temp Bat
-            chart_temp.series[1].setData([data[1]]);     //CPU
+            chart_vbat.series[0].setData([data[1]]);
+            chart_soc.series[0].setData([data[2]]);
+            chart_temp.series[0].setData([data[6]]);
+            chart_temp.series[1].setData([data[10]]);
 
-            chart_ibat.series[0].setData([data[0][2]]);  //Ibat
-            chart_ibat.series[1].setData([data[0][10]]); //Iplaca
+            chart_ibat.series[0].setData([data[0]]);
+            chart_ibat.series[1].setData([data[3]]);
             
-            chart_wplaca.series[0].setData([data[0][12]]);
-            //chart_wplaca.setTitle({
-            //  text: data[0][12] // ejem de cambio de titulo
-            //   });
-            chart_wplaca.yAxis[0].setTitle({
-              text: [data[0][13]+'Wh'] // Wh_placa
-                });
+            chart_wplaca.series[0].setData([data[5]]);
             
-            chart_consumo.series[0].setData([(data[0][2]-data[0][10])*data[0][3]]);
-            chart_consumo.series[1].setData([data[0][2]-data[0][10]]);
+            chart_consumo.series[0].setData([(data[3]-data[0])*data[1]]);
+            chart_consumo.series[1].setData([data[3]-data[0]]);
             
             x = (new Date()).getTime(), // current time
             
-            grafica_v.series[0].addPoint([x, data[0][3]], true, true);
-            grafica_v.setTitle({
-              text: 'Hora ' + data[0][1]
-                });
+            grafica_v.series[0].addPoint([x, data[1]], true, true);
+            
+            grafica_i.series[0].addPoint([x, data[0]], true, true); //Ibat
+            grafica_i.series[1].addPoint([x, data[3]], true, true); //Iplaca
+            grafica_i.series[2].addPoint([x, data[4]], true, true); //Vplaca
+            grafica_i.series[3].addPoint([x, data[7]], true, true); //Aux1
+            grafica_i.series[4].addPoint([x, data[9]], true, true); //PWM
             
             
-            grafica_i.series[0].addPoint([x, data[0][10]], true, true); //Ibat
-            grafica_i.series[1].addPoint([x, data[0][2]], true, true); //Iplaca
-            grafica_i.series[2].addPoint([x, data[0][11]], true, true); //Vplaca
-            grafica_i.series[3].addPoint([x, data[0][6]], true, true); //Aux1
-            grafica_i.series[4].addPoint([x, data[0][15]], true, true); //PWM
-            
-            
-            setTimeout(requestData, 3000);
+            setTimeout(requestData, 5000);
           },
         cache: false
       });
@@ -1402,7 +1353,7 @@ $(function () {
     
     function requestRele() {
       $.ajax({
-        url: 'datos_reles.php',
+        url: 'data_reles.php',
         success: function(data) {
             var tCategories = [];
             chart_reles.series[0].setData(data);
@@ -1412,7 +1363,7 @@ $(function () {
             chart_reles.xAxis[0].setCategories(tCategories);
          //   chart_reles.xAxis[0].setCategories(data);
          //    console.log(data)
-            setTimeout(requestRele, 3000);
+            setTimeout(requestRele, 5000);
         },
         cache: false
       });

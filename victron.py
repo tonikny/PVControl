@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Versión 2020-01-09
@@ -18,13 +18,12 @@ float H7;//Minimo voltaje bateria
 import  os, sys, time
 import serial
 import csv
-import subprocess,commands
+import subprocess
 from Parametros_FV import *
 import MySQLdb 
 
 if usar_victron == 0:
-    print commands.getoutput('sudo systemctl stop victron')
-    #print (subprocess.getoutput('sudo systemctl stop victron'))
+    print (subprocess.getoutput('sudo systemctl stop victron'))
     sys.exit()
 
 Estado = 'OFF'

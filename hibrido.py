@@ -78,23 +78,13 @@ def on_message(client, userdata, msg):
                 ##########################################################################
                 #            CAMBIAR INDICES  DE r[] DEPENDIENDO DEL MODELO DE HIBRIDO
                 ##########################################################################
-                #print ("BD=",)
-                #print ('Respuesta Hibrido=',r)
-                
-                Vgen = r[3]
-                Fgen = r[4]
-                
+                #print ('Iplaca=',r[15])
                 Iplaca = r[15]
-                #print ('Iplaca=',Iplaca)
-                
                 Vplaca = r[16]
-                #print ('Vplaca=',Vplaca)
-                
                 Wplaca = r[22]
 
-                
+                #print ('Vbat=',r[11])
                 Vbat = r[11]
-                
                 Vbus = r[10]
 
                 Ibatp = r[12]
@@ -126,7 +116,7 @@ def on_message(client, userdata, msg):
                              
                 client.publish("PVControl/Hibrido/Flot",Flot)
                 client.publish("PVControl/Hibrido/OnOff",OnOff)
-                
+
                 if grabar_datos_hibrido == 1:
                     try:
                         db1 = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
@@ -166,7 +156,7 @@ def on_message(client, userdata, msg):
                 print (r, len(r)) 
                 client.publish("PVControl/Hibrido/Respuesta",str(r))
                 if usar_telegram == 1: 
-                    L1 = 'Comando Recibido ='+ str(cmd)
+                    L1 = 'Comando Recibido ='+ cmd
                     L2 = str(r)
                     tg_msg = L1+'\n'+L2
                     print (tg_msg) 

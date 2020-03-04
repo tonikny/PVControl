@@ -1,33 +1,58 @@
-import time,sys
+# Simple demo of continuous ADC conversion mode for channel 0 of the ADS1x15 ADC.
+# Author: Tony DiCola
+# License: Public Domain
+import time
+
+# Import the ADS1x15 module.
 import Adafruit_ADS1x15
 
+
+# Create an ADS1115 ADC (16-bit) instance.
 adc = Adafruit_ADS1x15.ADS1115(address=0x48, busnum=1)
 
-start = hora1 = time.time()
+# Note you can change the I2C address from its default (0x48), and/or the I2C
+# bus by passing in these optional parameters:
+#adc = Adafruit_ADS1x15.ADS1015(address=0x49, busnum=1)
 
-#Vbat
-RES0 = (68+1.5)/1.5 * 12.63/12.33  # Divisor tension Vbat...(R2=68K..R1=1,5K) * ajuste por tolerancias en resistencias
-RES0_gain = 2 
-adc.start_adc(0, gain=RES0_gain, data_rate=250) #8,16,32,64,128,250,475,860
-                                                 # start_adc_difference() para diferencial
+# Choose a gain of 1 for reading voltages from 0 to 4.09V.
+# Or pick a different gain to change the range of voltages that are read:
+#  - 2/3 = +/-6.144V
+#  -   1 = +/-4.096V
+#  -   2 = +/-2.048V
+#  -   4 = +/-1.024V
+#  -   8 = +/-0.512V
+#  -  16 = +/-0.256V
+# See table 3 in the ADS1015/ADS1115 datasheet for more info on gain.
+GAIN = 1
 
-print('Leyendo ADS1115 canal 0 durante 5 segundos...')
-N=1
-while (time.time() - start) <= 500.0:
-    try:
-        Vbat=0
-        for i in range(N):
-            Vbat += adc.get_last_result()
-        Vbat= Vbat/N * 0.000125/RES0_gain * RES0
-        
-        print (round(time.time() - hora1,5),round(Vbat,5))
-        hora1=time.time()
-        # AVISO! Si se intenta leer otra entrada del ADS (read_adc) se desactiva la conversion continua
-        time.sleep(0.025)
+# Start continuous ADC conversions on channel 0 using the previously set gain
+# value.  Note you can also pass an optional data_rate parameter, see the simpletest.py
+# example and read_adc function for more infromation.
+adc.start_adc(0, gain=GAIN)
+# Once continuous ADC conversions are started you can call get_last_result() to
+# retrieve the latest result, or stop_adc() to stop conversions.
 
-    except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
-        break
-        
-# Stop conversion continua
+# Note you can also call start_adc_difference() to take continuous differential
+# readings.  See the read_adc_difference() function in differential.py for more
+# information and parameter description.
+
+# Read channel 0 for 5 seconds and print out its values.
+print('Reading ADS1x15 channel 0 for 5 seconds...')
+start = time.time()
+hora1=time.time()
+
+while (time.time() - start) <= 5.0:
+    print (time.time() - hora1)
+    hora1=time.time()
+    
+    # Read the last ADC conversion value and print it out.
+    value = adc.get_last_result()
+    # WARNING! If you try to read any other ADC channel during this continuous
+    # conversion (like by calling read_adc again) it will disable the
+    # continuous conversion!
+    #print('Channel 0: {0}'.format(value))
+    # Sleep for a while
+    time.sleep(0.0001)
+
+# Stop continuous conversion.  After this point you can't get data from get_last_result!
 adc.stop_adc()
-sys.exit()

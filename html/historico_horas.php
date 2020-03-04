@@ -14,9 +14,9 @@ if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
 
 
 //Coger datos grafica
-$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Aux1, Vplaca,Wplaca,PWM,IPWM_P,IPWM_I,IPWM_D
+$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Aux1, Vplaca,Wplaca, PWM
         FROM datos_s WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        ORDER BY id lIMIT 80000";
+        ORDER BY Tiempo";
 
 
 if($result = mysqli_query($link, $sql)){
@@ -116,7 +116,7 @@ $(function () {
       panKey: 'shift'
       },
     title: {
-      text: 'SOC, Iplaca -Ibat - Vbat - Vplaca - Wplaca - PWM - IPWM_P/I/D'
+      text: 'SOC, Iplaca -Ibat - Vbat - Vplaca - Wplaca - PWM'
       },
     subtitle: {
       //text: 'Permite Zoom XY'
@@ -124,9 +124,10 @@ $(function () {
     credits: {
       enabled: false
       },
-    yAxis: [
-     {// ########## Valores eje Intensidad ######################
-      opposite: false,     
+    yAxis: [{
+      opposite: false,
+      
+      // ########## Valores eje Intensidad ######################
       min: -180,
       max: 220,
       tickInterval: 20,
@@ -144,11 +145,12 @@ $(function () {
         color: 'black',
         dashStyle: 'shortdash'
         }]
-     },
-     {// ########## Valores eje Vbat ######################
+     },{
       opposite: false,
-      min: 11,//22,
-      max: 21,//42,
+
+      // ########## Valores eje Vbat ######################
+      min: 22,
+      max: 42,
       tickInterval: 1,
       minorGridLineColor: 'transparent',
       labels: {
@@ -179,9 +181,10 @@ $(function () {
           text: 'Vflot'
           }
        }]
-     },
-     {// ########## Valores eje SOC ######################
+     },{
       opposite: true,
+
+      // ########## Valores eje SOC ######################
       min: 20,
       max: 100 ,
       tickInterval: 20,
@@ -210,10 +213,11 @@ $(function () {
           text: '80%'
           }
        }]
-     },
-     {// ########## Valores eje PWM ######################
+     },{
       opposite: true,
-      min: -100,
+      
+      // ########## Valores eje PWM ######################
+      min: 0,
       max: 400 ,
       minorGridLineColor: 'transparent',
       labels: {
@@ -244,9 +248,10 @@ $(function () {
        }]
       */
 
-     },
-     {// ########## Valores eje WPlaca ######################
+     },{
       opposite: true,
+      
+      // ########## Valores eje WPlaca ######################
       min: 0,
       max: 5000 ,
       minorGridLineColor: 'transparent',
@@ -257,8 +262,9 @@ $(function () {
       title: {
         text: null
         },
-     }
-     ],
+
+     }],
+
 
     xAxis: {
       dateTimeLabelFormats: { day: '%e %b' },
@@ -294,9 +300,8 @@ $(function () {
     navigator: {
       enabled: true // false
       },
-    series: [
-     {name: 'SOC',
-      visible: false,
+    series: [{
+      name: 'SOC',
       type: 'spline',
       yAxis: 2,
       color: Highcharts.getOptions().colors[1],
@@ -313,8 +318,8 @@ $(function () {
               <?php } ?>
             return data;
         })()
-     },
-     {name: 'Vbat',
+     },{
+      name: 'Vbat',
       type: 'spline',
       yAxis: 1,
       color: Highcharts.getOptions().colors[0],
@@ -331,8 +336,8 @@ $(function () {
             <?php } ?>
           return data;
         })()
-     },
-     {name: 'Ibat',
+     }, {
+      name: 'Ibat',
       type: 'spline',
       color: Highcharts.getOptions().colors[2],
       tooltip: {
@@ -348,8 +353,8 @@ $(function () {
             <?php } ?>
           return data;
         })()
-     },
-     {name: 'Iplaca',
+     }, {
+      name: 'Iplaca',
       type: 'spline',
       color: Highcharts.getOptions().colors[3],
       tooltip: {
@@ -365,8 +370,8 @@ $(function () {
             <?php } ?>
           return data;
         })()
-     },
-     {name: 'Vplaca',
+     }, {
+      name: 'Vplaca',
       visible: false,
       type: 'spline',
       yAxis: 0, // poner 2 para escala del SOC
@@ -384,9 +389,9 @@ $(function () {
           <?php } ?>
         return data;
         })()
-     },
-     {name: 'Aux1',
-      visible: false,
+     }, {
+      name: 'Aux1',
+      visible: true,
       type: 'spline',
       yAxis: 0,
       color: Highcharts.getOptions().colors[4],
@@ -403,8 +408,8 @@ $(function () {
           <?php } ?>
         return data;
         })()
-      },
-     {name: 'PWM',
+      }, {
+      name: 'PWM',
       visible: true,
       type: 'spline',
       yAxis: 3,
@@ -422,8 +427,8 @@ $(function () {
           <?php } ?>
         return data;
         })()  
-      },
-     {name: 'Wplaca',
+      }, {
+      name: 'Wplaca',
       visible: true,
       type: 'spline',
       yAxis: 4,
@@ -441,66 +446,8 @@ $(function () {
           <?php } ?>
         return data;
         })()  
-     },
-     {name: 'IPWM_P',
-      visible: true,
-      type: 'spline',
-      yAxis: 3,
-      color: Highcharts.getOptions().colors[6],
-      tooltip: {
-        valueSuffix: ' ',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["IPWM_P"];?>]);
-          <?php } ?>
-        return data;
-        })()  
-      },
-     {name: 'IPWM_I',
-      visible: true,
-      type: 'spline',
-      yAxis: 3,
-      color: Highcharts.getOptions().colors[7],
-      tooltip: {
-        valueSuffix: ' ',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["IPWM_I"];?>]);
-          <?php } ?>
-        return data;
-        })()  
-      },
-     {name: 'IPWM_D',
-      visible: true,
-      type: 'spline',
-      yAxis: 3,
-      color: Highcharts.getOptions().colors[8],
-      tooltip: {
-        valueSuffix: ' ',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["IPWM_D"];?>]);
-          <?php } ?>
-        return data;
-        })()  
-      }
-          
-     ]
+
+     }]
 
     });
 

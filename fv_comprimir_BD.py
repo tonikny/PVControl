@@ -44,8 +44,7 @@ while bucle:
         ee = '7'
         
         sql2 = ("SELECT MAX(id),MAX(Tiempo),AVG(Ibat),AVG(Vbat),AVG(SOC),AVG(DS),AVG(Aux1),AVG(Aux2),"+
-                " MAX(Whp_bat),MAX(Whn_bat),AVG(Iplaca),AVG(Vplaca),AVG(Wplaca),MAX(Wh_placa),"+
-                " AVG(Temp),AVG(PWM),MAX(Mod_bat)" +
+                " MAX(Whp_bat),MAX(Whn_bat),AVG(Iplaca),AVG(Vplaca),AVG(Wplaca),MAX(Wh_placa),AVG(Temp),AVG(PWM)" +
                 " FROM datos WHERE id > " + str(Id_max) + " AND id < " + str(Id_max + 10000) +
                 " GROUP BY DAY(Tiempo),((60/5)*HOUR(TIME(Tiempo))+FLOOR(MINUTE(TIME(Tiempo))/5))" +
                 " ORDER BY id " )
@@ -86,17 +85,15 @@ while bucle:
             Wh_placa  = round(float(TD[I][13]),2)
             Temp      = round(float(TD[I][14]),2)
             PWM       = int(TD[I][15])
-            Mod_bat = str(TD[I][16])
-            #print (Mod_bat, TD[I][16])
-            
-            #print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat)
+
+            #print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM)
             ee = '13' 
-            cursor1.execute("""INSERT INTO datos_c (id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat) 
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-               (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat))
+            cursor1.execute("""INSERT INTO datos_c (id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM) 
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM))
             ee = '14' 
         
-        print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat)
+        print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM)
             
         print ()     
         db.commit()

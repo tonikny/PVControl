@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 # ------------------------------------------
 ######      PARAMETROS INSTALACION 
 # ------------------------------------------
@@ -12,7 +14,7 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 
 ##### Parametros sensores
 
-Vbat_sensor   = 'ADS'     # ADS, HIBRIDO, VICTRON
+Vbat_sensor   = 'ADS'     # ADS, HIBRIDO,
 Vplaca_sensor = 'ADS'     # ADS, HIBRIDO, VICTRON
 
 Ibat_sensor   = 'ADS'     # ADS, HIBRIDO, VICTRON, VICTRON+HIBRIDO
@@ -21,12 +23,12 @@ Iplaca_sensor = 'ADS'     # ADS, HIBRIDO, VICTRON, ADS+HIBRIDO, VICTRON+HIBRIDO
 Aux1_sensor   = ''     # ADS, dejar  '' para no usar
 Aux2_sensor   = ''     # ADS, dejar  '' para no usar
 
-Wplaca_sensor = "Iplaca * Vbat"         # Iplaca * Vbat, d_hibrido['Wplaca'].....
-Consumo_sensor = "Vbat * (Iplaca-Ibat)" # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
+Wplaca_sensor = 'Iplaca * Vbat'         # Iplaca * Vbat, d_hibrido['Wplaca'].....
+Consumo_sensor = 'Vbat * (Iplaca-Ibat)' # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
 
 ###### Parametros ADS1115
-SHUNT1 = 100.0/75        # Shunt Ibat (Amperios/mV)
-SHUNT2 = 100.0/75        # Shunt Iplaca (Amperios/mV)
+SHUNT1 = 500.0/50        # Shunt Ibat (Amperios/mV)
+SHUNT2 = 300.0/75        # Shunt Iplaca (Amperios/mV)
 
 # Valor Voltaje divisor = Ventrada*R1/(R1+R2)
 #Vbat
@@ -47,7 +49,7 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 
 ###### Parametros Mensaje error lectura incoherente
 vbat_max = 33
-vbat_min = 22.5
+vbat_min = -1#22.5
 
 aux1_max = 14
 aux1_min = -1
@@ -78,8 +80,7 @@ usuario = 'rpi'
 clave = 'fv' 
 basedatos = 'control_solar'
 
-grabar_datos_s = 'PWM > 0'    # expresion para grabar cada muestra en la tabla datos_s
-                              # Ejemplos: 'True'.. 'False'.. 'Vplaca > 10' 
+grabar_datos_s = 1 # graba cada muestra en la tabla datos_s
 # -----------------------------------------------
 
 ###### MQTT
@@ -95,7 +96,7 @@ pub_time  = 0  # publica datos de tiempo de ejecucion en "PVControl/Opcion/Time"
 
 ###### Telegram
 usar_telegram = 0 # 1 para usar  ..... 0 para no usar
-TOKEN ='XXXXXX:YYYYYYYYYY......'# bot Telegram...cambiar por el que cada uno de de alta
+TOKEN ='XXXXXX:YYYYYYYYYY'# bot Telegram...cambiar por el que cada uno de de alta
 
 # ID de Usuarios autorizados a mandar mensajes, los msg periodicos se mandan al primer declarado
 Aut = [111111,22222] # Lista de ID de Telegram autorizados
@@ -138,7 +139,7 @@ simular_reles = 0 # Simular reles fisicos
 # -----------------------------------------------
 
 ###### Sensor Temperatura (DS18B20)
-sensortemperatura = 0   # Poner a 0 si no se ha instalado el DS18B20
+sensortemperatura = 1   # Poner a 0 si no se ha instalado el DS18B20
 indice_sensortemperatura = 0 # si hay mas de un sensor hay que definir el que queremos guardar
 # -----------------------------------------------
 

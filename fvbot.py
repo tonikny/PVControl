@@ -406,7 +406,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                                 db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
                                 cursor = db.cursor()
 
-                                sql = "UPDATE parametros SET objetivo_PID='"+orden+ "'"
+                                sql = "UPDATE parametros SET objetivo_diver='"+orden+ "'"
                                 cursor.execute(sql)
                                 db.commit()
                                 msg='Objetivo_PID puesto a '+ orden
@@ -422,7 +422,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                                 db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
                                 cursor = db.cursor()
 
-                                sql = "UPDATE parametros SET sensor_PID='"+orden+ "'"
+                                sql = "UPDATE parametros SET sensor_diver='"+orden+ "'"
                                 cursor.execute(sql)
                                 db.commit()
                                 msg='Sensor_PID puesto a '+ orden
