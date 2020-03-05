@@ -1,0 +1,16 @@
+32 6    * * *   root    /home/pi/PVControl+/gestionbd.sh
+35 6    * * *   root    python3 /home/pi/PVControl+/vaciartablas.py
+28 *    * * *   root    python3 /home/pi/PVControl+/diario.py
+58 *    * * *   root    python3 /home/pi/PVControl+/diario.py
+10 0    * * *   root    python3 /home/pi/PVControl+/diario_ayer.py
+23 23   * * *   root    python3 /home/pi/PVControl+/diario_ayer.py
+00 *    * * *   root    python3 /home/pi/PVControl+/fvbot_msg.py
+03 1    * * *   root    python3 /home/pi/PVControl+/fv_soh.py
+#1-59/5 *  * * *   root    python3 /home/pi/PVControl+/pvoutput_live.py
+2-59/15 *  * * *   root    python3 /home/pi/PVControl+/fv_comprimir_BD.py
+#*/10 *    * * *   root    python3 /home/pi/PVControl+/fv_copiaBD.py
+
+#32 *    * * *   root    systemctl restart fvbot
+
+#10 09   * * *   root    python /home/pi/PVControl+/fvbot_msg_hibrido.py PCVV29.2 PCVV29.2 PBFT29.2 >> /home/pi/log/log.txt 2>&1
+#10 13   * * *   root    python /home/pi/PVControl+/fvbot_msg_hibrido.py PBFT26.7 PBFT26.9 PCVV29.2 >> /home/pi/log/log.txt 2>&1
