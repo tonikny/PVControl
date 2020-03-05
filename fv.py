@@ -955,8 +955,7 @@ try:
                             d_hibrido = row # Capturo los valores del fichero datos_hibrido.csv
                 except:
                     print ('Error, datos Hibrido no encontrados')
-                    #time.sleep(1)
-                    #continue  # vuelve al inicio del bucle
+                    
             ee=32
             if usar_victron == 1:
                 try:
@@ -964,11 +963,9 @@ try:
                         csv_reader = csv.DictReader(f)
                         for row in csv_reader:
                             d_victron = row # Capturo los valores del fichero datos_victron2.csv
-                    #print (' Datos Victron=',d_victron)
                 except:
                     print ('Error, datos victron no encontrados')
-                    #time.sleep(1)
-                    #continue # vuelve al inicio del bucle
+                    
             ee=34
             Ibat = leer_ibat(Ibat)
             Vbat = leer_vbat(Vbat)
