@@ -12,11 +12,11 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 
 ##### Parametros sensores
 
-Vbat_sensor   = 'ADS'     # ADS, HIBRIDO, VICTRON
-Vplaca_sensor = 'ADS'     # ADS, HIBRIDO, VICTRON
+Vbat_sensor   = 'ADS'     # ADS, d_hibrido['Vbat'], d_victron['Vbat'].....
+Vplaca_sensor = 'ADS'     # ADS, .....
 
-Ibat_sensor   = 'ADS'     # ADS, HIBRIDO, VICTRON, VICTRON+HIBRIDO
-Iplaca_sensor = 'ADS'     # ADS, HIBRIDO, VICTRON, ADS+HIBRIDO, VICTRON+HIBRIDO
+Ibat_sensor   = 'ADS'     # ADS, ......
+Iplaca_sensor = 'ADS'     # ADS, .....
 
 Aux1_sensor   = ''     # ADS, dejar  '' para no usar
 Aux2_sensor   = ''     # ADS, dejar  '' para no usar
@@ -47,7 +47,7 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 
 ###### Parametros Mensaje error lectura incoherente
 vbat_max = 33
-vbat_min = 22.5
+vbat_min = 11 #22.5
 
 aux1_max = 14
 aux1_min = -1
@@ -157,7 +157,11 @@ usar_hibrido = 0 #1 para leer datos Hibrido ..... 0 para no usar
 dev_hibrido ='/dev/hidraw0'
 usar_crc = 1 # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
 
-grabar_datos_hibrido = 1 # 1 = Graba la tabla Hibrido... 0 = No graba
+t_muestra_hibrido = 1      # Tiempo en segundos entre muestras
+publicar_hibrido_mqtt = 1  # Publica o no por MQTT los datos capturados del Hibrido
+
+grabar_datos_hibrido = 1   # 1 = Graba la tabla Hibrido... 0 = No graba
+n_muestras_hibrido = 5      # grabar en BD cada nmuestras
 
 iplaca_hibrido_max = 80
 iplaca_hibrido_min = 0
@@ -181,6 +185,17 @@ iplaca_victron_max = 99
 iplaca_victron_min = 0
 
 # -----------------------------------------------
+
+###### SMA
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa el SMA o se quiere guardar en BD en la tabla 'sma'
+## se debe poner usar_sma = 1
+
+usar_sma = 0 #1 para leer datos victron ..... 0 para no usar
+dev_sma = "/dev/ttyUSB0"
+grabar_datos_sma = 1 # 1 = Graba la tabla sma... 0 = No graba
+
 
 ###### Pantalla OLED
 OLED_salida1 =[0,1,2,3] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo

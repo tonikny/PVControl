@@ -1354,12 +1354,11 @@ $(function () {
             chart_vbat.series[0].setData([data[0][3]]);
             chart_vbat.yAxis[0].setTitle({
               text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
-              //text:"The value "+data[0][8] 
                 });
             
             chart_soc.series[0].setData([data[0][4]]);
             chart_soc.yAxis[0].setTitle({
-              text: data[0][16] // Mod_bat
+              text: data[0][17] // Mod_bat
                 });
                 
             chart_temp.series[0].setData([data[0][14]]); //Temp Bat
@@ -1376,8 +1375,8 @@ $(function () {
               text: [data[0][13]+'Wh'] // Wh_placa
                 });
             
-            chart_consumo.series[0].setData([(data[0][2]-data[0][10])*data[0][3]]);
-            chart_consumo.series[1].setData([data[0][2]-data[0][10]]);
+            chart_consumo.series[0].setData([(data[0][16])]); // Consumo
+            chart_consumo.series[1].setData([data[0][10]-data[0][2]]); //Iplaca -Ibat
             
             x = (new Date()).getTime(), // current time
             

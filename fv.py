@@ -132,8 +132,8 @@ OPH = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'prior
        'id_rele2':7,'parametro_h':8,'valor_h_ON':9,'valor_h_OFF':10}
 NDIA = {'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}
 
-nombres_datos = ['Tiempo_sg','Tiempo','Ibat', 'Vbat', 'SOC','DS','Aux1','Aux2',
-                 'Whp_bat','Whn_bat','Iplaca','Vplaca','Wplaca','Wh_placa','Temp','PWM', 'Mod_bat']
+#nombres_datos = ['Tiempo_sg','Tiempo','Ibat', 'Vbat', 'SOC','DS','Aux1','Aux2',
+#                 'Whp_bat','Whn_bat','Iplaca','Vplaca','Wplaca','Wh_placa','Temp','PWM', 'Mod_bat']
 
 #Inicializando las variables del programa
 Grabar = 1 # Contador ciclo grabacion en BD
@@ -154,9 +154,6 @@ Vbat = vsis*12.0     # Voltaje Bateria inicial
 Mod_bat =''
 
 Iplaca = 0.0          # Intensidad Placas Total
-iplaca_shunt = 0.0    # Intensidad Placas (dato Shunt Iplaca)
-iplaca_hibrido = 0.0  # Intensidad Placas (dato lectura Hibrido)
-iplaca_victron = 0.0  # Intensidad Placas (dato lectura Victron)
 
 Vplaca = 0.0    # Voltaje Placas (valor antes del regulador)
 Aux1 = Aux2 = 0.0   # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
@@ -314,268 +311,54 @@ def logBD(texto) : # Incluir en tabla de Log
 
     return
 
-def leer_ibat(x) :  # leer Ibat
+def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
     try:
-        if Ibat_sensor == 'ADS':
-            y = round(adc.read_adc_difference(0, gain=16, data_rate=128) * 0.0078125 * SHUNT1, 2)  # A0-A1
-
-        elif Ibat_sensor == 'HIBRIDO':
-            
-            dif = time.time()- float(d_hibrido['Tiempo_sg'])
-            if dif < 10: # maximo 10 seg de diferencia para considerar dato valido
-                y = float(d_hibrido['Ibatp']) - float(d_hibrido['Ibatn'])
-            elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y = x
-            else:
-                y=0
-
-        elif Ibat_sensor == 'VICTRON':
-            dif = time.time()- float(d_victron['Tiempo_sg'])
-            if dif < 10: # maximo 10 seg de diferencia para considerar dato valido
-                y = float(d_victron['Iplaca'])
-            elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y = x
-            else:
-                y=0
-
-        elif Ibat_sensor == 'VICTRON+HIBRIDO':
-            dif1 = time.time()- float(d_hibrido['Tiempo_sg'])
-            if dif1 < 10: # maximo 10 seg de diferencia para considerar dato valido
-                y1 = float(d_hibrido['Ibatp']) - float(d_hibrido['Ibatn'])
-            elif dif1 < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y1 = float(d_hibrido['Ibatp']) - float(d_hibrido['Ibatn'])
-                logBD('lectura desfasada Ibat_hibrido='+str(y1))
-            else:
-                y1=0
-                logBD('lectura MUY desfasada Ibat_hibrido=0')
-
-            dif2 = time.time()- float(d_victron['Tiempo_sg'])
-            if dif2 < 10: # maximo 10 seg de diferencia para considerar dato valido
-                y2 = float(d_victron['Iplaca'])
-            elif dif2 < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y2 = float(d_victron['Iplaca'])
-                logBD('lectura desfasada Ibat_victron='+str(y2))
-            else:
-                y2=0
-                logBD('lectura MUY desfasada Ibat_victron=0')
-            y =y1+y2
-
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Ibat')
-    if y < ibat_min or y > ibat_max:
-        logBD('lectura incoherente Ibat='+str(y))
-        y = x
-    return y
-
-def leer_iplaca(x) :  # leer Iplaca
-    global iplaca_shunt, iplaca_hibrido,iplaca_victron
-    try:
-        if Iplaca_sensor == 'ADS':
-            y =  leer_iplaca_shunt(x)
-            
-        elif Iplaca_sensor == 'HIBRIDO':
-            y =  leer_iplaca_hibrido(x)
-
-        elif Iplaca_sensor == 'VICTRON':
-            y =  leer_iplaca_victron(x)
-
-        elif Iplaca_sensor == 'ADS+HIBRIDO':
-            iplaca_shunt = leer_iplaca_shunt(iplaca_shunt)
-            iplaca_hibrido = leer_iplaca_hibrido(iplaca_hibrido)
-            y = iplaca_shunt + iplaca_hibrido
-
-        elif Iplaca_sensor == 'VICTRON+HIBRIDO':
-            iplaca_victron = leer_iplaca_victron(iplaca_victron)
-            iplaca_hibrido = leer_iplaca_hibrido(iplaca_hibrido)
-            y = iplaca_victron + iplaca_hibrido
-
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Iplaca')
-    if y < iplaca_min or y > iplaca_max:
-        logBD('lectura incoherente Iplaca='+str(y))
-        y = x
-    if abs(y) < iplaca_error: y = 0.0
-    
-    return y
-
-def leer_iplaca_shunt(x) :  # leer Iplaca del shunt
-    try:
-        y =  round(adc.read_adc_difference(3, gain=16, data_rate=128) * 0.0078125 * SHUNT2, 2)  # A2-A3
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Iplaca')
-    if y < iplaca_min or y > iplaca_max:
-        logBD('lectura incoherente Iplaca_ADS='+str(y))
-        y = x
-    #if abs(y) < iplaca_error: y = 0.0
-    return y
-
-def leer_iplaca_hibrido(x) :  # leer Iplaca del Hibrido
-    try:
-        dif = time.time() - float(d_hibrido['Tiempo_sg'])
- 
-        if dif < 10: # maximo 10 seg de diferencia para considerar dato valido
-            y = float(d_hibrido['Iplaca'])#*float(d_hibrido['Vplaca'])/float(d_hibrido['Vbat'])
-
-        elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-            y = x
-
+        if sensor=='ADS':
+            if n_sensor == 'Ibat':
+                y = round(adc.read_adc_difference(0, gain=16, data_rate=128) * 0.0078125 * SHUNT1, 2)  # A0-A1
+            elif n_sensor == 'Iplaca':
+                y = round(adc.read_adc_difference(3, gain=16, data_rate=128) * 0.0078125 * SHUNT1, 2)  # A2-A3
+            elif n_sensor == 'Vbat':
+                y = round(adc1.read_adc(0, gain=RES0_gain,data_rate=128) * 0.000125/RES0_gain * RES0, 2)  # A0   4,096V/32767=0.000125 
+            elif n_sensor == 'Aux1':
+                y = round(adc1.read_adc(1, gain=RES1_gain,data_rate=128) * 0.000125/RES1_gain * RES1, 2)  # A0   4,096V/32767=0.000125 
+            elif n_sensor == 'Vplaca':
+                y = round(adc1.read_adc(2, gain=RES2_gain,data_rate=128) * 0.000125/RES2_gain * RES2, 2)  # A0   4,096V/32767=0.000125 
+            elif n_sensor == 'Aux2':
+                y = round(adc1.read_adc(3, gain=RES3_gain,data_rate=128) * 0.000125/RES3_gain * RES3, 2)  # A0   4,096V/32767=0.000125 
+        elif sensor =='':
+            return anterior
         else:
-            y=0
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Iplaca_hibrido')
+            pp1=[idx for idx, x in enumerate(sensor) if x=='(']    # indices de todos los '('
+            pp2=[idx for idx, x in enumerate(sensor) if x=='[']    # indices de todos los '['
 
-    if y < iplaca_hibrido_min or y > iplaca_hibrido_max:
-        logBD('lectura incoherente Iplaca_hibrido ='+str(y))
-        y = x
+            k=len(pp1)
+            dif=0
 
-    return y
-
-def leer_iplaca_victron(x) :  # leer Iplaca del Victron
-    try:
-        dif = time.time() - float(d_victron['Tiempo_sg'])
-        if dif < 10: # maximo 10 seg de diferencia para considerar dato valido
-            y = float(d_victron['Iplaca'])
-        elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-            y = x
-        else:
-            y=0
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Iplaca_victron')
-
-    if y < iplaca_victron_min or y > iplaca_victron_max:
-        logBD('lectura incoherente Iplaca_victron ='+str(y))
-        y = x
-
-    return y
-
-def leer_vbat(x) :  # leer Vbat
-    try:
-        if Vbat_sensor == 'ADS':
-            y = round(adc1.read_adc(0, gain=RES0_gain,data_rate=128) * 0.000125/RES0_gain * RES0, 2)  # A0   4,096V/32767=0.000125 
-
-        elif Vbat_sensor == 'HIBRIDO':
-            dif = time.time()- float(d_hibrido['Tiempo_sg'])
-            if dif < 10: # maximo 10 seg de diferencia para considerar dato valido
-                y = float(d_hibrido['Vbat'])
-            elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y = x
+            if k>0:
+                for i in range(k):
+                    dif += time.time() - eval("float"+sensor[pp1[i]:pp2[i]]+"['Tiempo_sg'])")
             else:
-                y=0
+                dif += time.time() - eval("float("+sensor[:pp2[0]]+"['Tiempo_sg'])")
 
-        elif Vbat_sensor == 'VICTRON':
-            dif = time.time()- float(d_victron['Tiempo_sg'])
-            if dif < 10: # maximo 5 seg de diferencia para considerar dato valido
-                y = float(d_victron['Vbat'])
-            elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y = x
-            else:
-                y=0
+            if dif < 10: y = eval(sensor)
+            elif dif <20: y = anterior
+            else: y = 0    
     except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Vbat')
+        print ('Error en sensor ', n_sensor)
+        y = anterior
+        logBD('-ERROR MEDIDA FV-'+n_sensor)    
 
-    if y < vbat_min or y > vbat_max:
-        logBD('lectura incoherente Vbat='+str(y))
-        y = x
+    if y < minimo or y > maximo:
+        logBD('lectura incoherente '+n_sensor+'='+str(y))
+        print ('Error min/max sensor ', n_sensor)
+        
+        y = anterior
+
     return y
-
-def leer_aux1(x) :  # leer Aux1
-    try:
-        if Aux1_sensor == 'ADS':
-            y = round(adc1.read_adc(1, gain=RES1_gain,data_rate=128) * 0.000125/RES1_gain * RES1, 2)  # A0   4,096V/32767=0.000125 
-        else:
-            y=0
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Aux1')
-    if y < aux1_min or y > aux1_max:
-        logBD('lectura incoherente Aux1='+str(y))
-        y = x
-    return y
-
-def leer_aux2(x) :  # leer Aux2
-    try:
-        if Aux2_sensor == 'ADS':
-            y = round(adc1.read_adc(3, gain=RES1_gain,data_rate=128) * 0.000125/RES1_gain * RES1, 2)  # A3   4,096V/32767=0.000125 
-        else:
-            y=0
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Aux2')
-    if y < aux1_min or y > aux1_max:
-        logBD('lectura incoherente Aux2='+str(y))
-        y = x
-    return y
-
-def leer_vplaca(x) :  # leer Vplaca
-    try:
-        if Vplaca_sensor == 'ADS':
-            y = round(adc1.read_adc(2, gain=RES2_gain,data_rate=128) * 0.000125/RES2_gain * RES2, 2)  # A0   4,096V/32767=0.000125 
-
-        elif Vplaca_sensor == 'HIBRIDO':
-            dif = time.time()- float(d_hibrido['Tiempo_sg'])
-            if dif < 10: # maximo 10 seg de diferencia para considerar dato valido
-                y = float(d_hibrido['Vplaca'])
-            elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y = x
-            else:
-                y=0
-
-        elif Vplaca_sensor == 'VICTRON':
-            dif = time.time()- float(d_victron['Tiempo_sg'])
-            if dif < 10: # maximo 5 seg de diferencia para considerar dato valido
-                y = float(d_victron['Vplaca'])
-            elif dif < 20: # maximo 20 seg de diferencia para considerar dato anterior
-                y = x
-            else:
-                y=0
-
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Vplaca')
-    if y < vplaca_min or y > vplaca_max:
-        logBD('lectura incoherente Vplaca='+str(y))
-        y = x
-    return y
-
-def leer_diver(x) :  # ANTIGUO.....leer estado excedentes
-    if x == "AUX1":
-        Aux1 = leer_aux1(0)
-        if Aux1 > 1:
-            Diver = 1
-        else:
-            Diver = 0
-    elif x == "AUX2":
-        Aux2 = leer_aux2(0)
-        if Aux2 > 1:
-            Diver = 1
-        else:
-            Diver = 0
-    elif x == "VPLACA":
-        Vplaca = leer_vplaca(0) # si error lectura devuelve 0
-        Ibat = leer_ibat(-10)    # si error lectura devuelve -10
-        if Vplaca > TP[5] and Ibat > -10: 
-            Diver = 1
-        else:
-            Diver = 0
-    else:
-        Diver = 0
-    return Diver
 
 def leer_temp(x) :  # leer temperatura
     try:
-        """
-        tempfile= open(sensores[indice_sensortemperatura]) # chequear indice si se tienen instalados mas de un DS18B20
-        thetext=tempfile.read()
-        tempfile.close()
-        tempdata = thetext.split("\n")[1].split(" ")[9]
-        y = round(float(tempdata[2:]) / 1000,2)
-        """
         with open('/run/shm/datos_temp.csv', mode='r') as f:
             csv_reader = csv.DictReader(f)
             for row in csv_reader:
@@ -812,7 +595,7 @@ if nreles > 0 : # apagado reles en BD
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
 
 if simular != 1 and Vbat_sensor != 'HIBRIDO': 
-    Vbat = leer_vbat(vsis*12.0) # pongo por defecto a 24v
+    Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
 else:
     Vbat = vsis * 12.0
     
@@ -946,7 +729,7 @@ try:
             Consumo = Vbat * (Iplaca-Ibat)
             
         else:
-            ee=30
+            ee=30.1
             if usar_hibrido == 1:
                 try:
                     with open('/run/shm/datos_hibrido.csv', mode='r') as f:
@@ -956,23 +739,35 @@ try:
                 except:
                     print ('Error, datos Hibrido no encontrados')
                     
-            ee=32
+            ee=30.2
             if usar_victron == 1:
                 try:
                     with open('/run/shm/datos_victron.csv', mode='r') as f:
                         csv_reader = csv.DictReader(f)
                         for row in csv_reader:
-                            d_victron = row # Capturo los valores del fichero datos_victron2.csv
+                            d_victron = row # Capturo los valores del fichero datos_victron.csv
                 except:
                     print ('Error, datos victron no encontrados')
+            
+            ee=30.3
+            if usar_sma == 1:
+                try:
+                    with open('/run/shm/datos_sma.csv', mode='r') as f:
+                        csv_reader = csv.DictReader(f)
+                        for row in csv_reader:
+                            d_sma = row # Capturo los valores del fichero datos_sma.csv
+                except:
+                    print ('Error, datos sma no encontrados')
+
+
                     
             ee=34
-            Ibat = leer_ibat(Ibat)
-            Vbat = leer_vbat(Vbat)
-            Iplaca = leer_iplaca(Iplaca)
-            Vplaca = leer_vplaca(Vplaca)
-            Aux1 = leer_aux1(Aux1)
-            Aux2 = leer_aux2(Aux2)
+            Ibat = leer_sensor('Ibat',Ibat_sensor,Ibat,ibat_min,ibat_max)            
+            Vbat = leer_sensor('Vbat',Vbat_sensor,Vbat,vbat_min,vbat_max)
+            Iplaca = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,iplaca_min,iplaca_max)
+            Vplaca = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,vplaca_min,vplaca_max)
+            Aux1 = leer_sensor('Aux1',Aux1_sensor,Aux1,aux1_min,aux1_max)
+            Aux2 = leer_sensor('Aux2',Aux2_sensor,Aux2,aux2_min,aux2_max)
 
             try:
                 # evalua las expresiones definidas en Parametros_FV.py
@@ -994,30 +789,6 @@ try:
         ee=36
         PWM = Calcular_PWM(PWM)
         
-        ######## VALORES DEL MULTIPLEXOR ----PCF en Direccion 39---#########
-        if mux == 1: 
-            ###### Asegurar que el PCF del mux esta en la direccion 39 ==> A0=A1=A2=1
-            for K in range(16):
-                act_rele(39,1,int(not(K%2)))       #Pin S0 74HC4067
-                act_rele(39,2,int(not((K//2)%2)))  #Pin S1 74HC4067
-                act_rele(39,3,int(not((K//4)%2)))  #Pin S2 74HC4067
-                act_rele(39,4,int(not((K//8)%2)))  #Pin S3 74HC4067
-
-                #print ('direcc=',int(not(K%2)),)
-                #print (int(not((K//2)%2)),)
-                #print (int(not((K//4)%2)),)
-                #print (int(not((K//8)%2)),)
-                try:
-
-                    ###### pin del ADS1115 para mux
-                    mux1 = adc.read_adc(1, gain=1)
-                    #print (' Mux1=',mux1)
-
-                #### FALTA INCORPORAR A BD ######
-
-                except:
-                    logBD('-ERROR MEDIDA MUX1-'+ str(K))
-
         ##################################################################
         t_muestra_1=time.time()-hora_m
 
@@ -1034,10 +805,8 @@ try:
             Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tecu ??
 
         else:
-            if Ibat < 0:
-                Whn_bat = round(Whn_bat - (Ibat * Vbat * t_muestra/3600),2)
-            else:
-                Whp_bat = round(Whp_bat + (Ibat * Vbat * t_muestra/3600),2)
+            if Ibat < 0: Whn_bat = round(Whn_bat - (Ibat * Vbat * t_muestra/3600),2)
+            else:        Whp_bat = round(Whp_bat + (Ibat * Vbat * t_muestra/3600),2)
 
             Wh_placa = round(Wh_placa + (Wplaca * t_muestra/3600),2)
 
@@ -1189,7 +958,6 @@ try:
         DatosFV['Temp'] = Temp
         DatosFV['Vplaca'] = Vplaca
         DatosFV['Wplaca'] = Wplaca
-        DatosFV['Diver'] = Diver
         DatosFV['PWM'] = PWM
 
         # ----------------- Guardamos datos_fv.csv ------
@@ -1206,8 +974,8 @@ try:
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
 
             f_writer.writerow([round(tiempo_sg,2), tiempo,Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
-                               int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,Wplaca,round(Wh_placa),
-                               Temp,PWM,Mod_bat])
+                               int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
+                               Temp,PWM,round(Consumo),Mod_bat,Tabs,Tflot,Tflot_bulk])
         ee=43
         with open('/run/shm/datos_reles.csv', mode='w') as f:
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
@@ -1557,7 +1325,6 @@ try:
         espera = TP[2] - T_ejecucion #-0.1
         if espera > 0: time.sleep(espera)
         t_muestra_6=time.time()-hora_m
-
 
 except:
     print()
