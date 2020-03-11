@@ -192,8 +192,14 @@ iplaca_victron_min = 0
 ## Si algun sensor (Iplaca, Vplaca,...)  usa el SMA o se quiere guardar en BD en la tabla 'sma'
 ## se debe poner usar_sma = 1
 
-usar_sma = 0 #1 para leer datos victron ..... 0 para no usar
-dev_sma = "/dev/ttyUSB0"
+usar_sma = 0 #1 para leer datos sma ..... 0 para no usar
+usar_si = 0
+usar_sb1 = 0
+usar_sb2 = 0
+IP_SI = "192.168.0.24"
+IP_SB1 = "192.168.0.253"
+IP_SB2 = "192.168.0.252"
+
 grabar_datos_sma = 1 # 1 = Graba la tabla sma... 0 = No graba
 
 
