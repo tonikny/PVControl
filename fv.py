@@ -341,10 +341,11 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
             else:
                 dif += time.time() - eval("float("+sensor[:pp2[0]]+"['Tiempo_sg'])")
 
-            if dif < 10: y = eval(sensor)
-            elif dif <20: y = anterior
-            else: y = 0    
-    except:
+            if dif < 10: y = float(eval(sensor))
+            elif dif <20: y = float(anterior)
+            else: y = 0.0
+    except Exception as e:
+        print (e.traceback())
         print ('Error en sensor ', n_sensor)
         y = anterior
         logBD('-ERROR MEDIDA FV-'+n_sensor)    
@@ -593,11 +594,15 @@ if nreles > 0 : # apagado reles en BD
 ## ------------------------------------------------------------
 ### Calcular voltaje sistema (12,24 o 48)
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
+try:
+    if simular != 1 and Vbat_sensor != 'HIBRIDO':
+        Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
+    else:
+        Vbat = vsis * 12.0
+except:
+    # TODO: reformular esto, hay cambio de parametros
+    pass
 
-if simular != 1 and Vbat_sensor != 'HIBRIDO': 
-    Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
-else:
-    Vbat = vsis * 12.0
     
 log=''
 if Vbat > 11 and Vbat < 15.5 : vsis = 1
@@ -1326,11 +1331,12 @@ try:
         if espera > 0: time.sleep(espera)
         t_muestra_6=time.time()-hora_m
 
-except:
+except Exception as e:
     print()
     print ('Error en bucle fv',ee)
     for I in range (NGPIO):
         print (I)
         Reles_SSR[I][0].stop()
+    print(e.traceback())
 finally:
     GPIO.cleanup()    
