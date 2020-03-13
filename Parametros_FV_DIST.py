@@ -202,6 +202,26 @@ IP_SB2 = "192.168.0.252"
 
 grabar_datos_sma = 1 # 1 = Graba la tabla sma... 0 = No graba
 
+# -----------------------------------------------
+
+###### SRNE
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa el SRNE o se quiere guardar en BD en la tabla 'srne'
+## se debe poner usar_srne = 1
+
+usar_srne = 0 #1 para leer datos victron ..... 0 para no usar
+
+# dev_srne= '/dev/ttyUSB0' # USB
+#           '/dev/ttyS0' # TTL
+dev_srne = "/dev/ttyUSB0"
+
+grabar_datos_srne = 1 # 1 = Graba la tabla srne... 0 = No graba
+
+iplaca_srne_max = 85
+iplaca_srne_min = 0
+
+# -----------------------------------------------
 
 ###### Pantalla OLED
 OLED_salida1 =[0,1,2,3] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo

@@ -4,6 +4,7 @@
 # Versión 2020-02-25
 
 import time,csv,sys
+import traceback
 import datetime,glob
 import MySQLdb 
 import random # para simulacion usando random.choice
@@ -17,6 +18,8 @@ import paho.mqtt.client as mqtt
 
 import RPi.GPIO as GPIO # reles 4XX via GPIO
 GPIO.setmode(GPIO.BOARD) #para RPi
+
+from csvFv import CsvFv
 
 basepath = '/home/pi/PVControl+/'
 
@@ -334,18 +337,18 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
 
             k=len(pp1)
             dif=0
-
+            
             if k>0:
                 for i in range(k):
-                    dif += time.time() - eval("float"+sensor[pp1[i]:pp2[i]]+"['Tiempo_sg'])")
+                    dif += time.time() - eval("float("+sensor[pp1[i]:pp2[i]]+"['Tiempo_sg'])")
             else:
                 dif += time.time() - eval("float("+sensor[:pp2[0]]+"['Tiempo_sg'])")
 
             if dif < 10: y = float(eval(sensor))
             elif dif <20: y = float(anterior)
             else: y = 0.0
-    except Exception as e:
-        print (e.traceback())
+    except:
+        traceback.print_exc()
         print ('Error en sensor ', n_sensor)
         y = anterior
         logBD('-ERROR MEDIDA FV-'+n_sensor)    
@@ -594,14 +597,15 @@ if nreles > 0 : # apagado reles en BD
 ## ------------------------------------------------------------
 ### Calcular voltaje sistema (12,24 o 48)
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
-try:
-    if simular != 1 and Vbat_sensor != 'HIBRIDO':
-        Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
-    else:
-        Vbat = vsis * 12.0
-except:
-    # TODO: reformular esto, hay cambio de parametros
-    pass
+if Vbat == "ADS":
+    try:
+        if simular != 1 and Vbat_sensor != 'HIBRIDO':
+            Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
+        else:
+            Vbat = vsis * 12.0
+    except:
+        # TODO: reformular esto, hay cambio de parametros
+        pass
 
     
 log=''
@@ -763,9 +767,13 @@ try:
                             d_sma = row # Capturo los valores del fichero datos_sma.csv
                 except:
                     print ('Error, datos sma no encontrados')
-
-
                     
+            ee=30.4
+            if usar_srne == 1:
+                csvfv = CsvFv ('/run/shm/datos_srne.csv')
+                d_srne = csvfv.leerCsv() # Capturo los valores desde datos_srne.csv
+            
+                
             ee=34
             Ibat = leer_sensor('Ibat',Ibat_sensor,Ibat,ibat_min,ibat_max)            
             Vbat = leer_sensor('Vbat',Vbat_sensor,Vbat,vbat_min,vbat_max)
@@ -1331,12 +1339,12 @@ try:
         if espera > 0: time.sleep(espera)
         t_muestra_6=time.time()-hora_m
 
-except Exception as e:
+except:
     print()
     print ('Error en bucle fv',ee)
     for I in range (NGPIO):
         print (I)
         Reles_SSR[I][0].stop()
-    print(e.traceback())
+    traceback.print_exc()
 finally:
     GPIO.cleanup()    
