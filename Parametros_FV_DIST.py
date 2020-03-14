@@ -143,7 +143,7 @@ indice_sensortemperatura = 0 # si hay mas de un sensor hay que definir el que qu
 # -----------------------------------------------
 
 ###### Multiplexor
-mux = 0      # Poner a 1 si existe un multiplexor de 16 canales
+mux1 = 0      # Poner a 1 si se utiliza un multiplexor de 16 canales de la PCB
 # -----------------------------------------------
 
 ###### HIBRIDO
@@ -179,12 +179,28 @@ usar_victron = 0 #1 para leer datos victron ..... 0 para no usar
 
 dev_victron = "/dev/ttyUSB0"
 
-grabar_datos_victron = 1 # 1 = Graba la tabla victron... 0 = No graba
+grabar_datos_victron = 0 # 1 = Graba la tabla victron... 0 = No graba
 
 iplaca_victron_max = 99
 iplaca_victron_min = 0
 
 # -----------------------------------------------
+
+###### BMV
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa el BMV o se quiere guardar en BD en la tabla 'bmv'
+## se debe poner usar_bmv = 1
+
+usar_bmv = 0 #1 para leer datos victron ..... 0 para no usar
+
+dev_bmv = "/dev/serial0"
+
+grabar_datos_bmv = 0 # 1 = Graba la tabla bmv... 0 = No graba
+
+
+# -----------------------------------------------
+
 
 ###### SMA
 
@@ -200,7 +216,7 @@ IP_SI = "192.168.0.24"
 IP_SB1 = "192.168.0.253"
 IP_SB2 = "192.168.0.252"
 
-grabar_datos_sma = 1 # 1 = Graba la tabla sma... 0 = No graba
+grabar_datos_sma = 0 # 1 = Graba la tabla sma... 0 = No graba
 
 # -----------------------------------------------
 

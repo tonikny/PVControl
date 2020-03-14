@@ -738,40 +738,31 @@ try:
             Consumo = Vbat * (Iplaca-Ibat)
             
         else:
+            ## Capturando valores desde xxxxx.csv
             ee=30.1
             if usar_hibrido == 1:
-                try:
-                    with open('/run/shm/datos_hibrido.csv', mode='r') as f:
-                        csv_reader = csv.DictReader(f)
-                        for row in csv_reader:
-                            d_hibrido = row # Capturo los valores del fichero datos_hibrido.csv
-                except:
-                    print ('Error, datos Hibrido no encontrados')
+                csvfv = CsvFv ('/run/shm/datos_hibrido.csv')
+                d_hibrido = csvfv.leerCsv() 
                     
             ee=30.2
             if usar_victron == 1:
-                try:
-                    with open('/run/shm/datos_victron.csv', mode='r') as f:
-                        csv_reader = csv.DictReader(f)
-                        for row in csv_reader:
-                            d_victron = row # Capturo los valores del fichero datos_victron.csv
-                except:
-                    print ('Error, datos victron no encontrados')
+                csvfv = CsvFv ('/run/shm/datos_victron.csv')
+                d_victron = csvfv.leerCsv()
             
             ee=30.3
-            if usar_sma == 1:
-                try:
-                    with open('/run/shm/datos_sma.csv', mode='r') as f:
-                        csv_reader = csv.DictReader(f)
-                        for row in csv_reader:
-                            d_sma = row # Capturo los valores del fichero datos_sma.csv
-                except:
-                    print ('Error, datos sma no encontrados')
+            if usar_bmv == 1:
+                csvfv = CsvFv ('/run/shm/datos_victron.csv')
+                d_bmv = csvfv.leerCsv()
                     
             ee=30.4
+            if usar_sma == 1:
+                csvfv = CsvFv ('/run/shm/datos_sma.csv')
+                d_sma = csvfv.leerCsv()
+                    
+            ee=30.5
             if usar_srne == 1:
                 csvfv = CsvFv ('/run/shm/datos_srne.csv')
-                d_srne = csvfv.leerCsv() # Capturo los valores desde datos_srne.csv
+                d_srne = csvfv.leerCsv() 
             
                 
             ee=34
