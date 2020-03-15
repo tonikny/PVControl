@@ -137,8 +137,9 @@ simular = 0  # Simulacion datos FV --- 1 para simular....0 para no simular
 simular_reles = 0 # Simular reles fisicos
 # -----------------------------------------------
 
-###### Sensor Temperatura (DS18B20)
-sensortemperatura = 0   # Poner a 0 si no se ha instalado el DS18B20
+###### Sensor Temperatura
+sensortemperatura = 0   # Poner a 0 si no se ha instalado un sensor
+tipo_sensortemperatura = 'DS18B20'    # 'DS18B20', 'SNRE'
 indice_sensortemperatura = 0 # si hay mas de un sensor hay que definir el que queremos guardar
 # -----------------------------------------------
 

@@ -15,6 +15,7 @@ from Parametros_FV import *
 import MySQLdb
 
 if usar_bmv == 0:
+    print ('apagando servicio BMV por no configurar equipo')
     print (subprocess.getoutput('sudo systemctl stop bmv')) #python3
     sys.exit()
 
@@ -74,7 +75,7 @@ class bmv:
                             elif int(data[1]) == 4: self.dct["CS"] = 'ABS'
                             elif int(data[1]) == 5: self.dct["CS"] = 'FLOT'
                          
-                        elif data[0] == b'Checksum' and flag_Vbat == 1
+                        elif data[0] == b'Checksum' and flag_Vbat == 1:
                             ee = 400
                             flag_Vbat = 0
                             self.dct['Tiempo_sg'] = time.time()

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-01-11
+# Versión 2020-03-15
 
-import time,csv,sys
+import time,sys
 import datetime,glob
 
 #Parametros Instalacion FV
 from Parametros_FV import *
+
+from csvFv import CsvFv
 
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
@@ -18,12 +20,12 @@ elif str(sys.argv[narg-1]) == '-p2':
 elif str(sys.argv[narg-1]) == '-p3':
     DEBUG = 3
 elif str(sys.argv[narg-1]) == '-p':
-    DEBUG = 10
+    DEBUG = 100
 else:
     DEBUG = 0
 print ('DEBUG=',DEBUG)
 
-Temp_D = ([0] * 8)
+Temp_D ={}
 
 while True:
     sensores = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
@@ -40,38 +42,27 @@ while True:
         #temp_datos = segundalinea.split(" ")[9]
         
         temp= round(float(temp_datos[2:]) / 1000,2)
-        if DEBUG >=2: print (sensor, temp)
+        if DEBUG >= 2: print (sensor, temp)
         
-        Temp_D[Ctemp]=temp 
-        Ctemp +=1
+        Temp_D['Temp'+str(Ctemp)] = temp 
+        Ctemp += 1
         time.sleep(1)
-        
-     
-         
+
+    
     try:
-        tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-        tiempo_sg = time.time()
+        Temp_D['Tiempo'] = time.strftime("%Y-%m-%d %H:%M:%S")
+        Temp_D['Tiempo_sg'] =  time.time()
         
-        if DEBUG >=1:print (tiempo,tiempo_sg,Temp_D)
-        
-        with open('/run/shm/datos_temp.csv', mode='w') as f:
-            nombres = ['Tiempo_sg','Tiempo','Temp0', 'Temp1', 'Temp2','Temp3', 'Temp4', 'Temp5']
-            datos = csv.DictWriter(f, fieldnames=nombres)
-            datos.writeheader()
-            datos.writerow({'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,
-                'Temp0': Temp_D[0],'Temp1': Temp_D[1],'Temp2':Temp_D[2],
-                'Temp3': Temp_D[3],'Temp4': Temp_D[4],'Temp5':Temp_D[5]})
-            
-        
-        with open('/run/shm/datos_temp.csv', mode='r') as f:
-            csv_reader = csv.DictReader(f)
-            for row in csv_reader:
-                d_temp = row # Capturo los valores del fichero datos_temp.csv
+        if DEBUG >= 1:print (Temp_D)
         
         
-        if DEBUG >=1: print (d_temp['Temp'+str(indice_sensortemperatura)])
-        
-        
+        if tipo_sensortemperatura == 'DS18B20':
+            fichero = '/run/shm/datos_temp.csv'
+        else:
+            fichero = '/run/shm/datos_temp_DS18B20.csv'
+
+        c = CsvFv(fichero)
+        c.escribirCsv(Temp_D)
         
         time.sleep(10)
         
