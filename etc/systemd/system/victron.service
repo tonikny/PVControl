@@ -3,7 +3,7 @@ Description= PVControl+ - Lectura VICTRON
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python /home/pi/PVControl+/victron.py
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/victron.py
 Restart=always
 RestartSec=30
 

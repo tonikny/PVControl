@@ -103,7 +103,7 @@ if __name__ == '__main__':
     
     nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
     datosBD = {}
-    grabar_BD = grabar_datos_victron
+    grabar_BD = grabar_datos_bmv
     n_grabar_BD = n_grabar_BD_cont = 5
     
     while True:

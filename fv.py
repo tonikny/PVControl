@@ -556,7 +556,7 @@ try:
     else:
          Whp_bat = Whn_bat = Wh_placa = 0.0
 except Exception as e:
-    print ("Error, la base de datos no existe")
+    print ("Sin registros en la tabla datos")
 
 ## Definir matrices Rele_Out y Rele_Out_Ant
 Rele_Out = [[0] * 8 for i in range(50)]
@@ -597,15 +597,15 @@ if nreles > 0 : # apagado reles en BD
 ## ------------------------------------------------------------
 ### Calcular voltaje sistema (12,24 o 48)
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
-if Vbat == "ADS":
-    try:
-        if simular != 1 and Vbat_sensor != 'HIBRIDO':
-            Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
-        else:
-            Vbat = vsis * 12.0
-    except:
-        # TODO: reformular esto, hay cambio de parametros
-        pass
+
+try:
+    if simular != 1 and Vbat_sensor == 'ADS':
+        Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
+    else:
+        Vbat = vsis * 12.0
+except:
+    # TODO: reformular esto, hay cambio de parametros
+    pass
 
     
 log=''
