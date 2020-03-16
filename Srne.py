@@ -35,7 +35,8 @@ DEBUG_LEVEL = logging.WARNING
 #
 class Srne:
             
-    archivoCvs = '/run/shm/datos_srne.csv' # archivo ram
+    archivoFv = '/run/shm/datos_srne.csv' # archivo ram FV
+    archivoTemp = '/run/shm/datos_temp.csv' # archivo ram temperatura
     
     ##
     # creacion e inicializacion del objeto
@@ -51,7 +52,8 @@ class Srne:
         self.datos = {}
         self.timeBd = time.time()
         self.bd = Bd()
-        self.csvfv = CsvFv(self.archivoCvs)
+        self.csvfv = CsvFv(self.archivoFv)
+        self.csvtemp = CsvFv(self.archivoTemp)
     
     ##
     # convierte el estado del regulador
@@ -69,10 +71,20 @@ class Srne:
                         6 : "LIMITING"
                         }
             return estados[codigo]
+
             
+    def getDatosFV(self):
+        self.csvfv = CsvFv (self.archivoFv)
+        return self.csvfv.leerCsv() 
+        
+    def getDatosTemp(self):
+        self.csvtemp = CsvFv (self.archivoTemp)
+        return self.csvtemp.leerCsv() 
+       
+
     ##
     # Guardar datos en archivo ram y base de datos
-    def guardarDatos (self):
+    def guardarDatosFV (self):
         # escribir archivo ram
         self.csvfv.escribirCsv(self.datos)
 
@@ -86,42 +98,67 @@ class Srne:
     ##
     # Lectura de registros por modbus y almacenamiento
     def leerRegistros(self):
+        tiempo_sg = time.time()
         while True:
+            if time.time()-tiempo_sg < FREQ_MUESTREO: 
+                time.sleep(0.1) # esperamos
+                continue
+
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-            tiempo_sg = time.time()
-            # Lectura de registros
-            try:
-                R_Vbat = self.modbus.read_holding_registers(0x0101, 2, unit=1)
-                R_Vplaca = self.modbus.read_holding_registers(0x0107, 2, unit=1)
-                R_Iplaca = self.modbus.read_holding_registers(0x0102, 2, unit=1)
-                R_Est = self.modbus.read_holding_registers(0x0120, 2, unit=1)
-                time.sleep(FREQ_MUESTREO)
-            except:
-                traceback.print_exc()
-                logging.warning (__class__.__name__ + ":Error lectura SRNE")
-                #break # para poder parar con crtl+c
+            # recoger 9 registros (0x0101..0x0109)
+            Res = self.modbus.read_holding_registers(0x0101, 9, unit=1)
+            # recoger 1 registro (0x0120)
+            R_Est = self.modbus.read_holding_registers(0x0120, 2, unit=1)
 
-            # Procesado de los datos    
-            if not (R_Vbat.isError() or R_Vplaca.isError() or \
-                    R_Iplaca.isError() or R_Est.isError()):
-                Vbat = R_Vbat.registers[0]/10
-                Vplaca = R_Vplaca.registers[0]/10
-                Iplaca = R_Iplaca.registers[0]/100
-                est = R_Est.registers[0]
-                estInt = int(format(est, '02x')) # 8 lower bits
-                Estado = self.getEstado(estInt)
-                
-                self.datos = {'Tiempo_sg':tiempo_sg, 'Tiempo':tiempo, 'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca, 'Estado':Estado}
-                self.guardarDatos()
+            if not Res.isError() and not R_Est.isError():
+                r = Res.registers[0:]
+                if len(r)==9:
+                    
+                    # Procesado de los datos FV ########
+                    Vbat = float(r[0]/10)
+                    Iplaca = float(r[1]/100)
+                    Vplaca = float(r[6]/10)
+                    Ipanel = float(r[7]/100)
+                    Wplaca = int(r[8])
+                    x = format(r[2], '04x')
+                    Treg = int(x[:2],16)
+                    Tbat = int(x[2:],16)
+                    
+                    est = R_Est.registers[0]
+                    estInt = int(format(est, '02x')) # 8 lower bits
+                    Estado = self.getEstado(estInt)
 
-                logging.info ("Datos: %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca), Estado)
+                    self.datos = {'Tiempo_sg':tiempo_sg, 'Tiempo':tiempo,
+                                    'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca,
+                                    'Estado':Estado}
+                    #print(self.datos)
+                    #print(Vbat,Iplaca,Vplaca,Ipanel,Wplaca,Estado,Tbat,Treg)
+                    self.guardarDatosFV()
+                    logging.info ("Datos: %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca), Estado)
+                    
+                    # Procesado de los datos de temperatura ########
+                    if tipo_sensortemperatura == "SRNE":
+                        self.datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,
+                                        'Temp0':Tbat,'Temp1':Treg,'Temp2':0,
+                                        'Temp3':0,'Temp4':0,'Temp5':0}
+                        self.csvtemp.escribirCsv(self.datos)
+                        logging.info (__class__.__name__ + ": Tbat="+str(Tbat)+"|Treg="+str(Treg))
+                else:
+                    self.modbus.close()
+                    time.sleep(0.5)
+                    self.modbus.connect()
+                    logging.warning (__class__.__name__ + ':Error longitud registros SRNE')
+
             else:
+                self.modbus.close()
+                time.sleep(0.5)
+                self.modbus.connect()
                 logging.warning (__class__.__name__ + ':Error lectura registros SRNE')
+            tiempo_sg = time.time()
 
         self.modbus.close()
         self.bd.desconecta()
         
-
                
 if __name__ == '__main__':
     #main(sys.argv[1:])
