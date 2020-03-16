@@ -1386,8 +1386,8 @@ $(function () {
                 });
             
             
-            grafica_i.series[0].addPoint([x, data[0][10]], true, true); //Ibat
-            grafica_i.series[1].addPoint([x, data[0][2]], true, true); //Iplaca
+            grafica_i.series[0].addPoint([x, data[0][2]], true, true); //Ibat
+            grafica_i.series[1].addPoint([x, data[0][10]], true, true); //Iplaca
             grafica_i.series[2].addPoint([x, data[0][11]], true, true); //Vplaca
             grafica_i.series[3].addPoint([x, data[0][6]], true, true); //Aux1
             grafica_i.series[4].addPoint([x, data[0][15]], true, true); //PWM
