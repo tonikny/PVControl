@@ -38,7 +38,7 @@ class CsvFv:
         try:
             with open(self.archivo, mode='r') as f:
                 csv_reader = csv.DictReader(f)
-                datos = next(csv_reader)
+                datos = next(csv_reader, None)
                 if not datos:
                     raise ValueError('CsvFv: No hay datos')
                 return datos
