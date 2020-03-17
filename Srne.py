@@ -34,15 +34,15 @@ DEBUG_LEVEL = logging.WARNING
 # (Probado con el modelo MC-4885N25)
 #
 class Srne:
-            
+
     archivoFv = '/run/shm/datos_srne.csv' # archivo ram FV
     archivoTemp = '/run/shm/datos_temp.csv' # archivo ram temperatura
-    
+
     ##
     # creacion e inicializacion del objeto
     def __init__(self, serialPort):
-        logging.info(__class__.__name__ + ":Objeto creado") 
-        try:      
+        logging.info(__class__.__name__ + ":Objeto creado")
+        try:
             self.modbus = ModbusClient(method='rtu', port=serialPort, baudrate=9600, timeout=1)
             self.modbus.connect()
         except:
@@ -54,7 +54,7 @@ class Srne:
         self.bd = Bd()
         self.csvfv = CsvFv(self.archivoFv)
         self.csvtemp = CsvFv(self.archivoTemp)
-    
+
     ##
     # convierte el estado del regulador
     # @param codigo (byte)
@@ -72,15 +72,15 @@ class Srne:
                         }
             return estados[codigo]
 
-            
+
     def getDatosFV(self):
         self.csvfv = CsvFv (self.archivoFv)
-        return self.csvfv.leerCsv() 
-        
+        return self.csvfv.leerCsv()
+
     def getDatosTemp(self):
         self.csvtemp = CsvFv (self.archivoTemp)
-        return self.csvtemp.leerCsv() 
-       
+        return self.csvtemp.leerCsv()
+
 
     ##
     # Guardar datos en archivo ram y base de datos
@@ -94,13 +94,13 @@ class Srne:
             del datosBd["Tiempo_sg"] # no guardamos este campo en la bd
             self.bd.insert("srne", self.datos)
             self.timeBd = time.time()
-        
+
     ##
     # Lectura de registros por modbus y almacenamiento
     def leerRegistros(self):
         tiempo_sg = time.time()
         while True:
-            if time.time()-tiempo_sg < FREQ_MUESTREO: 
+            if time.time()-tiempo_sg < FREQ_MUESTREO:
                 time.sleep(0.1) # esperamos
                 continue
 
@@ -113,7 +113,7 @@ class Srne:
             if not Res.isError() and not R_Est.isError():
                 r = Res.registers[0:]
                 if len(r)==9:
-                    
+
                     # Procesado de los datos FV ########
                     Vbat = float(r[0]/10)
                     Iplaca = float(r[1]/100)
@@ -123,7 +123,7 @@ class Srne:
                     x = format(r[2], '04x')
                     Treg = int(x[:2],16)
                     Tbat = int(x[2:],16)
-                    
+
                     est = R_Est.registers[0]
                     estInt = int(format(est, '02x')) # 8 lower bits
                     Estado = self.getEstado(estInt)
@@ -135,7 +135,7 @@ class Srne:
                     #print(Vbat,Iplaca,Vplaca,Ipanel,Wplaca,Estado,Tbat,Treg)
                     self.guardarDatosFV()
                     logging.info ("Datos: %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca), Estado)
-                    
+
                     # Procesado de los datos de temperatura ########
                     if tipo_sensortemperatura == "SRNE":
                         self.datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,
@@ -158,14 +158,14 @@ class Srne:
 
         self.modbus.close()
         self.bd.desconecta()
-        
-               
+
+
 if __name__ == '__main__':
     #main(sys.argv[1:])
     logging.basicConfig(level=DEBUG_LEVEL)
     Srne(dev_srne).leerRegistros()
-        
-            
-            
+
+
+
 
 

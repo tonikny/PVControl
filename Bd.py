@@ -1,23 +1,28 @@
 
-import MySQLdb 
+import MySQLdb
 import logging
 import traceback
-from Parametros_FV import *
+
 
 #from Bd_Params import *
 
-## Bd_Params.py 
+## Bd_Params.py
 # Configuracion de la base de datos (se configura en Parametros_FV.py)
 #  servidor =
 #  usuario =
 #  clave =
 #  basedatos =
 
+SERVIDOR = 'localhost'
+USUARIO = 'rpi'
+CLAVE = 'fv'
+BASEDATOS = 'control_solar'
+
 ##
 # Bd: Acceso a la base de datos
 #
 # uso:  from Bd import *
-#       bd = Bd()
+#       bd = Bd(servidor,usuario,clave,basedatos)
 #       bd.insert("tabla", dict_datos)
 #       bd.desconecta()
 
@@ -25,27 +30,31 @@ from Parametros_FV import *
 # Clase para manejar la base de datos
 #
 class Bd:
-    
-#    bd = None
-#    cursor = None
-        
+
     ##
     # conectar con la BD
-    def __init__(self, host = servidor, user = usuario, passwd = clave, db = basedatos):
+    def __init__(self, host=SERVIDOR, user=USUARIO,
+                 passwd=CLAVE, db=BASEDATOS):
+        self.servidor = host
+        self.usuario = user
+        self.clave = passwd
+        self.basedatos = db
+
         logging.info(__class__.__name__ + ":Objeto creado")
         try:
-            self.bd = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+            self.bd = MySQLdb.connect(self.servidor, self.usuario,
+                                      self.clave, self.basedatos)
             self.cursor = self.bd.cursor()
             logging.info(__class__.__name__ + ":BD conectada")
-        except:
-            logging.error(__class__.__name__ + ":Error de conexión a la BD")
+        except MySQLdb._exceptions.Error as err:
+            logging.error(__class__.__name__ + ":Error de conexión a la BD"+format(err))
             traceback.print_exc()
-            
+
     ##
     # insertar datos en la tablasrne
     # @param tabla Tabla de la base de datos
-    # @params datos Diccionario {columna:valor,...}    
-    def insert (self, tabla, datos):
+    # @params datos Diccionario {columna:valor,...}
+    def insert(self, tabla, datos):
         try:
             campos = ",".join(datos.keys())
             valores = "','".join(str(v) for v in datos.values())
@@ -53,14 +62,12 @@ class Bd:
             logging.info(__class__.__name__ + ":"+insertQuery)
             self.cursor.execute(insertQuery)
             self.bd.commit()
-        except:
-            logging.error(__class__.__name__ + ":Error insertando en la BD")
+        except MySQLdb._exceptions.Error as err:
+            logging.error(__class__.__name__ + ":Error insertando en la BD"+format(err))
             traceback.print_exc()
-
 
     ##
     # desconectar la BD
-    def desconecta():
+    def desconecta(self):
         self.cursor.close()
         self.bd.close()
-
