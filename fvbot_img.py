@@ -27,8 +27,6 @@ api_key = 'ZZZZZ'   # Key Clarifai
 from clarifai.rest import ClarifaiApp
 from clarifai.rest import Workflow # si se quiere utilizar algun workflow
 
-app = ClarifaiApp(api_key=api_key)
-
 if motion_telegram == 0:
     sys.exit()
 
@@ -65,6 +63,9 @@ else:
 # --------Analizar Foto en Clarifai ------------------------------
 try:
     if motion_clarifai == 1:
+        
+        app = ClarifaiApp(api_key=api_key)
+        
         # Si se quiere subir la imagen capturada para categorizarla despues descomentar la siguiente linea
         #app.inputs.create_image_from_filename(imagen)
         

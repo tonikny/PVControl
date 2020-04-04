@@ -78,35 +78,34 @@ def on_message(client, userdata, msg):
                 ##########################################################################
                 #            CAMBIAR INDICES  DE r[] DEPENDIENDO DEL MODELO DE HIBRIDO
                 ##########################################################################
-                #print ("BD=",)
                 #print ('Respuesta Hibrido=',r)
                 
-                Vgen = r[3]
-                Fgen = r[4]
+                Vgen = r[3] # Voltaje AC entrada Linea
+                Fgen = r[4] # Frecuencia AC entrada Linea
                 
-                Iplaca = r[15]
-                #print ('Iplaca=',Iplaca)
+                PACW = r[8]  # W consumo activo
+                PACVA = r[7] # VA consumo aparente
                 
-                Vplaca = r[16]
-                #print ('Vplaca=',Vplaca)
+                Vbus = r[10] # V 
+                Vbat = r[11] # Voltaje bateria
                 
-                Wplaca = r[22]
-
+                Ibatp = r[12] # A carga Bateria
                 
-                Vbat = r[11]
+                Temp = r[14]  # Grados
+                #Iplaca = r[15]
+                                
+                Vplaca = r[16] # Voltaje placas
+                                
+                Ibatn = r[18]  # A descarga bateria
                 
-                Vbus = r[10]
-
-                Ibatp = r[12]
-                Ibatn = r[18]
-
-                PACW = r[8]
-                PACVA = r[7]
-
-                Temp = r[14]
-
-                Flot = r[23][0]
-                OnOff = r[23][1]
+                Wplaca = r[22] # W produccion placas
+                
+                Flot = r[23][0] # estado bit flotacion
+                OnOff = r[23][1] # estado pulsador OnOff Hibrido
+                
+                Iplaca = float(Wplaca)/float(Vbat) # Intensidad producida por placas en relacion a Vbat
+                
+                
                 ##########################################################################
                 
                 client.publish("PVControl/Hibrido/Iplaca",Iplaca)
@@ -198,6 +197,7 @@ def comando(cmd):
     cmd1 = cmd
     
     try:
+        err=10
         #print ('Comando')
         if cmd1 == b"ERROR":
             while True:
@@ -222,7 +222,7 @@ def comando(cmd):
             cmd_crc = cmd1 + b'\r'
 
         #print ('Comando=',cmd_crc)
-        
+        err=20
         if os.path.exists(dev_hibrido):
             fd = open(dev_hibrido,'rb+')
             time.sleep(.15)
@@ -232,6 +232,10 @@ def comando(cmd):
             if len(cmd_crc) > 8:
                 fd.flush()
                 fd.write(cmd_crc[8:16])
+                err=21
+                if (cmd1 == b"PBEQA1") or (cmd1 == b"PBEQA0"):
+                    fd.write(cmd_crc[8:16]) ######
+                    err = 22
 
             if len(cmd_crc) > 16:
                 fd.flush()
@@ -239,12 +243,14 @@ def comando(cmd):
                 
             time.sleep(.5)
             
+            err=30
             r = fd.read(5)
 
             while r.find(b'\r') == -1 :
                 time.sleep(.02)
                 r = r + fd.read(1)
 
+            err=40
             r = r[0:len(r)-3] # quita CRC
             #print (r)
             
@@ -253,7 +259,8 @@ def comando(cmd):
             #print('Sin CRC=',r)
             # Creo lista separando por espacio
             s = r.split(b" ")
-
+            
+            err=50
             s[3]=s[3][1:] #quito el parentesis inicial de la respuesta
             
             t_muestra=5
@@ -265,9 +272,9 @@ def comando(cmd):
                  b'20',b'21',b'22',b'23',b'24',b'25',b'26',b'27',b'28']
             """       
     except:
-        #print('Error Comando ',)
+        #print('Error Comando ',err)
         t_muestra=12
-        s = 'Error Hibrido'
+        s = 'Error Hibrido'+str(err)
         
     finally:
         #print ('finally')

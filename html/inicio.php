@@ -1,5 +1,39 @@
+<?php
 
+require('conexion.php');
+//Coger datos grafica tiempo real
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Ibat, Iplaca, Vbat, PWM, Vplaca
+        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 1 MINUTE)
+        ORDER BY Tiempo";
+
+if($result = mysqli_query($link, $sql)){
+
+  $i=0;
+  while($row = mysqli_fetch_assoc($result)) {
+        //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
+        $rawdata3[$i] = $row;
+        $i++;
+  }
+} else{
+        echo "ERROR: No se puede ejecutar $sql. " . mysqli_error($link);
+}
+
+mysqli_close($link);
+
+?>
 <HTML>
+
+<head>
+<link href="css/inicio.css" rel="stylesheet" type="text/css" media="screen" />
+<style type="text/css">
+body {
+color: purple;
+
+background: linear-gradient(to bottom, white, #fafafa);}
+</style>
+
+</head>
+
 
 <body>
 
@@ -15,6 +49,7 @@
 <script src="js/themes/grid.js"></script>
 
 <script src="js/modules/solid-gauge.js"></script>
+<script src="http://code.highcharts.com/themes/grid.js"></script>
 -->
 
 <!-- Latest compiled and minified JavaScript -->
@@ -27,19 +62,68 @@
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
-<div id="grafica_voltaje" style="width: 40%; height: 260px; margin-left: 0%; float: left"></div>
 
-<div id="containertemp"  style="width: 20%; height: 180px; margin-left: 0%; float: right"></div>
-<div id="containerSOC"  style="width: 20%; height: 180px; margin-left: 0%; float: right"></div>
-<div id="containervbat"  style="width: 20%; height: 180px; margin-left: 0%; float: right"></div>
+<!--<div id="grafica_intensidad" style="width: 25%; height: 260px; margin-left: -25%; margin-top: 260px;margin-right: 0%; float: left"></div>-->
+<div class="divTable"style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
+	<div class="divTableBody">
+		<div class="divTableRow">
+                <div class="divTableCell">Wh Placa</div>
+                <div id= "Wh_placa" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">Wh Cons</div>
+			<div id= "Wh_Cons" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">Wh Bat+</div>
+			<div id= "Whp_bat" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">Wh Bat-</div>
+			<div id= "Whn_bat" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">&nbsp;SOC máx</div>
+			<div id = "maxSOC" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">SOC mín</div>
+			<div id ="minSOC" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">&nbsp;Vbat mín</div>
+			<div id = "minVbat" class="divTableCell">&nbsp;</div>
+		</div>
+		<div class="divTableRow">
+			<div class="divTableCell">&nbsp;Vbat máx</div>
+               <div id ="maxVbat" class="divTableCell">&nbsp;</div>
+            </div>
+        <div class="divTableRow">
+			<div class="divTableCell"></div>
+			<div class="divTableCell">&nbsp;</div>
+		</div>
+        <div class="divTableRow">
+			<div class="divTableCell">Estado</div>
+			<div id ="Mod_bat" class="divTableCell">&nbsp;</div>
+		</div>
+		</div>
+	</div>
+</div>
 
-<div id="containerconsumo"  style="width: 20%; height: 180px; margin-left: 0%; float: right"></div>
-<div id="containeribat"  style="width: 20%; height: 180px; margin-left: 0%; float: right"></div>
-<div id="containerwplaca"  style="width: 20%; height: 180px; margin-left: 0%; float: right"></div>
+<div id="containervbat"  style="width: 20%; height: 180px; margin-left: 2%; margin-right: 0%;margin-top: -1%; float: left">
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+  </div>
+<div id="containeribat"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: -1%; float: left"></div>
+<div id="containertemp"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: -1%; float: left"></div>
+<div id="containervplaca"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: -1%; float: left"></div>
 
-<div id="grafica_intensidad" style="width: 40%; height: 260px; margin-left: 0%;float: left"></div>
-<div id="container_reles" style="width: 60%; height: 160px; margin-right: 0; float: right"></div>
+<div id="containerSOC"  style="width: 23%; height: 180px; margin-bottom: 0%; margin-left: 9%;margin-top: -2%; float: left"></div>
+<div id="containerconsumo"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
+<div id="containerwplaca"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 
+<div id="container_reles" style="width: 80%; height: 160px; margin-left: 1%;float: left"></div>
+<div id="grafica_intensidad" style="width: 100%; height: 280px; margin-left: 0%; margin-bottom: 0% ;float: left"></div>
 
 <!--
 <script src='https://openweathermap.org/themes/openweathermap/assets/vendor/owm/js/d3.min.js'></script>
@@ -63,6 +147,7 @@
 
 <script>
 
+
 $(function () {
     var Vbat=24;
     var Ibat=0;
@@ -74,6 +159,7 @@ $(function () {
     requestData(); 
 
     Highcharts.setOptions({
+        
         global: {
            useUTC: false
            },
@@ -96,6 +182,8 @@ $(function () {
             plotBackgroundImage: null,
             plotBorderWidth: 0,
             plotShadow: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null,
             events: {
                 load: requestData
                 }
@@ -103,13 +191,17 @@ $(function () {
         title: {
             y:140,
             floating: true,
+            /*style:{
+                color: 'Purple',
+                fontSize:'18px',
+                },*/
             text: 'Vbat',
             },
         credits: {
             enabled: false
             },
         pane: {
-            size: '90%',
+            size: '105%',
             startAngle: -150,
             endAngle: 150,
             background: [{
@@ -122,7 +214,7 @@ $(function () {
                     },
                 borderWidth: 0,
                 //outerRadius: '109%' - orla
-                outerRadius: '120%'
+                outerRadius: '100%'
                 }, {
                 backgroundColor: {
                     linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -131,15 +223,16 @@ $(function () {
                         [1, '#FFF']
                         ]
                     },
-                borderWidth: 1,
-                outerRadius: '107%'
+                borderWidth: 0,
+                outerRadius: '100%'
                 }, {
                 // default background
                 }, {
-                backgroundColor: '#DDD',
+                backgroundColor: null,//#DDD
                 borderWidth: 0,
                 outerRadius: '105%',
                 innerRadius: '103%'
+                
                 }]
             },
         yAxis: {
@@ -216,10 +309,10 @@ $(function () {
                 borderWidth: 0,
                 y: 0,
                 style: {
-                   fontSize: '20px'
+                   fontSize: '18px'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " V"
+                    return Highcharts.numberFormat(this.y,3) + " V"
                     },
               }
           }]
@@ -232,7 +325,11 @@ $(function () {
             plotBackgroundColor: null,
             plotBackgroundImage: null,
             plotBorderWidth: 0,
-            plotShadow: false
+            plotShadow: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null
+            
+            //
           },
         title: {
             y:150,
@@ -249,7 +346,7 @@ $(function () {
             endAngle: 90,
             background: {
                 backgroundColor: (Highcharts.theme && Highcharts.theme.background2) || '#EEE',
-                innerRadius: '60%',
+                innerRadius: '100%',
                 outerRadius: '100%',
                 shape: 'arc'
               }
@@ -325,7 +422,9 @@ $(function () {
             plotBackgroundColor: null,
             plotBackgroundImage: null,
             plotBorderWidth: 0,
-            plotShadow: false
+            plotShadow: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null
           },
         title: {
             y:140,
@@ -336,7 +435,7 @@ $(function () {
             enabled: false
           },   
         pane: [{
-            size: '90%',
+            size: '105%',
             startAngle: -150,
             endAngle: -10,
             background: [{
@@ -349,7 +448,7 @@ $(function () {
                   },
                 borderWidth: 0,
                 //outerRadius: '109%' - orla
-                outerRadius: '120%'
+                outerRadius: '100%'
               }, {
                 backgroundColor: {
                     linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -359,7 +458,7 @@ $(function () {
                       ]
                   },
                 borderWidth: 1,
-                outerRadius: '107%'
+                outerRadius: '105%'
               }, {
                 // default background
               }, {
@@ -370,7 +469,7 @@ $(function () {
               }]
 
           }, {
-            size: '90%',
+            size: '105%',
             startAngle: 20,
             endAngle: 150,
             background: []
@@ -482,7 +581,7 @@ $(function () {
                     fontSize: '15px'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + "ºC"
+                    return Highcharts.numberFormat(this.y,1) + "ºC Bat"
                   }
               },
             dial: {
@@ -503,7 +602,7 @@ $(function () {
                     fontSize: '15px'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,0) + "ºC"
+                    return Highcharts.numberFormat(this.y,0) + "ºC Rpi"
                   }
               },
             dial: {
@@ -521,18 +620,20 @@ $(function () {
             plotBackgroundImage: null,
             plotBorderWidth: 0,
             plotShadow: false,
-            alignTicks: false
+            alignTicks: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null
           },
         title: {
             y:140,
             floating: true,
-            text: 'Consumo',
+            text: 'Carga',
           },
         credits: {
             enabled: false
           },
         pane: [{
-            size: '90%',
+            size: '105%',
             startAngle: -150,
             endAngle: -10,
             background: [{
@@ -545,7 +646,7 @@ $(function () {
                   },
                 borderWidth: 0,
                 //outerRadius: '109%' - orla
-                outerRadius: '120%'
+                outerRadius: '100%'
               }, {
                 backgroundColor: {
                     linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -554,8 +655,8 @@ $(function () {
                         [1, '#FFF']
                       ]
                   },
-                borderWidth: 1,
-                outerRadius: '107%'
+                borderWidth: 0,
+                outerRadius: '100%'
               }, {
                 // default background
               }, {
@@ -566,7 +667,7 @@ $(function () {
               }]
 
           }, {
-            size: '90%',
+            size: '105%',
             startAngle: 10,
             endAngle: 150,
             background: []
@@ -706,7 +807,9 @@ $(function () {
             plotBackgroundColor: null,
             plotBackgroundImage: null,
             plotBorderWidth: 0,
-            plotShadow: false
+            plotShadow: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null
             },
         title: {
             y:130,
@@ -732,7 +835,7 @@ $(function () {
                 enabled: false
             },
         pane: {
-                size: '90%',
+                size: '105%',
                 startAngle: -150,
                 endAngle: 150,
                 background: [{
@@ -745,7 +848,7 @@ $(function () {
                     },
                     borderWidth: 0,
                     //outerRadius: '109%' - orla
-                    outerRadius: '120%'
+                    outerRadius: '100%'
                 }, {
                     backgroundColor: {
                         linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -754,10 +857,11 @@ $(function () {
                             [1, '#FFF']
                         ]
                     },
-                    borderWidth: 1,
-                    outerRadius: '107%'
+                    borderWidth: 0,
+                    outerRadius: '100%'
                 }, {
                     // default background
+                    //backgroundColor: 'red'
                 }, {
                     backgroundColor: '#DDD',
                     borderWidth: 0,
@@ -829,7 +933,7 @@ $(function () {
                     color: 'red'
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " A"
+                    return Highcharts.numberFormat(this.y,3) + " A"
                     },
                 },
             dial: {
@@ -866,7 +970,9 @@ $(function () {
             plotBackgroundColor: null,
             plotBackgroundImage: null,
             plotBorderWidth: 0,
-            plotShadow: false
+            plotShadow: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null
             },
         title: {
             y:140,
@@ -877,7 +983,7 @@ $(function () {
                 enabled: false
             },
         pane: {
-                size: '90%',
+                size: '100%',
                 startAngle: -150,
                 endAngle: 150,
                 background: [{
@@ -890,7 +996,7 @@ $(function () {
                     },
                     borderWidth: 0,
                     //outerRadius: '109%' - orla
-                    outerRadius: '120%'
+                    outerRadius: '100%'
                 }, {
                     backgroundColor: {
                         linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -899,8 +1005,8 @@ $(function () {
                             [1, '#FFF']
                         ]
                     },
-                    borderWidth: 1,
-                    outerRadius: '107%'
+                    borderWidth: 0,
+                    outerRadius: '100%'
                 }, {
                     // default background
                 }, {
@@ -982,16 +1088,166 @@ $(function () {
                 }
             }]
         });
+    chart_vplaca = new Highcharts.Chart ({
+        chart: {
+            renderTo: 'containervplaca',
+            type: 'gauge',
+            plotBackgroundColor: null,
+            plotBackgroundImage: null,
+            plotBorderWidth: 0,
+            plotShadow: false,
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null,
+            events: {
+                load: requestData
+                }
+            },
+        title: {
+            y:140,
+            floating: true,
+            style: {
+                    color: 'Red',
+                    fontWeight: 'bold',
+                    fontSize:'18px',
+                },
+            text: 'Vplaca',
+            },
+        credits: {
+            enabled: false
+            },
+        pane: {
+            size: '105%',
+            startAngle: -150,
+            endAngle: 150,
+            background: [{
+                backgroundColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    stops: [
+                        [0, '#FFF'],
+                        [1, '#333']
+                        ]
+                    },
+                borderWidth: 0,
+                //outerRadius: '109%' - orla
+                outerRadius: '100%'
+                }, {
+                backgroundColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                    stops: [
+                        [0, '#333'],
+                        [1, '#FFF']
+                        ]
+                    },
+                borderWidth: 0,
+                outerRadius: '100%'
+                }, {
+                // default background
+                }, {
+                backgroundColor: '#DDD',//#DDD
+                borderWidth: 0,
+                outerRadius: '105%',
+                innerRadius: '103%'
+                }]
+            },
+        yAxis: {
+            min: 0,
+            max: 300,
+            minorTickInterval: 'auto',
+            minorTickWidth: 1,
+            minorTickLength: 10,
+            minorTickPosition: 'inside',
+            minorTickColor: '#666',
+            tickPixelInterval: 30,
+            tickWidth: 2,
+            tickPosition: 'inside',
+            tickLength: 10,
+            tickColor: '#666',
+            labels: {
+                step: 1,
+                rotation: 'auto'
+              },
+            title: {
+                y:20,//-30,
+                x:0,
+                reserveSpace:false,
+                style: {
+                   fontSize: '16px'
+                  },
+                text: '' //null //'V_BAT'
+                },
+            subtitle: {
+                y:0,//-30,
+                x:-30,
+                style: {
+                   fontSize: '10px'
+                  },
+                text: 'pp' //null //'V_BAT'
+                },
+                
+            plotBands: [{
+                from: 190,
+                to: 240,
+                color: '#55BF3B' // green
+              }, {
+                from: 150,
+                to: 190,
+                color: '#d5f09d' // low green
+              }, {
+                from: 270,
+                to: 241,
+                color: '#DD8721' // yellow
+              }, {
+                from: 0,
+                to: 150,
+                color: '#DDDF0D' // red
+              }, {
+                from: 271,
+                to: 300,
+                color: '#DF5353' // red
+              }]
+            },
+        navigation: {
+            buttonOptions: {
+                enabled: false
+              }
+          },
+        tooltip: {
+            enabled: false
+          },
+        series: [{
+            name: 'Vplaca',
+            data: [],//requestData(),
+            dataLabels: {
+                enabled: true,
+                allowOverlap: true,
+                borderWidth: 0,
+                y: 0,
+                style: {
+                   fontSize: '20px'
+                  },
+                formatter: function() {
+                    return Highcharts.numberFormat(this.y,1) + " V"
+                    },
+              }
+          }]
+        });
                             
     chart_reles =new Highcharts.Chart({
         chart: {
             renderTo: 'container_reles',
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null,
             type: 'column',
+            shadow: false,
             options3d: {
                 enabled: true,
                 alpha: 0,
                 beta: 10,
-                depth: 100
+                depth: 100,
+                viewDistance: 25,
+            //backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            //borderColor: null,
+           
             },
             events: {
                load: requestRele
@@ -1001,13 +1257,16 @@ $(function () {
         //Data: {
             // table: 'reles_estado'
         //},
-
+        
         plotOptions: {
                   column: {
                     dataLabels: {
                         enabled: true,
+                        inside: true, //valor de la columna en el interior
                         crop: false,
                         overflow: 'none',
+                        //borderWidth: null,
+                        //borderColor: 'red',
                     },
                     enableMouseTracking: false
                   }
@@ -1033,31 +1292,43 @@ $(function () {
              categories: [] //Nombre_Reles()
                },
         yAxis: {
+              gridLineWidth: 0,
+              minorGridLineWidth: 0,
+              gridLineColor: 'transparent',
               min: 0,
               max: 100,
-              tickInterval:10,
+              //minPadding:0,
+              //maxPadding:0,
+              tickInterval: 10,
               allowDecimals: false,
+              visible: true, //desactivar grid i resta
               labels: {
                     enabled: true
                },
               title: {
                     enabled: false
                }
+              
              },
 
         series: [{
                 name: 'Estado Relés',
+                colorByPoint: false,//Color aleatorio para cada columna de un rele
+                color : '#2b5dc7',
+                borderColor: '#303030',
                 data: [],
                 
                 dataLabels: {
-                    enabled: true,
+                    enabled: true, 
                     formatter: function() {
                         return Highcharts.numberFormat(this.y,0) + " %"
                     }
                 }
 
                 }],
-
+        
+        
+        
         navigation: {
               buttonOptions: {
                 enabled: false
@@ -1079,11 +1350,14 @@ $(function () {
                     this.point.y + ' ' + this.point.name.toLowerCase();
                }
              }
+
       });
                 
-    grafica_v = new Highcharts.Chart ({
+    /*grafica_v = new Highcharts.Chart ({
         chart: {
             renderTo: 'grafica_voltaje',
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null,
             zoomType: 'xy',
             plotBorderWidth: 1,
             alignTicks: false,
@@ -1163,93 +1437,119 @@ $(function () {
             name: 'Vbat',
             data: (function () {
             // generate an array of random data
-                var data = [],
+                var data = [];
                 time = (new Date()).getTime(),
-                i;
-                for (i = -100; i <= 0; i += 1) {
-                    data.push({
-                        x: time + i * 5000,
-                        y: 24
-                      });
-                    }
+                <?php
+                for($i = 0 ;$i<count($rawdata3);$i++){
+                ?>
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vbat"];?>]);
+                <?php } ?>;
                 return data;
                 }())
+            
             },]
                         
-        });
-                
+        });*/
+       
     grafica_i = new Highcharts.Chart ({
         chart: {
          renderTo: 'grafica_intensidad',
+         backgroundColor: null,//'#ffffff',//'#f2f2f2',
+         borderColor: null,
          plotBorderWidth: 1,
          zoomType: 'xy',
          alignTicks: false,
          animation: Highcharts.svg, // don't animate in old IE
          marginRight: 10,
                },
-        title: {
-                text: null,
-                // x:-0
-            // },
-        // subtitle: {
-        // text: 'Prueba Dinamica'
-         },
+       title: {
+            text: '',
+            floating:true,
+            y: 5,
+            x:-0
+            },
+        subtitle: {
+            text: 'Prueba Dinamica',
+            floating:true,
+            align: 'right',
+            verticalAlign: 'bottom',
+            y: 25,
+            
+            },
         credits: {
-        enabled: false
-        },
+            enabled: false
+            },
         xAxis: {
-        type: 'datetime'
-        },
-        yAxis: {
+            type: 'datetime'
+            },
+        yAxis: [{
             gridLineWith: 2,
             min: -180,
             max: 220,
+            opposite: false,
             tickInterval:40,
             minorGridLineColor: 'transparent',
             //endOnTick: true,
             //maxPadding: 0.2,
             //tickAmount: 7,
             labels: {
-                    format: '{value} A',
-                    style: {
-                        color: Highcharts.getOptions().colors[0]
+                format: '{value} A',
+                style: {
+                    color: Highcharts.getOptions().colors[2]
                     }
                 },
             title: {
-                    text: null,
-                    style: {
-                        color: Highcharts.getOptions().colors[0]
-                    }
+                text: null,
                 },
             opposite: false,
-            plotLines: [{
-                value: 120,
+            },{
+            
+            // ########## Valores eje Vbat ######################
+            opposite: false,
+            min: 21,
+            max: 42,
+            tickInterval: 1,
+            minorGridLineColor: 'transparent',
+            labels: {
+                format: '{value} V',
+                style: {
+                    color: Highcharts.getOptions().colors[0]
+                    }
+                },
+            title: {
+                text: '',
+                },
+            plotLines: 
+              [{ // ########## Valores Linea Vabs #####################
+                value: 28.8,
                 width: 2,
                 color: 'green',
                 dashStyle: 'shortdash',
                 label: {
-                text: 'Max Carga'
-                }
-              },{
-                value: -120,
+                    text: 'Vabs'
+                    }
+                },
+                {// ########## Valores Linea Vflot ######################
+                value: 27.6,
                 width: 2,
                 color: 'red',
                 dashStyle: 'shortdash',
                 label: {
-                  text: 'Max Descarga'
-                }
-            }]
-          },
+                    text: 'Vflot'
+                    }
+              }]
+            }],
+          
         tooltip: {
-             crosshairs: true,
-             shared: true,
-             valueDecimals: 2
+            crosshairs: true,
+            shared: true,
+            valueDecimals: 2
             },
         navigation: {
             buttonOptions: {
                 enabled: false
-            }
-        },
+                }
+            },
 
         legend: {
             layout: 'horizontal',
@@ -1259,93 +1559,80 @@ $(function () {
             //x: -100,
             y: 20,
             borderWidth: 0
-                },
-        series: [
-        {      name: 'Ibat',
-                data: (function () {
-                    // generate an array of random data
-                    var data = [],
-                        time = (new Date()).getTime(),
-                        i;
-
-                    for (i = -100; i <= 0; i += 1) {
-                        data.push({
-                            x: time + i * 5000,
-                            y: 0
-                        });
-                    }
-                    return data;
-                }())
             },
-        {      name: 'IPlaca',
-                data: (function () {
-                    // generate an array of random data
-                    var data = [],
-                        time = (new Date()).getTime(),
-                        i;
+        series: [
+        {name: 'Ibat',
+            color: Highcharts.getOptions().colors[2],
+            data: (function() {
+                var data = [];
+                <?php
+                for($i = 0 ;$i<count($rawdata3);$i++){
+                ?>
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Ibat"];?>]);
+                <?php } ?>
+              return data;
+              })()
 
-                    for (i = -100; i <= 0; i += 1) {
-                        data.push({
-                            x: time + i * 5000,
-                            y: 0
-                        });
-                    }
-                    return data;
-                }())
+            },
+        
+        {name: 'IPlaca',
+            color: Highcharts.getOptions().colors[3],
+            data: (function() {
+                var data = [];
+                <?php
+                for($i = 0 ;$i<count($rawdata3);$i++){
+                ?>
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Iplaca"];?>]);
+                <?php } ?>
+              return data;
+              })()
+
+            },
+            {name: 'Vbat',
+            color: Highcharts.getOptions().colors[0],
+            yAxis: 1,
+            data: (function() {
+                var data = [];
+                <?php
+                for($i = 0 ;$i<count($rawdata3);$i++){
+                ?>
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vbat"];?>]);
+                <?php } ?>
+              return data;
+              })()
+            
             },
         {      name: 'VPlaca',
                 data: (function () {
-                    // generate an array of random data
-                    var data = [],
-                        time = (new Date()).getTime(),
-                        i;
-
-                    for (i = -100; i <= 0; i += 1) {
-                        data.push({
-                            x: time + i * 5000,
-                            y: 0
-                        });
-                    }
+                     var data = [];
+                <?php
+                for($i = 0 ;$i<count($rawdata3);$i++){
+                ?>
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vplaca"];?>]);
+                <?php } ?>
                     return data;
                 }())
             },
-        {      name: 'Aux1',
-                data: (function () {
-                    // generate an array of random data
-                    var data = [],
-                        time = (new Date()).getTime(),
-                        i;
-
-                    for (i = -100; i <= 0; i += 1) {
-                        data.push({
-                            x: time + i * 5000,
-                            y: 0
-                        });
-                    }
-                    return data;
-                }())
+            {name: 'PWM',
+            color: Highcharts.getOptions().colors[4],
+            data: (function() {
+                var data = [];
+                <?php
+                for($i = 0 ;$i<count($rawdata3);$i++){
+                ?>
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["PWM"];?>]);
+                <?php } ?>
+              return data;
+              })()
             },
-        {      name: 'PWM',
-                data: (function () {
-                    // generate an array of random data
-                    var data = [],
-                        time = (new Date()).getTime(),
-                        i;
-
-                    for (i = -100; i <= 0; i += 1) {
-                        data.push({
-                            x: time + i * 5000,
-                            y: 0
-                        });
-                    }
-                    return data;
-                }())
-            },
+            
         
                 ]
                                 
       });
-
+      
+      
+      
     function requestData() {
       $.ajax({
         url: 'datos_fv.php',
@@ -1354,11 +1641,12 @@ $(function () {
             chart_vbat.series[0].setData([data[0][3]]);
             chart_vbat.yAxis[0].setTitle({
               text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
+              //text:"The value "+data[0][8] 
                 });
             
             chart_soc.series[0].setData([data[0][4]]);
             chart_soc.yAxis[0].setTitle({
-              text: data[0][17] // Mod_bat
+              text: data[0][16] // Mod_bat
                 });
                 
             chart_temp.series[0].setData([data[0][14]]); //Temp Bat
@@ -1367,7 +1655,8 @@ $(function () {
             chart_ibat.series[0].setData([data[0][2]]);  //Ibat
             chart_ibat.series[1].setData([data[0][10]]); //Iplaca
             
-            chart_wplaca.series[0].setData([data[0][12]]);
+            chart_wplaca.series[0].setData([data[0][12]]); //Wplaca
+            
             //chart_wplaca.setTitle({
             //  text: data[0][12] // ejem de cambio de titulo
             //   });
@@ -1375,30 +1664,81 @@ $(function () {
               text: [data[0][13]+'Wh'] // Wh_placa
                 });
             
-            chart_consumo.series[0].setData([(data[0][16])]); // Consumo
-            chart_consumo.series[1].setData([data[0][10]-data[0][2]]); //Iplaca -Ibat
-            
+            chart_consumo.series[0].setData([(data[0][10]-data[0][2])*data[0][3]]);
+            chart_consumo.series[1].setData([data[0][10]-data[0][2]]);
+            chart_vplaca.series[0].setData([data[0][11]]); //Vplaca
             x = (new Date()).getTime(), // current time
             
-            grafica_v.series[0].addPoint([x, data[0][3]], true, true);
-            grafica_v.setTitle({
+            grafica_i.series[0].addPoint([x, data[0][3]], true, true);
+            grafica_i.setTitle({
               text: 'Hora ' + data[0][1]
                 });
             
             
             grafica_i.series[0].addPoint([x, data[0][2]], true, true); //Ibat
             grafica_i.series[1].addPoint([x, data[0][10]], true, true); //Iplaca
-            grafica_i.series[2].addPoint([x, data[0][11]], true, true); //Vplaca
-            grafica_i.series[3].addPoint([x, data[0][6]], true, true); //Aux1
+            grafica_i.series[3].addPoint([x, data[0][11]], true, true); //Vplaca
+            //grafica_i.series[3].addPoint([x, data[0][6]], true, true); //Aux1
             grafica_i.series[4].addPoint([x, data[0][15]], true, true); //PWM
+            grafica_i.series[2].addPoint([x, data[0][3]], true, true); //Vbat
             
+            //Valores de la tabla
+            $("#Wh_placa").text(data[0][13]+ " Wh");
+            $("#Wh_Cons").text((data[0][13])-(data[0][8] - data[0][9])+ " Wh");
+            $("#Whp_bat").text(data[0][8]+ " Wh");
+            $("#Whn_bat").text(data[0][9]+ " Wh");
+            $("#Mod_bat").text(data[0][16]);
+            $("#minSOC").text(data[0][17] + "%");
+            $("#maxSOC").text(data[0][18]+ "%");
+            $("#minVbat").text(data[0][19]+ "V");
+            $("#maxVbat").text(data[0][20]+ "V");
             
+            //Evaluacion del color de la celda segun la variable Mod_bat, SOCmax... (Colores definidos en inicio.css)
+            //MOD_BAT
+            if (data[0][16] == "ABS")  {
+				document.getElementById("Mod_bat").className = "ABS";};
+			if (data[0][16] == "BULK")  {
+				document.getElementById("Mod_bat").className = "BULK";};
+			if (data[0][16] == "FLOT")  {
+				document.getElementById("Mod_bat").className = "FLOT";};
+			if (data[0][16] == "EQU")  {
+				document.getElementById("Mod_bat").className = "EQU";};
+				
+			//SOC_min
+			if (data[0][17] <= 50)  {
+				document.getElementById("minSOC").className = "rojo";};
+			if (50 < data[0][17] && data[0][17] < 75)  {
+				document.getElementById("minSOC").className = "naranja";};
+			if (data[0][17] >= 75)  {
+				document.getElementById("minSOC").className = "verde";};
+			
+			//SOC_max
+			if (data[0][18] <= 65)  {
+				document.getElementById("maxSOC").className = "rojo";};
+			if (65 < data[0][18] && data[0][18] < 80)  {
+				document.getElementById("maxSOC").className = "naranja";};
+			if (data[0][18] >= 75)  {
+				document.getElementById("maxSOC").className = "verde";};
+			//minVbat
+			if (data[0][19] <= 24.3)  {
+				document.getElementById("minVbat").className = "rojo";};
+			if (24.3 < data[0][19] && data[0][19] < 24.5)  {
+				document.getElementById("minVbat").className = "naranja";};
+			if (data[0][19] >= 24.5)  {
+				document.getElementById("minVbat").className = "verde";};
+            //maxVbat
+            if (data[0][20] >= 30.7)  {
+                document.getElementById("maxVbat").className = "rojo";};
+            if (27.5 < data[0][20] && data[0][20] < 30.7)  {
+                document.getElementById("maxVbat").className = "verde";};
+            if (data[0][20] <= 27.5)  {
+                document.getElementById("maxVbat").className = "naranja";};
+
             setTimeout(requestData, 3000);
           },
         cache: false
       });
       }
-    
     function requestRele() {
       $.ajax({
         url: 'datos_reles.php',

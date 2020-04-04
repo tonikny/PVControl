@@ -3,19 +3,26 @@
 }
 
 #cabecera {
+    background: -webkit-linear-gradient(black, white); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(black, white); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(black, white); /* For Firefox 3.6 to 15 */
+
+    
     z-index: 100;
-    background-color:black;
+    background-color: #828a80;
     color:white;
-    height: 80px;
+    height: 75px;
 
     width: 100%; /* hacemos que la cabecera ocupe el ancho completo de la página */
     left: 0; /* Posicionamos la cabecera al lado izquierdo */
     top: 0; /* Posicionamos la cabecera pegada arriba */
     position: fixed; /* Hacemos que la cabecera tenga una posición fija */
+    
 }
 
+
 #cabecera a {
-        color: white;
+        color: white; /* color letras*/
 }
 
 /*

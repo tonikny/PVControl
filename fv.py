@@ -17,7 +17,7 @@ import token
 import paho.mqtt.client as mqtt
 
 import RPi.GPIO as GPIO # reles 4XX via GPIO
-GPIO.setmode(GPIO.BOARD) #para RPi
+GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
 
 from csvFv import CsvFv
 
@@ -27,14 +27,6 @@ print ('Arrancando_PVControl+')
 
 #Parametros Instalacion FV
 from Parametros_FV import *
-
-#Pantalla OLED
-import Adafruit_SSD1306
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-
-RST = 24 #parametro OLED
 
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
@@ -49,64 +41,6 @@ elif str(sys.argv[narg-1]) == '-p':
 else:
     DEBUG = 0
 print ('DEBUG=',DEBUG)
-
-# Comprobacion numero de OLED instaladas
-NUM_OLED = 0
-try:
-    disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
-    disp1.begin()
-    NUM_OLED += 1
-except:
-    pass
-
-if NUM_OLED == 1:
-    try:
-        disp2 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3D) 
-        disp2.begin()
-        NUM_OLED += 1
-        #print ('OLED 3C y 3D')
-    except:
-        #print ('OLED 3C')
-        pass
-else:
-    try:
-        disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3D) 
-        disp1.begin()
-        NUM_OLED += 1
-        #print ('OLED 3D')
-    except:
-        pass
-    
-if NUM_OLED >= 1:
-    disp1.clear()
-    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
-    disp1.image(image)
-    disp1.display()
-
-    width = disp1.width
-    height = disp1.height
-    image = Image.new('1', (width, height))
-    draw = ImageDraw.Draw(image)
-
-    font = ImageFont.load_default()
-    font34 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 34)
-    font16 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 16)
-    font12 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 12)
-    font10 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 10)
-    font11 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 15)
-    font6 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 10)
-
-    OLED_contador1=0 # contador del pantallazo que presenta en secuencial
-    OLED_salida_opcion1 = -1 # para elegir entre salida fija o secuencial
-                            # se controla por MQTT con PVControl/Oled
-                            # -1= secuencial....0,1,2,3... fija la pantalla marcada
-if NUM_OLED == 2:
-    disp2.clear()
-    image2 = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
-    disp2.image(image2)
-    disp2.display()
-    OLED_contador2 = 0 # contador del pantallazo que presenta en secuencial
-    OLED_salida_opcion2 = -1
 
 if usar_telegram == 1:
     bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
@@ -168,6 +102,10 @@ Ctemp = 0       # Contador del numero de muestra para leer temperatura
 Vflot = Vabs = Vecu = 0.0   # Voltaje asociado a estado de flotacion/Absorcion/Ecu
 Tflot = Tabs = Tecu = 0.0   # Tiempo asociado a estado de flotacion/Absorcion/Ecu
 Tflot_bulk = Tbulk = 0.0    # Tiempo asociado al paso de FLOT a BULK 
+SOC_max = 0     #Variable para guardar SOC maximo diario
+SOC_min = 0      #Variable para guardar SOC minimo diario
+Vmax = 0    # Variable para guardar Vbat maximo diario
+Vmin = 0    # Variable para guardar Vbat minimo diario
 
 flag_Abs= flag_Flot = 0
 
@@ -199,7 +137,7 @@ def on_connect(client, userdata, flags, rc):
     #print("Connected with result code "+str(rc))
     client.subscribe("PVControl/Log")
     client.subscribe("PVControl/Opcion")
-    client.subscribe("PVControl/Oled")
+    
      
 def on_disconnect(client, userdata, rc):
         if rc != 0:
@@ -209,7 +147,7 @@ def on_disconnect(client, userdata, rc):
             client.disconnect()
 
 def on_message(client, userdata, msg):
-    global pub_time,OLED_salida_opcion
+    global pub_time
     
     #print(msg.topic+" "+str(msg.payload))
     if msg.topic== "PVControl/Log":
@@ -234,9 +172,6 @@ def on_message(client, userdata, msg):
         elif pub_orden == "PUB_TIME_OFF":
             pub_time=0
 
-    elif msg.topic== "PVControl/Oled":
-        OLED_salida_opcion = int(str(msg.payload))
-        #print (OLED_salida_opcion)
              
 client = mqtt.Client("fv") #crear nueva instancia
 client.on_connect = on_connect
@@ -320,7 +255,7 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
             if n_sensor == 'Ibat':
                 y = round(adc.read_adc_difference(0, gain=16, data_rate=128) * 0.0078125 * SHUNT1, 2)  # A0-A1
             elif n_sensor == 'Iplaca':
-                y = round(adc.read_adc_difference(3, gain=16, data_rate=128) * 0.0078125 * SHUNT1, 2)  # A2-A3
+                y = round(adc.read_adc_difference(3, gain=16, data_rate=128) * 0.0078125 * SHUNT2, 2)  # A2-A3
             elif n_sensor == 'Vbat':
                 y = round(adc1.read_adc(0, gain=RES0_gain,data_rate=128) * 0.000125/RES0_gain * RES0, 2)  # A0   4,096V/32767=0.000125 
             elif n_sensor == 'Aux1':
@@ -368,7 +303,7 @@ def leer_temp(x) :  # leer temperatura
             for row in csv_reader:
                 d_temp = row # Capturo los valores del fichero datos_temp.csv
                 
-        y= float(d_temp['Temp'+str(indice_sensortemperatura)])
+        y= float(d_temp[sensor_temperatura])
         
     except:
         y = x
@@ -377,116 +312,6 @@ def leer_temp(x) :  # leer temperatura
         logBD('lectura incoherente Temp='+str(y))
         y = x
     return y
-
-def OLED(pantalla,modo):
-
-    draw.rectangle((0,0,width,height), outline=0, fill=0)
-
-    if modo == 0:
-        #image1 = Image.open('pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
-        image1 = Image.open(basepath+'pvcontrol_128_64.png').convert('1')
-        if pantalla == 1:
-            disp1.image(image1)
-            disp1.display()
-        else:
-            disp2.image(image1)
-            disp2.display()
-
-    elif modo == 1:
-        draw.rectangle((0, 0, 127, 20), outline=255, fill=0)
-        draw.text((8, 0), 'SOC='+str(SOC)+'%', font=font16, fill=255)
-        draw.rectangle((0, 20, 64, 46), outline=255, fill=0)
-        draw.rectangle((64, 20, 127, 46), outline=255, fill=0)
-        draw.text((4, 22),  'Vbat='+str(Vbat), font=font, fill=255)
-        draw.text((69, 22), 'Ibat='+str(Ibat), font=font, fill=255)
-        draw.text((4, 34),  'Vpla='+str(Vplaca), font=font, fill=255)
-        draw.text((69, 34), 'Ipla='+str(Iplaca), font=font, fill=255)
-
-        L4 = 'R('
-        for I in range(nreles): # Reles wifi
-            Puerto = (TR[I][0] % 10) - 1
-            addr = int((TR[I][0]-Puerto) / 10)
-            if int(addr/10) == 2:
-                valor = int(TR[I][3] / 10)
-                if valor == 10:
-                    texto ='X'
-                else:
-                    texto=str(valor)
-                L4=L4+texto
-        L4 = L4 + ')('
-        for I in range(nreles): # Reles i2C
-            Puerto = (TR[I][0] % 10) - 1
-            addr=int((TR[I][0] - Puerto) / 10)
-            if int(addr/10) == 3:
-                valor = int(TR[I][3] / 10)
-                if valor == 10:
-                    texto ='X'
-                else:
-                    texto = str(valor)
-                L4 = L4 + texto
-        L4 = L4 + ')'
-        draw.text((2, 49), L4, font=font11, fill=255)
-
-    elif modo == 2:
-        draw.rectangle((0, 0, 90, 31), outline=255, fill=0)
-        draw.text((8, 1), 'Vbat='+str(Vbat), font=font11, fill=255)
-        draw.text((8, 14), 'Ibat='+str(round(Ibat,0)), font=font11, fill=255)
-        draw.rectangle((0, 31, 90, 63), outline=255, fill=0)     
-        draw.text((8, 31), 'Vpla='+str(round(Vplaca,1)), font=font11, fill=255)
-        draw.text((8, 45), 'Ipla='+str(round(Iplaca,0)), font=font11, fill=255)
-
-        draw.rectangle((90, 0, 127, 20), outline=255, fill=255)     
-        draw.text((100, 0), 'SOC', font=font, fill=0)
-        draw.text((93, 10), str(SOC), font=font, fill=0)
-        
-        draw.rectangle((90, 22, 127, 42), outline=255, fill=255)     
-        draw.text((95, 22), 'Temp', font=font, fill=0)
-        draw.text((93, 32), str(Temp), font=font, fill=0)
-        
-        
-        draw.rectangle((90, 44, 127, 63), outline=255, fill=255)     
-        draw.text((95, 44), 'Exced.', font=font, fill=0)
-        draw.text((100, 54), str(Diver), font=font, fill=0)
-
-    elif modo==3:
-        lineax=0
-        lineay=0
-        for I in range(nreles):             
-            valor = int(TR[I][3] / 10)
-            if valor > 0:
-                fill1=0
-                fill2=255
-            else:
-                fill1=255
-                fill2=0
-            draw.rectangle((lineax, lineay, lineax+63, lineay+10), outline=255, fill=fill2)
-            draw.text((lineax+2, lineay), TR[I][1], font=font, fill=fill1)
-            lineay +=10
-            if lineay>53:
-                lineax=66
-                lineay=0
-
-    elif modo == 4:
-        if SOC == 100:
-            draw.rectangle((0, 0, 127, 63), outline=255, fill=255)
-            draw.rectangle((3, 3, 124, 60), outline=255, fill=0)
-            draw.rectangle((10, 10, 117, 53), outline=255, fill=255)
-                        
-            draw.text((13, 10), '100%', font=font34, fill=0)
-        else:
-            draw.rectangle((0, 0, 127, 63), outline=255, fill=0)
-            draw.text((10, 10), str(SOC)+'%', font=font34, fill=255)
-        
-    if modo > 0:
-        if pantalla == 1:
-            disp1.clear()
-            disp1.image(image)
-            disp1.display()
-            
-        if pantalla == 2:
-            disp2.clear()
-            disp2.image(image)
-            disp2.display()
 
 def Calcular_PID (sensor,objetivo,P,I,D):
     global Lista_errores_PID, IPWM_P, IPWM_I, IPWM_D
@@ -557,6 +382,23 @@ try:
          Whp_bat = Whn_bat = Wh_placa = 0.0
 except Exception as e:
     print ("Sin registros en la tabla datos")
+
+try: #Recuperar SOCmin, SOCmax, Vmin, Vmax de la BD si estamos en el mismo dia
+
+    sql='SELECT DATE(Tiempo), min(SOC) as minSOC, max(SOC) as maxSOC, min(Vbat) as minVbat, max(Vbat) as maxVbat FROM datos WHERE Tiempo >= CURDATE()'
+    cursor.execute(sql)
+    var=cursor.fetchone()
+    HOY=str(var[0])
+    if HOY == time.strftime("%Y-%m-%d"): #Comprueba que es el mismo dia
+        SOC_min = float(var[1])
+        SOC_max = float(var[2])
+        Vmin = float(var[3])
+        Vmax = float (var[4])
+    else:
+         SOC_max = SOC_min = Vmax = Vmin = 0.0
+         
+except Exception as e:
+    print ("Error, la base de datos no existe")
 
 ## Definir matrices Rele_Out y Rele_Out_Ant
 Rele_Out = [[0] * 8 for i in range(50)]
@@ -781,7 +623,7 @@ try:
                 Consumo = 0
                 Wplaca = 0
 
-            if sensortemperatura == 1 and Ctemp <= 0:
+            if sensor_temperatura != '' and Ctemp <= 0:
                 Temp = leer_temp(Temp)
                 Ctemp=Mtemp # reinicio contador
                 client.publish("PVControl/DatosFV/Temp",Temp)
@@ -807,6 +649,7 @@ try:
             Wh_bat = Whp_bat = Whn_bat = Wh_placa = 0.0
             CD1 = CD2 = CD3 = CD4 = CD5 = 0.0
             Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tecu ??
+            SOC_min = SOC_max = Vmax = Vmin = 0.0
 
         else:
             if Ibat < 0: Whn_bat = round(Whn_bat - (Ibat * Vbat * t_muestra/3600),2)
@@ -932,26 +775,6 @@ try:
         
         t_muestra_2=time.time()-hora_m
         
-      ## ------- Salida por pantalla OLED -------
-        
-        if NUM_OLED >= 1 and Grabar == 1: #OLED numero 1
-            if OLED_salida_opcion1 < 0: # <0 es salida secuencial
-                OLED(1,OLED_salida1[OLED_contador1])
-                OLED_contador1 += 1
-                if OLED_contador1 >= len(OLED_salida1):
-                    OLED_contador1=0
-            else:
-                 OLED(1,OLED_salida_opcion1)
-
-        if NUM_OLED == 2 and Grabar == 1: #OLED numero 2
-            if OLED_salida_opcion2 < 0: # <0 es salida secuencial
-                OLED(2,OLED_salida2[OLED_contador2])
-                OLED_contador2 += 1
-                if OLED_contador2 >= len(OLED_salida2):
-                    OLED_contador2=0
-            else:
-                 OLED(2,OLED_salida_opcion2)
-        
         #------------- Asignamos valores al diccionario para parametros condiciones ...
         DatosFV['Vbat'] = Vbat
         DatosFV['Ibat'] = Ibat
@@ -963,28 +786,30 @@ try:
         DatosFV['Vplaca'] = Vplaca
         DatosFV['Wplaca'] = Wplaca
         DatosFV['PWM'] = PWM
+        
+        # ------------------ Calculo del SOCmax, SOCmin, Vmax, Vmin ------------------
+        if SOC > SOC_max:
+            SOC_max = SOC
+        elif SOC < SOC_min:
+            SOC_min = SOC
+        
+        if Vbat > Vmax:
+            Vmax = Vbat
+        elif Vbat < Vmin:
+            Vmin = Vbat
 
         # ----------------- Guardamos datos_fv.csv ------
         ee=42        
         with open('/run/shm/datos_fv.csv', mode='w') as f:
-            """
-            datos = csv.DictWriter(f, fieldnames=nombres_datos)
-            datos.writeheader()
-            datos.writerow({'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Ibat': Ibat,'Vbat': Vbat,'SOC': SOC,
-                            'DS':DS,'Aux1':Aux1,'Aux2':Aux2,'Whp_bat': Whp_bat,'Whn_bat':Whn_bat,
-                            'Iplaca':Iplaca,'Vplaca':Vplaca,'Wplaca':Wplaca,'Wh_placa':Wh_placa,
-                            'Temp':Temp,'PWM':PWM,'Mod_bat':Mod_bat})
-            """
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
 
             f_writer.writerow([round(tiempo_sg,2), tiempo,Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
                                int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-                               Temp,PWM,round(Consumo),Mod_bat,Tabs,Tflot,Tflot_bulk])
+                               Temp,int(PWM),round(Consumo),Mod_bat,int(Tabs),int(Tflot),int(Tflot_bulk),SOC_min,SOC_max,Vmin,Vmax])
         ee=43
         with open('/run/shm/datos_reles.csv', mode='w') as f:
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
             for I in range(nreles):
-                #print (TR[I][1],'-',TR[I][3])
                 f_writer.writerow([TR[I][1],TR[I][3]])
             
 

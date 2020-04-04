@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import time
@@ -14,7 +14,7 @@ broker_address="localhost"
 user = "rpi"
 password = "fv"
 
-topic_221="PVControl/Reles/221"
+topic_rele="PVControl/Reles/201"
 topic_Vbat="PVControl/DatosFV/Vbat"
 topic_Ibat="PVControl/DatosFV/Ibat"
 topic_Iplaca="PVControl/DatosFV/Iplaca"
@@ -25,7 +25,6 @@ topic_Hora="PVControl/Hora"
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Conectandose al broker")
- 
         global Connected                #Use global variable
         Connected = True                #Signal connection 
     else:
@@ -44,31 +43,23 @@ while Connected != True:    #Wait for connection
     time.sleep(0.1)
 
 try:
-    rele=0
-    salto=5
-    espera=0.25
+    duty=0
+    espera=0.20
     
     t = time.time()
     FV=0
     
     while True:
-        #diver = random.choice([1,1,1,-1,1,-1,1,-1,1,-1,-1])
-        diver = random.choice([1,1,1])
-        rele = rele+diver*salto
-        
-        if rele > 100:
-            rele = 100
-        if rele < 0:
-            rele = 0
+        duty = random.choice([0,10,20,30,40,50,60,70,80,90,100])
 
-        client.publish(topic_221,rele)
+        client.publish(topic_rele,duty)
         
         FV+=1
         if FV%10 == 0:
             hora = time.strftime("%H:%M:%S")
             #tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
             client.publish(topic_Hora,hora)
-            print topic_221,diver,rele,hora
+            print (hora,topic_rele,duty)
             
         if FV>= 20:
             FV=0
@@ -81,7 +72,7 @@ try:
             #client.publish(topic_Ibat,Ibat)
             #client.publish(topic_Iplaca,Iplaca)
             #client.publish(topic_SOC,SOC)
-            #print topic_Vbat,Vbat,Ibat,Iplaca,SOC
+            #print (topic_Vbat,Vbat,Ibat,Iplaca,SOC)
         
 ##        t_ant = t
 ##        t = time.time()
@@ -92,10 +83,10 @@ try:
 
         time.sleep(espera)
 
-    print
+    print ()
         
 except KeyboardInterrupt:
-    print "exiting"
+    print ("exiting")
     client.disconnect()
 
 

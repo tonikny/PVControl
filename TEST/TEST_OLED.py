@@ -16,12 +16,15 @@ basepath = '/home/pi/PVControl+/'
 # Raspberry Pi pin configuration:
 RST = 24
 
+DEBUG = 0
+
 NUM_OLED = 0
 try:
     disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
     disp1.begin()
     NUM_OLED += 1
 except:
+    print ('No encontrado OLED en 3C')
     pass
 
 if NUM_OLED == 1:
@@ -83,22 +86,25 @@ if NUM_OLED == 2:
 # Initialize library.
 #disp1.begin()
 #disp2.begin()
+try:
+    # Clear display.
+    disp1.clear()
+    disp1.display()
 
-# Clear display.
-disp1.clear()
-disp1.display()
+    disp2.clear()
+    disp2.display()
+except:
+    pass
 
-disp2.clear()
-disp2.display()
+try:
+    #image = Image.open('happycat_oled_64.ppm').convert('1')
+    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
 
-
-#image = Image.open('happycat_oled_64.ppm').convert('1')
-image = Image.open('pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
-
-# Display image.
-disp2.image(image)
-disp2.display()
-
+    # Display image.
+    disp2.image(image)
+    disp2.display()
+except:
+    pass
 time.sleep(1)
 
 # Create blank image for drawing.
@@ -114,15 +120,15 @@ draw = ImageDraw.Draw(image)
 
 # Load font.
 font = ImageFont.load_default()
-font30 = ImageFont.truetype('Minecraftia-Regular.ttf', 34)
-font16 = ImageFont.truetype('Minecraftia-Regular.ttf', 16)
-font12 = ImageFont.truetype('Minecraftia-Regular.ttf', 12)
-font10 = ImageFont.truetype('Minecraftia-Regular.ttf', 10)
+font30 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 34)
+font16 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 16)
+font12 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 12)
+font10 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 10)
 
-font11 = ImageFont.truetype('SmallTypeWriting.ttf', 15)
-font6 = ImageFont.truetype('SmallTypeWriting.ttf', 10)
+font11 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 15)
+font6 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 10)
 
-#font11 = ImageFont.truetype('novamono.ttf', 16)
+#font11 = ImageFont.truetype(basepath+'novamono.ttf', 16)
 
 
 
@@ -134,7 +140,7 @@ def OLED(pantalla,modo):
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     
     if modo == 0:
-        image1 = Image.open('pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
+        image1 = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
         disp1.image(image1)
         disp1.display()
 

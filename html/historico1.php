@@ -112,10 +112,10 @@ $(function () {
     yAxis: [{
       opposite: false,
       
-	  // ########## Valores eje Intensidad ######################
-	  min: -180,
+      // ########## Valores eje Intensidad ######################
+      min: -180,
       max: 220,
-	  tickInterval: 20,
+      tickInterval: 20,
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
@@ -132,11 +132,11 @@ $(function () {
         }]
      },{
       opposite: false,
-	  
-	  // ########## Valores eje Vbat ######################
+          
+      // ########## Valores eje Vbat ######################
       min: 22,
       max: 42,
-	  tickInterval: 1,
+      tickInterval: 1,
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
@@ -146,8 +146,7 @@ $(function () {
         text: null
         },
       plotLines: [{
-		  
-		// ########## Valores Linea Vabs #####################
+        // ########## Valores Linea Vabs #####################
         value: 28.8,
         width: 2,
         color: 'green',
@@ -157,8 +156,8 @@ $(function () {
           }
        },{
         
-		// ########## Valores Linea Vflot ######################
-		value: 27.6,
+        // ########## Valores Linea Vflot ######################
+        value: 27.6,
         width: 2,
         color: 'red',
         dashStyle: 'shortdash',
@@ -168,8 +167,8 @@ $(function () {
        }]
      },{
       opposite: true,
-	  
-	  // ########## Valores eje SOC ######################
+          
+          // ########## Valores eje SOC ######################
       min: 20,
       max: 100 ,
       tickInterval: 20,
@@ -201,8 +200,8 @@ $(function () {
       },{
       opposite: true,
       
-	  // ########## Valores eje PWM ######################
-	  min: 0,
+      // ########## Valores eje PWM ######################
+      min: 0,
       max: 400 ,
       minorGridLineColor: 'transparent',
       labels: {
@@ -212,8 +211,8 @@ $(function () {
       title: {
         text: null
         },
-	  	  
-	  /*
+                  
+          /*
       plotLines: [{
         value: 100,
         width: 2,
@@ -229,10 +228,10 @@ $(function () {
         dashStyle: 'shortdash',
         label: {
           text: 'Rele2'
-          }	
+          }     
        }]
-	  */
-	   
+          */
+           
      }],
     xAxis: {
       dateTimeLabelFormats: { day: '%e %b' },
