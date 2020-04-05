@@ -195,6 +195,11 @@ $(function () {
                 },*/
             text: 'Vbat',
             },
+        subtitle: {
+            y:60,
+            floating: true,
+            text: '',
+          },
         credits: {
             enabled: false
             },
@@ -251,21 +256,24 @@ $(function () {
                 rotation: 'auto'
               },
             title: {
-                y:20,//-30,
+                y:10,//-30,
                 x:0,
+                floating:true,
                 reserveSpace:false,
                 style: {
                    fontSize: '16px'
                   },
-                text: '' //null //'V_BAT'
+                text: 'pp1' //'V_BAT'
                 },
             subtitle: {
-                y:0,//-30,
-                x:-30,
+                y:50,//-30,
+                x:0,
+                floating:true,
+                reserveSpace:false,
                 style: {
-                   fontSize: '10px'
+                   fontSize: '16px'
                   },
-                text: 'pp' //null //'V_BAT'
+                text: 'pp2' //null //'V_BAT'
                 },
                 
             plotBands: [{
@@ -644,7 +652,12 @@ $(function () {
         title: {
             y:140,
             floating: true,
-            text: 'Carga',
+            text: 'Consumo',
+          },
+        subtitle: {
+            y:42,
+            floating: true,
+            text: '',
           },
         credits: {
             enabled: false
@@ -1177,7 +1190,7 @@ $(function () {
             tickLength: 10,
             tickColor: '#666',
             labels: {
-                step: 1,
+                step: 2,
                 rotation: 'auto'
               },
             title: {
@@ -1215,7 +1228,7 @@ $(function () {
                 to: 150,
                 color: '#DDDF0D' // red
               }, {
-                from: 271,
+                from: 270,
                 to: 300,
                 color: '#DF5353' // red
               }]
@@ -1230,12 +1243,12 @@ $(function () {
           },
         series: [{
             name: 'Vplaca',
-            data: [],//requestData(),
+            data: [],
             dataLabels: {
                 enabled: true,
                 allowOverlap: true,
                 borderWidth: 0,
-                y: 0,
+                y: 10,
                 style: {
                    fontSize: '20px'
                   },
@@ -1567,8 +1580,12 @@ $(function () {
             chart_vbat.series[0].setData([data[0][3]]);
             chart_vbat.yAxis[0].setTitle({
               text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
-              //text:"The value "+data[0][8] 
                 });
+            
+            chart_vbat.setSubtitle({
+              text: data[0][8]+'/'+ data[0][9]+ ' Wh' //Wh bateria  posi-neg
+                });
+                
             
             chart_soc.series[0].setData([data[0][4]]);
             chart_soc.yAxis[0].setTitle({
@@ -1588,11 +1605,16 @@ $(function () {
             //  text: data[0][12] // ejem de cambio de titulo
             //   });
             chart_wplaca.yAxis[0].setTitle({
-              text: [data[0][13]+'Wh'] // Wh_placa
+              text: [data[0][13]+' Wh'] // Wh_placa
                 });
             
             chart_consumo.series[0].setData([data[0][16]]); // Consumo
             chart_consumo.series[1].setData([data[0][10]-data[0][2]]); // Iplaca - Ibat
+            chart_consumo.setSubtitle({
+              text: data[0][13]-(data[0][8] - data[0][9])+ " Wh"
+                });
+            
+            
             chart_vplaca.series[0].setData([data[0][11]]); //Vplaca
             
             grafica_i.setTitle({
