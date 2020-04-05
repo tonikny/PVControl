@@ -137,10 +137,12 @@ simular = 0  # Simulacion datos FV --- 1 para simular....0 para no simular
 simular_reles = 0 # Simular reles fisicos
 # -----------------------------------------------
 
-###### Sensor Temperatura
-sensortemperatura = 0   # Poner a 0 si no se ha instalado un sensor
-tipo_sensortemperatura = 'DS18B20'    # 'DS18B20', 'SNRE'
-indice_sensortemperatura = 0 # si hay mas de un sensor hay que definir el que queremos guardar
+###### Sensor Temperatura Batería
+sensor_temperatura = 'DS18B20_0'   # DS18B20_0, DS18B20_1,..... SRNE_0
+                                   # Poner a '' si no se ha instalado un sensor
+
+temp_min = -2                      # Minima temperatura admisible para no dar aviso log
+temp_max = 40                      # Maxima temperatura admisible para no dar aviso log                                                                          
 # -----------------------------------------------
 
 ###### Multiplexor
