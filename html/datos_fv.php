@@ -1,4 +1,3 @@
-
 <?php
 
  $csvFile = file('/run/shm/datos_fv.csv');
@@ -12,6 +11,13 @@
        
  $data[] = str_getcsv($cpu);
  
+ 
+ $csvFile = file('/run/shm/datos_reles.csv');
+    $data2 = [];
+    foreach ($csvFile as $line) {
+        $data2[] = str_getcsv($line);
+    }
+ $data[]=$data2;
  
  header("Content-type: text/json");
  print json_encode($data, JSON_NUMERIC_CHECK);

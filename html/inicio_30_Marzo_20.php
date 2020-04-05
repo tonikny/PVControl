@@ -160,13 +160,23 @@ $(function () {
                 rotation: 'auto'
               },
             title: {
-                y:0,//-30,
-                x:-90,
+                y:20,//-30,
+                x:0,
+                reserveSpace:false,
                 style: {
-                   fontSize: '20px'
+                   fontSize: '16px'
                   },
-                text: 'PP' //null //'V_BAT'
+                text: '' //null //'V_BAT'
                 },
+            subtitle: {
+                y:0,//-30,
+                x:-30,
+                style: {
+                   fontSize: '10px'
+                  },
+                text: 'pp' //null //'V_BAT'
+                },
+                
             plotBands: [{
                 from: 25.7,
                 to: 28.8,
@@ -199,7 +209,7 @@ $(function () {
           },
         series: [{
             name: 'Vbat',
-            data: [],//requestData(),//[],
+            data: [],//requestData(),
             dataLabels: {
                 enabled: true,
                 allowOverlap: true,
@@ -208,9 +218,9 @@ $(function () {
                 style: {
                    fontSize: '20px'
                   },
-                //formatter: function() {
-                //    return Highcharts.numberFormat(this.y,1) + " V"
-                //    },
+                formatter: function() {
+                    return Highcharts.numberFormat(this.y,1) + " V"
+                    },
               }
           }]
         });
@@ -919,10 +929,15 @@ $(function () {
                 step: 1,
                 rotation: 'auto'
             },
-            //title: {
-            //  y:20,
-            //    text: 'I_PLACA'
-            //},
+            title: {
+                y:20,//-30,
+                x:0,
+                style: {
+                   fontSize: '16px'
+                  },
+                text: '' //null 
+                },
+            
         plotBands: [{
                     from: 500,
                     to: 3000,
@@ -1076,7 +1091,7 @@ $(function () {
             marginRight: 10,
             },
         title: {
-            text: 'Grafico Tiempo Real', //'Vbateria',
+            text: '', //'Grafico Tiempo Real', //'Vbateria',
             x:-0
             },
         //subtitle: {
@@ -1090,7 +1105,7 @@ $(function () {
             },
         yAxis: [{ // 1er yAxis (num0)
             gridLineWith: 0,
-            min: 21,
+            min: 11, //22
             max: 33,
             tickInterval:1,
             minorGridLineColor: 'transparent',
@@ -1333,43 +1348,52 @@ $(function () {
 
     function requestData() {
       $.ajax({
-        url: 'data_fv.php',
+        url: 'datos_fv.php',
         success: function(data) {
                         
-            chart_vbat.series[0].setData([data[1]]);
+            chart_vbat.series[0].setData([data[0][3]]);
             chart_vbat.yAxis[0].setTitle({
-              //y: -2*[data[1]],
-              text: [data[10]]
+              text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
                 });
             
-            chart_soc.series[0].setData([data[2]]);
+            chart_soc.series[0].setData([data[0][4]]);
             chart_soc.yAxis[0].setTitle({
-              text: [data[10]]
+              text: data[0][17] // Mod_bat
                 });
                 
-            chart_temp.series[0].setData([data[6]]);
-            chart_temp.series[1].setData([data[11]]);
+            chart_temp.series[0].setData([data[0][14]]); //Temp Bat
+            chart_temp.series[1].setData([data[1]]);     //CPU
 
-            chart_ibat.series[0].setData([data[0]]);
-            chart_ibat.series[1].setData([data[3]]);
+            chart_ibat.series[0].setData([data[0][2]]);  //Ibat
+            chart_ibat.series[1].setData([data[0][10]]); //Iplaca
             
-            chart_wplaca.series[0].setData([data[5]]);
+            chart_wplaca.series[0].setData([data[0][12]]);
+            //chart_wplaca.setTitle({
+            //  text: data[0][12] // ejem de cambio de titulo
+            //   });
+            chart_wplaca.yAxis[0].setTitle({
+              text: [data[0][13]+'Wh'] // Wh_placa
+                });
             
-            chart_consumo.series[0].setData([(data[3]-data[0])*data[1]]);
-            chart_consumo.series[1].setData([data[3]-data[0]]);
+            chart_consumo.series[0].setData([(data[0][16])]); // Consumo
+            chart_consumo.series[1].setData([data[0][10]-data[0][2]]); //Iplaca -Ibat
             
             x = (new Date()).getTime(), // current time
             
-            grafica_v.series[0].addPoint([x, data[1]], true, true);
-            
-            grafica_i.series[0].addPoint([x, data[0]], true, true); //Ibat
-            grafica_i.series[1].addPoint([x, data[3]], true, true); //Iplaca
-            grafica_i.series[2].addPoint([x, data[4]], true, true); //Vplaca
-            grafica_i.series[3].addPoint([x, data[7]], true, true); //Aux1
-            grafica_i.series[4].addPoint([x, data[9]], true, true); //PWM
+            grafica_v.series[0].addPoint([x, data[0][3]], true, true);
+            grafica_v.setTitle({
+              text: 'Hora ' + data[0][1]
+                });
             
             
-            setTimeout(requestData, 5000);
+            grafica_i.series[0].addPoint([x, data[0][2]], true, true); //Ibat
+            grafica_i.series[1].addPoint([x, data[0][10]], true, true); //Iplaca
+            grafica_i.series[2].addPoint([x, data[0][11]], true, true); //Vplaca
+            grafica_i.series[3].addPoint([x, data[0][6]], true, true); //Aux1
+            grafica_i.series[4].addPoint([x, data[0][15]], true, true); //PWM
+            
+            
+            setTimeout(requestData, 3000);
           },
         cache: false
       });
@@ -1377,7 +1401,7 @@ $(function () {
     
     function requestRele() {
       $.ajax({
-        url: 'data_reles.php',
+        url: 'datos_reles.php',
         success: function(data) {
             var tCategories = [];
             chart_reles.series[0].setData(data);
@@ -1387,7 +1411,7 @@ $(function () {
             chart_reles.xAxis[0].setCategories(tCategories);
          //   chart_reles.xAxis[0].setCategories(data);
          //    console.log(data)
-            setTimeout(requestRele, 5000);
+            setTimeout(requestRele, 3000);
         },
         cache: false
       });

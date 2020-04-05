@@ -21,6 +21,9 @@ GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
 
 from csvFv import CsvFv
 
+import locale
+locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
+
 basepath = '/home/pi/PVControl+/'
 
 print ('Arrancando_PVControl+')
@@ -69,9 +72,6 @@ OPH = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'prior
        'id_rele2':7,'parametro_h':8,'valor_h_ON':9,'valor_h_OFF':10}
 NDIA = {'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}
 
-#nombres_datos = ['Tiempo_sg','Tiempo','Ibat', 'Vbat', 'SOC','DS','Aux1','Aux2',
-#                 'Whp_bat','Whn_bat','Iplaca','Vplaca','Wplaca','Wh_placa','Temp','PWM', 'Mod_bat']
-
 #Inicializando las variables del programa
 Grabar = 1 # Contador ciclo grabacion en BD
 
@@ -90,9 +90,8 @@ Ibat = 0.0      # Intensidad Bateria
 Vbat = vsis*12.0     # Voltaje Bateria inicial
 Mod_bat =''
 
-Iplaca = 0.0          # Intensidad Placas Total
+Iplaca = Vplaca = 0.0   #  Voltaje e Intensidad de Placas(valor intensidad tras el regulador)
 
-Vplaca = 0.0    # Voltaje Placas (valor antes del regulador)
 Aux1 = Aux2 = 0.0   # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
 Temp = 0.0      # temperatura baterias
 Mtemp = 60      # Numero de segundos para leer temperatura
@@ -104,8 +103,8 @@ Tflot = Tabs = Tecu = 0.0   # Tiempo asociado a estado de flotacion/Absorcion/Ec
 Tflot_bulk = Tbulk = 0.0    # Tiempo asociado al paso de FLOT a BULK 
 SOC_max = 0     #Variable para guardar SOC maximo diario
 SOC_min = 0      #Variable para guardar SOC minimo diario
-Vmax = 0    # Variable para guardar Vbat maximo diario
-Vmin = 0    # Variable para guardar Vbat minimo diario
+Vbat_max = 0    # Variable para guardar Vbat maximo diario
+Vbat_min = 0    # Variable para guardar Vbat minimo diario
 
 flag_Abs= flag_Flot = 0
 
@@ -369,36 +368,32 @@ try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
 
-    sql='SELECT DS, DATE(Tiempo),Whp_bat,Whn_bat,Wh_placa FROM datos ORDER BY id DESC limit 1'
+    sql="""SELECT DS, DATE(Tiempo),Whp_bat,Whn_bat,Wh_placa, SOC, Vbat
+         FROM datos ORDER BY id DESC limit 1"""
     cursor.execute(sql)
     var=cursor.fetchone()
     DS=float(var[0])
     HOY=str(var[1])
+    SOC_min = SOC_max =float(var[5])
+    Vbat_min = Vbat_max = float(var[6])
+    
     if HOY == time.strftime("%Y-%m-%d"): #Comprueba que es el mismo dia
         Whp_bat=float(var[2])
         Whn_bat=float(var[3])
         Wh_placa=float(var[4])
+        
+        sql='SELECT min(SOC), max(SOC), min(Vbat), max(Vbat) FROM datos WHERE Tiempo >= CURDATE()'
+        cursor.execute(sql)
+        var=cursor.fetchone()
+        SOC_min = float(var[0])
+        SOC_max = float(var[1])
+        Vbat_min = float(var[2])
+        Vbat_max = float (var[3])        
     else:
          Whp_bat = Whn_bat = Wh_placa = 0.0
+
 except Exception as e:
     print ("Sin registros en la tabla datos")
-
-try: #Recuperar SOCmin, SOCmax, Vmin, Vmax de la BD si estamos en el mismo dia
-
-    sql='SELECT DATE(Tiempo), min(SOC) as minSOC, max(SOC) as maxSOC, min(Vbat) as minVbat, max(Vbat) as maxVbat FROM datos WHERE Tiempo >= CURDATE()'
-    cursor.execute(sql)
-    var=cursor.fetchone()
-    HOY=str(var[0])
-    if HOY == time.strftime("%Y-%m-%d"): #Comprueba que es el mismo dia
-        SOC_min = float(var[1])
-        SOC_max = float(var[2])
-        Vmin = float(var[3])
-        Vmax = float (var[4])
-    else:
-         SOC_max = SOC_min = Vmax = Vmin = 0.0
-         
-except Exception as e:
-    print ("Error, la base de datos no existe")
 
 ## Definir matrices Rele_Out y Rele_Out_Ant
 Rele_Out = [[0] * 8 for i in range(50)]
@@ -649,8 +644,9 @@ try:
             Wh_bat = Whp_bat = Whn_bat = Wh_placa = 0.0
             CD1 = CD2 = CD3 = CD4 = CD5 = 0.0
             Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tecu ??
-            SOC_min = SOC_max = Vmax = Vmin = 0.0
-
+            SOC_min = SOC_max = SOC
+            Vbat_max = Vbat_min = Vbat
+            
         else:
             if Ibat < 0: Whn_bat = round(Whn_bat - (Ibat * Vbat * t_muestra/3600),2)
             else:        Whp_bat = round(Whp_bat + (Ibat * Vbat * t_muestra/3600),2)
@@ -786,26 +782,25 @@ try:
         DatosFV['Vplaca'] = Vplaca
         DatosFV['Wplaca'] = Wplaca
         DatosFV['PWM'] = PWM
+        DatosFV['Consumo'] = Consumo
+                
+        # ------------------ Calculo del SOCmax, SOCmin, Vbat_max, Vbat_min ------------------
+        if SOC > SOC_max:   SOC_max = SOC
+        elif SOC < SOC_min: SOC_min = SOC
         
-        # ------------------ Calculo del SOCmax, SOCmin, Vmax, Vmin ------------------
-        if SOC > SOC_max:
-            SOC_max = SOC
-        elif SOC < SOC_min:
-            SOC_min = SOC
-        
-        if Vbat > Vmax:
-            Vmax = Vbat
-        elif Vbat < Vmin:
-            Vmin = Vbat
+        if Vbat > Vbat_max:   Vbat_max = Vbat
+        elif Vbat < Vbat_min: Vbat_min = Vbat
 
         # ----------------- Guardamos datos_fv.csv ------
         ee=42        
         with open('/run/shm/datos_fv.csv', mode='w') as f:
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
-
-            f_writer.writerow([round(tiempo_sg,2), tiempo,Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
+            
+            f_writer.writerow([round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
+                               Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
                                int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-                               Temp,int(PWM),round(Consumo),Mod_bat,int(Tabs),int(Tflot),int(Tflot_bulk),SOC_min,SOC_max,Vmin,Vmax])
+                               Temp,int(PWM),round(Consumo),Mod_bat,int(Tabs),int(Tflot),
+                               int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max])
         ee=43
         with open('/run/shm/datos_reles.csv', mode='w') as f:
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
