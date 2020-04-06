@@ -12,7 +12,8 @@ def TestProceso(nombre):
 
 
 ruta = '/home/pi/PVControl+/'
-lista_proc=['fv.py','fvbot.py','hibrido.py','fv_temp.py','victron.py']
+lista_proc=['fv.py','fvbot.py','hibrido.py','fv_temp.py','victron.py',
+            'bmv.py','fv_oled.py','sma.py','snre.py','huawei.py' ]
 
 for proc in lista_proc:
     if TestProceso(ruta+proc):

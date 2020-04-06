@@ -799,7 +799,7 @@ try:
             f_writer.writerow([round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
                                Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
                                int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-                               Temp,int(PWM),round(Consumo),Mod_bat,int(Tabs),int(Tflot),
+                               Temp,int(PWM),round(Consumo,0),Mod_bat,int(Tabs),int(Tflot),
                                int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max])
         ee=43
         with open('/run/shm/datos_reles.csv', mode='w') as f:

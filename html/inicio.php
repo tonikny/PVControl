@@ -1608,10 +1608,13 @@ $(function () {
               text: [data[0][13]+' Wh'] // Wh_placa
                 });
             
+            //var consumo_wh= parseInt(data[0][13] - (data[0][8] -data[0][9]))
+            var consumo_wh= Math.round(data[0][13] - (data[0][8] -data[0][9]))
+            
             chart_consumo.series[0].setData([data[0][16]]); // Consumo
             chart_consumo.series[1].setData([data[0][10]-data[0][2]]); // Iplaca - Ibat
             chart_consumo.setSubtitle({
-              text: data[0][13]-(data[0][8] - data[0][9])+ " Wh"
+              text: consumo_wh + ' Wh'//data[0][13]-(data[0][8] - data[0][9]))//+ " Wh"
                 });
             
             
@@ -1636,7 +1639,8 @@ $(function () {
             
             //Valores de la tabla
             $("#Wh_placa").text(data[0][13]+ " Wh");
-            $("#Wh_Cons").text((data[0][13])-(data[0][8] - data[0][9])+ " Wh");
+            //$("#Wh_Cons").text((data[0][13])-(data[0][8] - data[0][9])+ " Wh");
+            $("#Wh_Cons").text(consumo_wh +' Wh')
             $("#Whp_bat").text(data[0][8]+ " Wh");
             $("#Whn_bat").text(data[0][9]+ " Wh");
             $("#Mod_bat").text(data[0][17]);
