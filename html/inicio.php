@@ -65,49 +65,49 @@ background: linear-gradient(to bottom, white, #fafafa);}
 
 <!--<div id="grafica_intensidad" style="width: 25%; height: 260px; margin-left: -25%; margin-top: 260px;margin-right: 0%; float: left"></div>-->
 <div class="divTable"style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
-	<div class="divTableBody">
-		<div class="divTableRow">
+    <div class="divTableBody">
+        <div class="divTableRow">
                 <div class="divTableCell">Wh Placa</div>
                 <div id= "Wh_placa" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">Wh Cons</div>
-			<div id= "Wh_Cons" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">Wh Bat+</div>
-			<div id= "Whp_bat" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">Wh Bat-</div>
-			<div id= "Whn_bat" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">&nbsp;SOC máx</div>
-			<div id = "maxSOC" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">SOC mín</div>
-			<div id ="minSOC" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">&nbsp;Vbat mín</div>
-			<div id = "minVbat" class="divTableCell">&nbsp;</div>
-		</div>
-		<div class="divTableRow">
-			<div class="divTableCell">&nbsp;Vbat máx</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">Wh Cons</div>
+            <div id= "Wh_Cons" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">Wh Bat+</div>
+            <div id= "Whp_bat" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">Wh Bat-</div>
+            <div id= "Whn_bat" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">&nbsp;SOC máx</div>
+            <div id = "maxSOC" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">SOC mín</div>
+            <div id ="minSOC" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">&nbsp;Vbat mín</div>
+            <div id = "minVbat" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">&nbsp;Vbat máx</div>
                <div id ="maxVbat" class="divTableCell">&nbsp;</div>
             </div>
         <div class="divTableRow">
-			<div class="divTableCell"></div>
-			<div class="divTableCell">&nbsp;</div>
-		</div>
+            <div class="divTableCell"></div>
+            <div class="divTableCell">&nbsp;</div>
+        </div>
         <div class="divTableRow">
-			<div class="divTableCell">Estado</div>
-			<div id ="Mod_bat" class="divTableCell">&nbsp;</div>
-		</div>
-		</div>
-	</div>
+            <div class="divTableCell">Estado</div>
+            <div id ="Mod_bat" class="divTableCell">&nbsp;</div>
+        </div>
+        </div>
+    </div>
 </div>
 
 <div id="containervbat"  style="width: 20%; height: 180px; margin-left: 2%; margin-right: 0%;margin-top: -1%; float: left">
@@ -1609,7 +1609,8 @@ $(function () {
                 });
             
             //var consumo_wh= parseInt(data[0][13] - (data[0][8] -data[0][9]))
-            var consumo_wh= Math.round(data[0][13] - (data[0][8] -data[0][9]))
+            //var consumo_wh= Math.round(data[0][13] - (data[0][8] -data[0][9]))
+            var consumo_wh= round(data[0][13] - (data[0][8] -data[0][9]),1)
             
             chart_consumo.series[0].setData([data[0][16]]); // Consumo
             chart_consumo.series[1].setData([data[0][10]-data[0][2]]); // Iplaca - Ibat
@@ -1652,36 +1653,36 @@ $(function () {
             //Evaluacion del color de la celda segun la variable Mod_bat, SOCmax... (Colores definidos en inicio.css)
             //MOD_BAT
             if (data[0][16] == "ABS")  {
-				document.getElementById("Mod_bat").className = "ABS";};
-			if (data[0][16] == "BULK")  {
-				document.getElementById("Mod_bat").className = "BULK";};
-			if (data[0][16] == "FLOT")  {
-				document.getElementById("Mod_bat").className = "FLOT";};
-			if (data[0][16] == "EQU")  {
-				document.getElementById("Mod_bat").className = "EQU";};
-				
-			//SOC_min
-			if (data[0][21] <= 50)  {
-				document.getElementById("minSOC").className = "rojo";};
-			if (50 < data[0][21] && data[0][20] < 75)  {
-				document.getElementById("minSOC").className = "naranja";};
-			if (data[0][21] >= 75)  {
-				document.getElementById("minSOC").className = "verde";};
-			
-			//SOC_max
-			if (data[0][22] <= 65)  {
-				document.getElementById("maxSOC").className = "rojo";};
-			if (65 < data[0][22] && data[0][21] < 80)  {
-				document.getElementById("maxSOC").className = "naranja";};
-			if (data[0][22] >= 75)  {
-				document.getElementById("maxSOC").className = "verde";};
-			//minVbat
-			if (data[0][23] <= 24.3)  {
-				document.getElementById("minVbat").className = "rojo";};
-			if (24.3 < data[0][23] && data[0][22] < 24.5)  {
-				document.getElementById("minVbat").className = "naranja";};
-			if (data[0][23] >= 24.5)  {
-				document.getElementById("minVbat").className = "verde";};
+                document.getElementById("Mod_bat").className = "ABS";};
+            if (data[0][16] == "BULK")  {
+                document.getElementById("Mod_bat").className = "BULK";};
+            if (data[0][16] == "FLOT")  {
+                document.getElementById("Mod_bat").className = "FLOT";};
+            if (data[0][16] == "EQU")  {
+                document.getElementById("Mod_bat").className = "EQU";};
+                
+            //SOC_min
+            if (data[0][21] <= 50)  {
+                document.getElementById("minSOC").className = "rojo";};
+            if (50 < data[0][21] && data[0][20] < 75)  {
+                document.getElementById("minSOC").className = "naranja";};
+            if (data[0][21] >= 75)  {
+                document.getElementById("minSOC").className = "verde";};
+            
+            //SOC_max
+            if (data[0][22] <= 65)  {
+                document.getElementById("maxSOC").className = "rojo";};
+            if (65 < data[0][22] && data[0][21] < 80)  {
+                document.getElementById("maxSOC").className = "naranja";};
+            if (data[0][22] >= 75)  {
+                document.getElementById("maxSOC").className = "verde";};
+            //minVbat
+            if (data[0][23] <= 24.3)  {
+                document.getElementById("minVbat").className = "rojo";};
+            if (24.3 < data[0][23] && data[0][22] < 24.5)  {
+                document.getElementById("minVbat").className = "naranja";};
+            if (data[0][23] >= 24.5)  {
+                document.getElementById("minVbat").className = "verde";};
             //maxVbat
             if (data[0][24] >= 30.7)  {
                 document.getElementById("maxVbat").className = "rojo";};
@@ -1707,6 +1708,11 @@ $(function () {
         cache: false
       });
       }
+
+    function round(value, precision) {
+        var multiplier = Math.pow(10, precision || 0);
+    return Math.round(value * multiplier) / multiplier;
+    }
 
 });
 
