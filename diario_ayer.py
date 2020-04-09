@@ -6,9 +6,15 @@
 import MySQLdb
 import time 
 
+from datetime import date,timedelta
 from Parametros_FV import *
 
 tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+d = date.today() - timedelta(1)
+rango1 = str(d) + ' 00:00:00'
+rango2 = str(d) + ' 23:59:59'
+
+print (rango1, rango2)
 
 def logBD() :
     try:
@@ -28,9 +34,11 @@ try:
     cursor = db.cursor()
 
     sql="SELECT MAX(DATE(Tiempo)), MAX(Vbat), MIN(Vbat), AVG(Vbat), MAX(SOC), MIN(SOC), AVG(SOC), \
-            MAX(Ibat), MIN(Ibat), AVG(Ibat), MAX(Iplaca), AVG(Iplaca), MAX(Wh_placa), \
-            MAX(Whp_bat), MAX(Whn_bat), MAX(Wh_placa-(Whp_bat-Whn_bat)), MAX(Temp), MIN(Temp), AVG(Temp) \
-            FROM datos WHERE DATE(Tiempo) = SUBDATE(CURDATE(),1)"
+        MAX(Ibat), MIN(Ibat), AVG(Ibat), MAX(Iplaca), AVG(Iplaca), MAX(Wh_placa), \
+        MAX(Whp_bat), MAX(Whn_bat), MAX(Wh_placa-(Whp_bat-Whn_bat)), MAX(Temp), MIN(Temp), AVG(Temp) \
+        FROM datos WHERE Tiempo BETWEEN '" + rango1 + "' AND '" + rango2 +"'"
+    
+
     cursor.execute(sql)
     var=cursor.fetchall()
     
