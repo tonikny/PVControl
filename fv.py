@@ -266,26 +266,27 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
         elif sensor =='':
             return anterior
         else:
-            pp1=[idx for idx, x in enumerate(sensor) if x=='(']    # indices de todos los '('
+            pp1=[idx for idx, x in enumerate(sensor) if x=='_']    # indices de todos los '_'
             pp2=[idx for idx, x in enumerate(sensor) if x=='[']    # indices de todos los '['
 
             k=len(pp1)
             dif=0
-            
             if k>0:
                 for i in range(k):
-                    dif += time.time() - eval("float("+sensor[pp1[i]:pp2[i]]+"['Tiempo_sg'])")
+                    #print('Caso pp1=',i,'--',sensor[pp1[i]-1:pp2[i]])
+                    dif += (time.time() - eval("float("+sensor[pp1[i]-1:pp2[i]]+"['Tiempo_sg'])"))/k
             else:
                 dif += time.time() - eval("float("+sensor[:pp2[0]]+"['Tiempo_sg'])")
-
+                #print('Caso pp2=',sensor[pp2[0]])
+                
             if dif < 10: y = float(eval(sensor))
             elif dif <20: y = float(anterior)
             else: y = 0.0
     except:
         traceback.print_exc()
-        print ('Error en sensor ', n_sensor)
+        print ('Error en sensor ', n_sensor, sensor)
         y = anterior
-        logBD('-ERROR MEDIDA FV-'+n_sensor)    
+        logBD('-ERROR MEDIDA -'+n_sensor+ '='+sensor)    
 
     if y < minimo or y > maximo:
         logBD('lectura incoherente '+n_sensor+'='+str(y))
@@ -579,27 +580,30 @@ try:
             ee=30.1
             if usar_hibrido == 1:
                 csvfv = CsvFv ('/run/shm/datos_hibrido.csv')
-                d_hibrido = csvfv.leerCsv() 
-                    
+                #csvfv = CsvFv ('/home/pi/Desktop/datos_hibrido.csv')
+                
+                d_hibrido = csvfv.leerCsvfloat() 
+                #d_hibrido['Tiempo_sg']=time.time()
+
             ee=30.2
             if usar_victron == 1:
                 csvfv = CsvFv ('/run/shm/datos_victron.csv')
-                d_victron = csvfv.leerCsv()
+                d_victron = csvfv.leerCsvfloat()
             
             ee=30.3
             if usar_bmv == 1:
                 csvfv = CsvFv ('/run/shm/datos_victron.csv')
-                d_bmv = csvfv.leerCsv()
+                d_bmv = csvfv.leerCsvfloat()
                     
             ee=30.4
             if usar_sma == 1:
                 csvfv = CsvFv ('/run/shm/datos_sma.csv')
-                d_sma = csvfv.leerCsv()
+                d_sma = csvfv.leerCsvfloat()
                     
             ee=30.5
             if usar_srne == 1:
                 csvfv = CsvFv ('/run/shm/datos_srne.csv')
-                d_srne = csvfv.leerCsv() 
+                d_srne = csvfv.leerCsvfloat() 
             
                 
             ee=34

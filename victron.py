@@ -4,7 +4,7 @@
 # Versión 2020-03-09
 
 import  sys, time
-#import os
+import os
 import serial
 from csvFv import CsvFv
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     c = CsvFv('/run/shm/datos_victron.csv')
     
     #nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
-    nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Iplaca':'Iplaca','Vplaca':'Vplaca','Estado':'CS','Temp':'Temp'}
+    nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Iplaca':'Iplaca','Vplaca':'Vplaca','Estado':'CS'}
     
     datosBD = {}
     grabar_BD = grabar_datos_victron

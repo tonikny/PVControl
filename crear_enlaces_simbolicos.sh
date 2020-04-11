@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Web
-sudo ln -s /home/pi/PVControl+/html /var/www/html
+#sudo ln -s /home/pi/PVControl+/html /var/www/html
 
 ## Services
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/fv.service /etc/systemd/system/fv.service

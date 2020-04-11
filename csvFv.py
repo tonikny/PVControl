@@ -37,8 +37,25 @@ class CsvFv:
         datos = None
         try:
             with open(self.archivo, mode='r') as f:
-                csv_reader = csv.DictReader(f)
+                csv_reader = csv.DictReader(f) 
                 datos = next(csv_reader, None)
+                if not datos:
+                    raise ValueError('CsvFv: No hay datos')
+                return datos
+        except (IOError, csv.Error):
+            logging.warning("CsvFv: No se pudo leer CSV")
+    
+    def leerCsvfloat(self):
+        datos = None
+        try:
+            with open(self.archivo, mode='r') as f:
+                csv_reader = csv.DictReader(f) 
+                datos = next(csv_reader, None)
+                for k, v in datos.items():
+                    try:
+                        datos[k] = float(v)
+                    except:
+                        pass
                 if not datos:
                     raise ValueError('CsvFv: No hay datos')
                 return datos

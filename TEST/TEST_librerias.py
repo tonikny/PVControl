@@ -6,7 +6,7 @@ import subprocess
 import importlib
 
 librerias = ['Adafruit_ADS1x15','pyModbusTCP','telebot','token','csv','glob','MySQLdb',
-             'random','paho.mqtt.client','requests','Adafruit_SSD1306']
+             'random','paho.mqtt.client','requests','Adafruit_SSD1306','pymodbus']
 
 for i in librerias:
     try:

@@ -103,8 +103,8 @@ def on_message(client, userdata, msg):
                 Flot = r[23][0] # estado bit flotacion
                 OnOff = r[23][1] # estado pulsador OnOff Hibrido
                 
-                Iplaca = float(Wplaca)/float(Vbat) # Intensidad producida por placas en relacion a Vbat
-                
+                Iplaca = float(Wplaca)/float(Vbat)  # Intensidad producida por placas en relacion a Vbat
+                Ibat  = float(Ibatp) - float(Ibatn) # Intensidad de bateria             
                 
                 ##########################################################################
                 
@@ -117,6 +117,8 @@ def on_message(client, userdata, msg):
                 
                 client.publish("PVControl/Hibrido/Ibatp",Ibatp)
                 client.publish("PVControl/Hibrido/Ibatn",Ibatn)
+                client.publish("PVControl/Hibrido/Ibat",Ibat)
+                
 
                 client.publish("PVControl/Hibrido/PACW",PACW)
                 client.publish("PVControl/Hibrido/PACVA",PACVA)
@@ -152,7 +154,7 @@ def on_message(client, userdata, msg):
                         datos.writeheader()
                         datos.writerow({'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Iplaca': Iplaca,'Vplaca': Vplaca,'Wplaca': Wplaca,
                          'Vbat': Vbat,'Vbus':Vbus,'Ibatp':Ibatp,'Ibatn':Ibatn,
-                         'PACW':PACW,'PACVA':PACVA,'Temp':Temp,'Flot':Flot,'OnOff':OnOff})
+                         'PACW':PACW,'PACVA':PACVA,'Temp':Temp,'Flot':Flot,'OnOff':OnOff,'Ibat':Ibat })
                 except:
                     print ('Error grabacion fichero datos_hibrido.csv')
 
