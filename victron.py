@@ -70,10 +70,10 @@ class victron:
                         elif data[0] == b"CS":
                             ee = 300
                             if int(data[1]) == 0: self.dct["CS"] = 'OFF'
-                            elif int(data[1]) == 2: self.dct["CS"] = 'FALLO'
+                            elif int(data[1]) == 2: self.dct["CS"] = 'FAULT'
                             elif int(data[1]) == 3: self.dct["CS"] = 'BULK'
-                            elif int(data[1]) == 4: self.dct["CS"] = 'ABS'
-                            elif int(data[1]) == 5: self.dct["CS"] = 'FLOT'
+                            elif int(data[1]) == 4: self.dct["CS"] = 'ABSORTION'
+                            elif int(data[1]) == 5: self.dct["CS"] = 'FLOAT'
                          
                         elif data[0] == b'Checksum' and flag_Vbat == 1:
                             ee = 400
