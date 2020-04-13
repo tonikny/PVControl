@@ -1,6 +1,6 @@
 [Unit]
 Description= PVControl+ - Lectura Temperatura DS18B20
-After=mysql.service
+After=fv.service
 
 [Service]
 ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_temp.py

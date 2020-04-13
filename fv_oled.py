@@ -3,10 +3,9 @@
 
 # Versión 2020-04-02
 
-import time,csv,sys
+import time,csv,sys, subprocess
 import traceback
 import datetime,glob
-
 
 basepath = '/home/pi/PVControl+/'
 DEBUG = False #True
@@ -53,7 +52,9 @@ else:
     except:
         pass
 
-if NUM_OLED == 0: sys.exit()
+if NUM_OLED == 0:
+    print (subprocess.getoutput('sudo systemctl fv_temp'))
+    sys.exit()
 
 if NUM_OLED >= 1:
     disp1.clear()
@@ -203,6 +204,7 @@ def OLED(pantalla,modo):
 # -------------------------------- BUCLE PRINCIPAL OLED --------------------------------------
 #########################################################################################
 try:
+    time.sleep(20) # espera para que fv.py ponga datos_fv.csv
     cp = 0
     while True:
         ee=34

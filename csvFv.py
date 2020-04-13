@@ -28,7 +28,7 @@ class CsvFv:
                 dat.writeheader()
                 dat.writerow(datos)
         except (IOError, csv.Error):
-            logging.warning("CsvFv: No se pudo escribir CSV ")
+            logging.warning("CsvFv: No se pudo escribir "+self.archivo)
 
     ##
     # Lee datos del archivocsv
@@ -43,7 +43,7 @@ class CsvFv:
                     raise ValueError('CsvFv: No hay datos')
                 return datos
         except (IOError, csv.Error):
-            logging.warning("CsvFv: No se pudo leer CSV")
+            logging.warning("CsvFv: No se pudo leer "+self.archivo)
     
     def leerCsvfloat(self):
         datos = None
@@ -60,4 +60,4 @@ class CsvFv:
                     raise ValueError('CsvFv: No hay datos')
                 return datos
         except (IOError, csv.Error):
-            logging.warning("CsvFv: No se pudo leer CSV")
+            logging.warning("CsvFv: No se pudo leer "+self.archivo)
