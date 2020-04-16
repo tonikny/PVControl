@@ -138,6 +138,7 @@ simular_reles = 0 # Simular reles fisicos
 # -----------------------------------------------
 
 ###### Sensor Temperatura Batería
+tipo_sensortemperatura = ''        # 'SRNE', ...
 sensor_temperatura = 'DS18B20_0'   # DS18B20_0, DS18B20_1,..... SRNE_0
                                    # Poner a '' si no se ha instalado un sensor
 
