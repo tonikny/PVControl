@@ -59,7 +59,7 @@ class Srne:
     # convierte el estado del regulador
     # @param codigo (byte)
     # @return (string) estado del regulador
-    def getEstado (self, codigo):
+    def getEstadoSrne (self, codigo):
         if 0 > codigo > 6: return None
         else:
             estados = { 0 : "DEACTIVATED",
@@ -69,6 +69,19 @@ class Srne:
                         4 : "ABSORTION",
                         5 : "FLOAT",
                         6 : "LIMITING"
+                        }
+            return estados[codigo]
+            
+    def getEstadoFv (self, codigo):
+        if 0 > codigo > 6: return None
+        else:
+            estados = { 0 : "OFF",   # "DEACTIVATED"
+                        1 : "BULK",  # "ACTIVATED",
+                        2 : "BULK",  # "MPPT"
+                        3 : "EQU",   # "EQUALIZE"
+                        4 : "ABS",   # "ABSORTION"
+                        5 : "FLOT",  # "FLOAT"
+                        6 : "OFF",   # "LIMITING"
                         }
             return estados[codigo]
 
@@ -84,10 +97,7 @@ class Srne:
 
     ##
     # Guardar datos en archivo ram y base de datos
-    def guardarDatosFV (self):
-        # escribir archivo ram
-        self.csvfv.escribirCsv(self.datos)
-
+    def guardarDatosBd (self):
         # escribir en la bd si ha pasado eltiempo estipulado
         if time.time() - self.timeBd >= FREQ_BD:
             datosBd = self.datos
@@ -106,41 +116,45 @@ class Srne:
 
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
             # recoger 9 registros (0x0101..0x0109)
-            Res = self.modbus.read_holding_registers(0x0101, 9, unit=1)
+            Res = self.modbus.read_holding_registers(0x0100, 10, unit=1)
             # recoger 1 registro (0x0120)
             R_Est = self.modbus.read_holding_registers(0x0120, 2, unit=1)
 
             if not Res.isError() and not R_Est.isError():
                 r = Res.registers[0:]
-                if len(r)==9:
+                if len(r)==10:
 
                     # Procesado de los datos FV ########
-                    Vbat = float(r[0]/10)
-                    Iplaca = float(r[1]/100)
-                    Vplaca = float(r[6]/10)
-                    Ipanel = float(r[7]/100)
-                    Wplaca = int(r[8])
-                    x = format(r[2], '04x')
+                    s = format(r[0],'02x') # 8 lower bits
+                    SoC = int(s,16)
+                    Vbat = float(r[1]/10)
+                    Iplaca = float(r[2]/100)
+                    Vplaca = float(r[7]/10)
+                    Ipanel = float(r[8]/100)
+                    Wplaca = int(r[9])
+                    x = format(r[3], '04x')
                     Treg = int(x[:2],16)
                     Tbat = int(x[2:],16)
 
                     est = R_Est.registers[0]
                     estInt = int(format(est, '02x')) # 8 lower bits
-                    Estado = self.getEstado(estInt)
+                    Estado = self.getEstadoFv(estInt)
 
                     self.datos = {'Tiempo_sg':tiempo_sg, 'Tiempo':tiempo,
                                     'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca,
-                                    'Estado':Estado}
-                    #print(self.datos)
-                    #print(Vbat,Iplaca,Vplaca,Ipanel,Wplaca,Estado,Tbat,Treg)
-                    self.guardarDatosFV()
-                    logging.info ("Datos: %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca), Estado)
+                                    'Estado':Estado,'SoC':SoC}
+                    # escribir archivo ram
+                    self.csvfv.escribirCsv(self.datos)
+                    logging.info ("DatosFV: %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca), Estado, str(SoC))
+                    
+                    # En la Bd guardamos los estados del protocolo SRNE
+                    self.datos['Estado'] = self.getEstadoSrne(estInt)
+                    self.guardarDatosBd()
 
                     # Procesado de los datos de temperatura ########
                     if tipo_sensortemperatura == "SRNE":
                         self.datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,
-                                        'Temp0':Tbat,'Temp1':Treg,'Temp2':0,
-                                        'Temp3':0,'Temp4':0,'Temp5':0}
+                                        'SRNE_0':Tbat,'SRNE_1':Treg}
                         self.csvtemp.escribirCsv(self.datos)
                         logging.info (__class__.__name__ + ": Tbat="+str(Tbat)+"|Treg="+str(Treg))
                 else:

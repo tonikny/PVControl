@@ -17,8 +17,8 @@ from telebot import types # Tipos para la API del bot.
 import token
 import paho.mqtt.client as mqtt
 
-import csv
-
+#import csv
+from csvFv import CsvFv
 from Parametros_FV import *
 
 if usar_hibrido == 0:
@@ -30,6 +30,11 @@ if usar_telegram == 1:
     bot.skip_pending = True # Skip the pending messages
     cid = Aut[0]
     bot.send_message(cid, 'Arrancando Programa Control Hibrido')
+
+
+# inicializar grabacion en archivo csv
+archivoFv = '/run/shm/datos_hibrido.csv' # archivo ram FV
+csvfv = CsvFv(archivoFv)
 
 
 # -----------------------MQTT MOSQUITTO ------------------------
@@ -148,13 +153,18 @@ def on_message(client, userdata, msg):
                         pass
 
                 try:
-                    with open('/run/shm/datos_hibrido.csv', mode='w') as f:
-                        nombres = ['Tiempo_sg','Tiempo','Iplaca', 'Vplaca', 'Wplaca','Vbat','Vbus','Ibatp','Ibatn','PACW','PACVA','Temp','Flot','OnOff']
-                        datos = csv.DictWriter(f, fieldnames=nombres)
-                        datos.writeheader()
-                        datos.writerow({'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Iplaca': Iplaca,'Vplaca': Vplaca,'Wplaca': Wplaca,
-                         'Vbat': Vbat,'Vbus':Vbus,'Ibatp':Ibatp,'Ibatn':Ibatn,
-                         'PACW':PACW,'PACVA':PACVA,'Temp':Temp,'Flot':Flot,'OnOff':OnOff,'Ibat':Ibat })
+                    datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Iplaca': Iplaca,'Vplaca': Vplaca,'Wplaca': Wplaca,
+                            'Vbat': Vbat,'Vbus':Vbus,'Ibatp':Ibatp,'Ibatn':Ibatn,
+                            'PACW':PACW,'PACVA':PACVA,'Temp':Temp,'Flot':Flot,'OnOff':OnOff,'Ibat':Ibat }
+                    csvfv.escribirCsv(datos)
+                    
+                    #with open('/run/shm/datos_hibrido.csv', mode='w') as f:
+                    #    nombres = ['Tiempo_sg','Tiempo','Iplaca', 'Vplaca', 'Wplaca','Vbat','Vbus','Ibatp','Ibatn','PACW','PACVA','Temp','Flot','OnOff','Ibat']
+                    #    datos = csv.DictWriter(f, fieldnames=nombres)
+                    #    datos.writeheader()
+                    #    datos.writerow({'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Iplaca': Iplaca,'Vplaca': Vplaca,'Wplaca': Wplaca,
+                    #     'Vbat': Vbat,'Vbus':Vbus,'Ibatp':Ibatp,'Ibatn':Ibatn,
+                    #     'PACW':PACW,'PACVA':PACVA,'Temp':Temp,'Flot':Flot,'OnOff':OnOff,'Ibat':Ibat })
                 except:
                     print ('Error grabacion fichero datos_hibrido.csv')
 
