@@ -77,7 +77,7 @@ def on_message(client, userdata, msg):
             
             r = [i.decode() for i in r]
             #print (r)
-            print ('cmd=',cmd)
+            #print ('cmd=',cmd)
             
             if cmd == b'QPIGSBD' and len(r) >= 24:
                 ##########################################################################
@@ -85,28 +85,28 @@ def on_message(client, userdata, msg):
                 ##########################################################################
                 #print ('Respuesta Hibrido=',r)
                 
-                Vgen = r[3] # Voltaje AC entrada Linea
-                Fgen = r[4] # Frecuencia AC entrada Linea
+                Vgen = float(r[3]) # Voltaje AC entrada Linea
+                Fgen = float(r[4]) # Frecuencia AC entrada Linea
                 
-                PACW = r[8]  # W consumo activo
-                PACVA = r[7] # VA consumo aparente
+                PACW = float(r[8])  # W consumo activo
+                PACVA = float(r[7]) # VA consumo aparente
                 
-                Vbus = r[10] # V 
-                Vbat = r[11] # Voltaje bateria
+                Vbus = float(r[10]) # V 
+                Vbat = float(r[11]) # Voltaje bateria
                 
-                Ibatp = r[12] # A carga Bateria
+                Ibatp = float(r[12]) # A carga Bateria
                 
-                Temp = r[14]  # Grados
+                Temp = float(r[14])  # Grados
                 #Iplaca = r[15]
                                 
-                Vplaca = r[16] # Voltaje placas
+                Vplaca = float(r[16]) # Voltaje placas
                                 
-                Ibatn = r[18]  # A descarga bateria
+                Ibatn = float(r[18])  # A descarga bateria
                 
-                Wplaca = r[22] # W produccion placas
+                Wplaca = float(r[22]) # W produccion placas
                 
-                Flot = r[23][0] # estado bit flotacion
-                OnOff = r[23][1] # estado pulsador OnOff Hibrido
+                Flot = int(r[23][0]) # estado bit flotacion
+                OnOff = int(r[23][1]) # estado pulsador OnOff Hibrido
                 
                 Iplaca = float(Wplaca)/float(Vbat)  # Intensidad producida por placas en relacion a Vbat
                 Ibat  = float(Ibatp) - float(Ibatn) # Intensidad de bateria             
