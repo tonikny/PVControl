@@ -19,6 +19,10 @@ import paho.mqtt.client as mqtt
 import RPi.GPIO as GPIO # reles 4XX via GPIO
 GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
 
+GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
+
+#GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
+
 from csvFv import CsvFv
 
 import locale
@@ -592,7 +596,7 @@ try:
             
             ee=30.3
             if usar_bmv == 1:
-                csvfv = CsvFv ('/run/shm/datos_victron.csv')
+                csvfv = CsvFv ('/run/shm/datos_bmv.csv')
                 d_bmv = csvfv.leerCsvfloat()
                     
             ee=30.4
