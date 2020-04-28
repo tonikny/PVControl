@@ -1,23 +1,8 @@
-<!--
 <?php
-
-require('conexion.php');
-
-//FLOTACION/DIVER
-$sql = "SELECT Vflot FROM datos WHERE DATE(Tiempo)= CURDATE() AND id=(SELECT max(id) FROM datos)";
-
-if($result = mysqli_query($link, $sql)){
-    $row=mysqli_fetch_row($result);
-    $row = number_format((float)$row[0], 0, '.', '');
-} else{
-    echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
-}
-
-mysqli_close($link);
-
+session_start([
+    'cookie_lifetime' => 0,
+]);
 ?>
--->
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es-ES" lang="es-ES">
 <head>
