@@ -1,0 +1,165 @@
+  PID TTY      STAT   TIME COMMAND
+    1 ?        Ss     2:03 /sbin/init splash
+    2 ?        S      0:02 [kthreadd]
+    3 ?        I<     0:00 [rcu_gp]
+    4 ?        I<     0:00 [rcu_par_gp]
+    8 ?        I<     0:00 [mm_percpu_wq]
+    9 ?        S      2:10 [ksoftirqd/0]
+   10 ?        I     37:47 [rcu_sched]
+   11 ?        I      0:00 [rcu_bh]
+   12 ?        S      0:04 [migration/0]
+   13 ?        S      0:00 [cpuhp/0]
+   14 ?        S      0:00 [cpuhp/1]
+   15 ?        S      0:05 [migration/1]
+   16 ?        S      0:12 [ksoftirqd/1]
+   19 ?        S      0:00 [cpuhp/2]
+   20 ?        S      0:05 [migration/2]
+   21 ?        S      0:41 [ksoftirqd/2]
+   24 ?        S      0:00 [cpuhp/3]
+   25 ?        S      0:05 [migration/3]
+   26 ?        S      0:11 [ksoftirqd/3]
+   29 ?        S      0:00 [kdevtmpfs]
+   30 ?        I<     0:00 [netns]
+   34 ?        S      0:02 [khungtaskd]
+   35 ?        S      0:00 [oom_reaper]
+   36 ?        I<     0:00 [writeback]
+   37 ?        S      0:00 [kcompactd0]
+   38 ?        I<     0:00 [crypto]
+   39 ?        I<     0:00 [kblockd]
+   40 ?        S      0:00 [watchdogd]
+   41 ?        I<     0:00 [rpciod]
+   42 ?        I<     0:00 [kworker/u9:0-hci0]
+   43 ?        I<     0:00 [xprtiod]
+   46 ?        S      2:41 [kswapd0]
+   47 ?        I<     0:00 [nfsiod]
+   58 ?        I<     0:00 [kthrotld]
+   60 ?        I<     0:00 [iscsi_eh]
+   61 ?        I<     0:00 [dwc_otg]
+   62 ?        I<     0:00 [DWC Notificatio]
+   63 ?        S<     2:05 [vchiq-slot/0]
+   64 ?        S<     0:01 [vchiq-recy/0]
+   65 ?        S<     0:00 [vchiq-sync/0]
+   66 ?        S      0:00 [vchiq-keep/0]
+   67 ?        S<     0:00 [SMIO]
+   69 ?        S      3:26 [irq/86-mmc1]
+   71 ?        I<     0:00 [mmc_complete]
+   76 ?        S     11:00 [jbd2/mmcblk0p2-]
+   77 ?        I<     0:00 [ext4-rsv-conver]
+   78 ?        I<     0:00 [ipv6_addrconf]
+  108 ?        Ss     0:57 /lib/systemd/systemd-journald
+  139 ?        Ss     0:04 /lib/systemd/systemd-udevd
+  153 ?        S     30:32 [w1_bus_master1]
+  160 ?        S<     0:00 [SMIO]
+  173 ?        I<     0:00 [mmal-vchiq]
+  174 ?        I<     0:00 [mmal-vchiq]
+  175 ?        I<     0:00 [mmal-vchiq]
+  197 ?        I<     0:00 [cfg80211]
+  198 ?        I<     0:00 [brcmf_wq/mmc1:0]
+  199 ?        S      2:06 [brcmf_wdog/mmc1]
+  252 ?        Ssl    0:05 /lib/systemd/systemd-timesyncd
+  280 ?        Ss     0:31 /usr/bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+  282 ?        Ssl    0:12 /usr/sbin/rsyslogd -n -iNONE
+  285 ?        Ss     0:13 /lib/systemd/systemd-logind
+  286 ?        Ss     0:08 /sbin/wpa_supplicant -u -s -O /run/wpa_supplicant
+  289 ?        Ssl    0:00 /usr/sbin/ModemManager --filter-policy=strict
+  290 ?        Ss     0:10 /usr/sbin/thd --triggers /etc/triggerhappy/triggers.d/ --socket /run/thd.socket --user nobody --deviceglob /dev/input/event*
+  292 ?        Ss     1:47 avahi-daemon: running [rpi-3.local]
+  296 ?        SNs    0:00 /usr/sbin/alsactl -E HOME=/run/alsa -s -n 19 -c rdaemon
+  320 ?        Ss     0:06 /usr/sbin/cron -f
+  325 ?        Ssl    0:02 /usr/lib/udisks2/udisksd
+  327 ?        SLsl   0:56 /usr/sbin/rngd -r /dev/hwrng
+  343 ?        S      0:00 avahi-daemon: chroot helper
+  357 ?        Ss     0:05 /sbin/dhcpcd -q -b
+  382 ?        Ssl    0:00 /usr/lib/policykit-1/polkitd --no-debug
+  388 ?        Ss     0:00 /usr/bin/vncserver-x11-serviced -fg
+  409 ?        Ssl    0:00 /usr/sbin/lightdm
+  413 ?        Sl    19:42 /usr/bin/vncserver-x11-core -service
+  425 ?        Ss     2:33 wpa_supplicant -B -c/etc/wpa_supplicant/wpa_supplicant.conf -iwlan0 -Dnl80211,wext
+  433 ?        Ss     0:00 /usr/sbin/sshd -D
+  487 ?        Ssl  128:56 /usr/sbin/mysqld
+  492 ?        Sl    59:34 /opt/teamviewer/tv_bin/teamviewerd -d
+  497 tty7     Ssl+ 437:46 /usr/lib/xorg/Xorg :0 -seat seat0 -auth /var/run/lightdm/root/:0 -nolisten tcp vt7 -novtswitch
+  498 tty1     Ss     0:00 /bin/login -f
+  521 ?        Ss     1:20 /usr/sbin/apache2 -k start
+  524 ?        S      5:58 /usr/bin/vncagent service 14
+  591 ?        Ss   176:38 /usr/bin/python3 /home/pi/PVControl+/fv_oled.py
+  592 ?        Ssl  261:09 /usr/bin/python3 /home/pi/PVControl+/fv.py
+  603 ?        Sl     0:00 lightdm --session-child 14 17
+  627 ?        Ss     0:00 /lib/systemd/systemd --user
+  630 ?        S      0:00 (sd-pam)
+  638 ?        I      0:00 [kworker/2:1-mm_percpu_wq]
+  659 ?        S      0:00 /usr/bin/hciattach /dev/serial1 bcm43xx 3000000 flow - b8:27:eb:ab:39:be
+  662 ?        I<     0:00 [kworker/u9:2-hci0]
+  673 ?        Ss     0:00 /usr/lib/bluetooth/bluetoothd
+  692 ?        Ssl    0:00 /usr/bin/bluealsa
+  704 ?        S<     0:00 [krfcommd]
+  711 tty1     S+     0:00 -bash
+  712 ?        Ssl    0:10 /usr/bin/lxsession -s LXDE-pi -e LXDE
+  723 ?        Ss    39:18 /usr/bin/dbus-daemon --session --address=systemd: --nofork --nopidfile --systemd-activation --syslog-only
+  772 ?        Ss     0:07 /usr/bin/ssh-agent x-session-manager
+  785 ?        Ssl    0:00 /usr/lib/gvfs/gvfsd
+  787 ?        Sl    47:07 /opt/teamviewer/tv_bin/TeamViewer
+  806 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-fuse /run/user/1000/gvfs -f -o big_writes
+  825 ?        S      0:29 openbox --config-file /home/pi/.config/openbox/lxde-pi-rc.xml
+  827 ?        Sl     0:00 lxpolkit
+  837 ?        S      0:11 /usr/bin/vncserverui service 15
+  843 ?        Sl   506:30 pcmanfm --desktop --profile LXDE-pi
+  850 ?        Ss     0:00 /usr/bin/ssh-agent -s
+  859 ?        Sl     0:00 /usr/lib/geoclue-2.0/demos/agent
+  882 ?        S      0:03 /usr/bin/vncserverui -statusicon 5
+  944 ?        Sl     0:00 /usr/lib/menu-cache/menu-cached /run/user/1000/menu-cached-:0
+  958 ?        Ssl    0:00 /usr/lib/gvfs/gvfs-udisks2-volume-monitor
+  964 ?        Ssl    0:00 /usr/lib/gvfs/gvfs-mtp-volume-monitor
+  969 ?        Ssl    0:00 /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
+  973 ?        Ssl    0:00 /usr/lib/gvfs/gvfs-goa-volume-monitor
+  977 ?        Ssl    0:00 /usr/lib/gvfs/gvfs-afc-volume-monitor
+ 1000 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-trash --spawner :1.6 /org/gtk/gvfs/exec_spaw/0
+ 1649 ?        I      0:00 [kworker/1:1-events]
+ 2139 pts/0    Ss     0:00 bash
+ 2285 ?        I      0:00 [kworker/0:0-cgroup_destroy]
+ 2510 ?        I      0:00 [kworker/2:2-mm_percpu_wq]
+ 3160 ?        I<     0:00 [kworker/3:0H]
+ 3947 ?        I<     0:00 [kworker/0:2H-mmc_complete]
+ 3951 ?        I<     0:00 [kworker/2:2H]
+ 4286 ?        I      0:00 [kworker/3:2-mm_percpu_wq]
+ 4706 ?        I<     0:00 [kworker/1:0H]
+ 4881 ?        I      0:00 [kworker/2:0-mm_percpu_wq]
+ 5079 ?        I<     0:00 [kworker/3:1H]
+ 5099 ?        I      0:00 [kworker/0:2-events]
+ 5104 ?        I      0:00 [kworker/1:2-events]
+ 5399 pts/2    Ss+    0:00 bash
+ 5484 ?        I      0:00 [kworker/u8:0-brcmf_wq/mmc1:0001:1]
+ 5789 ?        I<     0:00 [kworker/2:1H]
+ 5790 ?        I<     0:00 [kworker/0:0H-mmc_complete]
+ 6229 pts/0    S+     3:20 watch -t -n 5 ps -eo cmd | grep -v grep | grep python
+ 6536 pts/1    Ss+    0:00 /bin/sh /tmp/geany_run_script_4DWJJ0.sh
+ 6548 pts/1    S+     0:00 python3 borrar.py
+ 6549 pts/1    R+     0:00 ps ax
+ 7263 pts/4    S+     0:00 sudo python3 fv_temp.py
+ 7269 pts/4    S+    17:45 python3 fv_temp.py
+ 8777 ?        Sl    48:31 geany
+ 8812 pts/6    Ss+    0:00 /bin/bash
+10461 ?        S      0:00 /usr/sbin/apache2 -k start
+10462 ?        S      0:00 /usr/sbin/apache2 -k start
+10463 ?        S      0:00 /usr/sbin/apache2 -k start
+10464 ?        S      0:00 /usr/sbin/apache2 -k start
+10466 ?        S      0:00 /usr/sbin/apache2 -k start
+10904 ?        Ssl   83:47 /usr/lib/gvfs/gvfsd-metadata
+11069 ?        I<     0:04 [kworker/0:1H-kblockd]
+11138 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-network --spawner :1.6 /org/gtk/gvfs/exec_spaw/3
+11171 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-dnssd --spawner :1.6 /org/gtk/gvfs/exec_spaw/7
+11188 ?        Sl     0:00 /usr/lib/dconf/dconf-service
+11829 ?        Sl     7:42 lxterminal
+18888 ?        Sl    18:53 lxpanel --profile LXDE-pi
+23352 ?        Sl     0:52 /usr/bin/python3 -u -B /usr/lib/python3/dist-packages/thonny/backend_launcher.py
+25790 ?        I<     0:00 [kworker/1:2H-kblockd]
+25854 ?        I      0:03 [kworker/u8:1-brcmf_wq/mmc1:0001:1]
+26461 ?        I<     0:03 [kworker/2:0H-kblockd]
+27418 pts/4    Ss     0:00 bash
+28321 ?        I      0:00 [kworker/1:0-mm_percpu_wq]
+29507 ?        I<     0:07 [kworker/3:2H-kblockd]
+29652 ?        I      0:02 [kworker/u8:2-brcmf_wq/mmc1:0001:1]
+30285 ?        I      0:00 [kworker/3:1-events]
+31503 ?        Ss     8:14 /usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
+31596 ?        Sl     8:29 /usr/bin/python3 /usr/bin/thonny
+32327 ?        I      0:00 [kworker/0:1-mm_percpu_wq]

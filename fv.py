@@ -232,6 +232,20 @@ def act_rele(adr,port,out) : # Activar Reles
                 print ('Error rele GPIO')
                 print (I, Reles_SSR[I][0],Reles_SSR[I][1], adr,port,out)         
 
+        if int(adr/10) == 5: #Rele Sonoff (tasmota)
+            #print("Rele Sonoff")
+            if out == 100: out = "ON"
+            else:          out = "OFF"
+            
+            try:
+                client.publish("cmnd/PVControl/Reles/"+str(adr)+str(port)+"/POWER",str(out))  # via MQTT
+                #print("cmnd/PVControl/Reles/"+str(adr)+str(port)+"/POWER",str(out))
+            except:
+                logBD('Error rele sonoff '+str(adr)+str(port)+'='+ str(out)) 
+
+
+
+
     return
 
 def logBD(texto) : # Incluir en tabla de Log
@@ -401,8 +415,9 @@ except Exception as e:
     print ("Sin registros en la tabla datos")
 
 ## Definir matrices Rele_Out y Rele_Out_Ant
-Rele_Out = [[0] * 8 for i in range(50)]
-Rele_Out_Ant = [[0] * 8 for i in range(50)] # Situacion actual y anterior de los reles
+Reles_Max=60
+Rele_Out = [[0] * 8 for i in range(Reles_Max)]
+Rele_Out_Ant = [[0] * 8 for i in range(Reles_Max)] # Situacion actual y anterior de los reles
 
 ##  ------ inicializamos reles apagandolos  ------------------------
 sql = 'SELECT * FROM reles'
@@ -856,7 +871,8 @@ try:
                                 logBD('Rele ' + str(Puerto + 1) + ' en NodeMCU de direccion '+str(addr)+' NO ENCONTRADO')
                     
                     elif int(addr/10) == 4: pass
-
+                    elif int(addr/10) == 5: pass
+ 
         #### Encendemos virtualmente y apagamos SI condiciones FV o HORARIAS no se cumplen####
         
         ee=52
@@ -893,7 +909,7 @@ try:
         """
         # -------------------- Bucle de condiciones de horario --------------------------
         ee=56
-        Rele_Out_H = [[0] * 8 for i in range(50)] # Inicializo variable a 0
+        Rele_Out_H = [[0] * 8 for i in range(Reles_Max)] # Inicializo variable a 0
 
         for I in range(hcon):
             Puerto = (H[I][0] % 10) - 1

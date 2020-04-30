@@ -1652,13 +1652,13 @@ $(function () {
             
             //Evaluacion del color de la celda segun la variable Mod_bat, SOCmax... (Colores definidos en inicio.css)
             //MOD_BAT
-            if (data[0][16] == "ABS")  {
+            if (data[0][17] == "ABS")  {
                 document.getElementById("Mod_bat").className = "ABS";};
-            if (data[0][16] == "BULK")  {
+            if (data[0][17] == "BULK")  {
                 document.getElementById("Mod_bat").className = "BULK";};
-            if (data[0][16] == "FLOT")  {
+            if (data[0][17] == "FLOT")  {
                 document.getElementById("Mod_bat").className = "FLOT";};
-            if (data[0][16] == "EQU")  {
+            if (data[0][17] == "EQU")  {
                 document.getElementById("Mod_bat").className = "EQU";};
                 
             //SOC_min

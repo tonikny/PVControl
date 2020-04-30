@@ -27,7 +27,7 @@ fichero = '/run/shm/datos_temp.csv'
 c = CsvFv(fichero)
 
 while True:
-    Temp_D = c.leerCsv()
+    Temp_D = None #c.leerCsv()
     if Temp_D == None: Temp_D= {}
 
     sensores = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
@@ -46,7 +46,7 @@ while True:
         time.sleep(1)
 
     try:
-        Temp_D['Tiempo'] = time.strftime("%Y-%m-%d %H:%M:%S")
+        Temp_D['Tiempo'] = '_'+time.strftime("%Y-%m-%d %H:%M:%S")
         Temp_D['Tiempo_sg'] =  time.time()
         if DEBUG >= 1:print (Temp_D)
         c.escribirCsv(Temp_D)
