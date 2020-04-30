@@ -163,8 +163,9 @@ echo "<br \>";
 
 
 <?php
+
 $password = "3c77f4029be2e609c22bba665f13b101";
-if (md5($_POST['password']) != $password) {
+if ((md5($_POST['password']) != $password) && empty($_SESSION['logged'])) {
 ?>
 <!--- <h3>Login</h3> ---->
 <form name="form" method="post" action="">
@@ -172,12 +173,8 @@ if (md5($_POST['password']) != $password) {
 <input type="submit" value="Entrar"></form>
 <?php
 }else{
-?>
-
-
-
-<?php
-for($i=0;$i<$numreles;$i=$i+1) {
+    $_SESSION['logged'] = "yes";
+    for($i=0;$i<$numreles;$i=$i+1) {
 ?>
 	<p></p>
 	Cambiar estado relé <?php echo $rele[$i][1]; ?>
@@ -198,7 +195,7 @@ for($i=0;$i<$numreles;$i=$i+1) {
 	</form>
 
 <?php
-}
+    }
 ?>
 
 

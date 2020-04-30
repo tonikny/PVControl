@@ -602,8 +602,8 @@ try:
                 #csvfv = CsvFv ('/home/pi/Desktop/datos_hibrido.csv')
                 
                 d_hibrido = csvfv.leerCsvfloat() 
-                #d_hibrido['Tiempo_sg']=time.time()
-
+                #print ('d_hibrido= ',d_hibrido)
+                
             ee=30.2
             if usar_victron == 1:
                 csvfv = CsvFv ('/run/shm/datos_victron.csv')

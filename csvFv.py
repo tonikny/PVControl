@@ -39,11 +39,28 @@ class CsvFv:
                     dat = csv.writer(f, delimiter=',',
                                      quoting=csv.QUOTE_NONNUMERIC)
                     dat.writerow(datos)
-        except (IOError, csv.Error):
-            logging.warning("CsvFv: No se pudo escribir "+self.archivo)
+        except IOError:
+            logging.error("CsvFv: No se pudo abrir "+self.archivo, exc_info=True)
+        except csv.Error:
+            logging.warning("CsvFv: Error guardando datos en "+self.archivo, exc_info=True)
 
     def leerCsvfloat(self, formato="dict"):
-        self.leerCsv(formato)
+        datos = None
+        try:
+            with open(self.archivo, mode='r') as f:
+                csv_reader = csv.DictReader(f) 
+                datos = next(csv_reader, None)
+                for k, v in datos.items():
+                    try:
+                        datos[k] = float(v)
+                    except:
+                        pass
+                if not datos:
+                    raise ValueError('CsvFv: No hay datos')
+                return datos
+        except (IOError, csv.Error):
+            logging.warning("CsvFv: No se pudo leer "+self.archivo)
+
 
     def leerCsv(self, formato="dict"):
         """
@@ -60,7 +77,9 @@ class CsvFv:
                     csv_reader = csv.DictReader(f, quoting=csv.QUOTE_NONNUMERIC)
                 datos = next(csv_reader, None)
                 if not datos:
-                    raise ValueError('CsvFv: No hay datos')
+                    raise ValueError('CsvFv: No hay datos en '+self.archivo)
                 return datos
-        except (IOError, csv.Error):
-            logging.warning("CsvFv: No se pudo leer "+self.archivo)
+        except IOError:
+            logging.error("CsvFv: No se pudo abrir "+self.archivo, exc_info=True)
+        except csv.Error:
+            logging.warning("CsvFv: Error leyendo datos de "+self.archivo, exc_info=True)
