@@ -24,6 +24,7 @@ GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
 #GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
 
 from csvFv import CsvFv
+import pickle,json
 
 import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
@@ -314,23 +315,6 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
 
     return y
 
-def leer_temp(x) :  # leer temperatura
-    try:
-        with open('/run/shm/datos_temp.csv', mode='r') as f:
-            csv_reader = csv.DictReader(f)
-            for row in csv_reader:
-                d_temp = row # Capturo los valores del fichero datos_temp.csv
-                
-        y= float(d_temp[sensor_temperatura])
-        
-    except:
-        y = x
-        logBD('-ERROR MEDIDA FV-sensor Temp')
-    if y < temp_min or y > temp_max:
-        logBD('lectura incoherente Temp='+str(y))
-        y = x
-    return y
-
 def Calcular_PID (sensor,objetivo,P,I,D):
     global Lista_errores_PID, IPWM_P, IPWM_I, IPWM_D
     
@@ -595,14 +579,16 @@ try:
             Consumo = Vbat * (Iplaca-Ibat)
             
         else:
-            ## Capturando valores desde xxxxx.csv
+            ## Capturando valores desde xxxxx.pkl
             ee=30.1
             if usar_hibrido == 1:
-                csvfv = CsvFv ('/run/shm/datos_hibrido.csv')
-                #csvfv = CsvFv ('/home/pi/Desktop/datos_hibrido.csv')
-                
-                d_hibrido = csvfv.leerCsvfloat() 
-                #d_hibrido['Tiempo_sg']=time.time()
+                archivo_ram='/run/shm/datos_hibrido.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_hibrido = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue
 
             ee=30.2
             if usar_victron == 1:
@@ -641,8 +627,16 @@ try:
                 Consumo = 0
                 Wplaca = 0
 
-            if sensor_temperatura != '' and Ctemp <= 0:
-                Temp = leer_temp(Temp)
+            if Temperatura_sensor != '' and Ctemp <= 0:
+                if usar_ds18b20 == 1:
+                    archivo_ram='/run/shm/datos_ds18b20.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_ds18b20 = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+                Temp = leer_sensor('Temp',Temperatura_sensor,Temp,temp_min,temp_max)
                 Ctemp=Mtemp # reinicio contador
                 client.publish("PVControl/DatosFV/Temp",Temp)
                 if DEBUG >= 100: print('Temp=',Temp,end='')
@@ -815,22 +809,27 @@ try:
         elif Vbat < Vbat_min: Vbat_min = Vbat
 
         # ----------------- Guardamos datos_fv.csv ------
-        ee=42        
+        ee=42
+        datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
+               Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
+               int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
+               Temp,int(PWM),round(Consumo,0),Mod_bat,int(Tabs),int(Tflot),
+               int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max]        
+        """
         with open('/run/shm/datos_fv.csv', mode='w') as f:
             f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
-            
-            f_writer.writerow([round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
-                               Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
-                               int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-                               Temp,int(PWM),round(Consumo,0),Mod_bat,int(Tabs),int(Tflot),
-                               int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max])
+            f_writer.writerow(datos)
+        """
+        with open('/run/shm/datos_fv.json', 'w') as f:
+            json.dump(datos, f)
+        
         ee=43
-        with open('/run/shm/datos_reles.csv', mode='w') as f:
-            f_writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
+        with open('/run/shm/datos_reles.json', mode='w') as f:
+            TRR=[]
             for I in range(nreles):
-                f_writer.writerow([TR[I][1],TR[I][3]])
-            
-
+                TRR.append([TR[I][1]+'('+TR[I][2]+'-P'+str(TR[I][6])+')',TR[I][3]])
+            json.dump(TRR,f)
+                
       ## ------------------ ALGORITMO CONDICIONES RELES -----------------------------
         ee=50
         #### Cargamos los valores actuales de los reles  en Rele_Out_Ant####

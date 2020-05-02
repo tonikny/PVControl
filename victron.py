@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-03-09
+# Versión 2020-05-01
 
 import  sys, time
 import os
 import serial
-from csvFv import CsvFv
-
+import pickle
+#from csvFv import CsvFv
 import subprocess
-
 from Parametros_FV import *
-
 import MySQLdb
 
 if usar_victron == 0:
@@ -99,7 +97,8 @@ class victron:
 
 
 if __name__ == '__main__':
-    c = CsvFv('/run/shm/datos_victron.csv')
+    #c = CsvFv('/run/shm/datos_victron.csv')
+    archivo_ram = '/run/shm/datos_victron.pkl'
     
     #nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
     nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Iplaca':'Iplaca','Vplaca':'Vplaca','Estado':'CS'}
@@ -116,7 +115,10 @@ if __name__ == '__main__':
             datos = ve.read_data_single()
             ee=30
             if datos != None :
-                c.escribirCsv(datos)
+                with open(archivo_ram, 'wb') as f:
+                    pickle.dump(datos, f)
+
+                #c.escribirCsv(datos)
                 #print (datos) #descomenta esta linea para ver la salida completa de datos en el terminal
                 #print ('--------------')
                 

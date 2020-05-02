@@ -1,25 +1,19 @@
 <?php
 
- $csvFile = file('/run/shm/datos_fv.csv');
- $data = [];
-    foreach ($csvFile as $line) {
-        $data[] = str_getcsv($line);
-    }
+$data = [];
+$dat = file_get_contents('/run/shm/datos_fv.json');
+$data[]= json_decode($dat, true);
+
+$temperatura = shell_exec('cat /sys/class/thermal/thermal_zone0/temp');
+$cpu=$temperatura/1000;
+$data[] = str_getcsv($cpu);
+
+$dat = file_get_contents('/run/shm/datos_reles.json');
+$data[]= json_decode($dat, true);
+
  
- $temperatura = shell_exec('cat /sys/class/thermal/thermal_zone0/temp');
- $cpu=$temperatura/1000;
-       
- $data[] = str_getcsv($cpu);
- 
- 
- $csvFile = file('/run/shm/datos_reles.csv');
-    $data2 = [];
-    foreach ($csvFile as $line) {
-        $data2[] = str_getcsv($line);
-    }
- $data[]=$data2;
- 
- header("Content-type: text/json");
- print json_encode($data, JSON_NUMERIC_CHECK);
+header("Content-type: text/json");
+#print $data;
+print json_encode($data, JSON_NUMERIC_CHECK);
     
 ?>

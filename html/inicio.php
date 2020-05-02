@@ -1694,9 +1694,11 @@ $(function () {
                   
             var tCategories = [];
             chart_reles.series[0].setData(data[2]);
+            
             for (i = 0; i < chart_reles.series[0].data.length; i++) {
                 tCategories.push(chart_reles.series[0].data[i].name);
             }
+            
             chart_reles.xAxis[0].setCategories(tCategories);
             
             //console.log(data)

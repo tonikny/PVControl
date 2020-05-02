@@ -6,6 +6,7 @@
 import time,csv,sys, subprocess
 import traceback
 import datetime,glob
+import pickle
 
 basepath = '/home/pi/PVControl+/'
 DEBUG = False #True
@@ -53,7 +54,7 @@ else:
         pass
 
 if NUM_OLED == 0:
-    print (subprocess.getoutput('sudo systemctl fv_temp'))
+    print (subprocess.getoutput('sudo systemctl stop fv_oled'))
     sys.exit()
 
 if NUM_OLED >= 1:

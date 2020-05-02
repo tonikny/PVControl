@@ -1,4 +1,86 @@
 import time,sys
+import pickle
+import marshal
+import json
+
+from csvFv import CsvFv
+archivo_ram='/run/shm/datos_ds18b20.pkl'
+
+with open(archivo_ram, 'rb') as f:
+    d_ds18b20 = pickle.load(f)
+    print (d_ds18b20)
+
+sys.exit()
+
+
+
+shared = {"Foo0":"Bar", "Parrot0":"Dead",
+          "Foo1": 222.4, "Parrot1":34,
+          "Foo2":"Bar", "Parrot2":"Dead",
+          "Foo3":"Bar", "Parrot3":"Dead"}
+
+t1=time.time()
+
+with open('/run/shm/shared.pkl', 'wb') as f:
+    pickle.dump(shared, f)
+
+with open('/run/shm/shared.pkl', 'rb') as f:
+    shared1=pickle.load(f)
+
+print(time.time()-t1)
+print('#### pickle ####')
+print(shared1)
+print()
+
+t2=time.time()
+
+archivoFv = '/run/shm/shared.csv' # archivo ram FV
+csvfv = CsvFv(archivoFv)
+csvfv.escribirCsv(shared)
+
+archivoFv = '/run/shm/shared.csv' # archivo ram FV
+csvfv = CsvFv(archivoFv)
+shared1 = csvfv.leerCsv()
+print(time.time()-t2)
+
+print('#### csvFv ####')
+print(shared1)
+print()
+
+t3=time.time()
+
+with open('/run/shm/shared.mar', 'wb') as f:
+    marshal.dump(shared, f)
+
+with open('/run/shm/shared.mar', 'rb') as f:
+    shared1=marshal.load(f)
+
+print(time.time()-t3)
+
+print('#### marshal ####')
+print(shared1)
+print()
+
+
+t4=time.time()
+
+with open('/run/shm/shared.json', 'w') as f:
+    json.dump(shared, f)
+    
+with open('/run/shm/shared.json', 'r') as f:
+    shared1=json.load(f)
+
+print(time.time()-t4)
+print('#### json ####')
+print(shared1)
+print()
+
+
+sys.exit()
+
+
+
+
 
 import subprocess,shlex
 

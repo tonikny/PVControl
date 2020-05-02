@@ -11,11 +11,10 @@ sys.path.insert(1, '/home/pi/PVControl+')
 
 from csvFv import CsvFv
 import csv
+import pickle
 
 t_refresco=200 #ms
-simular_csv =0 # lee archivos desde Desktop
-simular_datos =0 # lee archivos desde Desktop
-
+simular_datos = 0 # random datos FV
 
 root = Tk()
 root.geometry('700x600')
@@ -25,17 +24,13 @@ canvas = Canvas(root, width = 400, height = 80,bg = 'seagreen')
 canvas.pack(anchor = NW,fill = BOTH)#, expand = True)
 
 foto_logo = PhotoImage(file = 'PVControl+.gif') #logo.gif
-#foto_placa = PhotoImage(file = './PVControl+.gif') 
 
 canvas.create_image(120, 40, image=foto_logo)
-
-#canvas.create_image(120, 240, image=foto_placa)
-
-#canvas.create_text(100, 100,text = 'Al lio', font = ('Helvetica', 22, 'bold'), justify = 'center', fill='blue')
 canvas.create_text(400, 30,text = 'TEST INSTALACION', font = ('Helvetica', 22, 'bold'), fill='DarkOrchid1')
 canvas.create_text(400, 50, text = 'xxxx', font = ('Helvetica', 12, 'bold'), justify = 'center', fill='black')
 
 canvas.update
+
 
 style = ttk.Style(root)
 # add label in the layout
@@ -51,37 +46,40 @@ style.configure('text.Horizontal.TProgressbar', text='0 %')
 variable = tk.DoubleVar(root)
 
 
-#frame_d1 = ttk.Frame(root)
-#frame_d1.pack(side = 'top',  fill="x")
-
-####### FRAME CSV #################################
+####### FRAME ARCHIVOS RAM #################################
 f_csv = Frame(root,bg="darkkhaki",width=450,bd=2,height=100)
 f_csv.pack(anchor= NW,)# fill = BOTH)#,expand = True)
 f_csv.place(x=0,y=80)# fill = BOTH)#,expand = True)
 
-d_fv_tit=Label(f_csv, relief ='groove',text=" datos_fv.csv: ",font=("Verdana",7))
+d_fv_tit=Label(f_csv, relief ='groove',text=" datos_fv: ",font=("Verdana",7))
 d_fv_tit.place(x=0, y=0, height=18,width = 100)
 d_fv=Label(f_csv, relief ='ridge',fg="black",bg="lightyellow", font=("Verdana",7))
 d_fv.place(x=100, y=0, height=18)
 d_fv_txt = StringVar()
 
-d_hibrido_tit=Label(f_csv, relief ='groove',text=" datos_hibrido.csv: ",font=("Verdana",7))
+d_hibrido_tit=Label(f_csv, relief ='groove',text=" datos_hibrido: ",font=("Verdana",7))
 d_hibrido_tit.place(x=0, y=20, height=18,width = 100)
 d_hibrido=Label(f_csv, relief ='ridge',fg="black",bg="lightyellow", font=("Verdana",7))
 d_hibrido.place(x=100, y=20, height=18)
 d_hibrido_txt = StringVar()
 
-d_bmv_tit=Label(f_csv, relief ='groove',text=" datos_bmv.csv: ",font=("Verdana",7))
+d_bmv_tit=Label(f_csv, relief ='groove',text=" datos_bmv: ",font=("Verdana",7))
 d_bmv_tit.place(x=0, y=40, height=18,width = 100)
 d_bmv=Label(f_csv, relief ='ridge',fg="black",bg="lightyellow", font=("Verdana",7))
 d_bmv.place(x=100, y=40, height=18)
 d_bmv_txt = StringVar()
 
-d_temp_tit=Label(f_csv, relief ='groove',text=" datos_temp.csv: ",font=("Verdana",7))
+d_temp_tit=Label(f_csv, relief ='groove',text=" datos_ds18b20: ",font=("Verdana",7))
 d_temp_tit.place(x=0, y=60, height=18,width = 100)
 d_temp=Label(f_csv, relief ='ridge',fg="black",bg="lightyellow", font=("Verdana",7))
 d_temp.place(x=100, y=60, height=18)
 d_temp_txt = StringVar()
+
+d_snre_tit=Label(f_csv, relief ='groove',text=" datos_snre: ",font=("Verdana",7))
+d_snre_tit.place(x=0, y=80, height=18,width = 100)
+d_snre=Label(f_csv, relief ='ridge',fg="black",bg="lightyellow", font=("Verdana",7))
+d_snre.place(x=100, y=80, height=18)
+d_snre_txt = StringVar()
 
 ################ FRAME PROGRAMAS ########################################
 
@@ -90,11 +88,6 @@ f_py.place(x=455,y=80)# fill = BOTH)#,expand = True)
 
 fv_py_tit=Label(f_py, relief ='groove',text=" En Ejecución ",font=("Verdana",7))
 fv_py_tit.place(x=50, y=0, height=10,width = 100)
-#fv_py=Label(f_py, relief ='ridge',fg="black",bg="lightyellow", font=("Verdana",7))
-#fv_py.place(x=20, y=10, height=20)
-#fv_py_txt = StringVar()
-#fv_py_txt.set('pepepepepep\njjjjjjjjj\nooooo')
-#fv_py.config(textvariable=fv_py_txt)
 
 chat = Text(f_py, wrap='word', state='normal', width=70,font = ('Helvetica', 7, 'bold'))
 chat.place(x=0, y=10, height=100)
@@ -107,15 +100,6 @@ salida = p3.communicate()[0]
 salida_py= salida.decode(encoding='UTF-8')
 
 chat.insert("insert", salida_py)
-
-#chat.tag_config("here", background="yellow", foreground="blue")
-#chat.grid(row=0, columnspan=2, sticky='ewns')
-
-#chatBox = Scrollbar(f_py)
-#chatBox.grid(row=0, column=2, sticky='ns')
-
-
-
 
 ################ FRAME PLACAS ########################################
 f_placas = Frame(root,bg='skyblue',bd=2)#,width = 650,height = 150)
@@ -195,95 +179,103 @@ def muestra():
     ##########  LECTURAS CSV ########################
     
     ### FV
-    nombres=(['tiempo_sg', 'Tiempo', 'Ibat','Vbat','SOC','DS','Aux1','Aux2',
+    nombres=(['Tiempo_sg', 'Tiempo', 'Ibat','Vbat','SOC','DS','Aux1','Aux2',
     'Whp_bat','Whn_bat','Iplaca','Vplaca','Wplaca','Wh_placa',
     'Temp','PWM','Consumo','Mod_bat','Tabs','Tflot','Tflot_bulk',
     'SOC_min','SOC_max','Vbat_min','Vbat_max'])
-    
-    try:
-       if simular_csv==1: fichero = '/home/pi/Desktop/datos_fv.csv'
-       else:              fichero = '/run/shm/datos_fv.csv'
-       
-       with open(fichero, mode='r') as f:
-           csv_reader = csv.reader(f, quoting=csv.QUOTE_MINIMAL)
-           valores = next(csv_reader, None)
-       dct_fv={}
-       for i in range (len(nombres)): dct_fv[nombres[i]]=valores[i]
 
-       if dct_fv == None:
-           d_fv.config(bg="yellow")
-           dct_fv={'FV':'Error datos_fv.csv = None'}
-       else:
-           d_fv.config(bg="green")
+    try:
+        archivo_ram='/run/shm/datos_fv.pkl'
+        with open(archivo_ram, 'rb') as f:
+            dct = pickle.load(f)
+        
+        dct_fv={}
+        for i in range (len(nombres)): dct_fv[nombres[i]]=dct[i]
+
+        dif= time.time()- float(dct_fv['Tiempo_sg'])        
+        if dif > 7: bg="yellow"
+        else:       bg="green"
     except:
-        d_fv.config(bg="red") 
-        dct_fv={'FV':'Error datos_fv.csv = except'}
+        bg="red"
+        dct={'FV':'Error captura /run/shm/datos_fv'}
+        print (time.strftime("%Y-%m-%d %H:%M:%S")+' - error lectura datos_fv')
+        #time.sleep(5)    
     finally:
-        d_fv_txt.set(dct_fv)
+        d_fv.config(bg=bg)
+        d_fv_txt.set(dct)
         d_fv.config(textvariable=d_fv_txt)
     
     
     ### HIBRIDO
     try:
-        if simular_csv==1:   csvfv = CsvFv ('/home/pi/Desktop/datos_hibrido.csv')
-        else:                csvfv = CsvFv ('/run/shm/datos_hibrido.csv')
+        archivo_ram='/run/shm/datos_hibrido.pkl'
+        with open(archivo_ram, 'rb') as f:
+            dct = pickle.load(f)
         
-        dct = csvfv.leerCsvfloat()
-        
-        if dct == None:
-            d_hibrido.config(bg="yellow")
-            dct={'Hibrido':'Error datos_hibrido.csv = None'}
-        else:
-            d_hibrido.config(bg="green")
+        dif= time.time()- float(dct['Tiempo_sg'])        
+        if dif > 7: bg="yellow"
+        else:       bg="green"
     except:
-        d_hibrido.config(bg="red") 
-        dct={'Hibrido':'Error datos_hibrido.csv = except'}
+        bg="red" 
+        dct={'HIBRIDO':'Error captura /run/shm/datos_hibrido'}
     finally:
+        d_hibrido.config(bg=bg)
         d_hibrido_txt.set(dct)
         d_hibrido.config(textvariable=d_hibrido_txt)
-    
+
+
     ### BMV
     try:
-        if simular_csv == 1: csvfv = CsvFv ('/home/pi/Desktop/datos_bmv.csv')
-        else:                csvfv = CsvFv ('/run/shm/datos_bmv.csv')
+        archivo_ram='/run/shm/datos_bmv.pkl'
+        with open(archivo_ram, 'rb') as f:
+            dct = pickle.load(f)
         
-        dct = csvfv.leerCsvfloat()
-        
-        if dct == None:
-            d_bmv.config(bg="yellow")
-            dct={'BMV':'Error datos_bmv.csv = None'}
-        else:
-            d_bmv.config(bg="green")
+        dif= time.time()- float(dct['Tiempo_sg'])        
+        if dif > 7: bg="yellow"
+        else:       bg="green"
     except:
-        d_bmv.config(bg="red") 
-        dct={'BMV':'Error datos_bmv.csv = except'}
+        bg="red" 
+        dct={'BMV':'Error captura /run/shm/datos_bmv'}
     finally:
+        d_bmv.config(bg=bg)
         d_bmv_txt.set(dct)
         d_bmv.config(textvariable=d_bmv_txt)
+
     
-    
-    ### TEMP
+    ### DS18B20 TEMPERATURA
     try:
-        if simular_csv == 1: csvfv = CsvFv ('/home/pi/Desktop/datos_temp.csv')
-        else:                csvfv = CsvFv ('/run/shm/datos_temp.csv')
+        archivo_ram='/run/shm/datos_ds18b20.pkl'
+        with open(archivo_ram, 'rb') as f:
+            dct = pickle.load(f)
         
-        dct = csvfv.leerCsv()
-        
-        if dct == None:
-            d_temp.config(bg="yellow")
-            dct={'Temp':'Error datos_temp.csv = None'}
-        else:
-            d_temp.config(bg="green")
+        dif= time.time()- float(dct['Tiempo_sg'])        
+        if dif > 7: bg="yellow"
+        else:       bg="green"
     except:
-        d_bmv.config(bg="red") 
-        dct={'Temp':'Error datos_temp.csv = except'}
+        bg="red" 
+        dct={'TEMP':'Error captura /run/shm/datos_ds18b20'}
     finally:
+        d_temp.config(bg=bg)
         d_temp_txt.set(dct)
         d_temp.config(textvariable=d_temp_txt)
     
+    ### SNRE
+    try:
+        archivo_ram='/run/shm/datos_snre.pkl'
+        with open(archivo_ram, 'rb') as f:
+            dct = pickle.load(f)
         
-    #csvfv = CsvFv ('/run/shm/datos_temp.csv')
-    #d_temp = csvfv.leerCsv()
+        dif= time.time()- float(dct['Tiempo_sg'])        
+        if dif > 7: bg="yellow"
+        else:       bg="green"
+    except:
+        bg="red" 
+        dct={'SNRE':'Error captura /run/shm/datos_snre'}
+    finally:
+        d_snre.config(bg=bg)
+        d_snre_txt.set(dct)
+        d_snre.config(textvariable=d_snre_txt)
+    
         
     #  ######### Programas activos #####
     if int(time.time())%10 == 0: #cada 10 sg
@@ -298,13 +290,13 @@ def muestra():
         chat.insert("insert", salida_py)
 
 
-
     #  ###### Valores capturados ####
 
     if simular_datos==1:
         
         PWM = random.choice([0,10,20,30,40,50,60,70,80,90,100])
-        
+        PWM_t = "PWM= {0:>4,.1f} %".format(PWM).replace(",", "@").replace(".", ",").replace("@", ".")
+ 
         Ibat = random.choice([0,12,22,33,46,56,65,78,101,-10,-20,-30,-40,-50,-60,-70,-80.1,-90])
         Iplaca = random.choice([0,10,20,30,45,57,67,77,88,99,102,110])
         Vbat = random.choice([22.5,23.7,24.0,24.4,25.5,26.3,27,27.5,28.2,29.1])
@@ -326,7 +318,6 @@ def muestra():
         except:
             Ibat='Ibat= ERROR'
             Ibat_status.configure (bg='red')
-            
         try:
             Vbat= float(dct_fv['Vbat'])
             Vbat_status.configure (bg='green')
@@ -334,15 +325,13 @@ def muestra():
         except:
             Vbat='Vbat= ERROR'
             Vbat_status.configure (bg='red')
-        
         try:
             Iplaca= float(dct_fv['Iplaca'])
             Iplaca_status.configure (bg='green')
             Iplaca = "Iplaca= {0:>5,.1f} A".format(Iplaca).replace(",", "@").replace(".", ",").replace("@", ".")
         except:
-            Vbat='Iplaca= ERROR'
-            Vbat_status.configure (bg='red')
-        
+            Iplaca='Iplaca= ERROR'
+            Iplaca_status.configure (bg='red')
         try:
             Vplaca= float(dct_fv['Vplaca'])
             Vplaca_status.configure (bg='green')
@@ -350,7 +339,6 @@ def muestra():
         except:
             Vplaca='Vplaca= ERROR'
             Vplaca_status.configure (bg='red')
-        
         try:
             Wplaca= float(dct_fv['Wplaca'])
             Wplaca_status.configure (bg='green')
@@ -358,7 +346,6 @@ def muestra():
         except:
             Wplaca='Wplaca= ERROR'
             Wplaca_status.configure (bg='red')
-        
         try:
             SOC= float(dct_fv['SOC'])
             SOC_status.configure (bg='green')
@@ -366,7 +353,6 @@ def muestra():
         except:
             SOC='SOC= ERROR'
             SOC_status.configure (bg='red')
-        
         try:
             PWM= float(dct_fv['PWM'])
             #PWM_status.configure (bg='green')
@@ -374,8 +360,6 @@ def muestra():
         except:
             PWM=0
             PWM_t='PWM= ERROR'
-            print (PWM_t)
-        
         try:
             Consumo= float(dct_fv['Consumo'])
             Wconsumo_status.configure (bg='green')
@@ -383,8 +367,6 @@ def muestra():
         except:
             Consumo='Consumo= ERROR'
             Wconsumo_status.configure (bg='red')
-       
-        
         
     try:    
         err=10
@@ -397,16 +379,16 @@ def muestra():
         Wplaca_status.configure(text = Wplaca);err=70
         Wconsumo_status.configure(text = Consumo);err=80
         
+        if PWM > 0: print(PWM, PWM_t)
         pbar.step(PWM) ;err=90 # increment progressbar
         #style.configure('text.Horizontal.TProgressbar', 
         #                text='PWM {:g} %'.format(variable.get()))  # update label
-        style.configure('text.Horizontal.TProgressbar', 
-                        text=PWM_t)  # update label
+        style.configure('text.Horizontal.TProgressbar', text=PWM_t)  # update label
     except:
         Vbat_status.configure (bg='red')
         Ibat_status.configure (bg='red')
         
-        print ('error asignacion variaables=',err)    
+        print (time.strftime("%Y-%m-%d %H:%M:%S")+' - error asignacion variables=',err)    
     root.after(t_refresco, muestra)
 
 muestra()

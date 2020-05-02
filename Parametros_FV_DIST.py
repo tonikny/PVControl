@@ -2,7 +2,9 @@
 ######      PARAMETROS INSTALACION 
 # ------------------------------------------
 
-###### Parametros Batería
+################################
+###### Parametros Bateria ######
+################################
 AH = 1200.        # Capacidad C20
 CP = 1.107          # Indice Peukert
 EC = 1.0            # Eficiencia Carga
@@ -10,21 +12,28 @@ vsis = 2            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
 
-##### Parametros sensores
+################################
+##### Parametros sensores ######
+################################
 
-Vbat_sensor   = 'ADS'     # ADS, d_hibrido['Vbat'], d_victron['Vbat'].....
-Vplaca_sensor = 'ADS'     # ADS, .....
+Vbat_sensor   = "ADS"     # ADS, d_hibrido['Vbat'], d_victron['Vbat'].....
+Vplaca_sensor = "ADS"    # ADS, .....
 
 Ibat_sensor   = 'ADS'     # ADS, ......
 Iplaca_sensor = 'ADS'     # ADS, .....
 
-Aux1_sensor   = ''     # ADS, dejar  '' para no usar
-Aux2_sensor   = ''     # ADS, dejar  '' para no usar
+Aux1_sensor   = ''     # ADS, etc....dejar  '' para no usar
+Aux2_sensor   = ''     # ADS, etc ...dejar  '' para no usar
 
 Wplaca_sensor = "Iplaca * Vbat"         # Iplaca * Vbat, d_hibrido['Wplaca'].....
-Consumo_sensor = "Vbat * (Iplaca-Ibat)" # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
+Consumo_sensor = "Vbat * (Iplaca-Ibat)"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
 
-###### Parametros ADS1115
+Temperatura_sensor = "d_ds18b20['Temp0']"   #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
+                                            # Poner a '' si no se ha instalado un sensor
+
+################################
+###### Parametros ADS1115 ######
+################################
 SHUNT1 = 100.0/75        # Shunt Ibat (Amperios/mV)
 SHUNT2 = 100.0/75        # Shunt Iplaca (Amperios/mV)
 
@@ -44,8 +53,9 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 
 # -----------------------------------------------
 
-
-###### Parametros Mensaje error lectura incoherente
+##########################################################
+###### Parametros Mensaje error lectura incoherente ######
+##########################################################
 vbat_max = 33
 vbat_min = 11 #22.5
 
@@ -65,24 +75,28 @@ iplaca_max = 250
 iplaca_min = -1.5
 iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
 
-temp_max = 50
-temp_min = -10
+temp_max = 50       # Maxima temperatura admisible para no dar aviso log
+temp_min = -10      # Minima temperatura admisible para no dar aviso log
 
 t_muestra_max =6  # valor para grabar en el log si tarda mas el bucle en ejecutarse
+
 # -----------------------------------------------
 
-
-###### Parametros Base de Datos
+######################################
+###### Parametros Base de Datos ######
+######################################
 servidor = 'localhost'
 usuario = 'rpi' 
 clave = 'fv' 
 basedatos = 'control_solar'
 
-grabar_datos_s = 'PWM > 0'    # expresion para grabar cada muestra en la tabla datos_s
-                              # Ejemplos: 'True'.. 'False'.. 'Vplaca > 10' 
-# -----------------------------------------------
+grabar_datos_s = 'False'   # expresion para grabar cada muestra en la tabla datos_s
+                           # Ejemplos: 'True'.. 'False'.. 'Vplaca > 10'... 'PWM > 0'
 
-###### MQTT
+# -----------------------------------------------
+##################
+###### MQTT ######
+##################
 mqtt_broker  = 'localhost'
 mqtt_puerto  = 1883
 mqtt_usuario = 'rpi'
@@ -91,9 +105,12 @@ mqtt_clave   = 'fv'
 pub_diver = 0 # publica datos ejecucion diver en "PVControl/Opcion/Diver"
 pub_time  = 0  # publica datos de tiempo de ejecucion en "PVControl/Opcion/Time"
 #mqtt_broker = 'iot.eclipse.org'
-# -----------------------------------------------
 
-###### Telegram
+
+# -----------------------------------------------
+###############################
+###### Telegram & MOTION ######
+###############################
 usar_telegram = 0 # 1 para usar  ..... 0 para no usar
 TOKEN ='XXXXXX:YYYYYYYYYY......'# bot Telegram...cambiar por el que cada uno de de alta
 
@@ -122,8 +139,9 @@ horario_alarma = {
     7:'111111111000000000000000'}
 
 # -----------------------------------------------
-
-###### PV_OUTPUT
+#########################
+###### PV_OUTPUT ########
+#########################
 usar_pvoutput = 0 # 1 para usar  ..... 0 para no usar
 
 pvoutput_key="xxxxxxxx" # Key PVoutput
@@ -131,26 +149,30 @@ pvoutput_id="1233455"
 
 
 # -----------------------------------------------
-
-###### Simulacion
+########################
+###### Simulacion ######
+########################
 simular = 0  # Simulacion datos FV --- 1 para simular....0 para no simular
 simular_reles = 0 # Simular reles fisicos
 # -----------------------------------------------
 
-###### Sensor Temperatura Batería
-tipo_sensortemperatura = ''        # 'SRNE', ...
-sensor_temperatura = 'DS18B20_0'   # DS18B20_0, DS18B20_1,..... SRNE_0
-                                   # Poner a '' si no se ha instalado un sensor
+################################################
+###### Sensor Temperatura Batería DS18B20 ######
+################################################
 
-temp_min = -2                      # Minima temperatura admisible para no dar aviso log
-temp_max = 40                      # Maxima temperatura admisible para no dar aviso log                                                                          
+usar_ds18b20 = 1   #1 para leer datos del sensores DS18B20 ..... 0 para no usar  
+
 # -----------------------------------------------
-
-###### Multiplexor
+#########################
+###### Multiplexor ######
+#########################
 mux1 = 0      # Poner a 1 si se utiliza un multiplexor de 16 canales de la PCB
-# -----------------------------------------------
 
-###### HIBRIDO
+
+# -----------------------------------------------
+#####################
+###### HIBRIDO ######
+#####################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
@@ -172,8 +194,9 @@ iplaca_hibrido_min = 0
 
 
 # -----------------------------------------------
-
-###### VICTRON
+#####################
+###### VICTRON ######
+#####################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa el Victron o se quiere guardar en BD en la tabla 'victron'
@@ -189,8 +212,9 @@ iplaca_victron_max = 99
 iplaca_victron_min = 0
 
 # -----------------------------------------------
-
-###### BMV
+#################
+###### BMV ######
+#################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa el BMV o se quiere guardar en BD en la tabla 'bmv'
@@ -204,9 +228,9 @@ grabar_datos_bmv = 0 # 1 = Graba la tabla bmv... 0 = No graba
 
 
 # -----------------------------------------------
-
-
-###### SMA
+#################
+###### SMA ######
+#################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa el SMA o se quiere guardar en BD en la tabla 'sma'
@@ -223,8 +247,9 @@ IP_SB2 = "192.168.0.252"
 grabar_datos_sma = 0 # 1 = Graba la tabla sma... 0 = No graba
 
 # -----------------------------------------------
-
-###### SRNE
+##################
+###### SRNE ######
+##################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa el SRNE o se quiere guardar en BD en la tabla 'srne'
@@ -242,8 +267,9 @@ iplaca_srne_max = 85
 iplaca_srne_min = 0
 
 # -----------------------------------------------
-
-###### Pantalla OLED
+###########################
+###### Pantalla OLED ######
+###########################
 OLED_salida1 =[0,1,2,3] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo
 OLED_salida2 =[4] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo
 
