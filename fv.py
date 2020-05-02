@@ -592,24 +592,43 @@ try:
 
             ee=30.2
             if usar_victron == 1:
-                csvfv = CsvFv ('/run/shm/datos_victron.csv')
-                d_victron = csvfv.leerCsvfloat()
-            
+                archivo_ram='/run/shm/datos_victron.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_victron = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue
+
             ee=30.3
             if usar_bmv == 1:
-                csvfv = CsvFv ('/run/shm/datos_bmv.csv')
-                d_bmv = csvfv.leerCsvfloat()
-                    
+                archivo_ram='/run/shm/datos_bmv.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_bmv = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue
+
             ee=30.4
             if usar_sma == 1:
-                csvfv = CsvFv ('/run/shm/datos_sma.csv')
-                d_sma = csvfv.leerCsvfloat()
-                    
+                archivo_ram='/run/shm/datos_sma.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_sma = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue
+
             ee=30.5
             if usar_srne == 1:
-                csvfv = CsvFv ('/run/shm/datos_srne.csv')
-                d_srne = csvfv.leerCsvfloat() 
-            
+                archivo_ram='/run/shm/datos_srne.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_srne = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue
                 
             ee=34
             Ibat = leer_sensor('Ibat',Ibat_sensor,Ibat,ibat_min,ibat_max)            
