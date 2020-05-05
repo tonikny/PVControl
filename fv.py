@@ -25,6 +25,7 @@ GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
 
 from csvFv import CsvFv
 import pickle,json
+from Srne import Srne
 
 import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano

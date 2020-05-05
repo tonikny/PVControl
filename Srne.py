@@ -27,6 +27,8 @@ FREQ_MUESTREO = 1 #seg
 FREQ_BD = 5 #seg
 # nivel de depuración (logging.CRITICAL, .ERROR, .WARNING, .INFO, .DEBUG)
 DEBUG_LEVEL = logging.WARNING
+
+archivo_ram = '/run/shm/datos_srne.pkl'
 #--------------------------------------------------------------------
 
 ##
@@ -34,7 +36,6 @@ DEBUG_LEVEL = logging.WARNING
 # (Probado con el modelo MC-4885N25)
 #
 class Srne:
-    archivo_ram = '/run/shm/datos_srne.pkl'
 
     ##
     # creacion e inicializacion del objeto
@@ -82,13 +83,13 @@ class Srne:
             return estados[codigo]
 
     @staticmethod
-    def get_datos(self):
+    def get_datos():
         try:
-            with open(self.archivo_ram, 'rb') as f:
+            with open(archivo_ram, 'rb') as f:
                 datos = pickle.load(f)
         except:
             datos = None
-            logging.warning (__class__.__name__ +':Error lectura'+archivo_ram)
+            logging.warning (__class__.__name__ +':Error lectura '+archivo_ram)
         return datos
 
     ##
@@ -141,11 +142,9 @@ class Srne:
                                     'Estado':Estado,'SoC':SoC,
                                     'Temp0':Tbat,'Temp1':Treg}
                     # escribir archivo ram
-                    with open(self.archivo_ram, 'wb') as f:
+                    with open(archivo_ram, 'wb') as f:
                         pickle.dump(self.datos, f)
-                    logging.info ("Datos: %s %s %s %s", 
-                                    str(Vbat), str(Vplaca), str(Iplaca),
-                                    Estado, str(SoC), str(Tbat), str(Treg))
+                    logging.info ("Datos: %s %s %s %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca),Estado, str(SoC), str(Tbat), str(Treg))
                     
                     # En la Bd guardamos los estados del protocolo SRNE
                     self.datos['Estado'] = self.getEstadoSrne(estInt)
