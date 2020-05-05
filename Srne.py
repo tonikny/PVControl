@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+# Versión 2020-05-04
 import time
 import sys, subprocess
 import logging, traceback
-from csvFv import CsvFv
 from Bd import *
+import pickle
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 
 from Parametros_FV import *
@@ -34,9 +34,7 @@ DEBUG_LEVEL = logging.WARNING
 # (Probado con el modelo MC-4885N25)
 #
 class Srne:
-
-    archivoFv = '/run/shm/datos_srne.csv' # archivo ram FV
-    archivoTemp = '/run/shm/datos_temp.csv' # archivo ram temperatura
+    archivo_ram = '/run/shm/datos_srne.pkl'
 
     ##
     # creacion e inicializacion del objeto
@@ -52,8 +50,6 @@ class Srne:
         self.datos = {}
         self.timeBd = time.time()
         self.bd = Bd()
-        self.csvfv = CsvFv(self.archivoFv)
-        self.csvtemp = CsvFv(self.archivoTemp)
 
     ##
     # convierte el estado del regulador
@@ -85,15 +81,15 @@ class Srne:
                         }
             return estados[codigo]
 
-
-    def getDatosFV(self):
-        self.csvfv = CsvFv (self.archivoFv)
-        return self.csvfv.leerCsv()
-
-    def getDatosTemp(self):
-        self.csvtemp = CsvFv (self.archivoTemp)
-        return self.csvtemp.leerCsv()
-
+    @staticmethod
+    def get_datos(self):
+        try:
+            with open(self.archivo_ram, 'rb') as f:
+                datos = pickle.load(f)
+        except:
+            datos = None
+            logging.warning (__class__.__name__ +':Error lectura'+archivo_ram)
+        return datos
 
     ##
     # Guardar datos en archivo ram y base de datos
@@ -142,21 +138,19 @@ class Srne:
 
                     self.datos = {'Tiempo_sg':tiempo_sg, 'Tiempo':tiempo,
                                     'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca,
-                                    'Estado':Estado,'SoC':SoC}
+                                    'Estado':Estado,'SoC':SoC,
+                                    'Temp0':Tbat,'Temp1':Treg}
                     # escribir archivo ram
-                    self.csvfv.escribirCsv(self.datos)
-                    logging.info ("DatosFV: %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca), Estado, str(SoC))
+                    with open(self.archivo_ram, 'wb') as f:
+                        pickle.dump(self.datos, f)
+                    logging.info ("Datos: %s %s %s %s", 
+                                    str(Vbat), str(Vplaca), str(Iplaca),
+                                    Estado, str(SoC), str(Tbat), str(Treg))
                     
                     # En la Bd guardamos los estados del protocolo SRNE
                     self.datos['Estado'] = self.getEstadoSrne(estInt)
                     self.guardarDatosBd()
 
-                    # Procesado de los datos de temperatura ########
-                    if tipo_sensortemperatura == "SRNE":
-                        self.datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,
-                                        'SRNE_0':Tbat,'SRNE_1':Treg}
-                        self.csvtemp.escribirCsv(self.datos)
-                        logging.info (__class__.__name__ + ": Tbat="+str(Tbat)+"|Treg="+str(Treg))
                 else:
                     self.modbus.close()
                     time.sleep(0.5)

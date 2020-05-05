@@ -622,12 +622,9 @@ try:
 
             ee=30.5
             if usar_srne == 1:
-                archivo_ram='/run/shm/datos_srne.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_srne = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
+                d_srne = Srne.get_datos()
+                if d_srne is None:
+                    logBD('error lectura archivo ram SRNE')
                     continue
                 
             ee=34
