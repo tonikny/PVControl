@@ -11,7 +11,7 @@ sys.path.insert(1, '/home/pi/PVControl+')
 
 from csvFv import CsvFv
 import csv
-import pickle
+import pickle,json
 
 t_refresco=200 #ms
 simular_datos = 0 # random datos FV
@@ -185,9 +185,9 @@ def muestra():
     'SOC_min','SOC_max','Vbat_min','Vbat_max'])
 
     try:
-        archivo_ram='/run/shm/datos_fv.pkl'
+        archivo_ram='/run/shm/datos_fv.json'
         with open(archivo_ram, 'rb') as f:
-            dct = pickle.load(f)
+            dct = json.load(f)
         
         dct_fv={}
         for i in range (len(nombres)): dct_fv[nombres[i]]=dct[i]

@@ -7,14 +7,14 @@ import os
 import time
 import subprocess,commands
 import sys
-import csv
+import pickle #,csv
 import MySQLdb 
 DEBUG = False
 
 if usar_sma == 0:
     print (commands.getoutput('sudo systemctl stop sma'))
     sys.exit()
-    
+
 SOC_si = 0
 t_to_abs = 0
 VP11 = 0
@@ -220,13 +220,22 @@ while True:
     if cont == 20:
         tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
         tiempo_sg = time.time()
+        
+        datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Ibat':Ibat,'Vbat':Vbat,'Iplaca': Iplaca,
+                 'Vplaca':Vplaca,'Aux1':Aux1,'Consumo':Consumo,'Temp':Temp,'Vobj':Vobj,'SOC_si':SOC_si})
+        
+        with open('/run/shm/datos_sma.pkl', mode='wb') as f:
+            pickle.dump(datos, f)
+            
+        """
         with open('/run/shm/datos_sma.csv', mode='w') as f:
             nombres = ['Tiempo_sg','Tiempo','Ibat','Vbat','Iplaca','Vplaca','Aux1','Consumo','Temp','Vobj','SOC_si']
             datos = csv.DictWriter(f, fieldnames=nombres)
             datos.writeheader()
             datos.writerow({'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Ibat':Ibat,'Vbat':Vbat,'Iplaca': Iplaca,'Vplaca':Vplaca,'Aux1':Aux1,'Consumo':Consumo,'Temp':Temp,'Vobj':Vobj,'SOC_si':SOC_si})
             #print datos
-            
+        """
+        
         try:
             
             if DEBUG: print tiempo,Vbat,Ibat,SOC_si,t_to_abs,VP11,VP12,VP21,VP22,IP11,IP12,IP21,IP22
