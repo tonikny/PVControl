@@ -10,10 +10,6 @@ from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 
 from Parametros_FV import *
 
-if usar_srne == 0:
-    #print (commands.getoutput('sudo systemctl stop srne'))
-    print (subprocess.getoutput('sudo systemctl stop srne'))
-    sys.exit()
 
 ## Srne_Params.py ---------------------------------------------------
 # Constantes de configuracion
@@ -168,6 +164,12 @@ class Srne:
 
 
 if __name__ == '__main__':
+
+    if usar_srne == 0:
+        #print (commands.getoutput('sudo systemctl stop srne'))
+        print (subprocess.getoutput('sudo systemctl stop srne'))
+        sys.exit()
+
     #main(sys.argv[1:])
     logging.basicConfig(level=DEBUG_LEVEL)
     Srne(dev_srne).leerRegistros()
