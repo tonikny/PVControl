@@ -176,7 +176,7 @@ Wconsumo_status.configure(justify='left')
 
 def muestra():
     
-    ##########  LECTURAS CSV ########################
+    ##########  LECTURAS Ficheros RAM ########################
     
     ### FV
     nombres=(['Tiempo_sg', 'Tiempo', 'Ibat','Vbat','SOC','DS','Aux1','Aux2',

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-04-02
+# Versión 2020-05-23
 
 import time,csv,sys, subprocess
 import traceback
 import datetime,glob
-import pickle
+import pickle,json
 
 basepath = '/home/pi/PVControl+/'
-DEBUG = False #True
 
 print ('Arrancando_PVControl+- OLED')
 
@@ -23,6 +22,21 @@ from PIL import ImageDraw
 from PIL import ImageFont
 
 RST = 24 #parametro OLED
+
+#Comprobacion argumentos en comando de fv.py
+narg = len(sys.argv)
+if str(sys.argv[narg-1]) == '-p1':
+    DEBUG = 1
+elif str(sys.argv[narg-1]) == '-p2':
+    DEBUG = 2
+elif str(sys.argv[narg-1]) == '-p3':
+    DEBUG = 3
+elif str(sys.argv[narg-1]) == '-p':
+    DEBUG = 100
+else:
+    DEBUG = 0
+print ('DEBUG=',DEBUG)
+
 
 # Comprobacion numero de OLED instaladas
 NUM_OLED = 0
@@ -105,13 +119,13 @@ def OLED(pantalla,modo):
 
     elif modo == 1:
         draw.rectangle((0, 0, 127, 20), outline=255, fill=0)
-        draw.text((8, 0), 'SOC='+str(SOC)+'%', font=font16, fill=255)
+        draw.text((8, 0), 'SOC='+str(d_fv['SOC'])+'%', font=font16, fill=255)
         draw.rectangle((0, 20, 64, 46), outline=255, fill=0)
         draw.rectangle((64, 20, 127, 46), outline=255, fill=0)
-        draw.text((4, 22),  'Vbat='+str(Vbat), font=font, fill=255)
-        draw.text((69, 22), 'Ibat='+str(Ibat), font=font, fill=255)
-        draw.text((4, 34),  'Vpla='+str(Vplaca), font=font, fill=255)
-        draw.text((69, 34), 'Ipla='+str(Iplaca), font=font, fill=255)
+        draw.text((4, 22),  'Vbat='+str(d_fv['Vbat']), font=font, fill=255)
+        draw.text((69, 22), 'Ibat='+str(d_fv['Ibat']), font=font, fill=255)
+        draw.text((4, 34),  'Vpla='+str(d_fv['Vplaca']), font=font, fill=255)
+        draw.text((69, 34), 'Ipla='+str(d_fv['Iplaca']), font=font, fill=255)
 
         L4 = 'R('
         """
@@ -142,30 +156,31 @@ def OLED(pantalla,modo):
 
     elif modo == 2:
         draw.rectangle((0, 0, 90, 31), outline=255, fill=0)
-        draw.text((8, 1), 'Vbat='+str(Vbat), font=font11, fill=255)
-        draw.text((8, 14), 'Ibat='+str(round(Ibat,0)), font=font11, fill=255)
+        draw.text((8, 1), 'Vbat='+str(d_fv['Vbat']), font=font11, fill=255)
+        draw.text((8, 14), 'Ibat='+str(round(d_fv['Ibat'],0)), font=font11, fill=255)
         draw.rectangle((0, 31, 90, 63), outline=255, fill=0)     
-        draw.text((8, 31), 'Vpla='+str(round(Vplaca,1)), font=font11, fill=255)
-        draw.text((8, 45), 'Ipla='+str(round(Iplaca,0)), font=font11, fill=255)
+        draw.text((8, 31), 'Vpla='+str(round(d_fv['Vplaca'],1)), font=font11, fill=255)
+        draw.text((8, 45), 'Ipla='+str(round(d_fv['Iplaca'],0)), font=font11, fill=255)
 
         draw.rectangle((90, 0, 127, 20), outline=255, fill=255)     
         draw.text((100, 0), 'SOC', font=font, fill=0)
-        draw.text((93, 10), str(SOC), font=font, fill=0)
+        draw.text((93, 10), str(d_fv['SOC']), font=font, fill=0)
         
         draw.rectangle((90, 22, 127, 42), outline=255, fill=255)     
         draw.text((95, 22), 'Temp', font=font, fill=0)
-        draw.text((93, 32), str(Temp), font=font, fill=0)
+        draw.text((93, 32), str(d_fv['Temp']), font=font, fill=0)
         
         
         draw.rectangle((90, 44, 127, 63), outline=255, fill=255)     
         draw.text((95, 44), 'Exced.', font=font, fill=0)
-        draw.text((100, 54), str(PWM), font=font, fill=0)
+        draw.text((100, 54), str(d_fv['PWM']), font=font, fill=0)
 
     elif modo==3:
         lineax=0
         lineay=0
-        for I in range(nreles):             
-            valor = int(Reles_L[I][1])
+        
+        for rele in d_reles:
+            valor = rele[1]
             if valor > 0:
                 fill1=0
                 fill2=255
@@ -173,14 +188,14 @@ def OLED(pantalla,modo):
                 fill1=255
                 fill2=0
             draw.rectangle((lineax, lineay, lineax+63, lineay+10), outline=255, fill=fill2)
-            draw.text((lineax+2, lineay), Reles_L[I][0], font=font, fill=fill1)
+            draw.text((lineax+2, lineay), rele[0], font=font, fill=fill1)
             lineay +=10
             if lineay>53:
                 lineax=66
                 lineay=0
-
+        
     elif modo == 4:
-        if SOC == 100:
+        if d_fv['SOC'] == 100:
             draw.rectangle((0, 0, 127, 63), outline=255, fill=255)
             draw.rectangle((3, 3, 124, 60), outline=255, fill=0)
             draw.rectangle((10, 10, 117, 53), outline=255, fill=255)
@@ -188,7 +203,7 @@ def OLED(pantalla,modo):
             draw.text((13, 10), '100%', font=font34, fill=0)
         else:
             draw.rectangle((0, 0, 127, 63), outline=255, fill=0)
-            draw.text((10, 10), str(SOC)+'%', font=font34, fill=255)
+            draw.text((10, 10), str(d_fv['SOC'])+'%', font=font34, fill=255)
         
     if modo > 0:
         if pantalla == 1:
@@ -205,71 +220,42 @@ def OLED(pantalla,modo):
 # -------------------------------- BUCLE PRINCIPAL OLED --------------------------------------
 #########################################################################################
 try:
-    time.sleep(20) # espera para que fv.py ponga datos_fv.csv
+    
+    time.sleep(2) # espera para que fv.py ponga datos_fv.json
     cp = 0
     while True:
         ee=34
-        
-        with open('/run/shm/datos_fv.csv', mode='r') as f:
-            d=f.read()
-        d_fv = d.split(",")
-    
-        if DEBUG: print(d_fv)
+        nombres=(['Tiempo_sg', 'Tiempo', 'Ibat','Vbat','SOC','DS','Aux1','Aux2',
+                  'Whp_bat','Whn_bat','Iplaca','Vplaca','Wplaca','Wh_placa',
+                  'Temp','PWM','Consumo','Mod_bat','Tabs','Tflot','Tflot_bulk',
+                  'SOC_min','SOC_max','Vbat_min','Vbat_max'])
+
         try:
-            tiempo_sg = float(d_fv[0])
-            tiempo = d_fv[1]
-            Ibat = float(d_fv[2])
-            Vbat = float(d_fv[3])
-            SOC = float(d_fv[4])
-            DS = float(d_fv[5])
-            Aux1 = float(d_fv[6])
-            Aux2 = float(d_fv[7])
-            Whp_bat = float(d_fv[8])
-            Whn_bat = float(d_fv[9])
-            Iplaca = float(d_fv[10])
-            Vplaca = float(d_fv[11])
-            Wplaca = float(d_fv[12])
-            Wh_placa = float(d_fv[13])
-            Temp = float(d_fv[14])
-            PWM = float(d_fv[15])
-            Consumo = float(d_fv[16])
-            Mod_bat = d_fv[17]
-            Tabs = float(d_fv[18])
-            Tflot = float(d_fv[19])
-            Tflot_bulk = float(d_fv[20])
-            SOC_min = float(d_fv[21])
-            SOC_max = float(d_fv[22])
-            Vbat_min = float(d_fv[23])
-            Vbat_max = float(d_fv[24]) 
-        except:
-            print ('error datos_fv.csv')
-            print (d_fv)
-            time.sleep(0.3)
-            continue
+            archivo_ram='/run/shm/datos_fv.json'
+            with open(archivo_ram, 'rb') as f:
+                dct = json.load(f)
+            
+            d_fv={}
+            for i in range (len(nombres)): d_fv[nombres[i]]=dct[i]
         
-        try:
-            with open('/run/shm/datos_reles.csv', mode='r',newline='\r\n') as f:
-                d_reles=f.read().splitlines()
-            if DEBUG: 
-                print('nreles=',len(d_reles))
-                print ('reles=',d_reles)
+            if DEBUG>=1: print(d_fv)
+        
+            archivo_ram='/run/shm/datos_reles.json'
+            with open(archivo_ram, 'rb') as f:
+                d_reles = json.load(f)
+            
             nreles=len(d_reles)
             
-            Reles_L = [ ] # inicializo lista reles
-            
-            for rele in d_reles:
-                Reles_L.append(rele.split(','))  
-            
-            if DEBUG: 
-                print (Reles_L)
+            if DEBUG >= 1: 
+                print('nreles=',len(d_reles))
+                print ('reles=',d_reles)
                 print('--------------------------------------------------')
             else:
                 cp += 1
                 print('x', end='')
                 if cp > 100: cp=0;print();print(tiempo,end='')
         except:
-            print ('error datos_reles.csv')
-            print (Reles_L)
+            print ('error lectura datos.json')
             time.sleep(0.3)
             continue
             

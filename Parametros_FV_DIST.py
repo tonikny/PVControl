@@ -28,8 +28,8 @@ Aux2_sensor   = ''     # ADS, etc ...dejar  '' para no usar
 Wplaca_sensor = "Iplaca * Vbat"         # Iplaca * Vbat, d_hibrido['Wplaca'].....
 Consumo_sensor = "Vbat * (Iplaca-Ibat)"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
 
-Temperatura_sensor = "d_ds18b20['Temp0']"   #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
-                                            # Poner a '' si no se ha instalado un sensor
+Temperatura_sensor = ""   #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
+                                            # Poner a "" si no se ha instalado un sensor
 
 ################################
 ###### Parametros ADS1115 ######
@@ -160,7 +160,7 @@ simular_reles = 0 # Simular reles fisicos
 ###### Sensor Temperatura Batería DS18B20 ######
 ################################################
 
-usar_ds18b20 = 1   #1 para leer datos del sensores DS18B20 ..... 0 para no usar  
+usar_ds18b20 = 0   #1 para leer datos del sensores DS18B20 ..... 0 para no usar  
 
 # -----------------------------------------------
 #########################
