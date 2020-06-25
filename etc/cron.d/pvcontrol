@@ -27,3 +27,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 #10 09   * * *   root    python /home/pi/PVControl+/fvbot_msg_hibrido.py PCVV29.2 PCVV29.2 PBFT29.2 >> /home/pi/log/log.txt 2>&1
 #10 13   * * *   root    python /home/pi/PVControl+/fvbot_msg_hibrido.py PBFT26.7 PBFT26.9 PCVV29.2 >> /home/pi/log/log.txt 2>&1
+#*/5 * * * * /bin/ping -q -c10 192.168.0.1 > /dev/null 2>&1 || (sudo ip link set wlan0 down ;sudo ip link set wlan0 up ;/usr/bin/logger wifi on wlan0 restarted via crontab)

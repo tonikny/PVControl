@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-03-28
+# Versión 2020-05-26
 
 import time
 import datetime,glob
@@ -93,7 +93,8 @@ while True:
         print('*****************************************************************************')
         print ('--------- ADS 1 - 4 (mV)--------')
         print ('ADS en direccion=',ad1)
-        for n in range (1):
+        ee = 10
+        for n in range (4):
             values1 =[0]*6
             values1[0] = round(RES0 * 0.125/RES0_gain*adc1.read_adc(0,gain=RES0_gain),2) #valor en mV
             values1[1] = round(RES1 * 0.125/RES1_gain*adc1.read_adc(1,gain=RES1_gain),2)
@@ -104,12 +105,12 @@ while True:
             values1[5] = round(0.0078127*adc1.read_adc_difference(3,gain=16),2)
             
             print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values1)) 
-            print()
-               
-
+            
+        ee = 20
+        print()
         #print '--------- ADS 4 -(mV) -------'
         print ('ADS en direccion=',ad)
-        for n in range (1):
+        for n in range (4):
             values =[0]*6
             for i in range(4):
                 values[i]=round(0.125*adc.read_adc(i,gain=1),2) #valor en mV
@@ -119,6 +120,7 @@ while True:
             values[5]=round(0.0078125*adc.read_adc_difference(3,gain=16),2)
             
             print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values)) 
+        ee = 30
         print()
         print('################## Datos FV ##################')
         print ('Vbat=', round(values1[0]/1000,2),
@@ -128,6 +130,7 @@ while True:
         
         
         # Valor Calibracion
+        ee = 40
         print()
         print ('Calibracion')
         values3 =[0]*6
@@ -138,14 +141,15 @@ while True:
         print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values3))
 
         # Valor en pin ADS
-        values1[0]= round(values1[0]/RES0,2)
-        values1[1]= round(values1[1]/RES1,2)
-        values1[2]= round(values1[2]/RES2,2)
-        values1[3]= round(values1[3]/RES3,2)
-        print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values1))
+        values4 =[0]*6
+        values4[0]= round(values1[0]/RES0,2)
+        values4[1]= round(values1[1]/RES1,2)
+        values4[2]= round(values1[2]/RES2,2)
+        values4[3]= round(values1[3]/RES3,2)
+        print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values4))
 
     except:
-        print ('Error ADS1115')
+        print ('Error ADS1115', ee)
 
 ###### DS18B20 
     print ()
