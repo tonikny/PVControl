@@ -18,9 +18,9 @@ if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
     
  }
  
-$sql = "SELECT Tiempo, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Temp) as Vflotavg
-        FROM datos WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        GROUP BY DAY(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Temp) as Vflotavg
+        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 //echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
 
@@ -36,13 +36,6 @@ if($result = mysqli_query($link, $sql)){
  }
 
 mysqli_close($link);
-
-//Adaptar el tiempo grafica historico general
-for($i=0;$i<count($rawdata);$i++){
-   $time = $rawdata[$i]["Tiempo"];
-   $date = new DateTime($time);
-   $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
- }
 
 ?>
 
@@ -248,7 +241,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata);$i++){
                    ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["SOCavg"];?>]);
+                   data.push([<?php echo $rawdata[$i]["Tiempo1"];?>,<?php echo $rawdata[$i]["SOCavg"];?>]);
                    <?php } ?>
                 return data;
                      })()
@@ -266,7 +259,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata);$i++){
                    ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vbatavg"];?>]);
+                   data.push([<?php echo $rawdata[$i]["Tiempo1"];?>,<?php echo $rawdata[$i]["Vbatavg"];?>]);
                    <?php } ?>
                 return data;
                      })()
@@ -283,7 +276,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata);$i++){
                    ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Ibatavg"];?>]);
+                   data.push([<?php echo $rawdata[$i]["Tiempo1"];?>,<?php echo $rawdata[$i]["Ibatavg"];?>]);
                    <?php } ?>
                 return data;
                      })()
@@ -300,7 +293,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata);$i++){
                    ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Iplacaavg"];?>]);
+                   data.push([<?php echo $rawdata[$i]["Tiempo1"];?>,<?php echo $rawdata[$i]["Iplacaavg"];?>]);
                    <?php } ?>
                 return data;
                      })()
@@ -318,7 +311,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata);$i++){
                    ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vflotavg"];?>]);
+                   data.push([<?php echo $rawdata[$i]["Tiempo1"];?>,<?php echo $rawdata[$i]["Vflotavg"];?>]);
                    <?php } ?>
                 return data;
                      })()

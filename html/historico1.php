@@ -3,7 +3,7 @@
 require('conexion.php');
 
 //Coger datos grafica historico general
-$sql = "SELECT Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Aux1 as Aux1avg, Vplaca as Vplacaavg, PWM as PWMavg
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Aux1 as Aux1avg, Vplaca as Vplacaavg, PWM as PWMavg
         FROM datos WHERE Tiempo >= (NOW()- INTERVAL 25 HOUR)
         ORDER BY Tiempo";
 
@@ -29,13 +29,6 @@ if($result = mysqli_query($link, $sql)){
 }
 
 mysqli_close($link);
-
-//Adaptar el tiempo grafica historico general
-for($i=0;$i<count($rawdata);$i++){
-    $time = $rawdata[$i]["Tiempo"];
-    $date = new DateTime($time);
-    $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
-}
 
 ?>
 
