@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-06-26
+# Versión 2020-07-16
+
 
 import time,sys
 import traceback

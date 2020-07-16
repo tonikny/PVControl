@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-07-9
+# Versión 2020-07-16
 
 import time
 import datetime,glob
@@ -102,6 +102,7 @@ adc4 = Adafruit_ADS1x15.ADS1115(address=ads4, busnum=1)
 nb=1
 values20 =[0]*6
 while True:    
+
     try:#### ADS
         print(Fore.YELLOW,'*****************************************************************************')
         print (Fore.GREEN,'--------- ADS 1 (mV) en direccion=',ads1)
@@ -155,6 +156,9 @@ while True:
         print (Fore.GREEN,'--------- ADS 4 (mV) en direccion=',ads4)
         for n in range (4):
             values4 =[0]*6
+
+            print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values1)) 
+            
             for i in range(4):
                 values4[i]=round(0.125*adc4.read_adc(i,gain=1),2) #valor en mV
                 time.sleep(0.1)
@@ -186,6 +190,7 @@ while True:
 
         ee=100
         # Valor en pin ADS
+
         values10 =[0]*6
         values10[0]= round(values1[0]/RES0,2)
         values10[1]= round(values1[1]/RES1,2)
