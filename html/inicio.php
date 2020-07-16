@@ -432,7 +432,7 @@ $(function () {
             
             data: [],
             dataLabels: {
-                y:10,
+                y:-35,
                 format: '<div style="text-align:center"><span style="font-size:25px;color:' +
                   ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span>' +
                        '<span style="font-size:15px;color:silver">%</span></div>'
