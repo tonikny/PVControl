@@ -871,7 +871,7 @@ $(function () {
         title: {
             y:140,
             floating:true,
-            text: 'Wplaca',
+            text: 'Wplacaaaa',
             },
         credits: {
                 enabled: false
@@ -926,14 +926,21 @@ $(function () {
             tickColor: '#666',
             labels: {
                 allowOverlap:true,
+                distance: -25,
                 step: 1,
+                style:{
+                  fontWeight:'bold',
+                  //color:#666666,
+                  //cursor:default,
+                  fontSize:'14px',
+                  },
                 rotation: 'auto'
             },
             title: {
                 y:20,//-30,
                 x:0,
                 style: {
-                   fontSize: '16px'
+                   fontSize: '11px'
                   },
                 text: '' //null 
                 },
@@ -966,7 +973,7 @@ $(function () {
                   enabled: false
                  },
         series: [{
-            name: 'Wplaca',
+            name: 'Wplacaa',
             data: [],
             dataLabels: {
                 allowOverlap:true,
