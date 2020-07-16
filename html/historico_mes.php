@@ -3,16 +3,9 @@
 require('conexion.php');
 
 //Coger datos grafica historico general
-$sql = "SELECT Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Aux1 as Aux1avg, Vplaca as Vplacaavg, PWM as PWMavg
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Aux1 as Aux1avg, Vplaca as Vplacaavg, PWM as PWMavg
         FROM datos_c WHERE Tiempo >= (NOW()- INTERVAL 30 DAY)
         ORDER BY Tiempo";
-
-//$sql = "SELECT Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Vflot*10 as Vflotavg, Vplaca as Vplacaavg
-//        FROM datos WHERE DATE(Tiempo) >= SUBDATE(NOW(), INTERVAL 3 DAY)
-//        ORDER BY Tiempo";
-//$sql = "SELECT Tiempo, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Vflot)*10 as Vflotavg
-//        FROM datos WHERE DATE(Tiempo) >= SUBDATE(NOW(), INTERVAL 7 DAY)
-//        GROUP BY DAY(Tiempo),((60/1)*HOUR(TIME(Tiempo))+FLOOR(MINUTE(TIME(Tiempo))/1)) ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
 
@@ -29,13 +22,6 @@ if($result = mysqli_query($link, $sql)){
 }
 
 mysqli_close($link);
-
-//Adaptar el tiempo grafica historico general
-for($i=0;$i<count($rawdata);$i++){
-    $time = $rawdata[$i]["Tiempo"];
-    $date = new DateTime($time);
-    $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
-}
 
 ?>
 

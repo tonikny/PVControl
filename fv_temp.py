@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-05-01
+# Versión 2020-05-29
 
-import time, glob, sys
+import time, glob, sys, subprocess
 
 # Librerias y Parametros PVControl+
 from Parametros_FV import *
 import pickle
 
+"""
+#if Temperatura_sensor.find ('d_ds18b20') == -1:
 if usar_ds18b20 == 0:
+    print ('sensor ds18b20 no seleccionado')
     print (subprocess.getoutput('sudo systemctl stop fv_temp'))
     sys.exit()
+"""
 
 archivo_ram = '/run/shm/datos_ds18b20.pkl'
 
@@ -46,6 +50,14 @@ while True:
         Ctemp += 1
         time.sleep(1)
 
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            temp_cpu = float(f.read())/1000
+        Temp_D['Temp_cpu'] = temp_cpu 
+    except:
+        f.close()
+    
+    
     try:
         Temp_D['Tiempo'] = '_'+time.strftime("%Y-%m-%d %H:%M:%S")
         Temp_D['Tiempo_sg'] =  time.time()

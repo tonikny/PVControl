@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-05-22
+# Versión 2020-06-26
 
 import time,sys
 import traceback
@@ -62,8 +62,8 @@ if usar_telegram == 1:
     bot.skip_pending = True # Skip the pending messages
     cid = Aut[0]
 
-if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor + Ibat_sensor + Iplaca_sensor).find ('ADS') >=0 : 
-    bus = SMBus(1) # Bus I2C
+#if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor + Ibat_sensor + Iplaca_sensor).find ('ADS') >=0 : 
+bus = SMBus(1) # Activo Bus I2C
 
 if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor).find ('ADS') >=0 : 
     # Alta ADS1115_1 - pin addr a 3V3
@@ -82,7 +82,8 @@ OP = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'priori
       'id_rele2':7,'operacion':8,'parametro':9,'condicion':10,'valor':11}
 OPH = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'prioridad':6,
        'id_rele2':7,'parametro_h':8,'valor_h_ON':9,'valor_h_OFF':10}
-NDIA = {'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}
+#NDIA = {'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}
+NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'}
 
 #Inicializando las variables del programa
 Grabar = 1 # Contador ciclo grabacion en BD
@@ -413,9 +414,11 @@ except Exception as e:
     print ("Sin registros en la tabla datos")
 
 ## Definir diccionarios Rele y Rele_Ant
-Rele = {}      # Situacion actual de los reles
-Rele_Ant = {}  # Situacion anterior de los reles
-Rele_H = {}    # Situacion condiciones horario
+Rele = {}        # Situacion actual de los reles
+Rele_Ant = {}    # Situacion anterior de los reles
+Rele_H = {}      # Situacion condiciones horario
+Rele_Tiempo = {} # Tiempo activo en segundos de cada rele en el dia
+
 
 ##  ------ inicializamos reles apagandolos  ------------------------
 sql = 'SELECT * FROM reles'
@@ -700,6 +703,7 @@ try:
             Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tecu ??
             SOC_min = SOC_max = SOC
             Vbat_max = Vbat_min = Vbat
+            Rele_Tiempo = {} # inicializo diccionaro tiempo de reles 
             
         else:
             if Ibat < 0: Whn_bat = round(Whn_bat - (Ibat * Vbat * t_muestra/3600),2)
@@ -876,10 +880,11 @@ try:
             
             diaok = 0 # variables de control para ver si esta dentro de horario
             horaok = 0
+            dias_activos=H[I][OPH['parametro_h']].upper()
             
-            if H[I][OPH['parametro_h']] == 'T': #Todos los dias de la semana
+            if  dias_activos == 'T': #Todos los dias de la semana
                 diaok = 1
-            elif str(NDIA[H[I][OPH['parametro_h']]]) == diasemana:
+            elif NDIA[diasemana] in dias_activos:
                 diaok = 1
 
             if str(H[I][OPH['valor_h_ON']]).zfill(8) > str(H[I][OPH['valor_h_OFF']]).zfill(8): #True si periodo pasa por 0:00
@@ -1057,6 +1062,8 @@ try:
                 estado = Rele[id_rele]
                 sql = ('SELECT id_rele,segundos_on,nconmutaciones FROM reles_segundos_on WHERE fecha='+
                       '"'+time.strftime("%Y-%m-%d")+'" and id_rele =' + str(id_rele))
+                
+                segundos_on = 0
                 try:
                     nreles_on = cursor.execute(sql)
                     nreles_on = int(nreles_on)
@@ -1081,7 +1088,13 @@ try:
                                             (id_rele,fecha,segundos_on,nconmutaciones)
                                             VALUES (%s,%s,%s,%s)""",
                                             (id_rele,time.strftime("%Y-%m-%d"),segundos_on,1))
+                        
+                        Rele_Tiempo[id_rele] = segundos_on
+                    
+                    if not(id_rele in Rele_Tiempo): Rele_Tiempo[id_rele] = 0  #aseguramos que el diccionario contiene todos los reles
 
+                    
+                        
                 except:
                     db.rollback()
                     print ('Error grabacion Reles_segundos_on',ee)
