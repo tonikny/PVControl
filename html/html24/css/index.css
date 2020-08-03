@@ -1,0 +1,181 @@
+#contenedor {
+    width: 100%;
+}
+
+#cabecera {
+    background: -webkit-linear-gradient(black, white); /* For Safari 5.1 to 6.0 */
+    background: -o-linear-gradient(black, white); /* For Opera 11.1 to 12.0 */
+    background: -moz-linear-gradient(black, white); /* For Firefox 3.6 to 15 */
+
+    
+    z-index: 100;
+    background-color: #828a80;
+    color:white;
+    height: 75px;
+
+    width: 100%; /* hacemos que la cabecera ocupe el ancho completo de la página */
+    left: 0; /* Posicionamos la cabecera al lado izquierdo */
+    top: 0; /* Posicionamos la cabecera pegada arriba */
+    position: fixed; /* Hacemos que la cabecera tenga una posición fija */
+    
+}
+
+
+#cabecera a {
+        color: white; /* color letras*/
+}
+
+/*
+ * Logo
+ */
+#logo-header {
+        float: left;
+        padding: 15px 0 0 20px;
+        text-decoration: none;
+}
+#logo-header:hover {
+        color: #0b76a6;
+}
+
+#logo-header .site-name {
+        display: block;
+        font-weight: 700;
+        font-size: 1.6em;
+}
+
+#logo-header .site-desc {
+        display: block;
+        font-weight: 300;
+        font-size: 1.2em;
+        color: #999;
+}
+
+/*
+ * Menu
+ */
+
+nav {
+        float: right;
+}
+
+ul {
+        list-style: none;
+        margin: 40px 0 0 0; /* 0 */
+        padding: 0px;
+        padding-right: 50px; /* Separación extremo derecha */
+}
+
+ul li {
+        display: inline-block;
+        line-height: 40px;  /* 80px */
+}
+
+
+ul li a {
+        display: block;
+        padding: 0 20px; /* 0 15px separación entre las palabras del  menus */
+        text-decoration: none;
+        font-size: 16px; /* 16 */
+        font-weight: bold;
+}
+
+
+li {
+        list-style: none;
+        margin: 0px;
+        padding: 0px;
+}
+
+li a, li a:link, li a:visited {
+        color: #FFFFFF;
+        display: block;
+        font-size: 20px; /*Tamano letras MENU*/
+        /*text-transform: uppercase;*/ /*Todo MAYUSCULAS NOOOOOO */
+
+        margin: 0px 0px 0px 0px;
+
+        /*padding: 5px 10px 5px 10px;*/
+        /*border-left: 1px solid #FFFFFF;*/  /* SIN lineas de separacion */
+}
+
+li a:hover, li a:active {
+        background: #0b76a6;
+        color: #000000;
+        display: block;
+        text-decoration: none;
+        margin: 0px 0px 0px 0px;
+        /*padding: 5px 10px 5px 10px;*/
+}
+
+li li a, li li a:link, li li a:visited {
+        background-color:black;
+        width: 100px; /*120px*/
+        height: 40px; /*20px  -  auto*/
+        float: none;
+        margin: 0px;
+}
+
+li li a:hover, li li a:active {
+        background: #0b76a6;
+        margin: 0px;
+}
+
+li {
+        float: left;
+        padding: 0px;
+}
+
+li ul {
+        z-index: 9999;
+        position: absolute;
+        left: -999em;
+        height: auto;
+        width: 160px;
+        margin: 0px;
+        padding: 0px;
+}
+
+li li {
+}
+
+li ul a {
+        width: 140px; /* 140px */
+}
+
+li ul a:hover, li ul a:active {
+}
+
+li ul ul {
+        margin: -40px 0 0 140px; /* -25px 0 0 161px  */
+}
+
+li:hover ul ul, li:hover ul ul ul, li.sfhover
+ul ul, li.sfhover ul ul ul {
+        left: -999em;
+}
+
+li:hover ul, li li:hover ul, li li li:hover ul,
+li.sfhover ul, li li.sfhover ul, li li
+li.sfhover ul {
+        left: auto;
+}
+
+li:hover, li.sfhover {
+        position: static;
+}
+
+
+#contenido {
+    width: 100%;
+    padding-top: 80px; /* Relleno superior igual a la altura de la cabecera*/
+}
+
+
+#pie {
+    //width: 100%;
+    background-color:black;
+    color: white;
+    //clear: both;
+    text-align: right;
+    padding: 5px;
+}
