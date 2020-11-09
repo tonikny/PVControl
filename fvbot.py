@@ -551,6 +551,24 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             bot.send_message(cid, "Comando no valido "+orden)
                             bot.send_message(cid, "foto,estado,pausa,start,check,time,video")
                                         
+                    #------------------ ORDEN LINUX -------------------
+                    elif tipo_orden=='L':
+                        comando= tg_orden[1:]
+                        print ("Comando: ", comando)
+                        proceso = subprocess.run(comando, shell=True,
+                                                 stdout=subprocess.PIPE,
+                                                 stderr=subprocess.PIPE,
+                                                 text=True
+                                                )
+                        if proceso.returncode==0:
+                            msg = proceso.stdout
+                        else:
+                            msg = proceso.stderr
+                            
+                        maxlong = 4096
+                        for t in [msg[i:i+maxlong] for i in range(0, len(msg), maxlong)]:
+                            bot.send_message (cid, t)
+                            
                     #------------------ ORDEN INCORRECTA -------------------
                     else:
                         msg='Orden incorrecta .. #'
