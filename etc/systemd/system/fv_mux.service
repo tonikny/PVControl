@@ -1,0 +1,12 @@
+[Unit]
+Description=FV Mux PCB
+After=mysql.service
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_mux.py
+Restart=always
+RestartSec=600
+
+[Install]
+WantedBy=multi-user.target
+

@@ -53,6 +53,7 @@ mysqli_close($link);
 
 <meta charset="utf-8">
 
+<script src="Parametros_Web.js"></script>
 
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
 <script src="js/jquery.js"></script>
@@ -127,16 +128,21 @@ $(function () {
     yAxis: [
      {// ########## Valores eje Intensidad ######################
       opposite: false,     
-      min: -180,
-      max: 220,
+      min: Escala_intensidad_min,
+      max: Escala_intensidad_max,
       tickInterval: 20,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'Ibat',
+        rotation: 0,
+        y: -10
         },
       plotLines: [{
         value: 0,
@@ -147,21 +153,26 @@ $(function () {
      },
      {// ########## Valores eje Vbat ######################
       opposite: false,
-      min: 11,//22,
-      max: 21,//42,
+      min: Escala_Vbat_min,
+      max: Escala_Vbat_max,
       tickInterval: 1,
+      //gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'Vbat',
+        rotation: 0,
+        y: -10
         },
       plotLines: [{
 
         // ########## Valores Linea Vabs #####################
-        value: 28.8,
+        value: Vabs,
         width: 2,
         color: 'green',
         dashStyle: 'shortdash',
@@ -171,7 +182,7 @@ $(function () {
        },{
         
        // ########## Valores Linea Vflot ######################
-        value: 27.6,
+        value: Vflot,
         width: 2,
         color: 'red',
         dashStyle: 'shortdash',
@@ -185,13 +196,18 @@ $(function () {
       min: 20,
       max: 100 ,
       tickInterval: 20,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'SOC',
+        rotation: 0,
+        y: -5
         },
       plotLines: [{
         value: 100,
@@ -213,17 +229,22 @@ $(function () {
      },
      {// ########## Valores eje PWM ######################
       opposite: true,
-      min: -100,
-      max: 400 ,
+      min: 0,
+      max: Escala_PWM_max,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'PWM ',
+        rotation: 0,
+        y: -15
         },
-
+      
       /*
       plotLines: [{
         value: 100,
@@ -248,15 +269,21 @@ $(function () {
      {// ########## Valores eje WPlaca ######################
       opposite: true,
       min: 0,
-      max: 5000 ,
+      max: Watios_placa_max ,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: -10,
+        text: 'Wplaca',
+        rotation: 0,
+        y: -5
         },
+      
      }
      ],
 

@@ -155,9 +155,61 @@ if($result = mysqli_query($link, $sql)){
         echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 }
 
+echo '<br>';
+echo 'CONDICIONES AVANZADAS';
+// --------------------- TABLA CONDICIONES -----------------------------------------
+
+
+$sql = "SELECT id_condicion,activado,condicion1,condicion2,accion,descripcion
+		FROM condiciones
+		ORDER BY id_condicion ASC";
+
+if($result = mysqli_query($link, $sql)){
+
+        $rawdata=array();
+        $i=0;
+
+        while ($row = mysqli_fetch_array($result)){
+                $rawdata[$i]=$row;
+                $i++;
+        }
+
+	echo "<br \>";
+
+	echo '<table width="80%" border="1" style="text-align:center;">';
+	$columnas = count($rawdata[0])/2;
+	$filas = count($rawdata);
+
+	//Añadimos los titulos
+
+	for($i=1;$i<count($rawdata[0]);$i=$i+2){
+		next($rawdata[0]);
+		echo "<th><b>".key($rawdata[0])."</b></th>";
+		next($rawdata[0]);
+	}
+
+	for($i=0;$i<$filas;$i++){
+
+		echo "<tr>";
+		for($j=0;$j<$columnas;$j++){
+			echo "<td>".$rawdata[$i][$j]."</td>";
+		}
+		echo "</tr>";
+	}
+
+	echo '</table>';
+
+} else{
+
+        echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+}
+
+
+
 mysqli_close($link);
 
 echo "<br \>";
+
 
 ?>
 

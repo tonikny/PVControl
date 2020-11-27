@@ -98,7 +98,6 @@ session_start([
                             </li>
                         </ul>
                     </li>
-                    <!-- Para menu celdas 
                     <li><a href="#"
                         title="Celdas"><img src="img/bateria.png" width="20" height="20"> Celdas</a>
                         <ul>
@@ -109,7 +108,7 @@ session_start([
                                 title="Graficas resumen">Resumen</a>
                             </li>
                         </ul>
-                    </li>-->
+                    </li>
                 
                 </ul>
             </nav>

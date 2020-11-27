@@ -35,7 +35,8 @@ elif str(sys.argv[narg-1]) == '-p':
     DEBUG = 100
 else:
     DEBUG = 0
-print ('DEBUG=',DEBUG)
+
+if DEBUG !=0: print ('DEBUG=',DEBUG)
 
 
 # Comprobacion numero de OLED instaladas
@@ -46,7 +47,7 @@ try:
     NUM_OLED += 1
     #print('OLED 3C')
 except:
-    print('No esta la OLED 3C')
+    print('No detectada OLED 3C')
     pass
 
 if NUM_OLED == 1:
@@ -68,7 +69,8 @@ else:
         pass
 
 if NUM_OLED == 0:
-    print (subprocess.getoutput('sudo systemctl stop fv_oled'))
+    #print (subprocess.getoutput('sudo systemctl stop fv_oled'))
+    if DEBUG !=0: print ('NO detectada OLED - reintento en 1 minuto')
     sys.exit()
 
 if NUM_OLED >= 1:
@@ -252,7 +254,7 @@ try:
                 print('--------------------------------------------------')
             else:
                 cp += 1
-                print('x', end='')
+                print('x', end='',flush=True)
                 if cp > 100: cp=0;print();print(tiempo,end='')
         except:
             print ('error lectura datos.json')
@@ -284,7 +286,7 @@ try:
 
 except:
     print()
-    print ('Error en bucle Oled',ee)
+    print ('Error en bucle OLED',ee)
     traceback.print_exc()
 finally:
     pass    

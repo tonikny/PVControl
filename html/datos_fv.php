@@ -11,6 +11,9 @@ $data[] = str_getcsv($cpu);
 $dat = file_get_contents('/run/shm/datos_reles.json');
 $data[]= json_decode($dat, true);
 
+$dat = file_get_contents('/run/shm/datos_mux.json');
+$data[]= json_decode($dat, true);
+
  
 header("Content-type: text/json");
 #print $data;

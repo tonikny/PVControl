@@ -125,11 +125,11 @@ while True:
             for n in range (4):
                 values2 =[0]*6
                 for i in range(4):
-                    values2[i]=round(0.125*adc2.read_adc(i,gain=1),2) #valor en mV
+                    values2[i]=round(adc2.read_adc(i,gain=1),2) #valor en mV
                     time.sleep(0.1)
                 
-                values2[4]=round(0.0078125*adc2.read_adc_difference(0,gain=16),2)
-                values2[5]=round(0.0078125*adc2.read_adc_difference(3,gain=16),2)
+                values2[4]=round(adc2.read_adc_difference(0,gain=1),2)
+                values2[5]=round(adc2.read_adc_difference(3,gain=1),2)
                 
                 print (Fore.WHITE,'| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values2)) 
         except:
@@ -141,11 +141,11 @@ while True:
             for n in range (4):
                 values3 =[0]*6
                 for i in range(4):
-                    values3[i]=round(0.125*adc3.read_adc(i,gain=1),2) #valor en mV
+                    values3[i]=round(adc3.read_adc(i,gain=1),2) #valor en mV
                     time.sleep(0.1)
                 
-                values3[4]=round(0.0078125*adc3.read_adc_difference(0,gain=16),2)
-                values3[5]=round(0.0078125*adc3.read_adc_difference(3,gain=16),2)
+                values3[4]=round(adc3.read_adc_difference(0,gain=1),2)
+                values3[5]=round(adc3.read_adc_difference(3,gain=1),2)
                 
                 print (Fore.WHITE,'| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values3)) 
         except:
@@ -157,14 +157,17 @@ while True:
         for n in range (4):
             values4 =[0]*6
 
-            print ('| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values1)) 
-            
             for i in range(4):
-                values4[i]=round(0.125*adc4.read_adc(i,gain=1),2) #valor en mV
+                #values4[i]=round(0.125*adc4.read_adc(i,gain=1),2) #valor en mV
+                values4[i]=round(adc4.read_adc(i,gain=1),2) #valor en mV
+                
                 time.sleep(0.1)
             
-            values4[4]=round(0.0078125*adc4.read_adc_difference(0,gain=16),2)
-            values4[5]=round(0.0078125*adc4.read_adc_difference(3,gain=16),2)
+            values4[4]=round(adc4.read_adc_difference(0,gain=1),2)
+            values4[5]=round(adc4.read_adc_difference(3,gain=1),2)
+            
+            #values4[4]=round(0.0078125*adc4.read_adc_difference(0,gain=16),2)
+            #values4[5]=round(0.0078125*adc4.read_adc_difference(3,gain=16),2)
             
             print (Fore.WHITE,'| {0:>7} | {1:>7} | {2:>7} | {3:>7} | {4:>7} | {5:>7} |'.format(*values4)) 
         
@@ -250,7 +253,7 @@ while True:
     ee = 60
     # Reles 33X I2C
     print()
-    for r in (33,34):
+    for r in (33,34,35,32):
         print (Fore.GREEN,' ##### RELES',r,'X #####',Fore.WHITE,)
         try:
             for puerto in range (8): # Rele I2C
@@ -260,14 +263,14 @@ while True:
                 bus.write_byte(r,salida)
                 
                 print ('- PCF=',bin(bus.read_byte(r)))  #devuelve el valor en decimal
-                time.sleep(2)
+                time.sleep(0.25)
             
             print (Fore.WHITE,'  Activo Reles alternos..... 10101010', end='')
             bus.write_byte(r,170)
-            time.sleep(2)
+            time.sleep(0.5)
             print (Fore.WHITE,'   -   ..... 01010101')
             bus.write_byte(r,85)
-            time.sleep(2)
+            time.sleep(0.5)
             estado = bus.read_byte(r)  #devuelve el valor en decimal
             if estado == 85 :
                 print (Fore.YELLOW,'  PCF ',r,'X OK')
@@ -281,7 +284,7 @@ while True:
             print (Fore.RED,'  PCF ',r,'X ERROR')
         
 
-    time.sleep(2)
+    time.sleep(0.5)
     nb += 1
     print (Fore.WHITE, Back.GREEN)
     input("Press Enter to continue..."+Back.BLACK)

@@ -128,8 +128,9 @@ background: linear-gradient(to bottom, white, #fafafa);}
 <div id="containerconsumo"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 <div id="containerwplaca"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 
+<div id="container_celdas" style="width: 45%; height: 160px; margin-left: 1%;float: left"></div>
 
-<div id="container_reles" style="width: 80%; height: 160px; margin-left: 1%;float: left"></div>
+<div id="container_reles" style="width: 40%; height: 160px; margin-left: 1%;float: left"></div>
 
 
 <div id="grafica_intensidad" style="width: 100%; height: 280px; margin-left: 0%; margin-bottom: 0% ;float: left"></div>
@@ -1383,7 +1384,164 @@ $(function () {
 
       });
  
-  
+ 
+    chart_celdas =new Highcharts.Chart({
+        chart: {
+            renderTo: 'container_celdas',
+            backgroundColor: null,//'#ffffff',//'#f2f2f2',
+            borderColor: null,
+            type: 'column',
+            shadow: false,//true,false,
+            options3d: {
+                enabled: false,
+                alpha: 0,
+                beta: 0,//10,
+                depth: 100,
+                viewDistance: 0 //25,
+              },
+          },
+        plotOptions: {
+            column: {
+                dataLabels: {
+                    enabled: true,
+                    //inside: false, //valor de la columna en el interior
+                    crop: false,
+                    allowOverlap: false,
+                    overflow: 'allow',//'none',
+                    //borderWidth: null,
+                    //borderColor: 'red',
+                   },
+                enableMouseTracking: true,
+                grouping: false,
+                shadow: false,
+                borderWidth: 0
+              }
+          },
+
+        credits: {
+             enabled: false
+             },
+        title: {
+              y:20,
+              text: 'SITUACION CELDAS'
+             },
+        subtitle: {
+              text: null
+             },
+        xAxis: {
+             categories: []
+               },
+        yAxis: {
+            gridLineWidth: 0,
+            minorGridLineWidth: 0,
+            gridLineColor: 'transparent',
+            min: Vcelda_min,
+            max: Vcelda_max,
+            //minPadding:0,
+            //maxPadding:0,
+            tickInterval: 0.2,
+            allowDecimals: false,
+            visible: true, //desactivar grid
+            labels: {
+                enabled: true
+              },
+            title: {
+              enabled: false
+               },
+            
+            plotBands: [{
+                from: Vcelda_franja_min, //Vcelda_franja_inferior,
+                to: Vcelda_franja_max, //Vcelda_franja_superior,
+                color: 'rgba(68, 170, 213, 0.2)',
+                label: {
+                    text: ''
+                }
+            }],
+            
+          },
+
+        series: [
+            {name: 'Vcelda_max',
+            color: 'rgba(243,41,45,1)',
+            //color: 'rgba(165,170,217,1)',
+            pointPadding: 0.4,
+            pointPlacement: -0.3,
+            colorByPoint: false,//Color aleatorio para cada columna de un rele
+            borderColor: '#303030',
+            data: [],
+            dataLabels: {
+                enabled: true, 
+                inside: false,
+                rotation: 270,
+                y: -20,
+                formatter: function() {
+                    return Highcharts.numberFormat(this.y,2)
+                  }
+              }
+            },
+            {name: 'Vcelda',
+            colorByPoint: false,//Color aleatorio para cada columna de un rele
+            color: 'rgba(43,132,221,1)',
+            opacity: 0.9,
+            pointPadding: 0.1,
+            pointPlacement: 0,
+            borderColor: '#303030',
+            data: [],
+            dataLabels: {
+                enabled: true,
+                inside: true, 
+                align: 'center',
+                formatter: function() {
+                    return Highcharts.numberFormat(this.y,2)
+                  }
+              }
+            },
+            
+            {name: 'Vcelda_min',
+            color: 'rgba(243,240,41,1)',
+            pointPadding: 0.4,
+            pointPlacement: 0.3,
+            colorByPoint: false,//Color aleatorio para cada columna de un rele
+            borderColor: '#303030',
+            data: [],
+            dataLabels: {
+                enabled: true, 
+                inside: false,
+                allowOverlap:true,
+                rotation: 270,
+                y: -20,
+                align: 'center',
+                formatter: function() {
+                    return Highcharts.numberFormat(this.y,2)
+                  }
+              }
+            },
+          ],
+        
+        navigation: {
+              buttonOptions: {
+                enabled: false
+               }
+             },
+        legend: {
+              enabled: false,
+              layout: 'vertical',
+              floating: true,
+              align: 'center',
+              verticalAlign: 'center',
+              //x: -100,
+              y: 30,
+              borderWidth: 0
+             },
+        tooltip: {
+              formatter: function () {
+                return '<b>' + this.series.name + '</b><br/>' +
+                    this.point.y + ' ' + this.point.name.toLowerCase();
+               }
+             }
+
+      });
+       
     grafica_i = new Highcharts.Chart ({
         chart: {
          renderTo: 'grafica_intensidad',
@@ -1744,6 +1902,13 @@ $(function () {
             }
             
             chart_reles.xAxis[0].setCategories(tCategories);
+            
+            // Actualizacion Vceldas     
+            
+            chart_celdas.xAxis[0].setCategories(data[3][0]);
+            chart_celdas.series[0].setData(data[3][1]);
+            chart_celdas.series[1].setData(data[3][2]);
+            chart_celdas.series[2].setData(data[3][3]);
             
             
             //console.log(data)

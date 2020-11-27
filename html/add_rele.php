@@ -1,11 +1,5 @@
 <?php
 
-//$link = mysqli_connect("localhost", "fv", "fv", "fv");
-
-
-//if($link === false){
-//	die("ERROR: Could not connect. " . mysqli_connect_error());
-//}
 
 require('conexion.php');
 
@@ -17,10 +11,14 @@ $modo = mysqli_real_escape_string($link, $_POST['modo']);
 
 $grabacion = mysqli_real_escape_string($link, $_POST['grabacion']);
 
+$salto = mysqli_real_escape_string($link, $_POST['salto']);
+
+$prioridad = mysqli_real_escape_string($link, $_POST['prioridad']);
+
 
 // attempt insert query execution
 
-$sql = "INSERT INTO reles (id_rele, nombre, modo, grabacion) VALUES ('$id_rele', '$nombre', '$modo', '$grabacion')";
+$sql = "INSERT INTO reles (id_rele, salto, prioridad, nombre, modo, grabacion) VALUES ('$id_rele','$salto','$prioridad','$nombre', '$modo', '$grabacion')";
 
 if(mysqli_query($link, $sql)){
         sleep(2);

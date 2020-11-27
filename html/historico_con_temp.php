@@ -44,6 +44,9 @@ mysqli_close($link);
 
 <meta charset="utf-8">
 
+<script src="Parametros_Web.js"></script>
+
+
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi
 <script src="js/jquery.js"></script>
 <script src="js/stock/highstock.js"></script>
@@ -110,30 +113,52 @@ $(function () {
             credits: {
                 enabled: false
             },
-            yAxis: [{
-		        opposite: false,
-				min: -120,
-		        max: 180 ,
-		        labels: {
-                    //align: 'left',
-                    y: 5
-            	},
-                title: {
-                    text: null
-                }
-             },{
+            yAxis: [
+             {// ########## Valores eje Intensidad ######################
                 opposite: false,
-				min: 24,
-		        max: 35 ,
+                min: Escala_intensidad_min,
+                max: Escala_intensidad_max,
+                gridLineColor: 'transparent',
+                minorGridLineColor: 'transparent',
 		        labels: {
                     //align: 'left',
                     y: 5
             	},
                 title: {
-                    text: null
-                },
+                    align: 'high',
+                    offset: 0,
+                    text: 'Ibat',//null
+                    rotation: 0,
+                    y: -5
+                    },
+                plotLines: [{
+                value: 0,
+                width: 2,
+                color: 'black',
+                dashStyle: 'shortdash'
+                }]
+             },
+             
+             {// ########## Valores eje Vbat ######################
+                opposite: false,
+                min: Escala_Vbat_min,
+                max: Escala_Vbat_max,
+                tickInterval: 1,
+                //gridLineColor: 'transparent',
+                //minorGridLineColor: 'transparent',
+                labels: {
+                  //align: 'left',
+                  y: 5
+                  },
+                title: {
+                    align: 'high',
+                    offset: 0,
+                    text: 'Vbat',//null
+                    rotation: 0,
+                    y: -10
+                    },
 				plotLines: [{
-		            value: 28.8,
+		            value: Vabs,
 		            width: 2,
 		            color: 'green',
 		            dashStyle: 'shortdash',
@@ -141,26 +166,33 @@ $(function () {
 			            text: 'Vabs'
 		             }
 		            }, {
-		            value: 27.6,
+		            value: Vflot,
 		            width: 2,
 		            color: 'red',
 		            dashStyle: 'shortdash',
 		            label: {
 			            text: 'Vflot'
 		              }
-		          }]
+		            }]
 	
-             },{
+             },
+             {// SOC
                 opposite: true,
 				min: 5,
 		        max: 100 ,
+                gridLineColor: 'transparent',
+                minorGridLineColor: 'transparent',
 		        labels: {
                     //align: 'left',
                     y: 5
             	},
                 title: {
-                    text: null
-                },
+                    align: 'high',
+                    offset: 0,
+                    text: 'SOC <br/> Temp',//null
+                    rotation: 0,
+                    y: -10
+                    },
 				plotLines: [{
 		            value: 100,
 		            width: 2,
@@ -186,9 +218,8 @@ $(function () {
 			            text: '30ºC'
 		                   }
 		          }]
-	
-	
-			 }],
+			 }
+             ],
 			
 			xAxis: {
                 dateTimeLabelFormats: { day: '%e %b' },
@@ -227,8 +258,8 @@ $(function () {
                 valueDecimals: 2
              },
 
-            series: [{
-                name: 'Avg SOC',
+            series: [
+              { name: 'Avg SOC',
                 type: 'spline',
 				yAxis: 2,
                 color: Highcharts.getOptions().colors[1],
@@ -245,8 +276,8 @@ $(function () {
                    <?php } ?>
                 return data;
                      })()
-              }, {
-                name: 'Avg Vbat',
+              },
+              { name: 'Avg Vbat',
                 type: 'spline',
 				yAxis: 1,
                 color: Highcharts.getOptions().colors[0],
@@ -263,8 +294,8 @@ $(function () {
                    <?php } ?>
                 return data;
                      })()
-              }, {
-                name: 'Avg Ibat',
+              },
+              { name: 'Avg Ibat',
                 type: 'spline',
                 color: Highcharts.getOptions().colors[2],
                 tooltip: {
@@ -280,8 +311,8 @@ $(function () {
                    <?php } ?>
                 return data;
                      })()
-              }, {
-                name: 'Avg Iplaca',
+              },
+              { name: 'Avg Iplaca',
                 type: 'spline',
                 color: Highcharts.getOptions().colors[3],
                 tooltip: {
@@ -297,8 +328,8 @@ $(function () {
                    <?php } ?>
                 return data;
                      })()
-              }, {
-                name: 'Avg Temp',
+              },
+              { name: 'Avg Temp',
                 type: 'spline',
 				yAxis: 2,
                 color: 'black', //color: Highcharts.getOptions().colors[4],
@@ -315,7 +346,9 @@ $(function () {
                    <?php } ?>
                 return data;
                      })()
-            }]
+              }
+            
+            ]
 
         });
 

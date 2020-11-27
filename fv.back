@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-11-24
+# Versión 2020-07-16
 
 
 import time,sys
@@ -43,22 +43,6 @@ print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl') #+St
 
 #Parametros Instalacion FV
 from Parametros_FV import *
-
-AH = float(AH)
-CP = float(CP)
-EC = float(EC)  
-vflotacion = float(vflotacion)
-SHUNT1 = float(SHUNT1)
-SHUNT2 = float(SHUNT2)
-RES0 = float(RES0)
-RES1 = float(RES1)
-RES2 = float(RES2)
-RES3 = float(RES3)
-RES0_gain = float(RES0_gain)
-RES1_gain = float(RES1_gain)
-RES2_gain = float(RES2_gain)
-RES3_gain = float(RES3_gain)
-
 
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
@@ -154,7 +138,6 @@ Wh_placa = Wh_consumo = 0.0
 N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
-
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -302,51 +285,21 @@ def logBD(texto) : # Incluir en tabla de Log
 
 def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
     try:
-        y_err = 0.0 # error en lectura multiple
         if sensor=='ADS':
-            Suma = 0; Max=-40000; Min=-Max
             if n_sensor == 'Ibat':
-                N = 5
-                for i in range(N):
-                    l = adc.read_adc_difference(0, gain=16, data_rate=250)
-                    Suma += l
-                    Max = max(Max,l)
-                    Min = min(Min,l)
-                ADS = Suma/N
-                y = round(0.0078127 * ADS * SHUNT1,2)
-                y_err = round((Max-Min) * 0.0078127 * SHUNT1 ,2)
-            
+                y = round(adc.read_adc_difference(0, gain=16, data_rate=64) * 0.0078125 * SHUNT1, 2)  # A0-A1
             elif n_sensor == 'Iplaca':
-                N = 2
-                for i in range(N):
-                    l = adc.read_adc_difference(3, gain=16, data_rate=250)
-                    Suma += l
-                    Max = max(Max,l)
-                    Min = min(Min,l)
-                ADS = Suma/N
-                y = round(0.0078127 * ADS * SHUNT2,2)
-                y_err = round((Max-Min) * 0.0078127 * SHUNT2 ,2)
+                y = round(adc.read_adc_difference(3, gain=16, data_rate=64) * 0.0078125 * SHUNT2, 2)  # A2-A3
             elif n_sensor == 'Vbat':
-                N = 5
-                for i in range(N):
-                    l = adc1.read_adc(0, gain=RES0_gain,data_rate=250)
-                    Suma += l
-                    Max = max(Max,l)
-                    Min = min(Min,l)
-                ADS = Suma/N
-                y = round(ADS * 0.000125/RES0_gain * RES0,2) # A0   4,096V/32767=0.000125
-                y_err = round((Max-Min) * 0.000125/RES0_gain * RES0,2)
+                y = round(adc1.read_adc(0, gain=RES0_gain,data_rate=128) * 0.000125/RES0_gain * RES0, 2)  # A0   4,096V/32767=0.000125 
             elif n_sensor == 'Aux1':
                 y = round(adc1.read_adc(1, gain=RES1_gain,data_rate=128) * 0.000125/RES1_gain * RES1, 2)  # A1   4,096V/32767=0.000125 
-                y_err = 0.0
             elif n_sensor == 'Vplaca':
                 y = round(adc1.read_adc(2, gain=RES2_gain,data_rate=128) * 0.000125/RES2_gain * RES2, 2)  # A2   4,096V/32767=0.000125 
             elif n_sensor == 'Aux2':
                 y = round(adc1.read_adc(3, gain=RES3_gain,data_rate=128) * 0.000125/RES3_gain * RES3, 2)  # A3   4,096V/32767=0.000125 
-        
-        
         elif sensor =='':
-            return anterior, y_err
+            return anterior
         else:
             pp1=[idx for idx, x in enumerate(sensor) if x=='_']    # indices de todos los '_'
             pp2=[idx for idx, x in enumerate(sensor) if x=='[']    # indices de todos los '['
@@ -376,22 +329,23 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
         
         y = anterior
 
-    return y,y_err
+    return y
 
 def Calcular_PID (sensor,objetivo,P,I,D):
     global Lista_errores_PID, IPWM_P, IPWM_I, IPWM_D
     
     valor = eval(sensor)
-    
+        
     # Desplazamos un elemento en la Lista de errores
     Lista_errores_PID = Lista_errores_PID[-1:] + Lista_errores_PID[:-1] 
-    
+
     # Calculo Termino Proporcional PID
-    if objetivo >= 0:
+    if valor >= 0:
         error_actual = Lista_errores_PID[0] = valor - objetivo
     else:
-        error_actual = Lista_errores_PID[0] = objetivo - valor
-    
+        error_actual = Lista_errores_PID[0] = objetivo + valor
+
+
     # Calculo Termino Integral PID
     error_integral = 0
     for i in range(N-1):
@@ -505,7 +459,7 @@ if nreles > 0 : # apagado reles en BD
 
 try:
     if simular != 1 and Vbat_sensor == 'ADS':
-        Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
+        Vbat = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
     else:
         Vbat = vsis * 12.0
 except:
@@ -603,7 +557,7 @@ try:
             hcon=int(hcon)  # = numero de condiciones horarias
             H=cursor.fetchall()
 
-            sql='SELECT * FROM condiciones WHERE activado is True ORDER BY id_condicion'
+            sql='SELECT * FROM condiciones'
             ncon=cursor.execute(sql)
             ncon=int(ncon)  # = numero de condiciones
             TC=cursor.fetchall()
@@ -699,29 +653,15 @@ try:
                 if d_srne is None:
                     logBD('error lectura archivo ram SRNE')
                     continue
-            
-            ee=30.6
-            if usar_mux > 0:
-                archivo_ram='/run/shm/datos_mux.json'
-                try:
-                    with open(archivo_ram, 'r') as f:
-                        d_mux = json.load(f)
-                        #print(d_mux)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
                 
             ee=34
-            Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,ibat_min,ibat_max)            
-            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,vbat_min,vbat_max)
-            
-            Iplaca, Iplaca_err = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,iplaca_min,iplaca_max)
-            if abs(Iplaca) < iplaca_error: Iplaca =0 
-            
-            Vplaca, Vplaca_err = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,vplaca_min,vplaca_max)
-            Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,aux1_min,aux1_max)
-            Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,aux2_min,aux2_max)
-        
+            Ibat = leer_sensor('Ibat',Ibat_sensor,Ibat,ibat_min,ibat_max)            
+            Vbat = leer_sensor('Vbat',Vbat_sensor,Vbat,vbat_min,vbat_max)
+            Iplaca = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,iplaca_min,iplaca_max)
+            Vplaca = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,vplaca_min,vplaca_max)
+            Aux1 = leer_sensor('Aux1',Aux1_sensor,Aux1,aux1_min,aux1_max)
+            Aux2 = leer_sensor('Aux2',Aux2_sensor,Aux2,aux2_min,aux2_max)
+
             try:
                 # evalua las expresiones definidas en Parametros_FV.py
                 Consumo = float(eval (Consumo_sensor)) 
@@ -731,7 +671,7 @@ try:
                 Wplaca = 0
 
             if Temperatura_sensor != '' and Ctemp <= 0:
-                if True: #usar_ds18b20 == 1:
+                if usar_ds18b20 == 1:
                     archivo_ram='/run/shm/datos_ds18b20.pkl'
                     try:
                         with open(archivo_ram, 'rb') as f:
@@ -739,7 +679,7 @@ try:
                     except:
                         logBD('error lectura '+archivo_ram)
                         continue
-                Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,temp_min,temp_max)
+                Temp = leer_sensor('Temp',Temperatura_sensor,Temp,temp_min,temp_max)
                 Ctemp=Mtemp # reinicio contador
                 client.publish("PVControl/DatosFV/Temp",Temp)
                 if DEBUG >= 100: print(Fore.BLUE +'Temp=',Temp,Fore.RESET,end='')
@@ -998,15 +938,12 @@ try:
         ee=60
         for I in range(ncon):
             try:
-                TC1 = TC[I][1]
-                TC2 = TC[I][2]
-                #print(TC1],TC2) 
-                if TC1 in ('', ' ','1'): TC1 = 'True'          
-                if TC2 in ('', ' ','1'): TC2 = 'True'
-                if (eval(TC1) and eval(TC2)): exec(TC[I][3]) 
+                #print (I,CD1,TC[I][0],TC[I][1],TC[I][2],(eval(TC[I][0])and eval(TC[I][1])))
+                if (eval(TC[I][0])and eval(TC[I][1])):
+                    #print( 'Ejecutando ',TC[I][2])                
+                    exec(TC[I][2]) 
             except:
-                print ('Error Condicion ',str(TC[I][5]))
-                logBD('Error en id_condicion='+str(TC[I][5]))
+                logBD('Error en id_condicion='+str(TC[I][3]))
 
         #-------------------- Bucle encendido/apagado reles ------------------------------------
         ee=62
@@ -1230,12 +1167,10 @@ try:
         T_ejecucion = round(time.time() - hora1,2)
 
         if T_ejecucion_max < T_ejecucion: T_ejecucion_max = T_ejecucion
-        
-        ee=320
+
         if DEBUG >= 1:
             #print (tiempo,'-',end='')
             print(' {0:4}ms - Sensor={1}={2:.2f}'.format(int(T_ejecucion*1000),TP[6],TP[5]),end='')
-            print (Fore.CYAN+'/{0:.2f}'.format(eval(TP[6])),end='')
             print (Fore.MAGENTA+' / Vbat={0:.2f}- Iplaca={1:.2f}- Ibat={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vbat,Iplaca,Ibat,Consumo,PWM),Fore.RESET)
 
         # Repetir bucle cada X segundos

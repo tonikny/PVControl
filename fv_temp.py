@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-05-29
+# Versión 2020-11-01
 
 import time, glob, sys, subprocess
 
@@ -9,13 +9,6 @@ import time, glob, sys, subprocess
 from Parametros_FV import *
 import pickle
 
-"""
-#if Temperatura_sensor.find ('d_ds18b20') == -1:
-if usar_ds18b20 == 0:
-    print ('sensor ds18b20 no seleccionado')
-    print (subprocess.getoutput('sudo systemctl stop fv_temp'))
-    sys.exit()
-"""
 
 archivo_ram = '/run/shm/datos_ds18b20.pkl'
 
@@ -31,7 +24,7 @@ elif str(sys.argv[narg-1]) == '-p':
     DEBUG = 100
 else:
     DEBUG = 0
-print ('DEBUG=',DEBUG)
+if DEBUG !=0: print ('DEBUG=',DEBUG)
 
 while True:
     Temp_D= {}

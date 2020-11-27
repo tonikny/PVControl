@@ -3,16 +3,9 @@
 require('conexion.php');
 
 //Coger datos grafica historico general
-$sql = "SELECT Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Aux1 as Aux1avg, Vplaca as Vplacaavg, PWM as PWMavg
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Aux1 as Aux1avg, Vplaca as Vplacaavg, PWM as PWMavg
         FROM datos_c WHERE Tiempo >= (NOW()- INTERVAL 3 DAY)
         ORDER BY Tiempo";
-
-//$sql = "SELECT Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Vflot*10 as Vflotavg, Vplaca as Vplacaavg
-//        FROM datos WHERE DATE(Tiempo) >= SUBDATE(NOW(), INTERVAL 3 DAY)
-//        ORDER BY Tiempo";
-//$sql = "SELECT Tiempo, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Vflot)*10 as Vflotavg
-//        FROM datos WHERE DATE(Tiempo) >= SUBDATE(NOW(), INTERVAL 7 DAY)
-//        GROUP BY DAY(Tiempo),((60/1)*HOUR(TIME(Tiempo))+FLOOR(MINUTE(TIME(Tiempo))/1)) ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
 
@@ -30,13 +23,6 @@ if($result = mysqli_query($link, $sql)){
 
 mysqli_close($link);
 
-//Adaptar el tiempo grafica historico general
-for($i=0;$i<count($rawdata);$i++){
-    $time = $rawdata[$i]["Tiempo"];
-    $date = new DateTime($time);
-    $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
-}
-
 ?>
 
 
@@ -45,6 +31,8 @@ for($i=0;$i<count($rawdata);$i++){
 <body>
 
 <meta charset="utf-8">
+
+<script src="Parametros_Web.js"></script>
 
 
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
@@ -101,7 +89,7 @@ $(function () {
       panKey: 'shift'
       },
     title: {
-      text: 'Promedio SOC, Iplaca/Ibat y Vbat/Vplaca y Salida Diver - 3 DIAS'
+      text: 'SOC, Iplaca/Ibat - Vbat/Vplaca - PWM/Aux1 --- 3 DIAS'
       },
     subtitle: {
       //text: 'Permite Zoom XY'
@@ -109,20 +97,24 @@ $(function () {
     credits: {
       enabled: false
       },
-    yAxis: [{
+    yAxis: [
+     {// ########## Valores eje Intensidad ######################
       opposite: false,
-      
-      // ########## Valores eje Intensidad ######################
-      min: -180,
-      max: 220, 
+      min: Escala_intensidad_min,
+      max: Escala_intensidad_max,
       tickInterval: 20,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'Ibat',//null
+        rotation: 0,
+        y: -5
         },
       plotLines: [{
         value: 0,
@@ -130,25 +122,30 @@ $(function () {
         color: 'black',
         dashStyle: 'shortdash'
         }]
-     },{
+     },
+     
+     
+     {// ########## Valores eje Vbat ######################
       opposite: false,
-      
-      // ########## Valores eje Vbat ######################
-      min: 22,
-      max: 42 ,
+      min: Escala_Vbat_min,
+      max: Escala_Vbat_max,
       tickInterval: 1,
+      //gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'Vbat',//null
+        rotation: 0,
+        y: -10
         },
       plotLines: [{
-        
-        // ########## Valores Linea Vabs ######################
-        value: 28.8,
+        // ########## Valores Linea Vabs #####################
+        value: Vabs,
         width: 2,
         color: 'green',
         dashStyle: 'shortdash',
@@ -158,7 +155,7 @@ $(function () {
        },{
         
         // ########## Valores Linea Vflot ######################
-        value: 27.6,
+        value: Vflot,
         width: 2,
         color: 'red',
         dashStyle: 'shortdash',
@@ -166,20 +163,25 @@ $(function () {
           text: 'Vflot'
           }
        }]
-     },{
+     },
+     
+     {// ########## Valores eje SOC ######################
       opposite: true,
-      
-      // ########## Valores eje SOC ######################
       min: 20,
       max: 100 ,
       tickInterval: 20,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'SOC',//null
+        rotation: 0,
+        y: -10
         },
       plotLines: [{
         value: 100,
@@ -198,42 +200,62 @@ $(function () {
           text: '80%'
           }
        }]
-      },{
-      opposite: true,
+      },
       
-      // ########## Valores eje PWM ######################
+     {// ########## Valores eje PWM ######################
+      opposite: true,
       min: 0,
-      max: 400 ,
+      max: Escala_PWM_max,
+      gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
         y: 5
         },
       title: {
-        text: null
+        align: 'high',
+        offset: 0,
+        text: 'PWM',//null
+        rotation: 0,
+        y: -10
+        },
+                  
+     },
+      
+     {// ########## Valores eje Vplaca ######################
+      opposite: false,
+      min: 0,
+      max: Escala_Vplaca_max,
+      tickInterval: 20,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      title: {
+        align: 'high',
+        offset: 0,
+        text: 'Vplaca',//null
+        rotation: 0,
+        y: -5
+        },
+      },
+      
+     {// ########## Valores eje Aux1 ######################
+      opposite: true,
+      min: Escala_Aux1_min,
+      max: Escala_Aux1_max,
+      tickInterval: 5,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      title: {
+        align: 'high',
+        offset: 0,
+        text: 'Aux1',//null
+        rotation: 0,
+        y: -5
         },
       
-	  /*
-	  plotLines: [{
-        value: 100,
-        width: 2,
-        color: 'green',
-        dashStyle: 'shortdash',
-        label: {
-          text: 'Rele1'
-          }
-       },{
-        value: 200,
-        width: 2,
-        color: 'red',
-        dashStyle: 'shortdash',
-        label: {
-          text: 'Rele2'
-          }
-       }]
-	   */
-	   
-     }],
+      }
+      
+     ],
     xAxis: {
       dateTimeLabelFormats: { day: '%e %b' },
       type: 'datetime'
@@ -249,16 +271,16 @@ $(function () {
        }, {
         type: 'day',
         count: 1,
-        text: '1día'
+        text: '1dia'
        }, {
         type: 'day',
         count: 2,
-        text: '2días'
+        text: '2día'
        }, {
         type: 'all',
         text: 'Todo'
        }],
-      selected: 3
+      selected: 1
       },
     tooltip: {
       crosshairs: true,
@@ -266,15 +288,14 @@ $(function () {
       valueDecimals: 2
       },
     navigator: {
-      enabled: true //false
+      enabled: true // false
       },
-    series: [{
-      name: 'SOC',
+    series: [
+     {name: 'Ibat',
       type: 'spline',
-      yAxis: 2,
-      color: Highcharts.getOptions().colors[1],
+      color: Highcharts.getOptions().colors[2],
       tooltip: {
-        valueSuffix: ' %',
+        valueSuffix: ' A',
         valueDecimals: 2,
         },
       data: (function() {
@@ -282,12 +303,29 @@ $(function () {
         <?php
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
-              data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["SOCavg"];?>]);
-              <?php } ?>
-            return data;
+            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Ibatavg"];?>]);
+            <?php } ?>
+          return data;
         })()
-     },{
-      name: 'Vbat',
+     },
+     {name: 'Iplaca',
+      type: 'spline',
+      color: Highcharts.getOptions().colors[3],
+      tooltip: {
+        valueSuffix: ' A',
+        valueDecimals: 2,
+        },
+      data: (function() {
+        var data = [];
+        <?php
+          for($i = 0 ;$i<count($rawdata);$i++){
+            ?>
+            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Iplacaavg"];?>]);
+            <?php } ?>
+          return data;
+        })()
+     },
+     {name: 'Vbat',
       type: 'spline',
       yAxis: 1,
       color: Highcharts.getOptions().colors[0],
@@ -304,12 +342,13 @@ $(function () {
             <?php } ?>
           return data;
         })()
-     }, {
-      name: 'Ibat',
+     },
+     {name: 'SOC',
       type: 'spline',
-      color: Highcharts.getOptions().colors[2],
+      yAxis: 2,
+      color: Highcharts.getOptions().colors[1],
       tooltip: {
-        valueSuffix: ' A',
+        valueSuffix: ' %',
         valueDecimals: 2,
         },
       data: (function() {
@@ -317,67 +356,12 @@ $(function () {
         <?php
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Ibatavg"];?>]);
-            <?php } ?>
-          return data;
+              data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["SOCavg"];?>]);
+              <?php } ?>
+            return data;
         })()
-     }, {
-      name: 'Iplaca',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[3],
-      tooltip: {
-        valueSuffix: ' A',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Iplacaavg"];?>]);
-            <?php } ?>
-          return data;
-        })()
-     }, {
-      name: 'Vplaca',
-      visible: false,
-      type: 'spline',
-      yAxis: 0, // poner 2 para escala del SOC
-      color: 'black', //Highcharts.getOptions().colors[20],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vplacaavg"];?>]);
-          <?php } ?>
-        return data;
-        })()
-     }, {
-      name: 'Excedentes',
-      visible: true,
-      type: 'spline',
-      yAxis: 0,
-      color: Highcharts.getOptions().colors[4],
-      tooltip: {
-        valueSuffix: ' ',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Aux1avg"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      }, {
-      name: 'PWM',
+     },
+     {name: 'PWM',
       visible: true,
       type: 'spline',
       yAxis: 3,
@@ -396,7 +380,48 @@ $(function () {
         return data;
         })()  
         
-     }]
+     },
+     {name: 'Vplaca',
+      visible: false,
+      type: 'spline',
+      yAxis: 4, // poner 2 para escala del SOC
+      color: 'black', //Highcharts.getOptions().colors[20],
+      tooltip: {
+        valueSuffix: ' V',
+        valueDecimals: 0,
+        },
+      data: (function() {
+        var data = [];
+        <?php
+        for($i = 0 ;$i<count($rawdata);$i++){
+          ?>
+          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vplacaavg"];?>]);
+          <?php } ?>
+        return data;
+        })()
+     }, 
+     
+     {name: 'Aux1',
+      visible: true,
+      type: 'spline',
+      yAxis: 5,
+      color: Highcharts.getOptions().colors[4],
+      tooltip: {
+        valueSuffix: ' ',
+        valueDecimals: 0,
+        },
+      data: (function() {
+        var data = [];
+        <?php
+        for($i = 0 ;$i<count($rawdata);$i++){
+          ?>
+          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Aux1avg"];?>]);
+          <?php } ?>
+        return data;
+        })()
+      } 
+     
+     ]
 
     });
 

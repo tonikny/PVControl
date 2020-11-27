@@ -5,7 +5,7 @@ After=fv.service
 [Service]
 ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_temp.py
 Restart=always
-RestartSec=30
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target
