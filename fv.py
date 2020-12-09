@@ -692,6 +692,16 @@ try:
                 except:
                     logBD('error lectura '+archivo_ram)
                     continue
+                    
+            if usar_fronius == 1:
+                archivo_ram='/run/shm/datos_fronius.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_fronius = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue       
+                    
 
             ee=30.5
             if usar_srne == 1:
