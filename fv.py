@@ -387,11 +387,13 @@ def Calcular_PID (sensor,objetivo,P,I,D):
     Lista_errores_PID = Lista_errores_PID[-1:] + Lista_errores_PID[:-1] 
     
     # Calculo Termino Proporcional PID
+    error_actual = Lista_errores_PID[0] = valor - objetivo
+    """
     if objetivo >= 0:
         error_actual = Lista_errores_PID[0] = valor - objetivo
     else:
         error_actual = Lista_errores_PID[0] = objetivo - valor
-    
+    """
     # Calculo Termino Integral PID
     error_integral = 0
     for i in range(N-1):
@@ -833,7 +835,8 @@ try:
                 if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
                     Tflot_bulk = Tabs = flag_Abs= 0
                     cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
-                    cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
+                    if TP[6] == 'Vbat':
+                        cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
                     db.commit()
                     try:
                         if flag_Flot == 1 and usar_telegram == 1:
@@ -853,7 +856,8 @@ try:
                 
                 if Tabs >= Tabs_max: # paso de Abs a Flot
                     cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
-                    cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vflot)+"'")
+                    if TP[6] == 'Vbat':
+                        cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vflot)+"'")
                     db.commit()
                     try:
                         if flag_Flot == 0 and usar_telegram == 1:

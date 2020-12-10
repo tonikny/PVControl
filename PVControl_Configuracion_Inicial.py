@@ -211,8 +211,9 @@ if confirmacion == '1':
     else:
         print()
         print (Fore.RED + '  --- SERVICIOS PVControl+ NO REINICIADOS --- ')
-        print ( ' Recuerde reiniciar manualmente con '+ Fore.CYAN +
-                'sudo systemctl restart nombre_servicio'+ Fore.RED +' los servicios afectados')
+        print ( ' Recuerde reiniciar manualmente los servicios afectados con '+ Fore.CYAN +
+                '\n sudo systemctl enable nombre_servicio'+
+                '\n sudo systemctl restart nombre_servicio\n')
         
 else:
     print()
