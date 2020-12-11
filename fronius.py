@@ -9,7 +9,7 @@ import requests
 from requests.exceptions import HTTPError
 import json
 import time
-import csv
+import pickle
 import subprocess, sys
 from Parametros_FV import *
 from csvFv import CsvFv
