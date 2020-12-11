@@ -16,7 +16,7 @@ DEBUG = False
 MCAST_GRP = '239.12.255.254'
 MCAST_PORT = 9522
 
-#db_client=influxdb.InfluxDBClient('localhost', database='sma_em')
+
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -26,7 +26,7 @@ sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 sock.settimeout(10)
 
 def captura(sock):
-    #threading.Timer(1.0, args=[sock]).start()
+    
     try:
         smainfo=sock.recv(600)
         deg=smainfo[28:]
