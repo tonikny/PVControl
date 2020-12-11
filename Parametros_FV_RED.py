@@ -268,6 +268,7 @@ grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar fronius = 1
 
 usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
+usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius
 IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
 
 # -----------------------------------------------

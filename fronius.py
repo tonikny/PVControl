@@ -73,7 +73,11 @@ class fronius:
             #EFF = Pout(AC)/Pin(DC) * 100
             #Pin = Vi * Ii
             Pin = Vplaca * float((inverter['Body']['Data']['IDC']['Value']))
-            EFF = ((float((inverter['Body']['Data']['PAC']['Value'])) / Pin) * 100)
+            try:
+                EFF = ((float((inverter['Body']['Data']['PAC']['Value'])) / Pin) * 100)
+            except:
+                EFF=100
+                pass
             
             if DEBUG: print('Vred',Vred,'Vplaca',Vplaca)
             
@@ -98,13 +102,13 @@ if __name__ == '__main__':
             
             datos_inverter = ve.read_data_inverter()
             
-            if usar_meter == 1:
+            if usar_meter_fronius == 1:
                 datos_meter = ve.read_data_meter()
                 datos_inverter.update(datos_meter)                
                 datos_inverter['Ibat'] = datos_meter['Wred']/datos_inverter['Vred']
                 datos_inverter['Vbat'] = datos_inverter['Vred']
                 datos_inverter['Iplaca'] = datos_meter['Wplaca']/datos_inverter['Vred']
-                datos_inverter['Aux1'] = datos_meter['Wred'] + 10000
+                datos_inverter['Aux1'] = datos_meter['Wred'] 
                 Temp = 0
                 
             datos= datos_inverter
@@ -117,7 +121,8 @@ if __name__ == '__main__':
             
             #print(datos)
             if datos != None :
-                c.escribirCsv(datos)       
+                with open('/run/shm/datos_fronius.pkl', mode='wb') as f:
+                    pickle.dump(datos, f)      
              
             
             time.sleep(5)

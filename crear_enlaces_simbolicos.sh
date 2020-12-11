@@ -17,6 +17,7 @@ sudo ln -s /home/pi/PVControl+/etc/systemd/system/hibrido.service /etc/systemd/s
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/victron.service /etc/systemd/system/victron.service
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/bmv.service /etc/systemd/system/bmv.service
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/srne.service /etc/systemd/system/srne.service
+sudo ln -s /home/pi/PVControl+/etc/systemd/system/fronius.service /etc/systemd/system/fronius.service
 
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/fv_mux.service /etc/systemd/system/fv_mux.service
 
