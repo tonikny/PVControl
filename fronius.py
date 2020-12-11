@@ -94,7 +94,7 @@ class fronius:
             return self.dct
 
 if __name__ == '__main__':
-    c = CsvFv('/run/shm/datos_fronius.csv') 
+    #c = CsvFv('/run/shm/datos_fronius.csv') 
     
     while True:
         try:
