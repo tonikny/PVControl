@@ -1,5 +1,5 @@
 [Unit]
-Description= PVControl+ - Lectura SMA Meter
+Description= PVControl+ - Lectura SMA METER
 After=mysql.service
 
 [Service]
