@@ -9,14 +9,14 @@ from Parametros_FV import *
 
 if usar_must == 0:
         #print (commands.getoutput('sudo systemctl stop srne'))
-        print (subprocess.getoutput('sudo systemctl stop sma_meter'))
+        print (subprocess.getoutput('sudo systemctl stop must'))
         sys.exit()
 
 modbus = ModbusClient(method='rtu', port=dev_must, baudrate=19200, timeout=1)
 modbus.connect()
 
 
-DEBUG = True
+DEBUG = False
 
 datos = [[None]*6 for i in range(n_equipos_must)]
 prod  = [[1.0]* n_equipos_must for i in range(1)]
@@ -54,7 +54,7 @@ def leer_datos(a,b):
         #if DEBUG: print (Vbat, Vplaca, Iplaca, 'Consumo', Consumo,'Pred', Pred,'Ibat',Ibat)
         
         datos=[Vbat,Vplaca,Iplaca,Consumo,Pred,Ibat]
-        print(datos)
+        if DEBUG: print(datos)
         return (datos)
         
     except:
@@ -91,7 +91,7 @@ while True:
     
     
     datos_p = {'Tiempo_sg': tiempo_sg,'Tiempo':tiempo,'Vbat':Vbat,'Vplaca':Vplaca,'Iplaca':Iplaca,'Consumo':Consumo,'Pred':Pred,'Ibat':Ibat}
-    print(datos_p)
+    if DEBUG: print(datos_p)
     if datos != None :
         with open('/run/shm/datos_must.pkl', mode='wb') as f:
             pickle.dump(datos_p, f)
