@@ -225,6 +225,25 @@ iplaca_victron_max = 99
 iplaca_victron_min = 0
 
 # -----------------------------------------------
+#####################
+###### MUST ######
+#####################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa el MUST o se quiere guardar en BD en la tabla 'must'
+## se debe poner usar must= 1
+
+usar_must = 0              # 1 para leer datos victron ..... 0 para no usar
+n_equipos_must = 0         #número de inversores en paralelo. Si sólo hay uno, marcar 1.
+dev_must = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Must
+
+grabar_datos_must= 0      # 1 = Graba la tabla Must... 0 = No graba
+t_muestra_must = 5         # Tiempo en segundos entre muestras
+
+iplaca_must_max = 99
+iplaca_must_min = 0
+
+# -----------------------------------------------
 #################
 ###### BMV ######
 #################
