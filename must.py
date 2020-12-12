@@ -2,7 +2,6 @@ import time
 import pymodbus
 import Parametros_FV
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
-import sys
 import pickle
 import subprocess, sys
 from Parametros_FV import *
