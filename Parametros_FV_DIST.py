@@ -238,7 +238,7 @@ n_equipos_must = 0         #número de inversores en paralelo. Si sólo hay uno,
 dev_must = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Must
 
 grabar_datos_must= 0      # 1 = Graba la tabla Must... 0 = No graba
-t_muestra_must = 5         # Tiempo en segundos entre muestras
+t_muestra_must = 1         # Tiempo en segundos entre muestras + numero de equipos
 
 iplaca_must_max = 99
 iplaca_must_min = 0

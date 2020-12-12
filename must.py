@@ -14,7 +14,7 @@ if usar_must == 0:
 
 modbus = ModbusClient(method='rtu', port=dev_must, baudrate=19200, timeout=1)
 modbus.connect()
-
+time.sleep(0.5)
 
 DEBUG = False
 
@@ -25,7 +25,7 @@ res   = [[0]*1 for i in range(6)]
 
 
 def leer_datos(a,b):
-    time.sleep(0.5)
+    
     R1 = modbus.read_holding_registers(15205, 4, unit=a)
     time.sleep(0.5)
     I1 = modbus.read_holding_registers(25205, 11, unit=b)
@@ -67,7 +67,7 @@ def leer_datos(a,b):
         
 while True:
     
-    time.sleep(4.5)
+    time.sleep(t_muestra_must)
     
     for i in range(n_equipos_must):    
         datos[i] = leer_datos(i+1,i+4)
