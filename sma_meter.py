@@ -5,7 +5,7 @@ import struct
 import time
 import threading
 import pickle
-
+import subprocess, sys
 
 if usar_sma_meter == 0:
         #print (commands.getoutput('sudo systemctl stop srne'))
