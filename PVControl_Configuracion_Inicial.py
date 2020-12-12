@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-11-20
+# Versión 2020-12-10
 
 import time,sys,os
 import MySQLdb 
@@ -39,13 +39,11 @@ salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 par
 if salir == "1": pass
 else: sys.exit()
 
-parametros_comunes = ['AH','CP','EC','vsis']
+parametros_aislada_red = ['AH']
+parametros_bateria = ['CP','EC','vsis']
 parametros_mezcla = ['_sensor',
-                     'usar_hibrido', 'grabar_datos_hibrido',
-                     '_victron',
-                     '_bmv',
-                     'usar_sma','usar_si','usar_sb1','usar_sb2','IP_SI','IP_SB1','IP_SB2','grabar_datos_sma',
-                     '_srne', 
+                     'usar_', '_hibrido', '_victron', '_bmv','_sma','_si','_sb1','_sb2',
+                     'IP_','_srne'
                      ]
 
 parametros_hibrido = ['dev_hibrido','t_muestra_hibrido']
@@ -63,7 +61,7 @@ print ('   0 = Usar archivo Parametros_FV.py actual')
 print ('   1 = PCB de PVControl+   (copia el archivo Parametros_FV_ADS.py en Parametros_FV.py y continua)')
 print ('   2 = HIBRIDO tipo Axpert (copia el archivo Parametros_FV_HIBRIDO.py en Parametros_FV.py y continua)')
 
-print ('   99 = Mezcla u otras instalaciones')
+print ('   99 = Mezcla u otras instalaciones (Fronius, Huawei, SRNE, SMA, ...)')
 
 print ()
 print (Fore.CYAN + ' Elije el dispositivo de captura'+Fore.GREEN)
@@ -72,20 +70,20 @@ print (Fore.CYAN + ' Elije el dispositivo de captura'+Fore.GREEN)
 Tipo_instalacion = click.prompt('    ', type=str, default='0')
 
 if Tipo_instalacion == '1':
-    parametros = parametros_comunes + parametros_ads
+    parametros = parametros_aislada_red + parametros_bateria + parametros_ads
     shutil.copy('/home/pi/PVControl+/Parametros_FV_ADS.py', '/home/pi/PVControl+/Parametros_FV.py')
     
     print()
     print (Fore.CYAN +' Configuracion para PCB')
     
 elif Tipo_instalacion == '2':
-    parametros = parametros_comunes + parametros_hibrido
+    parametros = parametros_aislada_red + parametros_bateria + parametros_hibrido
     shutil.copy('/home/pi/PVControl+/Parametros_FV_HIBRIDO.py', '/home/pi/PVControl+/Parametros_FV.py')
     print()
     print (Fore.CYAN +' Configuracion para HIBRIDO')
     
 elif Tipo_instalacion == '99' or Tipo_instalacion == '0':
-    parametros = parametros_comunes + parametros_ads + parametros_hibrido + parametros_mezcla
+    parametros = parametros_aislada_red + parametros_bateria + parametros_ads + parametros_hibrido + parametros_mezcla
 
 #print (parametros)    
 print()
@@ -168,15 +166,26 @@ with open('/home/pi/PVControl+/Parametros_FV.py') as f:
                         cursor.close()
                         db.close()
                 
+                elif 'AH' in p: # adaptacion inicio.php e index.php dependiendo de si se usa bateria o no
+                    if int(ip) < 1:
+                        print (Fore.CYAN +'Instalacion SIN BATERIA se adapta Pagina index.php')
+                        shutil.copy('/home/pi/PVControl+/html/index_red.php', '/home/pi/PVControl+/html/index.php')
+                        #shutil.copy('/home/pi/PVControl+/html/inicio_red.php', '/home/pi/PVControl+/html/inicio.php')
+                        
+                        shutil.copy('/home/pi/PVControl+/html/Parametros_Web_Red.js', '/home/pi/PVControl+/html/Parametros_Web.js')
+                        Sql = "sensor_PID = 'Aux2',objetivo_PID = '100', Vabs = '0',Vflot = '0', Vequ = '0'"
+                        print (Fore.CYAN +'Web configurada a sistemas SIN BATERIA')
+                        
+                
                 elif 'usar_mux' in p: # adaptacion inicio.php e index.php dependiendo de si se usa mux o no
                     if int(ip) > 0:
                         shutil.copy('/home/pi/PVControl+/html/inicio_con_celdas.php', '/home/pi/PVControl+/html/inicio.php')
-                        shutil.copy('/home/pi/PVControl+/html/index_con_celdas.php', '/home/pi/PVControl+/html/index.php')
-                        print (Fore.CYAN +'Pagina de inicio.php y index.php configuradas CON celdas')
+                        #shutil.copy('/home/pi/PVControl+/html/index_con_celdas.php', '/home/pi/PVControl+/html/index.php')
+                        print (Fore.CYAN +'Pagina index.php configuradas CON celdas')
                     else:
                         shutil.copy('/home/pi/PVControl+/html/inicio_sin_celdas.php', '/home/pi/PVControl+/html/inicio.php')
-                        shutil.copy('/home/pi/PVControl+/html/index_sin_celdas.php', '/home/pi/PVControl+/html/index.php')
-                        print (Fore.CYAN +'Pagina de inicio.php y index.php configuradas SIN celdas')
+                        #shutil.copy('/home/pi/PVControl+/html/index_sin_celdas.php', '/home/pi/PVControl+/html/index.php')
+                        print (Fore.CYAN +'Pagina index.php configuradas SIN celdas')
                     
                 break
             else:

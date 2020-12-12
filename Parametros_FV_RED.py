@@ -1,13 +1,13 @@
 # ------------------------------------------------------------------
-######    PARAMETROS INSTALACION PVControl+  -- version: 2020-11-21
+######    PARAMETROS INSTALACION PVControl+  -- version: 2020-12-12
 # ------------------------------------------------------------------
 
 ################################
 ###### Parametros Bateria ######
 ################################
-AH = 1000.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
+AH = 0.             # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
 CP = 1              # Indice Peukert
-EC = 1           # Eficiencia Carga
+EC = 1              # Eficiencia Carga
 vsis = 4            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
@@ -16,17 +16,21 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 ##### Parametros sensores ######
 ################################
 
-Vbat_sensor   = "d_hibrido['Vbat']"       # Sensor de Voltaje bateria ( ADS, d_hibrido['Vbat'], d_victron['Vbat'].....)
-Vplaca_sensor = "d_hibrido['Vplaca']"     # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],d_victron['Vbat'].....)
+Vbat_sensor   = ""                        # Sensor de Voltaje bateria ( ADS, d_hibrido['Vbat'], d_victron['Vbat'].....)
+Vplaca_sensor = "d_huawei['Vplaca']"      # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],d_victron['Vbat'].....)
 
-Ibat_sensor   = "d_hibrido['Ibat']"       # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
-Iplaca_sensor = "d_hibrido['Iplaca']"     # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
+Ibat_sensor   = ""                        # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
+Iplaca_sensor = "d_huawei['Iplaca']"      # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
 
-Aux1_sensor   = ""     # ADS, etc...
-Aux2_sensor   = ""     # ADS, etc...
+Aux1_sensor   = "d_huawei['Aux1']"        # huawei, sma, fronius,....
+Aux2_sensor   = "d_huawei['Aux1']"        # Sensor Excedentes (huawei, sma, fronius,....)
 
-Wplaca_sensor  = "d_hibrido['Wplaca']"     # Iplaca * Vbat, d_hibrido['Wplaca'].....
-Consumo_sensor = "Vbat * (Iplaca-Ibat)"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
+Vred_sensor   = "d_huawei['Vred']"        # Sensor Voltaje de red (d_huawei['Vred'],...)
+Ired_sensor   = "d_huawei['Ired']"        # Sensor Intensidad de red (d_huawei['Ired'],...)
+EFF_sensor    = "d_huawei['EFF']"         # Eficienca Conversion (d_huawei['EFF'],...)
+
+Wplaca_sensor  = "d_huawei['Wplaca']"     # Iplaca * Vbat, d_huawei['Wplaca'].....
+Consumo_sensor = "d_huawei['Consumo']"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
 
 Temperatura_sensor = ""                    #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
 
@@ -55,27 +59,32 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 ##########################################################
 ###### Parametros Mensaje error lectura incoherente ######
 ##########################################################
-vbat_max = 300     # Maximo voltaje bateria admisible para no dar aviso log
-vbat_min = 11     # Minimo voltaje bateria admisible para no dar aviso log
+Vbat_max = 0     # Maximo voltaje bateria/red admisible para no dar aviso log
+Vbat_min = 0      # Minimo voltaje bateria/red admisible para no dar aviso log
 
-aux1_max = 14
-aux1_min = -1
+Aux1_max = 14
+Aux1_min = -1
 
-aux2_max = 10000
-aux2_min = -10000
+Aux2_max = 10000   # Valor max inyeccion a red
+Aux2_min = -10000  # Valor max consumo de red
 
-vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
-vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
+Vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
+Vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
 
-ibat_max = 200    # Maxima intensidad bateria admisible para no dar aviso log
-ibat_min = -200   # Minima intensidad bateria admisible para no dar aviso log
+Ibat_max = 0    # Maxima intensidad bateria admisible para no dar aviso log
+Ibat_min = 0    # Minima intensidad bateria admisible para no dar aviso log
 
-iplaca_max = 250
-iplaca_min = -1.5
-iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
+Iplaca_max = 250
+Iplaca_min = -1.5
+Iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
 
-temp_max = 50       # Maxima temperatura admisible para no dar aviso log
-temp_min = -10      # Minima temperatura admisible para no dar aviso log
+Ired_max = 60     # Maxima intensidad red admisible para no dar aviso log
+Ired_min = -60    # Minima intensidad red admisible para no dar aviso log
+Vred_max = 280    # Maxima intensidad red admisible para no dar aviso log
+Vred_min = 180    # Minima intensidad red admisible para no dar aviso log
+
+Temp_max = 50       # Maxima temperatura admisible para no dar aviso log
+Temp_min = -10      # Minima temperatura admisible para no dar aviso log
 
 t_muestra_max = 6  # valor para grabar en el log si tarda mas el bucle en ejecutarse
 
@@ -152,8 +161,8 @@ pvoutput_id = "1233455"
 ########################
 ###### Simulacion ######
 ########################
-simular = 0  # Simulacion datos FV --- 1 para simular....0 para no simular
-simular_reles = 0 # Simular reles fisicos
+simular = 0        # Simulacion datos FV --- 1 para simular....0 para no simular
+simular_reles = 0  # Simular reles fisicos
 # -----------------------------------------------
 
 
@@ -165,15 +174,11 @@ usar_mux = 0   # Poner a 0 si no se utiliza un multiplexor de 16 canales de la P
 
 t_muestra_mux = 10 # segundos entre capturas del mux
 
-pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1
-                      #A2_2 = entrada A2 del ADS2
-                      #A2_3 = entrada A2 del ADS3
-                      #A2_4 = entrada A2 del ADS4
+pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1, #A2_2 = entrada A2 del ADS2
+                      #A2_3 = entrada A2 del ADS3, #A2_4 = entrada A2 del ADS4
                       
-pin_ADS_mux2 = ''     #A3_1 = entrada A3 del ADS1
-                      #A3_2 = entrada A3 del ADS2
-                      #A3_3 = entrada A3 del ADS3
-                      #A3_4 = entrada A3 del ADS4
+pin_ADS_mux2 = ''     #A3_1 = entrada A3 del ADS1, #A3_2 = entrada A3 del ADS2
+                      #A3_3 = entrada A3 del ADS3, #A3_4 = entrada A3 del ADS4
 
 R =(68+1.5)/1.5 * 12.94 / 12.72
 r_mux1 =  [R,R,R,R,R,R,R,R,R,R,R,R,R,R,R,R] # Divisores de Voltaje de cada entrada del Mux1
@@ -190,7 +195,7 @@ celdas_log_dif = 0.1 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = 1 #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = 0 #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = "/dev/hidraw0"  # puerto donde reconoce la RPi al Hibrido
 usar_crc = 1                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
@@ -225,6 +230,23 @@ iplaca_victron_max = 99
 iplaca_victron_min = 0
 
 # -----------------------------------------------
+#####################
+###### MUST ######
+#####################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa el MUST o se quiere guardar en BD en la tabla 'must'
+## se debe poner usar must= 1
+
+usar_must = 0              # 1 para leer datos victron ..... 0 para no usar
+n_equipos_must = 0         #número de inversores en paralelo. Si sólo hay uno, marcar 1.
+dev_must = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Must
+
+grabar_datos_must= 0      # 1 = Graba la tabla Must... 0 = No graba
+t_muestra_must = 1         # Tiempo en segundos entre muestras + numero de equipos
+
+iplaca_must_max = 99
+iplaca_must_min = 0                     
 #################
 ###### BMV ######
 #################
@@ -270,6 +292,7 @@ grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 
 usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
 usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius
+                                                                          
 IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
 
 # -----------------------------------------------
@@ -280,8 +303,9 @@ IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
 
-usar_hawei = 0          	# 1 para leer datos del huawei..... 0 para no usar
+usar_huawei = 1          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
+
 # -----------------------------------------------
 ##################
 ###### SRNE ######

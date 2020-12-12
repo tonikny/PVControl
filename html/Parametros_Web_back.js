@@ -2,12 +2,12 @@
 // Pagina inicio.php
 
 	// Reloj Vbat
-	Vbat_min = 22; 
-	Vbat_bajo_amarillo = 24;
-	Vbat_verde = 25.4;
-	Vbat_alto_amarillo = 28;
-	Vbat_alto_rojo = 30;
-	Vbat_max = 32; 
+	Vbat_min = 44; 
+	Vbat_bajo_amarillo = 48;
+	Vbat_verde = 50.8;
+	Vbat_alto_amarillo = 56;
+	Vbat_alto_rojo = 60;
+	Vbat_max = 64; 
 
 	// SOC
 	SOC_min=60;
@@ -33,15 +33,15 @@
 	Consumo_watios_max = 5000;
 
 	Consumo_amperios_min= 0;
-	Consumo_amperios_amarillo = 125;
-	Consumo_amperios_rojo = 166;
-	Consumo_amperios_max= 210;
+	Consumo_amperios_amarillo = 60;
+	Consumo_amperios_rojo = 80;
+	Consumo_amperios_max= 100;
 
 	// Reloj Ibat/Iplaca
-	Intensidad_min = -130;
-	Intensidad_descarga_amarillo = -40;
-	Intensidad_carga_rojo = 80;
-	Intensidad_max = 130;
+	Intensidad_min = -65;
+	Intensidad_descarga_amarillo = -20;
+	Intensidad_carga_rojo = 40;
+	Intensidad_max = 65;
 
 
 	// Reloj Watios Placa
@@ -66,14 +66,14 @@
 	Vcelda_franja_max = 2.5;
 	
 	// Grafico Tiempo Real
-	Escala_intensidad_min = -130;
-	Escala_intensidad_max = 200;
+	Escala_intensidad_min = -65;
+	Escala_intensidad_max = 100;
 
-	Escala_Vbat_min = 22;
-	Escala_Vbat_max = 70;
+	Escala_Vbat_min = 44;
+	Escala_Vbat_max = 140;
 
-	Vabs = 28.8;  // linea Vabs
-	Vflot = 27.2; // Linea Vflot
+	Vabs = 57.6;  // linea Vabs
+	Vflot = 54.4; // Linea Vflot
 
 	Escala_PWM_max = 400; 
 	Escala_Vplaca_max = 400; 
@@ -86,13 +86,13 @@
 	SOC_min_rojo = 60;
 	SOC_min_naranja = 75;
 
-	Vbat_max_alta_rojo = 30;
-	Vbat_max_alta_naranja = 29;
-	Vbat_max_baja_rojo = 25;
-	Vbat_max_baja_naranja = 27;
+	Vbat_max_alta_rojo = 60;
+	Vbat_max_alta_naranja = 58;
+	Vbat_max_baja_rojo = 50;
+	Vbat_max_baja_naranja = 54;
 
-	Vbat_min_rojo = 22;
-	Vbat_min_naranja = 23;
+	Vbat_min_rojo = 44;
+	Vbat_min_naranja = 46;
 	
 	
 // Pagina Historico1.php,  Historico_horas.php, historico_con_temp.php  ........

@@ -38,10 +38,10 @@
 	Consumo_amperios_max= 40;
 
 	// Reloj Ibat/Iplaca --- considerar que Intensidad_xxx es realmente Excedentes_xxx
-	Intensidad_min = -40;
-	Intensidad_descarga_amarillo = -10;
-	Intensidad_carga_rojo = 40;
-	Intensidad_max = 40;
+	Intensidad_min = -5000;
+	Intensidad_descarga_amarillo = -1000;
+	Intensidad_carga_rojo = 5000;
+	Intensidad_max = 5000;
 
 
 	// Reloj Watios Placa

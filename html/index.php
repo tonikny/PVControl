@@ -19,27 +19,33 @@ session_start([
             <a id="logo-header" href="index.php">
                 <span class="site-name"><img src="img/fvcontrol.png" alt="logo" style="width:200px;height:60px;" /></span>
                 
-                <!--
-                <span class="site-desc">
-                    <?php
-                        if($row == 1)
-                                print "<font size = 4 color = yellow><b>EXCEDENTES ON</b></font>";
-                        else
-                                print "<font size = 4 color = red><b>EXCEDENTES OFF</b></font>";
-                    ?>
-                </span>
-                -->
-            </a> <!-- / #logo-header -->
+            </a> 
             <?php
             $recibe_pagina=$_GET['pagina'];
              ?>
 
             <nav>
                 <ul>
-                    <li><a href="index.php?pagina=boton1"
+                    <!-- Inicio -->
+                    <li><a href="index.php?pagina=boton1" 
                         title="Inicio"><img src="img/Home.png" width="20" height="20"> Inicio</a>
                     </li>
                     
+                    <!-- Utilidades -->
+                    <li><a href="#" 
+                        title="Utilidades"><img src="img/util.jpg" width="20" height="20"> Utilidades</a>
+                        <ul>
+                            <li><a href="index.php?pagina=meteo"
+                                title="Gráficas Prevision Meteorologica">Meteorologia</a>
+                            </li>
+                            <li><a href="index.php?pagina=log"
+                                title="Logs del sistema">Log</a>
+                            </li>
+                            
+                        </ul>
+                    </li>
+
+                    <!-- Graficas -->
                     <li><a href="#"
                         title="Gráficas"><img src="img/Graph.png" width="20" height="20"> Gráficas</a>
                         <ul>
@@ -67,26 +73,44 @@ session_start([
                             <li><a href="index.php?pagina=botonH_soh"
                                 title="Histórico Ciclado">Hist_Ciclado</a>
                             </li>
-                            <li><a href="index.php?pagina=botonH_hibrido"
-                                title="Hist_Hibrido">Hibrido</a>
-                            </li>
                             <li><a href="index.php?pagina=boton7"
                                 title="Gráficas Producción y Consumo">Extra</a>
                             </li>
-                            <li><a href="index.php?pagina=boton10"
-                                title="Gráficas Prevision Meteorologica">Meteorologia</a>
-                            </li>
+                            
                             <li><a href="index.php?pagina=boton8"
-                                title="Tabla valores importantes">Diario</a>
+                                title="Tabla resumen diario">Diario</a>
                             </li>
                             <li><a href="index.php?pagina=boton11"
                                 title="Eficiencia Carga/Descarga Bateria">Carga/Descaga</a>
                             </li>
-                            <li><a href="index.php?pagina=boton9"
-                                title="Logs del sistema">Log</a>
+                            
+                        </ul>
+                    </li>
+
+                    <!-- Equipos -->
+                    <li><a href="#" 
+                        title="Equipos"><img src="img/inverter.png" width="20" height="20"> Equipos</a>
+                        <ul>
+                            <li><a href="index.php?pagina=botonH_hibrido"
+                                title="Hist_Hibrido">Hibrido</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="Fronius">Fronius</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="Huawei">Huawei</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="SMA">SMA</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="BMV">BMV</a>
                             </li>
                         </ul>
                     </li>
+
+
+                    <!-- Reles -->
                     <li><a href="#"
                         title="Relés"><img src="img/Target.png" width="20" height="20"> Relés</a>
                         <ul>
@@ -98,7 +122,8 @@ session_start([
                             </li>
                         </ul>
                     </li>
-                    <!-- Para menu celdas 
+  
+                    <!-- Celdas -->
                     <li><a href="#"
                         title="Celdas"><img src="img/bateria.png" width="20" height="20"> Celdas</a>
                         <ul>
@@ -109,7 +134,7 @@ session_start([
                                 title="Graficas resumen">Resumen</a>
                             </li>
                         </ul>
-                    </li>-->
+                    </li>
                 
                 </ul>
             </nav>
@@ -120,7 +145,7 @@ session_start([
         <?php
             switch ($recibe_pagina){
                 case "boton1":
-                    include ("inicio.php");
+                    include ("inicio_con_celdas.php");
                     break;
                 case "boton2":
                     include ("wh.php");
@@ -161,10 +186,10 @@ session_start([
                 case "boton8":
                     include ("diario.php");
                     break;
-                case "boton9":
+                case "log":
                     include ("log.php");
                     break;
-                case "boton10":
+                case "meteo":
                     include ("meteogram.php");
                     break;
                 case "boton11":
@@ -177,17 +202,14 @@ session_start([
                     include ("historico_celdas_max_min.php");
                     break;    
                 default:
-                    include ("inicio.php");
+                    include ("inicio_con_celdas.php");
             }
         ?>
 
         <br>
     </div>
 
-
-
 </div>
-
 
 </body>
 </html>

@@ -5,10 +5,10 @@
 ################################
 ###### Parametros Bateria ######
 ################################
-AH = 500.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
-CP = 1              # Indice Peukert
-EC = 0.95           # Eficiencia Carga
-vsis = 4            # Voltaje sistema - 1=12V  2=24V   4=48V
+AH = 1200.          # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
+CP = 1.107          # Indice Peukert
+EC = 1.0            # Eficiencia Carga
+vsis = 2            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
 
@@ -16,19 +16,19 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 ##### Parametros sensores ######
 ################################
 
-Vbat_sensor   = "d_hibrido['Vbat']"       # Sensor de Voltaje bateria ( ADS, d_hibrido['Vbat'], d_victron['Vbat'].....)
-Vplaca_sensor = "d_hibrido['Vplaca']"     # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],d_victron['Vbat'].....)
+Vbat_sensor   = "ADS"     # Sensor de Voltaje bateria ( ADS, d_hibrido['Vbat'], d_victron['Vbat'].....)
+Vplaca_sensor = "ADS"     # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],d_victron['Vbat'].....)
 
-Ibat_sensor   = "d_hibrido['Ibat']"       # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
-Iplaca_sensor = "d_hibrido['Iplaca']"     # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
+Ibat_sensor   = "ADS"     # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
+Iplaca_sensor = "ADS"     # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
 
 Aux1_sensor   = ""     # ADS, etc...
 Aux2_sensor   = ""     # ADS, etc...
 
-Wplaca_sensor  = "d_hibrido['Wplaca']"     # Iplaca * Vbat, d_hibrido['Wplaca'].....
+Wplaca_sensor  = "Iplaca * Vbat"         # Iplaca * Vbat, d_hibrido['Wplaca'].....
 Consumo_sensor = "Vbat * (Iplaca-Ibat)"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
 
-Temperatura_sensor = ""                    #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
+Temperatura_sensor = "d_ds18b20['Temp0']"   #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
 
 ################################
 ###### Parametros ADS1115 ######
@@ -78,7 +78,6 @@ temp_max = 50       # Maxima temperatura admisible para no dar aviso log
 temp_min = -10      # Minima temperatura admisible para no dar aviso log
 
 t_muestra_max = 6  # valor para grabar en el log si tarda mas el bucle en ejecutarse
-
 
 # -----------------------------------------------
 
@@ -165,15 +164,11 @@ usar_mux = 0   # Poner a 0 si no se utiliza un multiplexor de 16 canales de la P
 
 t_muestra_mux = 10 # segundos entre capturas del mux
 
-pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1
-                      #A2_2 = entrada A2 del ADS2
-                      #A2_3 = entrada A2 del ADS3
-                      #A2_4 = entrada A2 del ADS4
+pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1, #A2_2 = entrada A2 del ADS2, ....
+                      #A2_3 = entrada A2 del ADS3, #A2_4 = entrada A2 del ADS4
                       
-pin_ADS_mux2 = ''     #A3_1 = entrada A3 del ADS1
-                      #A3_2 = entrada A3 del ADS2
-                      #A3_3 = entrada A3 del ADS3
-                      #A3_4 = entrada A3 del ADS4
+pin_ADS_mux2 = ''     #A3_1 = entrada A3 del ADS1, #A3_2 = entrada A3 del ADS2, ...
+                      #A3_3 = entrada A3 del ADS3, #A3_4 = entrada A3 del ADS4
 
 R =(68+1.5)/1.5 * 12.94 / 12.72
 r_mux1 =  [R,R,R,R,R,R,R,R,R,R,R,R,R,R,R,R] # Divisores de Voltaje de cada entrada del Mux1
@@ -190,7 +185,7 @@ celdas_log_dif = 0.1 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = 1 #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = 0 #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = "/dev/hidraw0"  # puerto donde reconoce la RPi al Hibrido
 usar_crc = 1                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC

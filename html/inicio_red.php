@@ -1,5 +1,8 @@
 <?php
 
+// Se debe interpretar Vbat/Ibat/SOC como Vred/Ired/EFF  
+// se han mantenido los nombres por simplicacion de cambios entre FV con o sin Baterias
+
 require('conexion.php');
 //Coger datos grafica tiempo real
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Ibat, Iplaca, Vbat, PWM, Vplaca
@@ -81,27 +84,27 @@ background: linear-gradient(to bottom, white, #fafafa);}
             <div id= "Wh_Cons" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">Wh Bat+</div>
+            <div class="divTableCell">Wh Red+</div>
             <div id= "Whp_bat" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">Wh Bat-</div>
+            <div class="divTableCell">Wh Red-</div>
             <div id= "Whn_bat" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;SOC máx</div>
+            <div class="divTableCell">&nbsp;EFF máx</div>
             <div id = "maxSOC" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">SOC mín</div>
+            <div class="divTableCell">EFF mín</div>
             <div id ="minSOC" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vbat mín</div>
+            <div class="divTableCell">&nbsp;Vred mín</div>
             <div id = "minVbat" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vbat máx</div>
+            <div class="divTableCell">&nbsp;Vred máx</div>
                <div id ="maxVbat" class="divTableCell">&nbsp;</div>
             </div>
         <div class="divTableRow">
@@ -128,9 +131,8 @@ background: linear-gradient(to bottom, white, #fafafa);}
 <div id="containerconsumo"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 <div id="containerwplaca"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 
-<div id="container_celdas" style="width: 45%; height: 160px; margin-left: 1%;float: left"></div>
 
-<div id="container_reles" style="width: 40%; height: 160px; margin-left: 1%;float: left"></div>
+<div id="container_reles" style="width: 80%; height: 160px; margin-left: 1%;float: left"></div>
 
 
 <div id="grafica_intensidad" style="width: 100%; height: 280px; margin-left: 0%; margin-bottom: 0% ;float: left"></div>
@@ -191,13 +193,13 @@ $(function () {
             borderColor: null,
             },
         title: {
-            y:140,
+            y:155,
             floating: true,
             /*style:{
                 color: 'Purple',
                 fontSize:'18px',
                 },*/
-            text: 'Vbat',
+            text: 'Vred',
             },
         subtitle: {
             y:60,
@@ -317,7 +319,7 @@ $(function () {
             enabled: false
           },
         series: [{
-            name: 'Vbat',
+            name: 'Vred',
             data: [],
             dataLabels: {
                 enabled: true,
@@ -348,13 +350,13 @@ $(function () {
             //
           },
         title: {
-            y:60,
+            y:140,
             widthAdjust: 0,
             style: {
                 fontSize: '30px'
                 },
             floating: true,
-            text: 'SOC'
+            text: 'DC/AC EFICIENCIA INVERSOR'
           },
         credits: {
             enabled: false
@@ -399,7 +401,7 @@ $(function () {
                 style: {
                    fontSize: '15px'
                   },
-                text: 'PoP' //null //'V_BAT'
+                text: '' //null //'V_BAT'
                 },
             
             labels: { // valores de la escala
@@ -462,7 +464,7 @@ $(function () {
             borderColor: null
           },
         title: {
-            y:140,
+            y:155,
             floating: true,
             text: 'Temp',
           },
@@ -617,7 +619,7 @@ $(function () {
                     fontSize: '15px'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + "ºC Bat"
+                    return Highcharts.numberFormat(this.y,1) + "ºC Inv"
                   }
               },
             dial: {
@@ -636,7 +638,7 @@ $(function () {
                 x: 0,
                 style: {
                     fontSize: '15px',
-                    color: 'red'            
+                    color: 'red'
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "ºC Rpi"
@@ -662,7 +664,7 @@ $(function () {
             borderColor: null
           },
         title: {
-            y:140,
+            y:155,
             floating: true,
             text: 'Consumo',
           },
@@ -715,10 +717,12 @@ $(function () {
             background: []
           }],
 
+            
         yAxis: [
-          {
+          { // Wconsumo
             min: Consumo_watios_min,
             max: Consumo_watios_max,
+            pane: 0,
             minorTickInterval: 'auto',
             minorTickWidth: 1,
             minorTickLength: 10,
@@ -753,12 +757,11 @@ $(function () {
                 color: '#DF5353' // red
               }]
           },
-          { // A consumo
+          { // Aconsumo
             reversed: true,
             min: Consumo_amperios_min,
             max: Consumo_amperios_max,
             pane: 1,
-
             minorTickInterval: 'auto',
             minorTickWidth: 1,
             minorTickLength: 10,
@@ -822,7 +825,7 @@ $(function () {
                 radius: '80%' //longitud de la aguja
               },
           },
-          {//Aconsumo
+          { //Aconsumo
             yAxis: 1,
             name: '',
             data: [],
@@ -833,7 +836,8 @@ $(function () {
                 y: 20,
                 x: 0,
                 style: {
-                    fontSize: '15px'
+                    fontSize: '15px',
+                    color : 'red'
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "A"
@@ -847,7 +851,8 @@ $(function () {
           ]        
       });
     
-    chart_ibat = new Highcharts.Chart ({
+    
+    chart_ibat = new Highcharts.Chart ({ // Valor Excedentes (Ired * Vred) realmente  en FV SIN bateria
         chart: {
             renderTo: 'containeribat',
             type: 'gauge',
@@ -859,25 +864,24 @@ $(function () {
             borderColor: null
             },
         title: {
-            y:130,
+            y:155,
             floating:true,
-            text: 'Ibat',
+            text: 'Excedentes',
             style: {
                 fontSize: '12px',
-                color: 'red'
+                color: 'black'
                 },
             },
         subtitle: {
-            y:142,
+            y:165,
             floating:true,
-            text: 'Iplaca',
+            text: '',
             style: {
                 fontSize: '14px',
                 color: 'green'
                 },
             },
-            
-            
+                       
         credits: {
                 enabled: false
             },
@@ -919,27 +923,26 @@ $(function () {
         yAxis: {
                 min: Intensidad_min,
                 max: Intensidad_max,
+
                 minorTickInterval: 'auto',
                 minorTickWidth: 1,
-                minorTickLength: 10,
+                minorTickLength: 2,
                 minorTickPosition: 'inside',
                 minorTickColor: '#666',
 
-                //TickInterval: 1000,
-                tickPixelInterval: 40,
+                tickPixelInterval: 30,
                 tickWidth: 2,
                 tickPosition: 'inside',
                 tickLength: 10,
                 tickColor: '#666',
                 labels: {
-                    allowOverlap:false,
                     step: 2,
                     rotation: 'auto'
                 },
                 title: {
                     y:20,
                     text: null, //'I_BAT'
-                    reserveSpace:false,
+                    
                 },
                 plotBands: [{
                     from: 0,
@@ -970,25 +973,26 @@ $(function () {
                  },
 
         series: [{
-            name: 'Ibat',
+            name: 'Excedentes',
             data: [],
             dataLabels: {
                 allowOverlap:true,
                 enabled: true,
                 borderWidth: 0,
-                y: 0,
+                y: 10,
                 style: {
-                    fontSize: '14px',
-                    color: 'red'
+                    fontSize: '20px',
+                    color: 'black'
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " A"
+                    return Highcharts.numberFormat(this.y,1) + " W"
                     },
                 },
             dial: {
                 backgroundColor: (([this.y] <= 0) ? 'red' : 'green')
                 }
-            },{
+            } /* 
+            ,{
             name: 'Iplaca',
             data: [],
             dataLabels: {
@@ -1001,15 +1005,16 @@ $(function () {
                     color: 'green'
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " A"
+                    return Highcharts.numberFormat(this.y,1) + " W"
                     },
                 },
             dial: {
                 backgroundColor: (([this.y] <= 0) ? 'green' : 'red')
                 }
 
-            
-            }]
+             }
+             */
+            ]
         });
     
     chart_wplaca = new Highcharts.Chart ({
@@ -1024,7 +1029,7 @@ $(function () {
             borderColor: null
             },
         title: {
-            y:140,
+            y:155,
             floating:true,
             text: 'Wplaca',
             },
@@ -1149,10 +1154,10 @@ $(function () {
             borderColor: null,
             },
         title: {
-            y:140,
+            y:155,
             floating: true,
             style: {
-                    color: 'Red',
+                    color: 'Black',
                     fontWeight: 'bold',
                     fontSize:'18px',
                 },
@@ -1203,6 +1208,7 @@ $(function () {
             minorTickLength: 10,
             minorTickPosition: 'inside',
             minorTickColor: '#666',
+           
             tickPixelInterval: 30,
             tickWidth: 2,
             tickPosition: 'inside',
@@ -1386,164 +1392,7 @@ $(function () {
 
       });
  
- 
-    chart_celdas =new Highcharts.Chart({
-        chart: {
-            renderTo: 'container_celdas',
-            backgroundColor: null,//'#ffffff',//'#f2f2f2',
-            borderColor: null,
-            type: 'column',
-            shadow: false,//true,false,
-            options3d: {
-                enabled: false,
-                alpha: 0,
-                beta: 0,//10,
-                depth: 100,
-                viewDistance: 0 //25,
-              },
-          },
-        plotOptions: {
-            column: {
-                dataLabels: {
-                    enabled: true,
-                    //inside: false, //valor de la columna en el interior
-                    crop: false,
-                    allowOverlap: false,
-                    overflow: 'allow',//'none',
-                    //borderWidth: null,
-                    //borderColor: 'red',
-                   },
-                enableMouseTracking: true,
-                grouping: false,
-                shadow: false,
-                borderWidth: 0
-              }
-          },
-
-        credits: {
-             enabled: false
-             },
-        title: {
-              y:20,
-              text: 'SITUACION CELDAS'
-             },
-        subtitle: {
-              text: null
-             },
-        xAxis: {
-             categories: []
-               },
-        yAxis: {
-            gridLineWidth: 0,
-            minorGridLineWidth: 0,
-            gridLineColor: 'transparent',
-            min: Vcelda_min,
-            max: Vcelda_max,
-            //minPadding:0,
-            //maxPadding:0,
-            tickInterval: 0.2,
-            allowDecimals: false,
-            visible: true, //desactivar grid
-            labels: {
-                enabled: true
-              },
-            title: {
-              enabled: false
-               },
-            
-            plotBands: [{
-                from: Vcelda_franja_min, //Vcelda_franja_inferior,
-                to: Vcelda_franja_max, //Vcelda_franja_superior,
-                color: 'rgba(68, 170, 213, 0.2)',
-                label: {
-                    text: ''
-                }
-            }],
-            
-          },
-
-        series: [
-            {name: 'Vcelda_max',
-            color: 'rgba(243,41,45,1)',
-            //color: 'rgba(165,170,217,1)',
-            pointPadding: 0.4,
-            pointPlacement: -0.3,
-            colorByPoint: false,//Color aleatorio para cada columna de un rele
-            borderColor: '#303030',
-            data: [],
-            dataLabels: {
-                enabled: true, 
-                inside: false,
-                rotation: 270,
-                y: -20,
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,2)
-                  }
-              }
-            },
-            {name: 'Vcelda',
-            colorByPoint: false,//Color aleatorio para cada columna de un rele
-            color: 'rgba(43,132,221,1)',
-            opacity: 0.9,
-            pointPadding: 0.1,
-            pointPlacement: 0,
-            borderColor: '#303030',
-            data: [],
-            dataLabels: {
-                enabled: true,
-                inside: true, 
-                align: 'center',
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,2)
-                  }
-              }
-            },
-            
-            {name: 'Vcelda_min',
-            color: 'rgba(243,240,41,1)',
-            pointPadding: 0.4,
-            pointPlacement: 0.3,
-            colorByPoint: false,//Color aleatorio para cada columna de un rele
-            borderColor: '#303030',
-            data: [],
-            dataLabels: {
-                enabled: true, 
-                inside: false,
-                allowOverlap:true,
-                rotation: 270,
-                y: -20,
-                align: 'center',
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,2)
-                  }
-              }
-            },
-          ],
-        
-        navigation: {
-              buttonOptions: {
-                enabled: false
-               }
-             },
-        legend: {
-              enabled: false,
-              layout: 'vertical',
-              floating: true,
-              align: 'center',
-              verticalAlign: 'center',
-              //x: -100,
-              y: 30,
-              borderWidth: 0
-             },
-        tooltip: {
-              formatter: function () {
-                return '<b>' + this.series.name + '</b><br/>' +
-                    this.point.y + ' ' + this.point.name.toLowerCase();
-               }
-             }
-
-      });
-       
+  
     grafica_i = new Highcharts.Chart ({
         chart: {
          renderTo: 'grafica_intensidad',
@@ -1783,16 +1632,16 @@ $(function () {
                 
             
             chart_soc.series[0].setData([data[0][4]]);
-            chart_soc.yAxis[0].setTitle({
+            //chart_soc.yAxis[0].setTitle({
               //text: data[0][16] // Mod_bat
-              text: 'Tabs='+data[0][18] +'sg - Tflot='+ data[0][19]+ 'sg' // Tabs /Tflot
-                });
+              //text: 'Tabs='+data[0][18] +'sg - Tflot='+ data[0][19]+ 'sg' // Tabs /Tflot
+              //  });
                 
             chart_temp.series[0].setData([data[0][14]]); //Temp Bat
             chart_temp.series[1].setData([data[1]]);     //CPU
 
-            chart_ibat.series[0].setData([data[0][2]]);  //Ibat
-            chart_ibat.series[1].setData([data[0][10]]); //Iplaca
+            chart_ibat.series[0].setData([data[0][2]]);  //Ibat o Excedentes Red
+            //chart_ibat.series[1].setData([data[0][10]]); //Iplaca (no se usa en Red)
             
             chart_wplaca.series[0].setData([data[0][12]]); //Wplaca
             
@@ -1846,16 +1695,17 @@ $(function () {
             $("#maxVbat").text(data[0][24]+ "V");
             
             //Evaluacion del color de la celda segun la variable Mod_bat, SOCmax... (Colores definidos en inicio.css)
-            //MOD_BAT
-            if (data[0][17] == "ABS")  {
-                document.getElementById("Mod_bat").className = "ABS";}
-            else if (data[0][17] == "BULK")  {
-                document.getElementById("Mod_bat").className = "BULK";}
+            //MOD_BAT o INYECCCION/CONSUMO RED
+            if (data[0][17] == "CONS")  {
+                document.getElementById("Mod_bat").className = "rojo";}
+            else if (data[0][17] == "INYEC")  {
+                document.getElementById("Mod_bat").className = "verde";}
+            /*
             else if (data[0][17] == "FLOT")  {
                 document.getElementById("Mod_bat").className = "FLOT";}
             else if (data[0][17] == "EQU")  {
                 document.getElementById("Mod_bat").className = "EQU";};
-             
+             */
               
             //SOC_min
             if (data[0][21] <= SOC_min_rojo)  {
@@ -1904,13 +1754,6 @@ $(function () {
             }
             
             chart_reles.xAxis[0].setCategories(tCategories);
-            
-            // Actualizacion Vceldas     
-            
-            chart_celdas.xAxis[0].setCategories(data[3][0]);
-            chart_celdas.series[0].setData(data[3][1]);
-            chart_celdas.series[1].setData(data[3][2]);
-            chart_celdas.series[2].setData(data[3][3]);
             
             
             //console.log(data)

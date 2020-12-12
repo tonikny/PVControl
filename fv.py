@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-11-24
+# Versión 2020-12-12
 
 
 import time,sys
@@ -44,6 +44,7 @@ print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl') #+St
 #Parametros Instalacion FV
 from Parametros_FV import *
 
+#aseguro que los valores introducidos en Parametros_FV.py son float
 AH = float(AH)
 CP = float(CP)
 EC = float(EC)  
@@ -58,7 +59,6 @@ RES0_gain = float(RES0_gain)
 RES1_gain = float(RES1_gain)
 RES2_gain = float(RES2_gain)
 RES3_gain = float(RES3_gain)
-
 
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
@@ -79,8 +79,7 @@ if usar_telegram == 1:
     bot.skip_pending = True # Skip the pending messages
     cid = Aut[0]
 
-#if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor + Ibat_sensor + Iplaca_sensor).find ('ADS') >=0 : 
-bus = SMBus(1) # Activo Bus I2C
+bus = SMBus(1) # Activo Bus I2C para ADS o PCF
 
 if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor).find ('ADS') >=0 : 
     # Alta ADS1115_1 - pin addr a 3V3
@@ -99,10 +98,10 @@ OP = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'priori
       'id_rele2':7,'operacion':8,'parametro':9,'condicion':10,'valor':11}
 OPH = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'prioridad':6,
        'id_rele2':7,'parametro_h':8,'valor_h_ON':9,'valor_h_OFF':10}
-#NDIA = {'D':0,'L':1,'M':2,'X':3,'J':4,'V':5,'S':6}
 NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'}
 
 #Inicializando las variables del programa
+
 Grabar = 1 # Contador ciclo grabacion en BD
 
 T_ejecucion_max = 0.0
@@ -117,11 +116,15 @@ T_ejecucion = 0
 
 Ibat = 0.0      # Intensidad Bateria
 Vbat = vsis*12.0     # Voltaje Bateria inicial
+DS = SOC = 0   # control SOC bateria
 Mod_bat =''
 
-Iplaca = Vplaca = 0.0   #  Voltaje e Intensidad de Placas(valor intensidad tras el regulador)
+Iplaca = Vplaca = 0.0   # Voltaje e Intensidad de Placas(valor intensidad tras el regulador)
 
-Aux1 = Aux2 = 0.0   # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
+Aux1 = Aux2 = 0.0       # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
+
+Ired = Vred = EFF = 0.0 # Valores de rec AC
+
 Temp = 0.0      # temperatura baterias
 Mtemp = 60      # Numero de segundos para leer temperatura
 
@@ -132,11 +135,14 @@ Tflot_bulk = Tbulk = 0.0    # Tiempo asociado al paso de FLOT a BULK
 SOC_max = SOC_min = 0     #Variable para guardar SOC maximo y minimo diario
 Vbat_max = Vbat_min = 0    # Variable para guardar Vbat maximo  y minimo diario
 
-flag_Abs= flag_Flot = 0
+flag_Abs= flag_Flot = 0    # Flags de Absorcion y Flotacion
+Vabs = Vflot = 0           # Valores de Absorcion y Flotacion
 
 Coef_Temp = 0.0             # Coeficiente de compensacion de temperatura para Vflot/Vabs 
 
 Nlog = Nlog_max = 30 # Contador Numero de log maximos cada minuto
+log=''               # Valor del log 
+
 minuto = time.strftime("%H:%M")
 
 n_refresco_rele = 0 #utilizado en secuenciacion escritura de refresco en reles
@@ -149,6 +155,8 @@ Ip = Ip1 = Ip2 = DS = 0.0
 
 Puerto = estado = 0
 Wh_bat = Whp_bat = Whn_bat = 0.0
+Wh_red = Whp_red = Whn_red = 0.0
+
 Wh_placa = Wh_consumo = 0.0
 
 N = 5  # numero de muestras para control PID
@@ -437,6 +445,7 @@ try:
 
     sql="""SELECT DS, DATE(Tiempo),Whp_bat,Whn_bat,Wh_placa, SOC, Vbat
          FROM datos ORDER BY id DESC limit 1"""
+                 
     cursor.execute(sql)
     var=cursor.fetchone()
     DS=float(var[0])
@@ -496,7 +505,6 @@ for I in range(nreles): #apagado fisico
         Rele_SSR[NGPIO][0].start(0)
         NGPIO +=1
 
-
 if nreles > 0 : # apagado reles en BD
     sql = "UPDATE reles SET estado = 0"
     cursor.execute(sql)
@@ -504,26 +512,24 @@ if nreles > 0 : # apagado reles en BD
 ## ------------------------------------------------------------
 ### Calcular voltaje sistema (12,24 o 48)
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
+if AH > 1:
+    try:
+        if simular != 1 and Vbat_sensor == 'ADS':
+            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
+        else:
+            Vbat = vsis * 12.0
+    except:
+        # TODO: reformular esto, hay cambio de parametros
+        pass
 
-try:
-    if simular != 1 and Vbat_sensor == 'ADS':
-        Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
-    else:
-        Vbat = vsis * 12.0
-except:
-    # TODO: reformular esto, hay cambio de parametros
-    pass
+    if Vbat > 11 and Vbat < 15.5 : vsis = 1
+    elif Vbat > 22 and Vbat < 31 : vsis = 2
+    elif Vbat > 44 and Vbat < 62 : vsis = 4
+    else : log='Error: Imposible reconocer el voltaje del sistema'
 
-    
-log=''
-if Vbat > 11 and Vbat < 15.5 : vsis = 1
-elif Vbat > 22 and Vbat < 31 : vsis = 2
-elif Vbat > 44 and Vbat < 62 : vsis = 4
-else : log='Error: Imposible reconocer el voltaje del sistema'
-
-Vflot = 13.7 * vsis
-Vabs = 14.4 * vsis
-Objetivo_PID = 15.2 * vsis #pongo un valor alto no alcanzable
+    Vflot = 13.7 * vsis
+    Vabs = 14.4 * vsis
+    Objetivo_PID = 17.2 * vsis #pongo un valor alto no alcanzable
 
 print(Fore.RED+'Pulsa Ctrl-C para salir...'+Fore.RESET)
 
@@ -590,7 +596,7 @@ try:
             TR=cursor.fetchall()
             
             for I in range(nreles): # actualizar diccionarios por si se han creado nuevos reles
-                Rele[TR[I][0]] = TR[I][3] # actualizamos diccionario Reles_Out con valor en BD
+                Rele[TR[I][0]] = TR[I][3] # actualizamos diccionario Reles con valor en BD
                 Rele_H[TR[I][0]] = 0 # inicializamos a cero el diccionario para control horario
            
 
@@ -625,7 +631,9 @@ try:
         t_muestra_ant=t_muestra
         t_muestra=time.time()-hora_m
         hora_m=time.time()
-        i=-1 
+        
+        i=-1  # ?????? no recuerdo para que es
+        
         if t_muestra > t_muestra_max:
             logBD('TmuestraX='+str(int(t_muestra_1))+'/'+str(int(t_muestra_2))+'/'+str(int(t_muestra_3))+'/'+str(int(t_muestra_4))+'/'+str(int(t_muestra_5))+'/'+str(int(t_muestra_6))+'/'+str(int(t_muestra_7))+'/'+str(int(t_muestra_8)))
        
@@ -647,10 +655,13 @@ try:
             Vbat = random.choice([22.5,23.7,24.0,24.4,25.5,26.3,27,27.5,28.2,29.1])
             Vplaca = random.choice([60,59.4,61,59.9,52,60.1,61.6,58.7,62,57.3])
             Wplaca = random.choice([600,590.40,610,590.90,520,600.10,610.60,580.70,620,570.30])
-            Diver = random.choice([10,-10,11,20,-7,5,8,-8])  
             Temp = random.choice([10,12,14,16,18,20,22,24,26,28,30,32,34])
             Aux1 = random.choice([0,10,12,14,16,18,20,22,24,26,28,30,32,34])
             Aux2 = random.choice([0,10,12,14,16,18,20,22,24,26,28,30,32,34])
+            Vred = random.choice([220,221,222])
+            Ired = random.choice([1,2,3,0,-1,-2,-3])
+            EFF = random.choice([1,0.95,0.9])
+            
             Consumo = Vbat * (Iplaca-Ibat)
             
         else:
@@ -694,7 +705,8 @@ try:
                 except:
                     logBD('error lectura '+archivo_ram)
                     continue
-                    
+            
+            ee=30.41        
             if usar_fronius == 1:
                 archivo_ram='/run/shm/datos_fronius.pkl'
                 try:
@@ -702,8 +714,19 @@ try:
                         d_fronius = pickle.load(f)
                 except:
                     logBD('error lectura '+archivo_ram)
-                    continue  
+                    continue       
             
+            ee=30.42        
+            if usar_huawei == 1:
+                archivo_ram='/run/shm/datos_huawei.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_huawei = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue       
+            
+            ee=30.43             
             if usar_must == 1:
                 archivo_ram='/run/shm/datos_must.pkl'
                 try:
@@ -711,9 +734,7 @@ try:
                         d_must = pickle.load(f)
                 except:
                     logBD('error lectura '+archivo_ram)
-                    continue         
-                         
-                    
+                    continue
 
             ee=30.5
             if usar_srne == 1:
@@ -734,15 +755,31 @@ try:
                     continue
                 
             ee=34
-            Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,ibat_min,ibat_max)            
-            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,vbat_min,vbat_max)
             
-            Iplaca, Iplaca_err = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,iplaca_min,iplaca_max)
-            if abs(Iplaca) < iplaca_error: Iplaca =0 
+            if AH > 1 : # hay bateria
+                Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,Ibat_min,Ibat_max)            
+                Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,Vbat_min,Vbat_max)
+                Wbat = Vbat * Ibat # W instantaneos a bateria
+                EFF = Ired = Vred = 0
             
-            Vplaca, Vplaca_err = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,vplaca_min,vplaca_max)
-            Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,aux1_min,aux1_max)
-            Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,aux2_min,aux2_max)
+            else:       # NO hay bateria
+                Ired, Ired_err = leer_sensor('Ired',Ired_sensor,Ired,Ired_min,Ired_max)            
+                Vred, Vred_err = leer_sensor('Vred',Vred_sensor,Vred,Vred_min,Vred_max)            
+                EFF, EFF_err = leer_sensor('EFF',EFF_sensor,EFF,EFF_min,EFF_max)
+                Wred = Vred * Ired # W instantaneos a red
+                
+                ################# mientras se piensa que hacer con BD
+                Vbat = Vred
+                Ibat = Ired            
+                SOC = EFF
+                ################
+            Iplaca, Iplaca_err = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,Iplaca_min,Iplaca_max)
+            if abs(Iplaca) < Iplaca_error: Iplaca =0 
+            
+            Vplaca, Vplaca_err = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,Vplaca_min,Vplaca_max)
+             
+            Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,Aux1_min,Aux1_max)
+            Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,Aux2_min,Aux2_max)
         
             try:
                 # evalua las expresiones definidas en Parametros_FV.py
@@ -761,7 +798,7 @@ try:
                     except:
                         logBD('error lectura '+archivo_ram)
                         continue
-                Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,temp_min,temp_max)
+                Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min,Temp_max)
                 Ctemp=Mtemp # reinicio contador
                 client.publish("PVControl/DatosFV/Temp",Temp)
                 if DEBUG >= 100: print(Fore.BLUE +'Temp=',Temp,Fore.RESET,end='')
@@ -789,131 +826,147 @@ try:
             Rele_Tiempo = {} # inicializo diccionaro tiempo de reles 
             
         else:
-            if Ibat < 0: Whn_bat = round(Whn_bat - (Ibat * Vbat * t_muestra/3600),2)
-            else:        Whp_bat = round(Whp_bat + (Ibat * Vbat * t_muestra/3600),2)
-
+            if Ibat < 0: 
+                Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
+                Whn_red = Whn_bat
+            else: 
+                Whp_bat = round(Whp_bat + (Wbat * t_muestra/3600),2)
+                Whp_red = Whp_bat
+                        
             Wh_placa = round(Wh_placa + (Wplaca * t_muestra/3600),2)
 
-        ## -------- CALCULO SOC% A C20 ----------
-        if Ibat < 0 :
-            Ip1 = -Ibat; Ip1 = Ip1**CP; Ip1 = AH*Ip1
-            Ip2 = AH / 20 ; Ip2 = (Ip2**CP)*20
-            Ip= -Ip1/Ip2
-        else :
-            Ip = Ibat * EC
+        if AH > 1:   #Solo si hay batería
+            ## -------- CALCULO SOC% A C20 ----------
+            if Ibat < 0 :
+                Ip1 = -Ibat; Ip1 = Ip1**CP; Ip1 = AH*Ip1
+                Ip2 = AH / 20 ; Ip2 = (Ip2**CP)*20
+                Ip= -Ip1/Ip2
+            else :
+                Ip = Ibat * EC
 
-        if (Ibat>0 and Ibat<0.005*AH and abs(Vbat-Vflot)<0.2) : DS = DS + (AH-DS)/50
-        else : DS = DS + (Ip * t_muestra/3600)
-        
-        if DS > AH : DS = AH
-        if DS < 0 :  DS = 0
-
-        if TP[4] != 0: # Actualizo SOC si en la BD es distinto de 0
-            DS = AH*TP[4]/100
-            cursor.execute("UPDATE parametros SET nuevo_soc=0 WHERE id_parametros=1")
-            db.commit()                
-        SOC = round(DS/AH*100,2)
-        
-        ###########   Calculo Algoritmo de carga #############
-        ee=38
-        try:
-            if Mod_bat == 'BULK':
-                ee=38.1
-                if Iplaca > 0: Tbulk += t_muestra
-                
-                if Vbat >= Vabs:# paso de Bulk a Abs
-                    cursor.execute("UPDATE parametros SET Mod_bat='ABS'")
-                    db.commit()
-                    try:
-                        if flag_Abs == 0 and usar_telegram == 1:
-                            flag_Abs =1
-                            logBD('Inicio ABS')
-                            bot.send_message( cid, 'Inicio Absorcion')
-                    except:
-                        pass
-
-            elif Mod_bat == 'FLOT': 
-                ee=38.2
-                if Vbat >= Vflot-0.2: Tflot += t_muestra
+            if (Ibat>0 and Ibat<0.005*AH and abs(Vbat-Vflot)<0.2) : DS = DS + (AH-DS)/50
+            else : DS = DS + (Ip * t_muestra/3600)
             
-                # paso de Flot a Bulk
-                if Vbat <= Vflot-4: Tflot_bulk += 8 * t_muestra
-                elif Vbat <= Vflot-3: Tflot_bulk += 4 * t_muestra
-                elif Vbat <= Vflot-2: Tflot_bulk += 2 * t_muestra
-                elif Vbat <= Vflot-0.1: Tflot_bulk += t_muestra
+            if DS > AH : DS = AH
+            if DS < 0 :  DS = 0
 
-                if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
-                    Tflot_bulk = Tabs = flag_Abs= 0
-                    cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
-                    if TP[6] == 'Vbat':
-                        cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
-                    db.commit()
-                    try:
-                        if flag_Flot == 1 and usar_telegram == 1:
-                            flag_Flot = 0
-                            logBD('Inicio BULK')
-                            bot.send_message( cid, 'Inicio BULK')
-                    except:
-                        pass
+            if TP[4] != 0: # Actualizo SOC si en la BD es distinto de 0
+                DS = AH*TP[4]/100
+                cursor.execute("UPDATE parametros SET nuevo_soc=0 WHERE id_parametros=1")
+                db.commit()                
+            SOC = round(DS/AH*100,2)
             
-            elif Mod_bat == 'ABS':
-                ee=38.3
-                if Vbat >= Vabs-0.1:Tabs += t_muestra
-                
-                elif Vbat < Vabs-0.2:# paso de Abs a Bulk
-                    cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
-                    db.commit() 
-                
-                if Tabs >= Tabs_max: # paso de Abs a Flot
-                    cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
-                    if TP[6] == 'Vbat':
-                        cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vflot)+"'")
-                    db.commit()
-                    try:
-                        if flag_Flot == 0 and usar_telegram == 1:
-                            flag_Flot = 1
-                            logBD('Inicio FLOT')
-                            bot.send_message( cid, 'Inicio Flotacion')
-                    except:
-                        pass
+            ###########   Calculo Algoritmo de carga #############
+            ee=38
+            try:
+                if Mod_bat == 'BULK':
+                    ee=38.1
+                    if Iplaca > 0: Tbulk += t_muestra
+                    
+                    if Vbat >= Vabs:# paso de Bulk a Abs
+                        cursor.execute("UPDATE parametros SET Mod_bat='ABS'")
+                        db.commit()
+                        try:
+                            if flag_Abs == 0 and usar_telegram == 1:
+                                flag_Abs =1
+                                logBD('Inicio ABS')
+                                bot.send_message( cid, 'Inicio Absorcion')
+                        except:
+                            pass
 
-            elif Mod_bat == 'EQU':
-                ee=38.4
-                if Vbat >= Vequ-0.2:
-                    Tequ += t_muestra
-                if Tequ >= Tequ_max:    
-                    Tequ=0 
-                    cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
-                    db.commit() 
-            ee=39
-            if DEBUG >=3:
+                elif Mod_bat == 'FLOT': 
+                    ee=38.2
+                    if Vbat >= Vflot-0.2: Tflot += t_muestra
+                
+                    # paso de Flot a Bulk
+                    if Vbat <= Vflot-4: Tflot_bulk += 8 * t_muestra
+                    elif Vbat <= Vflot-3: Tflot_bulk += 4 * t_muestra
+                    elif Vbat <= Vflot-2: Tflot_bulk += 2 * t_muestra
+                    elif Vbat <= Vflot-0.1: Tflot_bulk += t_muestra
+
+                    if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
+                        Tflot_bulk = Tabs = flag_Abs= 0
+                        cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
+                        if TP[6] == 'Vbat': # si sensor_PID es Vbat
+                            cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
+                        db.commit()
+                        try:
+                            if flag_Flot == 1 and usar_telegram == 1:
+                                flag_Flot = 0
+                                logBD('Inicio BULK')
+                                bot.send_message( cid, 'Inicio BULK')
+                        except:
+                            pass
+                
+                elif Mod_bat == 'ABS':
+                    ee=38.3
+                    if Vbat >= Vabs-0.1:Tabs += t_muestra
+                    
+                    elif Vbat < Vabs-0.2:# paso de Abs a Bulk
+                        cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
+                        db.commit() 
+                    
+                    if Tabs >= Tabs_max: # paso de Abs a Flot
+                        cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
+                        if TP[6] == 'Vbat':
+                            cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vflot)+"'")
+                        db.commit()
+                        try:
+                            if flag_Flot == 0 and usar_telegram == 1:
+                                flag_Flot = 1
+                                logBD('Inicio FLOT')
+                                bot.send_message( cid, 'Inicio Flotacion')
+                        except:
+                            pass
+
+                elif Mod_bat == 'EQU':
+                    ee=38.4
+                    if Vbat >= Vequ-0.2:
+                        Tequ += t_muestra
+                    if Tequ >= Tequ_max:    
+                        Tequ=0 
+                        cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
+                        db.commit() 
+                ee=39
+                if DEBUG >=3:
+                    print(' Tbulk={0:.2f} - Tabs={1:.2f} - Tflot={2:.2f}- Tflot_bulk={3:.2f}'.format(Tbulk,Tabs,Tflot,Tflot_bulk),end='')
+                    print (' Carga= {0}'.format(Mod_bat))
+            except:
+                print (tiempo,' Error algoritomo carga ',ee) 
                 print(' Tbulk={0:.2f} - Tabs={1:.2f} - Tflot={2:.2f}- Tflot_bulk={3:.2f}'.format(Tbulk,Tabs,Tflot,Tflot_bulk),end='')
                 print (' Carga= {0}'.format(Mod_bat))
-        except:
-            print (tiempo,' Error algoritomo carga ',ee) 
-            print(' Tbulk={0:.2f} - Tabs={1:.2f} - Tflot={2:.2f}- Tflot_bulk={3:.2f}'.format(Tbulk,Tabs,Tflot,Tflot_bulk),end='')
-            print (' Carga= {0}'.format(Mod_bat))
-            logBD('Err.Alg.Carga='+ str(ee)+ '==' + Mod_bat + '=' + str(Tabs) + '/' + str(Tflot) + '/' + str(Tflot_bulk))            
+                logBD('Err.Alg.Carga='+ str(ee)+ '==' + Mod_bat + '=' + str(Tabs) + '/' + str(Tflot) + '/' + str(Tflot_bulk))            
+                
+        else:   #Solo si NO hay batería
+            if Wred * Ired > 0:
+                Mod_red = 'INYECT'
+            else:
+                Mod_red = 'CONS'
             
+            Mod_bat = Mod_red # para BD mientras no se cambien nombre de campos
         
         ee=40
         if Grabar == 1: #publico cada t_muestra*N_muestras
-            client.publish("PVControl/DatosFV/Ibat",Ibat)
+            
             client.publish("PVControl/DatosFV/Iplaca",Iplaca)
-            client.publish("PVControl/DatosFV/Vbat",Vbat)
             client.publish("PVControl/DatosFV/Vplaca",Vplaca)
             client.publish("PVControl/DatosFV/Wplaca",Wplaca)
             client.publish("PVControl/DatosFV/Aux1",Aux1)
             client.publish("PVControl/DatosFV/Aux2",Aux2)
             client.publish("PVControl/Reles/PWM", PWM)  # publico salida PWM
-            client.publish("PVControl/DatosFV/SOC",SOC)
-        
+            
+            if AH > 1 :
+                client.publish("PVControl/DatosFV/Ibat",Ibat)
+                client.publish("PVControl/DatosFV/Vbat",Vbat)
+                client.publish("PVControl/DatosFV/SOC",SOC)
+            else:
+                client.publish("PVControl/DatosFV/Ired",Ired)
+                client.publish("PVControl/DatosFV/Vred",Vred)
+                client.publish("PVControl/DatosFV/EFF",EFF)
+            
         t_muestra_2=(time.time()-hora_m) * 1000
         
         #------------- Asignamos valores al diccionario para parametros condiciones ...
-        DatosFV['Vbat'] = Vbat
-        DatosFV['Ibat'] = Ibat
-        DatosFV['SOC'] = SOC
         DatosFV['Iplaca'] = Iplaca
         DatosFV['Aux1'] = Aux1
         DatosFV['Aux2'] = Aux2
@@ -922,21 +975,38 @@ try:
         DatosFV['Wplaca'] = Wplaca
         DatosFV['PWM'] = PWM
         DatosFV['Consumo'] = Consumo
-                
-        # ------------------ Calculo del SOCmax, SOCmin, Vbat_max, Vbat_min ------------------
-        if SOC > SOC_max:   SOC_max = SOC
-        elif SOC < SOC_min: SOC_min = SOC
         
-        if Vbat > Vbat_max:   Vbat_max = Vbat
-        elif Vbat < Vbat_min: Vbat_min = Vbat
+        if AH > 1: # FV Con Bateria
+            DatosFV['Vbat'] = Vbat
+            DatosFV['Ibat'] = Ibat
+            DatosFV['SOC'] = SOC
+            DatosFV['Whn_bat'] = Whn_bat           # Wh descargados de bateria
+            DatosFV['Whp_bat'] = Whp_bat           # Wh cargados a bateria
+            DatosFV['Wh_bat'] = Whp_bat - Whn_bat  # Wh balance (cargados - descargados) bateria
+            DatosFV['Wbat'] = Wbat                 # Wbateria  Vbat * Ibat
+            
+        else:
+            DatosFV['Vred'] = Vred
+            DatosFV['Ired'] = Ired
+            DatosFV['EFF'] = EFF
+            DatosFV['Whn_red'] = Whn_red           # Wh consumidos de red
+            DatosFV['Whp_red'] = Whp_red           # Wh inyectados a red
+            DatosFV['Wh_red'] = Whp_red - Whn_red  # Wh balance (inyectados - consumidos) red
+            DatosFV['Wred'] = Wred                 # Wred =  Vred * Ired
+            
+        # ------------------ Calculo del SOCmax, SOCmin, Vbat_max, Vbat_min ------------------
+        SOC_max = max (SOC, SOC_max)
+        SOC_min = min (SOC, SOC_min)
+        Vbat_max = max (Vbat, Vbat_max)
+        Vbat_min = min (Vbat, Vbat_min)
 
-                
+               
       ## ------------------ ALGORITMO CONDICIONES RELES -----------------------------
         ee=50
         #### Cargamos los valores actuales de los reles  en Rele_Ant####
         
         for I in range(nreles): # Calculo Numero reles wifi y actualizo Rele_Ant
-            Rele_Ant[TR[I][0]] = Rele[TR[I][0]] # ponemos estado en BD del rele
+            Rele_Ant[TR[I][0]] = Rele[TR[I][0]] # ponemos estado del rele en el estado anterior
             Rele_H[TR[I][0]] = 0 # inicializamos a cero el diccionario para control horario
         
             
@@ -944,7 +1014,7 @@ try:
         
         ee=52
         for I in range(fvcon): # enciendo reles con condiciones FV
-            if R[I][6] == 0: # no actuo en reles de excedentes
+            if R[I][6] == 0: # no actuo en reles de excedentes (prioridad > 0) 
                 Rele[R[I][0]] = R[I][5] # pongo valor del salto
                 #print ('enciendo condiciones FV - Rele',R[I][0],'=',Rele[R[I][0]])
                 # no me gusta... deberia ser al valor ant + salto y ver si no me paso de 100
@@ -1090,7 +1160,7 @@ try:
         PWM_Max= Nreles_Diver * 100
     
         ee=100
-        if PWM >=0 : # situacion normal
+        if PWM >=0 : # situacion normal, se puede anular la entrada aqui poniendo en condiciones PWM = -1
             #print ('Reles diver=',Nreles_Diver)
             #print (Reles_D_Ord)
             if Nreles_Diver > 0:
@@ -1113,7 +1183,7 @@ try:
                     #print('Rele',id_rele,Rele[id_rele],int(PWM_R))
                 #print('.....................')
                     
-        else: #salida manual de reles de excedentes
+        else: #salida manual de reles de excedentes por si se manipulan en condiciones
             for P in range(Nreles_Diver):
                 id_rele = Reles_D_Ord[P][0]
                 
@@ -1144,7 +1214,7 @@ try:
             
                  
                     
-        if TP[1] == "S" and Grabar == 1 and nreles > 0:
+        if TP[1] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
             for I in range(nreles):
                 id_rele = TR[I][0]
                 estado = Rele[id_rele]
@@ -1204,8 +1274,8 @@ try:
             if DEBUG >=2: print (Fore.RED+'G'+Fore.RESET,end='')
             try:
                 cursor.execute("""INSERT INTO datos (Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat) 
-                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                   (tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat))
+                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                       (tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat))
                 #db.commit()
             except:
                 db.rollback()
@@ -1231,12 +1301,20 @@ try:
         t_muestra_5=(time.time()-hora_m) * 1000
         # ----------------- Guardamos datos_fv.json ------
         ee=300
-        datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
-               Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
-               int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-               Temp,int(PWM),round(Consumo,0),Mod_bat,int(Tabs),int(Tflot),
-               int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max]        
+        if AH > 1: # FV con bateria
+            datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
+                   Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
+                   int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
+                   Temp,int(PWM),round(Consumo,0),Mod_bat,int(Tabs),int(Tflot),
+                   int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max]        
         
+        else:   # FV sin bateria
+            datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
+                   Ired,Vred,EFF,0,Aux1,Aux2,
+                   int(Whp_red),int(Whn_red),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
+                   Temp,int(PWM),round(Consumo,0),Mod_red,0,0,
+                   0,EFF_min,EFF_max,Vred_min,Vred_max]
+                       
         with open('/run/shm/datos_fv.json', 'w') as f:
             json.dump(datos, f)
         
@@ -1260,8 +1338,11 @@ try:
             #print (tiempo,'-',end='')
             print(' {0:4}ms - Sensor={1}={2:.2f}'.format(int(T_ejecucion*1000),TP[6],TP[5]),end='')
             print (Fore.CYAN+'/{0:.2f}'.format(eval(TP[6])),end='')
-            print (Fore.MAGENTA+' / Vbat={0:.2f}- Iplaca={1:.2f}- Ibat={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vbat,Iplaca,Ibat,Consumo,PWM),Fore.RESET)
-
+            if AH > 0:
+                print (Fore.MAGENTA+' / Vbat={0:.2f}- Iplaca={1:.2f}- Ibat={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vbat,Iplaca,Ibat,Consumo,PWM),Fore.RESET)
+            else:
+                print (Fore.MAGENTA+' / Vred={0:.2f}- Iplaca={1:.2f}- Ired={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vred,Iplaca,Ired,Consumo,PWM),Fore.RESET)
+                
         # Repetir bucle cada X segundos
         espera = TP[2] - T_ejecucion #-0.1
         if espera > 0: time.sleep(espera)

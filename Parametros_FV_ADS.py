@@ -6,8 +6,8 @@
 ###### Parametros Bateria ######
 ################################
 AH = 1200.          # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
-CP = 1.107          # Indice Peukert
-EC = 1.0            # Eficiencia Carga
+CP = 1              # Indice Peukert
+EC = 0.95            # Eficiencia Carga
 vsis = 2            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
@@ -55,27 +55,27 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 ##########################################################
 ###### Parametros Mensaje error lectura incoherente ######
 ##########################################################
-vbat_max = 66     # Maximo voltaje bateria admisible para no dar aviso log
-vbat_min = 11     # Minimo voltaje bateria admisible para no dar aviso log
+Vbat_max = 66     # Maximo voltaje bateria admisible para no dar aviso log
+Vbat_min = 11     # Minimo voltaje bateria admisible para no dar aviso log
 
-aux1_max = 14
-aux1_min = -1
+Aux1_max = 14
+Aux1_min = -1
 
-aux2_max = 14
-aux2_min = -1
+Aux2_max = 14
+Aux2_min = -1
 
-vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
-vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
+Vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
+Vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
 
-ibat_max = 200    # Maxima intensidad bateria admisible para no dar aviso log
-ibat_min = -200   # Minima intensidad bateria admisible para no dar aviso log
+Ibat_max = 200    # Maxima intensidad bateria admisible para no dar aviso log
+Ibat_min = -200   # Minima intensidad bateria admisible para no dar aviso log
 
-iplaca_max = 250
-iplaca_min = -1.5
-iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
+Iplaca_max = 250
+Iplaca_min = -1.5
+Iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
 
-temp_max = 50       # Maxima temperatura admisible para no dar aviso log
-temp_min = -10      # Minima temperatura admisible para no dar aviso log
+Temp_max = 50       # Maxima temperatura admisible para no dar aviso log
+Temp_min = -10      # Minima temperatura admisible para no dar aviso log
 
 t_muestra_max = 6  # valor para grabar en el log si tarda mas el bucle en ejecutarse
 
@@ -253,6 +253,28 @@ IP_SB1 = "192.168.0.253"  # IP del SB1
 IP_SB2 = "192.168.0.252"  # IP del SB2
 
 grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
+
+# -----------------------------------------------
+#################
+#### FRONIUS ####
+#################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar fronius = 1
+
+usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
+IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
+
+# -----------------------------------------------
+#################
+####  HUAWEI ####
+#################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
+
+usar_huawei = 0          	# 1 para leer datos del huawei..... 0 para no usar
+IP_HUAWEI = "192.168.0.24"     # IP del huawei
 
 # -----------------------------------------------
 ##################
