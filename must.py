@@ -59,8 +59,9 @@ def leer_datos(a,b):
         
     except:
         print ('error lectura')
-        pass
+        
         return None
+        pass
         
     
         
