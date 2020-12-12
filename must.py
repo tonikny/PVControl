@@ -2,8 +2,6 @@ import time
 import pymodbus
 import Parametros_FV
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
-modbus = ModbusClient(method='rtu', port='/dev/ttyUSB1', baudrate=19200, timeout=1)
-modbus.connect()
 import sys
 import pickle
 import subprocess, sys
@@ -14,6 +12,8 @@ if usar_must == 0:
         print (subprocess.getoutput('sudo systemctl stop sma_meter'))
         sys.exit()
 
+modbus = ModbusClient(method='rtu', port=dev_must, baudrate=19200, timeout=1)
+modbus.connect()
 
 
 DEBUG = True
