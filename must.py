@@ -24,7 +24,7 @@ res   = [[0]*1 for i in range(6)]
 
 
 def leer_datos(a,b):
-    
+    time.sleep(0.5)
     R1 = modbus.read_holding_registers(15205, 4, unit=a)
     time.sleep(0.5)
     I1 = modbus.read_holding_registers(25205, 11, unit=b)
