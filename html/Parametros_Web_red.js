@@ -37,7 +37,7 @@
 	Consumo_amperios_rojo = 25;
 	Consumo_amperios_max= 40;
 
-	// Reloj Ibat/Iplaca --- considerar que Intensidad_xxx es realmente Excedentes_xxx
+	// Reloj Excedentes --- considerar que Intensidad_xxx es realmente Excedentes_xxx
 	Intensidad_min = -5000;
 	Intensidad_descarga_amarillo = -1000;
 	Intensidad_carga_rojo = 5000;
@@ -89,13 +89,13 @@
 	SOC_min_naranja = 75;
     
     //--- considerar que Vbat_xxx es realmente Vred_xxx
-	Vbat_max_alta_rojo = 15;
-	Vbat_max_alta_naranja = 14.5;
-	Vbat_max_baja_rojo = 12.5;
-	Vbat_max_baja_naranja = 13.5;
+	Vbat_max_alta_rojo = 245;
+	Vbat_max_alta_naranja = 240;
+	Vbat_max_baja_rojo = 205;
+	Vbat_max_baja_naranja = 215;
 
-	Vbat_min_rojo = 11;
-	Vbat_min_naranja = 11.5;
+	Vbat_min_rojo = 205;
+	Vbat_min_naranja = 215;
 	
 	
 // Pagina Historico1.php,  Historico_horas.php, historico_con_temp.php  ........

@@ -43,18 +43,29 @@ print ()
 if AH <1 :
     print ('NO se ha dado de alta una BATERIA,por lo que se configura la WEb como ')
     print(Fore.RED+' --------- FV SIN BATERIA --------')
-    fichero ='/home/pi/PVControl+/html/index_red.php'
+    fichero1 ='/home/pi/PVControl+/html/index_red.php'
+    fichero2 ='/home/pi/PVControl+/html/Parametros_Web_red.js'
                         
 else:
     print (Fore.CYAN + 'Se ha dado de alta una BATERIA de ' + Fore.RED, AH, 'AH'+ Fore.CYAN,
            ' por lo que se configura la WEb como')
-    print(Fore.RED+' --------- FV CON BATERIA --------')
+    print(Fore.RED+' --------- FV CON BATERIA a ', end='')
+    if vsis == 1:
+        print (' 12V -------')
+        fichero2 ='/home/pi/PVControl+/html/Parametros_Web_12V.js'
+    elif vsis == 2:
+        print (' 24V -------')
+        fichero2 ='/home/pi/PVControl+/html/Parametros_Web_24V.js'
+    elif vsis == 4:
+        print (' 48V -------')
+        fichero2 ='/home/pi/PVControl+/html/Parametros_Web_48V.js'
     print()
     if usar_mux > 0:
         print (Fore.CYAN + 'Se ha dado de alta control de ' + Fore.RED, usar_mux, 'Celdas'+ Fore.CYAN,
            ' por lo que se configura la WEb como')
         print (Fore.RED+' ------ FV CON BATERIA y CONTROL CELDAS -------')
-        fichero ='/home/pi/PVControl+/html/index_con_celdas.php'
+        fichero1 ='/home/pi/PVControl+/html/index_con_celdas.php'
+        
     else:
         print (Fore.CYAN + 'NO se ha dado de alta control de Celdas',
            ' por lo que se configura la WEb como ')
@@ -65,6 +76,8 @@ else:
 web_act = click.prompt(Fore.GREEN + ' 1= Actualiza Web  --  0: No Actualiza', type=str, default='1')
 
 if web_act == '1':
-    shutil.copy(fichero, '/home/pi/PVControl+/html/index.php')
+    shutil.copy(fichero1, '/home/pi/PVControl+/html/index.php')
+    shutil.copy(fichero2, '/home/pi/PVControl+/html/Parametros_Web.js')
+    
     print ()
     print ('WEB ACTUALIZADA')

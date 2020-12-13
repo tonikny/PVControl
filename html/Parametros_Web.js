@@ -1,25 +1,25 @@
 
 // Pagina inicio.php
 
-	// Reloj Vred   --- considerar que Vbat_xxx es realmente Vred_xxx 
-	Vbat_min = 200; 
-	Vbat_bajo_amarillo = 210;
-	Vbat_verde = 215;
-	Vbat_alto_amarillo = 240;
-	Vbat_alto_rojo = 250;
-	Vbat_max = 270; 
+	// Reloj Vbat
+	Vbat_min = 11; 
+	Vbat_bajo_amarillo = 12;
+	Vbat_verde = 12.7;
+	Vbat_alto_amarillo = 14;
+	Vbat_alto_rojo = 15;
+	Vbat_max = 16; 
 
-	// AC/DC EFICIENCIA --- considerar que SOC_xxx es realmente EFF_xxx
+	// SOC
 	SOC_min=60;
 	SOC_max=100;
 
 
-	// reloj Temp  --- considerar que Temp_Vbat_xxx es realmente Temp_Inversor_xxx
+	// reloj Temp
 	Temp_bat_min = -10;
 	Temp_bat_baja = 10;
-	Temp_bat_normal = 30;
-	Temp_bat_alta = 50;
-	Temp_bat_max = 80;
+	Temp_bat_normal = 20;
+	Temp_bat_alta = 30;
+	Temp_bat_max = 50;
 
 	Temp_rpi_min = 0;
 	Temp_rpi_normal = 40;
@@ -28,20 +28,20 @@
 
 	// Reloj Consumo
 	Consumo_watios_min = 0;
-	Consumo_watios_amarillo = 3000;
-	Consumo_watios_rojo = 5000;
-	Consumo_watios_max = 6000;
+	Consumo_watios_amarillo = 1000;
+	Consumo_watios_rojo = 2000;
+	Consumo_watios_max = 3000;
 
 	Consumo_amperios_min= 0;
-	Consumo_amperios_amarillo = 15;
-	Consumo_amperios_rojo = 25;
-	Consumo_amperios_max= 40;
+	Consumo_amperios_amarillo = 60;
+	Consumo_amperios_rojo = 80;
+	Consumo_amperios_max= 100;
 
-	// Reloj Ibat/Iplaca --- considerar que Intensidad_xxx es realmente Excedentes_xxx
-	Intensidad_min = -40;
-	Intensidad_descarga_amarillo = -10;
+	// Reloj Ibat/Iplaca
+	Intensidad_min = -65;
+	Intensidad_descarga_amarillo = -20;
 	Intensidad_carga_rojo = 40;
-	Intensidad_max = 40;
+	Intensidad_max = 65;
 
 
 	// Reloj Watios Placa
@@ -79,16 +79,13 @@
 	Escala_Vplaca_max = 400; 
 
 
-	// Tabla Colores 
-	 
-	//--- considerar que SOC_xxx es realmente EFF_xxx 
+	// Tabla Colores
 	SOC_max_rojo = 70;
 	SOC_max_naranja = 80;
 
 	SOC_min_rojo = 60;
 	SOC_min_naranja = 75;
-    
-    //--- considerar que Vbat_xxx es realmente Vred_xxx
+
 	Vbat_max_alta_rojo = 15;
 	Vbat_max_alta_naranja = 14.5;
 	Vbat_max_baja_rojo = 12.5;
@@ -101,8 +98,8 @@
 // Pagina Historico1.php,  Historico_horas.php, historico_con_temp.php  ........
 
 	// Se usan los mismos datos puestos en el Grafico Tiempo Real de inicio.php
-	Escala_Aux1_min = -3000;
-	Escala_Aux1_max = 3000;
+	Escala_Aux1_min = 0;
+	Escala_Aux1_max = 120;
 
 	
 

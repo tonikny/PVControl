@@ -1,0 +1,75 @@
+Estrategia WEB
+
+1.- CONFIGURACION PAGINA INICIAL WEB DE PVControl+
+    
+    Se tienen creados ../PVControl+/html los siguientes archivos index_xxx.php
+	
+	- index_sin celdas.php  # FV con Bateria
+	- index_con celdas.php  # FV con bateria y sin control de celdas (uso del mux de la PCB)
+	- index_red.php         # FV sin baterias
+	
+	En estos archivos se establece:
+	
+		- Los menus que aparecen en la Web
+		- Los distintos archivos xxx.php a los que direcciona cada opcion de menu
+	
+	Por ejemplo :
+		- index_sin celdas.php NO mostrara el menu de celdas y usa
+	   
+			- inicio_sin celdas.php   # pagina principal
+			- historico1.php          # grafico de carga del dia
+			- historico_mes.php       # grafico de carga de los ultimos 30 dias
+		    - wh.php                  # grafico Kwh resumen 30 dias
+		    - ....
+			
+		- index_con celdas.php SI mostrara el menu de celdas y usa
+	   
+			- inicio_con celdas.php   # pagina principal
+			- historico1.php          # grafico de carga del dia
+			- historico_mes.php       # grafico de carga de los ultimos 30 dias
+		    - wh.php                  # grafico Kwh resumen 30 dias
+		    - .....
+			
+		
+		- index_red.php NO mostrara el menu de celdas y usa
+	   
+			- inicio_red.php         # pagina principal
+			- historico1_red.php     # grafico de carga del dia
+			- historico_mes_red.php  # grafico de carga de los ultimos 30 dias
+		    - wh_red.php             # grafico Kwh resumen 30 dias
+		    - .....
+			
+	Simplemente hay que poner el index_xxx.php como index.php para que se use en la WEB
+	
+	Estos se puede hacer de forma manual o utilizando una de las siguiente utilidades:
+	
+		- PVControl_Configuracion_Inicial.py              # Programa de Configuracion Inicial de PVControl+
+		- PVControl_Configuracion_Web.py # Programa de Configuracion WEB de PVControl+
+	
+Ademas hay que tener el cuenta la configuracion de escalas/parametros WEB de acuerdo con el siguiente apartado
+		
+	
+2.- CONFIGURACION DE PARAMETROS/ESCALAS GRAFICAS WEB
+	
+	Para simplificar la adaptacion/personalizacion de la Web de PVControl+, muchos archivos xxx.php leen
+	el archivo  "Parametros_Web.js" en donde se define por ejemplo la Vbat maxima y minima del reloj de Vbat etc
+	
+	Por tanto, se han creado en ../PVControl+/html los siguientes archivos para ser usados como patrones:
+		
+		- Parametros_Web_12V.js    # Para sistemas FV de 12V
+		- Parametros_Web_24V.js    # Para sistemas FV de 24V
+		- Parametros_Web_48V.js    # Para sistemas FV de 48V
+		- Parametros_Web_red.js    # Para sistemas FV sin bateria
+	
+	Al igual que con index_xxx.php la idea es poner Parametros_Web_xxx.js como Parametros_Web.js para 
+	que sea usado por la WEB
+	
+	Estos se puede hacer de forma manual o utilizando una de las siguiente utilidades:
+	
+		- PVControl_Configuracion_Inicial.py   # Programa de Configuracion Inicial de PVControl+
+		- PVControl_Configuracion_Web.py       # Programa de Configuracion WEB de PVControl+
+	 
+	
+	  
+	
+ 
