@@ -172,7 +172,7 @@ with open('/home/pi/PVControl+/Parametros_FV.py') as f:
                         shutil.copy('/home/pi/PVControl+/html/index_red.php', '/home/pi/PVControl+/html/index.php')
                         #shutil.copy('/home/pi/PVControl+/html/inicio_red.php', '/home/pi/PVControl+/html/inicio.php')
                         
-                        shutil.copy('/home/pi/PVControl+/html/Parametros_Web_Red.js', '/home/pi/PVControl+/html/Parametros_Web.js')
+                        shutil.copy('/home/pi/PVControl+/html/Parametros_Web_red.js', '/home/pi/PVControl+/html/Parametros_Web.js')
                         Sql = "sensor_PID = 'Aux2',objetivo_PID = '100', Vabs = '0',Vflot = '0', Vequ = '0'"
                         print (Fore.CYAN +'Web configurada a sistemas SIN BATERIA')
                         
