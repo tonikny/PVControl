@@ -1310,7 +1310,7 @@ try:
         
         else:   # FV sin bateria
             datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
-                   Ired,Vred,EFF,0,Aux1,Aux2,
+                   Wred,Vred,EFF,0,Aux1,Aux2,
                    int(Whp_red),int(Whn_red),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
                    Temp,int(PWM),round(Consumo,0),Mod_red,0,0,
                    0,EFF_min,EFF_max,Vred_min,Vred_max]
