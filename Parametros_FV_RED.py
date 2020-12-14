@@ -68,7 +68,7 @@ Aux1_min = -1
 Aux2_max = 10000   # Valor max inyeccion a red
 Aux2_min = -10000  # Valor max consumo de red
 
-Vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
+Vplaca_max = 1000  # Maximo voltaje placas admisible para no dar aviso log
 Vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
 
 Ibat_max = 0    # Maxima intensidad bateria admisible para no dar aviso log
@@ -292,9 +292,8 @@ grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 
 usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
 usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius
-                                                                          
 IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
-
+t_muestra_fronius = 5
 # -----------------------------------------------
 #################
 ####  HUAWEI ####
@@ -305,7 +304,7 @@ IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
 
 usar_huawei = 1          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
-
+t_muestra_huawei
 # -----------------------------------------------
 ##################
 ###### SRNE ######
