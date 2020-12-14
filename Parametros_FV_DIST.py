@@ -293,7 +293,7 @@ grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
 usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius
 IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
-
+t_muestra_fronius = 5
 # -----------------------------------------------
 #################
 ####  HUAWEI ####
@@ -304,6 +304,7 @@ IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
 
 usar_huawei = 0          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
+t_muestra_huwei = 5
 
 # -----------------------------------------------
 ##################
