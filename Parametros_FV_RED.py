@@ -304,7 +304,7 @@ t_muestra_fronius = 5
 
 usar_huawei = 1          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
-t_muestra_huawei
+t_muestra_huawei = 5
 # -----------------------------------------------
 ##################
 ###### SRNE ######
