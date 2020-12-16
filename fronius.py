@@ -105,8 +105,8 @@ if __name__ == '__main__':
             if usar_meter_fronius == 1:
                 datos_meter = ve.read_data_meter()
                 datos_inverter.update(datos_meter)                
-                datos_inverter['Ibat'] = datos_meter['Wred']/datos_inverter['Vred']
-                datos_inverter['Vbat'] = datos_inverter['Vred']
+                datos_inverter['Ired'] = datos_meter['Wred']/datos_inverter['Vred']
+                datos_inverter['Vred'] = datos_inverter['Vred']
                 datos_inverter['Iplaca'] = datos_meter['Wplaca']/datos_inverter['Vred']
                 datos_inverter['Aux1'] = datos_meter['Wred'] 
                 Temp = 0
