@@ -4,7 +4,7 @@ require('conexion.php');
 
 //Coger datos grafica historico general
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Wplaca,Wred, Wplaca-Wred as Consumo, PWM
-        FROM datos_c WHERE Tiempo >= (NOW()- INTERVAL 30 DAY)
+        FROM datos_c WHERE Tiempo >= (NOW()- INTERVAL 3 DAY)
         ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){

@@ -59,35 +59,34 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 ##########################################################
 ###### Parametros Mensaje error lectura incoherente ######
 ##########################################################
-Vbat_max = 66     # Maximo voltaje bateria admisible para no dar aviso log
-Vbat_min = 11     # Minimo voltaje bateria admisible para no dar aviso log
+Vbat_max_log = 66     # Maximo voltaje bateria admisible para no dar aviso log
+Vbat_min_log = 11     # Minimo voltaje bateria admisible para no dar aviso log
 
-Aux1_max = 14
-Aux1_min = -1
+Aux1_max_log = 14
+Aux1_min_log = -1
 
-Aux2_max = 14
-Aux2_min = -1
+Aux2_max_log = 14
+Aux2_min_log = -1
 
-Vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
-Vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
+Vplaca_max_log = 500  # Maximo voltaje placas admisible para no dar aviso log
+Vplaca_min_log = -5   # Minimo voltaje placas admisible para no dar aviso log
 
-Ibat_max = 200    # Maxima intensidad bateria admisible para no dar aviso log
-Ibat_min = -200   # Minima intensidad bateria admisible para no dar aviso log
+Ibat_max_log = 200    # Maxima intensidad bateria admisible para no dar aviso log
+Ibat_min_log = -200   # Minima intensidad bateria admisible para no dar aviso log
 
-Iplaca_max = 250
-Iplaca_min = -1.5
-Iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
+Iplaca_max_log = 250  # Maxima intensidad placa admisible para no dar aviso log
+Iplaca_min_log = -1.5 # Minima intensidad placa admisible para no dar aviso log 
+Iplaca_error = 0.1    # poner el valor que por debajo se considerara Iplaca=0
 
-Ired_max = 60     # Maxima intensidad red admisible para no dar aviso log
-Ired_min = -60    # Minima intensidad red admisible para no dar aviso log
-Vred_max = 280    # Maxima intensidad red admisible para no dar aviso log
-Vred_min = 180    # Minima intensidad red admisible para no dar aviso log
+Ired_max_log = 60     # Maxima intensidad red admisible para no dar aviso log
+Ired_min_log = -60    # Minima intensidad red admisible para no dar aviso log
+Vred_max_log = 280    # Maximo voltaje red admisible para no dar aviso log
+Vred_min_log = 180    # Minimo voltaje red admisible para no dar aviso log
 
-Temp_max = 50       # Maxima temperatura admisible para no dar aviso log
-Temp_min = -10      # Minima temperatura admisible para no dar aviso log
+Temp_max_log = 50     # Maxima temperatura admisible para no dar aviso log
+Temp_min_log = -10    # Minima temperatura admisible para no dar aviso log
 
-t_muestra_max = 6  # valor para grabar en el log si tarda mas el bucle en ejecutarse
-
+t_muestra_max = 6     # valor para grabar en el log si tarda mas el bucle en ejecutarse
 
 # -----------------------------------------------
 
@@ -247,6 +246,8 @@ t_muestra_must = 1         # Tiempo en segundos entre muestras + numero de equip
 
 iplaca_must_max = 99
 iplaca_must_min = 0
+
+# -----------------------------------------------
 #################
 ###### BMV ######
 #################
@@ -275,7 +276,7 @@ usar_sma = 0              # 1 para leer datos del sma ..... 0 para no usar
 usar_si = 0               # 1 para leer datos del SI ..... 0 para no usar
 usar_sb1 = 0              # 1 para leer datos del SB1 ..... 0 para no usar
 usar_sb2 = 0              # 1 para leer datos del SB2 ..... 0 para no usar
-usar_sma_meter = 0        # 1 para leer datos del meter SMA ..... 0 para no 
+usar_sma_meter = 0        # 1 para leer datos del meter SMA ..... 0 para no usar
 IP_SI = "192.168.0.24"    # IP del SI
 IP_SB1 = "192.168.0.253"  # IP del SB1
 IP_SB2 = "192.168.0.252"  # IP del SB2
@@ -304,7 +305,7 @@ t_muestra_fronius = 5
 
 usar_huawei = 0          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
-t_muestra_huwei = 5
+t_muestra_huawei = 5
 
 # -----------------------------------------------
 ##################
@@ -323,6 +324,17 @@ grabar_datos_srne = 1      # 1 = Graba la tabla srne... 0 = No graba
 
 iplaca_srne_max = 85
 iplaca_srne_min = 0
+
+# -----------------------------------------------
+##################
+###### EASTRON ######
+##################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor usa el eastron se debe poner usar eastron = 1
+
+usar_eastron = 0       # 1 para leer datos srne ..... 0 para no usar
+dev_eastron = ""       # /dev/ttyUSB0" # USB  
 
 # -----------------------------------------------
 ###########################

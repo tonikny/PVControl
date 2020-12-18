@@ -45,7 +45,8 @@ while bucle:
         
         sql2 = ("SELECT MAX(id),MAX(Tiempo),AVG(Ibat),AVG(Vbat),AVG(SOC),AVG(DS),AVG(Aux1),AVG(Aux2),"+
                 " MAX(Whp_bat),MAX(Whn_bat),AVG(Iplaca),AVG(Vplaca),AVG(Wplaca),MAX(Wh_placa),"+
-                " AVG(Temp),AVG(PWM),MAX(Mod_bat)" +
+                " AVG(Temp),AVG(PWM),MAX(Mod_bat)," +
+                " AVG(Vred),AVG(Wred),MAX(Whp_red),MAX(Whn_red)" +
                 " FROM datos WHERE id > " + str(Id_max) + " AND id < " + str(Id_max + 10000) +
                 " GROUP BY DAY(Tiempo),((60/5)*HOUR(TIME(Tiempo))+FLOOR(MINUTE(TIME(Tiempo))/5))" +
                 " ORDER BY id " )
@@ -68,7 +69,7 @@ while bucle:
         ee = '11'        
         for I in range(nreg-1):
             if I == 2 :
-                print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM)
+                print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat,Vred,Wred,Whp_red,Whn_red)
             
             Id        = int(TD[I][0])
             Tiempo    = str(TD[I][1])
@@ -86,17 +87,23 @@ while bucle:
             Wh_placa  = round(float(TD[I][13]),2)
             Temp      = round(float(TD[I][14]),2)
             PWM       = int(TD[I][15])
-            Mod_bat = str(TD[I][16])
-            #print (Mod_bat, TD[I][16])
+            Mod_bat   = str(TD[I][16])
             
-            #print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat)
+            Vred      = round(float(TD[I][17]),2)
+            Wred      = round(float(TD[I][18]),2)
+            Whp_red   = round(float(TD[I][19]),2)
+            Whn_red   = round(float(TD[I][20]),2)
+            
             ee = '13' 
-            cursor1.execute("""INSERT INTO datos_c (id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat) 
-               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-               (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat))
+            #print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat,Vred,Wred,Whp_red,Whn_red)
+            ee = '13a'
+            cursor1.execute("""INSERT INTO datos_c (id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,
+               Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat,Vred,Wred,Whp_red,Whn_red) 
+               VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat,Vred,Wred,Whp_red,Whn_red))
             ee = '14' 
         
-        print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat)
+        print (Id,Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat,Vred,Wred,Whp_red,Whn_red)
             
         print ()     
         db.commit()

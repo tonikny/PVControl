@@ -41,14 +41,14 @@ else: sys.exit()
 
 print ()
 if AH <1 :
-    print ('NO se ha dado de alta una BATERIA,por lo que se configura la WEb como ')
-    print(Fore.RED+' --------- FV SIN BATERIA --------')
+    print ('NO se ha dado de alta una BATERIA,por lo que se configura la WEb como.. ', end='')
+    print(Fore.RED+' ---- FV SIN BATERIA ----')
     fichero1 ='/home/pi/PVControl+/html/index_red.php'
     fichero2 ='/home/pi/PVControl+/html/Parametros_Web_red.js'
                         
 else:
-    print (Fore.CYAN + 'Se ha dado de alta una BATERIA de ' + Fore.RED, AH, 'AH'+ Fore.CYAN,
-           ' por lo que se configura la WEb como')
+    print (Fore.CYAN + 'Dada de alta BATERIA de ' + Fore.RED, AH, 'AH'+ Fore.CYAN,
+           ' se configura la WEb como', end='')
     print(Fore.RED+' --------- FV CON BATERIA a ', end='')
     if vsis == 1:
         print (' 12V -------')
@@ -72,6 +72,7 @@ else:
         print (Fore.RED+' ------ FV CON BATERIA y SIN CONTROL CELDAS --------')
         fichero ='/home/pi/PVControl+/html/index_sin_celdas.php'
         
+print()
 
 web_act = click.prompt(Fore.GREEN + ' 1= Actualiza Web  --  0: No Actualiza', type=str, default='1')
 

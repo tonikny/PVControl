@@ -5,7 +5,7 @@
 ################################
 ###### Parametros Bateria ######
 ################################
-AH = 500.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
+AH = 0.0            # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
 CP = 1              # Indice Peukert
 EC = 0.95           # Eficiencia Carga
 vsis = 4            # Voltaje sistema - 1=12V  2=24V   4=48V
@@ -16,23 +16,23 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 ##### Parametros sensores ######
 ################################
 
-Vbat_sensor   = "d_hibrido['Vbat']"       # Sensor de Voltaje bateria ( ADS, d_hibrido['Vbat'], d_victron['Vbat'].....)
-Vplaca_sensor = "d_hibrido['Vplaca']"     # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],d_victron['Vbat'].....)
+Vbat_sensor   = ""                        # Sensor de Voltaje bateria ( ADS, d_fronius['Vbat'], d_victron['Vbat'].....)
+Vplaca_sensor = "d_huawei['Vplaca']"      # Sensor de Voltaje placas ( ADS, d_fronius['Vplaca'],d_victron['Vbat'].....)
 
-Ibat_sensor   = "d_hibrido['Ibat']"       # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
-Iplaca_sensor = "d_hibrido['Iplaca']"     # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
+Ibat_sensor   = ""                        # Sensor de Intensidad Bateria ( ADS, d_fronius['Ibat'], d_victron['Vbat'].....)
+Iplaca_sensor = "d_huawei['Iplaca']"      # Sensor de Intensidad Placas ( ADS, d_fronius['Iplaca'], .....)
 
-Aux1_sensor   = ""     # ADS, etc...
-Aux2_sensor   = ""     # ADS, etc...
+Aux1_sensor   = "d_huawei['Aux1']"        # ADS, etc...
+Aux2_sensor   = ""                        # ADS, etc...
 
-Vred_sensor   = ""                        # Sensor Voltaje de red (d_huawei['Vred'],...)
-Ired_sensor   = ""                        # Sensor Intensidad de red (d_huawei['Ired'],...)
-EFF_sensor    = ""                        # Eficienca Conversion (d_huawei['EFF'],...)
+Vred_sensor   = "d_huawei['Vred']"        # Sensor Voltaje de red (d_huawei['Vred'],...)
+Ired_sensor   = "d_huawei['Ired']"        # Sensor Intensidad de red (d_huawei['Ired'],...)
+EFF_sensor    = "d_huawei['EFF']"         # Eficienca Conversion (d_huawei['EFF'],...)
 
-Wplaca_sensor  = "d_hibrido['Wplaca']"     # Iplaca * Vbat, d_hibrido['Wplaca'].....
-Consumo_sensor = "Vbat * (Iplaca-Ibat)"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
+Wplaca_sensor  = "d_huawei['Wplaca']"     # Iplaca * Vbat, d_fronius['Wplaca'].....
+Consumo_sensor = "d_huawei['Consumo']"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
 
-Temperatura_sensor = ""                    #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
+Temperatura_sensor = ""                   #  d_ds18b20['Temp0'],d_ds18b20['Temp1'],..... d_snre['Temp0'].....
 
 ################################
 ###### Parametros ADS1115 ######
@@ -42,17 +42,17 @@ SHUNT2 = 100.0/75        # Shunt Iplaca (Amperios/mV)
 
 # Valor Voltaje divisor = Ventrada*R1/(R1+R2)
 #Vbat
-RES0 = (68+1.5)/1.5 * 12.63/12.33  # Divisor tension Vbat...(R2=68K..R1=1,5K) * ajuste por tolerancias en resistencias
-RES0_gain = 2                   # Voltios Fondo escala 1=4,096 - 2=2.048
+RES0 = (68+1.5)/1.5   # Divisor tension Vbat...(R2=68K..R1=1,5K) * ajuste por tolerancias en resistencias
+RES0_gain = 2         # Voltios Fondo escala 1=4,096 - 2=2.048
 #Vaux
-RES1 = (68+1.5)/1.5 #* 1.02735     # Divisor tension Aux1    
-RES1_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
+RES1 = (68+1.5)/1.5   # Divisor tension Aux1    
+RES1_gain = 2         # VoltiosFondo escala 1=4,096 - 2=2.048
 #Vplaca
-RES2 = (68+1.5)/1.5 #* 1.02618     # Divisor tension Vplaca
-RES2_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
+RES2 = (68+1.5)/1.5   # Divisor tension Vplaca
+RES2_gain = 2         # VoltiosFondo escala 1=4,096 - 2=2.048
 #V...
-RES3 = (68+1.5)/1.5 #* 1.02113     # Divisor tension Aux2
-RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
+RES3 = (68+1.5)/1.5   # Divisor tension Aux2
+RES3_gain = 2         # VoltiosFondo escala 1=4,096 - 2=2.048
 
 # -----------------------------------------------
 
@@ -160,8 +160,8 @@ pvoutput_id = "1233455"
 ########################
 ###### Simulacion ######
 ########################
-simular = 0  # Simulacion datos FV --- 1 para simular....0 para no simular
-simular_reles = 0 # Simular reles fisicos
+simular = 0         # Simulacion datos FV --- 1 para simular....0 para no simular
+simular_reles = 0   # Simular reles fisicos
 # -----------------------------------------------
 
 
@@ -194,7 +194,7 @@ celdas_log_dif = 0.1 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = 1 #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = 0 #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = "/dev/hidraw0"  # puerto donde reconoce la RPi al Hibrido
 usar_crc = 1                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
@@ -276,7 +276,7 @@ usar_sma = 0              # 1 para leer datos del sma ..... 0 para no usar
 usar_si = 0               # 1 para leer datos del SI ..... 0 para no usar
 usar_sb1 = 0              # 1 para leer datos del SB1 ..... 0 para no usar
 usar_sb2 = 0              # 1 para leer datos del SB2 ..... 0 para no usar
-usar_sma_meter = 0        # 1 para leer datos del meter SMA ..... 0 para no usar
+usar_sma_meter = 0        # 1 para leer datos del meter SMA ..... 0 para no 
 IP_SI = "192.168.0.24"    # IP del SI
 IP_SB1 = "192.168.0.253"  # IP del SB1
 IP_SB2 = "192.168.0.252"  # IP del SB2
@@ -293,8 +293,8 @@ grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 
 usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
 usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius
-IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
-t_muestra_fronius = 5
+IP_FRONIUS = '192.168.0.95'    # IP del FRONIUS
+
 # -----------------------------------------------
 #################
 ####  HUAWEI ####
@@ -303,9 +303,8 @@ t_muestra_fronius = 5
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
 
-usar_huawei = 0          	# 1 para leer datos del huawei..... 0 para no usar
+usar_huawei = 1          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
-t_muestra_huawei = 5
 
 # -----------------------------------------------
 ##################
@@ -335,7 +334,6 @@ iplaca_srne_min = 0
 
 usar_eastron = 0       # 1 para leer datos srne ..... 0 para no usar
 dev_eastron = ""       # /dev/ttyUSB0" # USB  
-
 
 # -----------------------------------------------
 ###########################

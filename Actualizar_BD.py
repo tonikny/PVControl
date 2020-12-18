@@ -1,0 +1,62 @@
+import MySQLdb
+
+db = MySQLdb.connect(host = "localhost", user = 'rpi', passwd = 'fv', db = 'control_solar')
+cursor = db.cursor()
+
+for tabla in ["datos", "datos_c"]:
+    Sql = "ALTER TABLE "+ tabla +" CHANGE Mod_bat Mod_bat ENUM('OFF','BULK','FLOT','ABS','EQU','INYECT','CONS') CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL DEFAULT 'BULK'";
+    print (Sql)
+    cursor.execute(Sql)
+    print('Mod_bat -OK')
+print('#' * 60 )
+Sql = """ALTER TABLE `parametros` CHANGE `sensor_PID` `sensor_PID`
+          SET('Aux1','Aux2','Vplaca','Iplaca','Wplaca','Vbat','Ibat','Wbat','SOC',
+               'Hz','Vred','Ired','Wred')
+          CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL DEFAULT 'Vbat'
+          COMMENT 'Variable de control PID'"""    
+print (Sql)
+cursor.execute(Sql)
+print('sensor_PID - OK')
+
+# ###### Tablas datos
+for tabla in ["datos", "datos_c", "datos_s"]:
+    print ( "#" * 30)
+    print("Tabla = ", tabla)
+    campos = [('Vred',"'V red AC'"),
+              ('Wred',"'W inyectados o consumidos de red'"),
+              ('Whn_red',"'Wh consumidos de red'"),
+              ('Whp_red',"'Wh inyectados a red'")]          
+    for campo in campos:
+        try:
+            Sql = "ALTER TABLE " + tabla+ " ADD " + campo[0] + " FLOAT NOT NULL DEFAULT '0' COMMENT "+ campo[1]
+            #print (Sql)
+            cursor.execute(Sql)
+            print(campo[0],'... creado')
+        except:
+            print(campo[0],'... ya estaba creado')
+
+# #### Tabla diario
+for tabla in ["diario"]:
+    print ( "#" * 30)
+    print("Tabla = ", tabla)
+    campos = [('Whn_red',"'Wh consumidos de red'"),
+              ('Whp_red',"'Wh inyectados a red'"),
+              ('maxWred',"'maximo W inyectados a red'"),
+              ('minWred',"'minimo W consumidos de red'"),
+              ('avgWred',"'media W de red'"),
+              ('maxVred',"'maxima Vred'"),
+              ('minVred',"'minima Vred'")]
+    
+    for campo in campos:
+        try:
+            Sql = "ALTER TABLE " + tabla+ " ADD " + campo[0] + " FLOAT NOT NULL DEFAULT '0' COMMENT "+ campo[1]
+            #print (Sql)
+            cursor.execute(Sql)
+            print(campo[0],'... creado')
+        except:
+            print(campo[0],'... ya estaba creado')
+
+
+db.commit()
+cursor.close()
+db.close()

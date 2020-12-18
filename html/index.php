@@ -50,7 +50,7 @@ session_start([
                         title="Gráficas"><img src="img/Graph.png" width="20" height="20"> Gráficas</a>
                         <ul>
                             <li><a href="index.php?pagina=boton2"
-                                title="KWh Batería, Producción y Consumo">KWh</a>
+                                title="KWh Red, Producción y Consumo">KWh</a>
                             </li>
                             <li><a href="index.php?pagina=boton3"
                                 title="Promedios 30 días">Promedios</a>
@@ -70,9 +70,6 @@ session_start([
                             <li><a href="index.php?pagina=botonH_mes"
                                 title="Histórico Mes">Hist_Mes</a>
                             </li>
-                            <li><a href="index.php?pagina=botonH_soh"
-                                title="Histórico Ciclado">Hist_Ciclado</a>
-                            </li>
                             <li><a href="index.php?pagina=boton7"
                                 title="Gráficas Producción y Consumo">Extra</a>
                             </li>
@@ -80,10 +77,7 @@ session_start([
                             <li><a href="index.php?pagina=boton8"
                                 title="Tabla resumen diario">Diario</a>
                             </li>
-                            <li><a href="index.php?pagina=boton11"
-                                title="Eficiencia Carga/Descarga Bateria">Carga/Descaga</a>
-                            </li>
-                            
+                                                        
                         </ul>
                     </li>
 
@@ -92,7 +86,7 @@ session_start([
                         title="Equipos"><img src="img/inverter.png" width="20" height="20"> Equipos</a>
                         <ul>
                             <li><a href="index.php?pagina=botonH_hibrido"
-                                title="Hist_Hibrido">Hibrido</a>
+                                title="Hibrido">Hibrido</a>
                             </li>
                             <li><a href="index.php?pagina=xxx"
                                 title="Fronius">Fronius</a>
@@ -123,7 +117,7 @@ session_start([
                         </ul>
                     </li>
   
-                    <!-- Celdas -->
+                    <!-- Celdas 
                     <li><a href="#"
                         title="Celdas"><img src="img/bateria.png" width="20" height="20"> Celdas</a>
                         <ul>
@@ -135,7 +129,8 @@ session_start([
                             </li>
                         </ul>
                     </li>
-                
+                    -->
+                    
                 </ul>
             </nav>
         </div>
@@ -145,32 +140,26 @@ session_start([
         <?php
             switch ($recibe_pagina){
                 case "boton1":
-                    include ("inicio_con_celdas.php");
+                    include ("inicio_red.php");
                     break;
                 case "boton2":
-                    include ("wh.php");
+                    include ("wh_red.php");
                 break;
                 case "boton3":
                     include ("prom_30.php");
                     break;
                 case "botonH_mes":
-                    include ("historico_mes.php");
+                    include ("historico_mes_red.php");
                     break;
                 case "botonH_horas":
-                    include ("historico_horas.php");
+                    include ("historico_horas_red.php");
                     break;
                 case "botonH_1d":
-                    include ("historico1.php");
+                    include ("historico1_red.php");
                     break;  
                 case "botonH_3d":
-                    include ("historico3c.php");
+                    include ("historico3c_red.php");
                     break;  
-                case "botonH_soh":
-                    include ("historico_soh.php");
-                    break;  
-                case "botonH_temp":
-                    include ("historico_con_temp.php");
-                    break;
                 case "botonH_hibrido":
                     include ("historico_hibrido.php");
                     break;                                  
@@ -195,14 +184,8 @@ session_start([
                 case "boton11":
                     include ("wh_2.php");
                     break;
-                case "celda1":
-                    include ("historico_celdas.php");
-                    break;
-                case "celda2":
-                    include ("historico_celdas_max_min.php");
-                    break;    
                 default:
-                    include ("inicio_con_celdas.php");
+                    include ("inicio_red.php");
             }
         ?>
 

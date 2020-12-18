@@ -20,11 +20,6 @@ if usar_fronius == 0:
         #print (commands.getoutput('sudo systemctl stop srne'))
         print (subprocess.getoutput('sudo systemctl stop fronius'))
         sys.exit()
-
-
-
-
-
     
 class fronius:
 
@@ -59,12 +54,10 @@ class fronius:
             
             if DEBUG: print('Error lectura meter')
             return None
-            
-            
+                        
     def read_data_inverter(self):
-    
         try:
-        
+            
             response = requests.get(self.cmd_inverter)
             inverter = json.loads(response.content)
             print('Vred',inverter)
@@ -105,10 +98,10 @@ if __name__ == '__main__':
             if usar_meter_fronius == 1:
                 datos_meter = ve.read_data_meter()
                 datos_inverter.update(datos_meter)                
-                datos_inverter['Ired'] = datos_meter['Wred']/datos_inverter['Vred']
                 datos_inverter['Vred'] = datos_inverter['Vred']
+                datos_inverter['Ired'] = datos_meter['Wred']/datos_inverter['Vred']
                 datos_inverter['Iplaca'] = datos_meter['Wplaca']/datos_inverter['Vred']
-                datos_inverter['Aux1'] = datos_meter['Wred'] 
+                datos_inverter['Wred'] = datos_meter['Wred'] 
                 Temp = 0
                 
             datos= datos_inverter

@@ -3,42 +3,25 @@
 require('conexion.php');
 
 //Coger datos grafica historico general
-$sql = "SELECT Tiempo,   Wplaca,Vbat*Ibat as Excedentes, Wplaca-Vbat*Ibat as Consumo
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Wplaca,Wred, Wplaca-Wred as Consumo, PWM
         FROM datos WHERE Tiempo >= (NOW()- INTERVAL 25 HOUR)
         ORDER BY Tiempo";
 
-//$sql = "SELECT Tiempo, SOC as SOCavg, Ibat as Ibatavg, Iplaca as Iplacaavg, Vbat as Vbatavg, Vflot*10 as Vflotavg, Vplaca as Vplacaavg
-//        FROM datos WHERE DATE(Tiempo) >= SUBDATE(NOW(), INTERVAL 3 DAY)
-//        ORDER BY Tiempo";
-//$sql = "SELECT Tiempo, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Vflot)*10 as Vflotavg
-//        FROM datos WHERE DATE(Tiempo) >= SUBDATE(NOW(), INTERVAL 7 DAY)
-//        GROUP BY DAY(Tiempo),((60/1)*HOUR(TIME(Tiempo))+FLOOR(MINUTE(TIME(Tiempo))/1)) ORDER BY Tiempo";
-
 if($result = mysqli_query($link, $sql)){
-
   $i=0;
   while($row = mysqli_fetch_assoc($result)) {
         //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
         $rawdata[$i] = $row;
         $i++;
+    }
   }
-
-} else{
-
-        echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
-}
+else{
+  echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+  }
 
 mysqli_close($link);
 
-//Adaptar el tiempo grafica historico general
-for($i=0;$i<count($rawdata);$i++){
-    $time = $rawdata[$i]["Tiempo"];
-    $date = new DateTime($time);
-    $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
-}
-
 ?>
-
 
 <HTML>
 
@@ -46,18 +29,7 @@ for($i=0;$i<count($rawdata);$i++){
 
 <meta charset="utf-8">
 
-
-<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
-<script src="js/jquery.js"></script>
-<script src="js/stock/highstock.js"></script>
-<script src="js/highcharts-more.js"></script>
-
-<script src="js/themes/grid.js"></script>
--->
-
-
-<!-- Importo el archivo Javascript directamente desde la webr -->
-<!---->
+<script src="Parametros_Web.js"></script>
 
 <script src="https://code.jquery.com/jquery.js"></script>
 <script src="http://code.highcharts.com/stock/highstock.js"></script>
@@ -65,9 +37,7 @@ for($i=0;$i<count($rawdata);$i++){
 
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 
-<!--
-<div id="container12" style="width: auto; height: 600px; margin-left: 5;margin-right:5"></div>
--->
+
 <div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
 
 <br>
@@ -101,7 +71,7 @@ $(function () {
       panKey: 'shift'
       },
     title: {
-      text: ' GRÁFICA POTENCIA SOLAR -  EXCEDENTES  - CONSUMO '
+      text: ' GRÁFICA POTENCIA SOLAR -  POTENCIA RED  - CONSUMO '
       },
     subtitle: {
       //text: 'Permite Zoom XY'
@@ -113,9 +83,9 @@ $(function () {
       opposite: false,
       
 	  // ########## Valores POTENCIA ######################
-	  min: 0,
-      max: 6000,
-	  tickInterval: 250,
+      min: Wred_min,
+      max: Wred_max,
+      tickInterval: 500,
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
@@ -130,13 +100,13 @@ $(function () {
       opposite: true,
       
 	  // ########## Valores eje PWM ######################
-	  min: 0,
-      max: 6000 ,
-      tickInterval: 250,
+      min: 0,
+      max: Escala_PWM_max ,
+      tickInterval: 50,
       minorGridLineColor: 'transparent',
       labels: {
         //align: 'left',
-        format:  '{value} W',
+        format:  '{value}',
         y: 5
         },
       title: {
@@ -198,8 +168,9 @@ $(function () {
     navigator: {
       enabled: true // false
       },
-    series: [{
-      name: 'Energia Solar',
+    series: [
+      {//Wplaca
+      name: 'Wplaca',
       type: 'spline',
       yAxis: 0,
       
@@ -217,8 +188,9 @@ $(function () {
             <?php } ?>
           return data;
         })()
-     }, {
-      name: 'Excedentes',
+      },
+      {//Wred
+      name: 'Wred',
       type: 'spline',
       yAxis: 0,
       color: Highcharts.getOptions().colors[2],
@@ -231,11 +203,12 @@ $(function () {
         <?php
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Excedentes"];?>]);
+            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Wred"];?>]);
             <?php } ?>
           return data;
         })()
-     }, {
+      },
+      {//Wconsumo
       name: 'Consumo',
       type: 'spline',
       yAxis: 0,
@@ -253,9 +226,27 @@ $(function () {
             <?php } ?>
           return data;
         })()
-     
-        
-     }]
+      },
+      {//PWM
+      name: 'PWM',
+      type: 'spline',
+      yAxis: 1,
+      color: Highcharts.getOptions().colors[4],
+      tooltip: {
+        valueSuffix: ' %',
+        valueDecimals: 0,
+        },
+      data: (function() {
+        var data = [];
+        <?php
+          for($i = 0 ;$i<count($rawdata);$i++){
+            ?>
+            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["PWM"];?>]);
+            <?php } ?>
+          return data;
+        })()
+      }
+     ]
 
     });
 

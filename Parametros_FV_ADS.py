@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------
-######    PARAMETROS INSTALACION PVControl+  -- version: 2020-11-21
+######    PARAMETROS INSTALACION PVControl+  -- version: 2020-12-12
 # ------------------------------------------------------------------
 
 ################################
@@ -55,29 +55,34 @@ RES3_gain = 2                   # VoltiosFondo escala 1=4,096 - 2=2.048
 ##########################################################
 ###### Parametros Mensaje error lectura incoherente ######
 ##########################################################
-Vbat_max = 66     # Maximo voltaje bateria admisible para no dar aviso log
-Vbat_min = 11     # Minimo voltaje bateria admisible para no dar aviso log
+Vbat_max_log = 66     # Maximo voltaje bateria admisible para no dar aviso log
+Vbat_min_log = 11     # Minimo voltaje bateria admisible para no dar aviso log
 
-Aux1_max = 14
-Aux1_min = -1
+Aux1_max_log = 14
+Aux1_min_log = -1
 
-Aux2_max = 14
-Aux2_min = -1
+Aux2_max_log = 14
+Aux2_min_log = -1
 
-Vplaca_max = 500  # Maximo voltaje placas admisible para no dar aviso log
-Vplaca_min = -5   # Minimo voltaje placas admisible para no dar aviso log
+Vplaca_max_log = 500  # Maximo voltaje placas admisible para no dar aviso log
+Vplaca_min_log = -5   # Minimo voltaje placas admisible para no dar aviso log
 
-Ibat_max = 200    # Maxima intensidad bateria admisible para no dar aviso log
-Ibat_min = -200   # Minima intensidad bateria admisible para no dar aviso log
+Ibat_max_log = 200    # Maxima intensidad bateria admisible para no dar aviso log
+Ibat_min_log = -200   # Minima intensidad bateria admisible para no dar aviso log
 
-Iplaca_max = 250
-Iplaca_min = -1.5
-Iplaca_error = 0.1 # poner el valor que por debajo se considerara Iplaca=0
+Iplaca_max_log = 250  # Maxima intensidad placa admisible para no dar aviso log
+Iplaca_min_log = -1.5 # Minima intensidad placa admisible para no dar aviso log 
+Iplaca_error = 0.1    # poner el valor que por debajo se considerara Iplaca=0
 
-Temp_max = 50       # Maxima temperatura admisible para no dar aviso log
-Temp_min = -10      # Minima temperatura admisible para no dar aviso log
+Ired_max_log = 60     # Maxima intensidad red admisible para no dar aviso log
+Ired_min_log = -60    # Minima intensidad red admisible para no dar aviso log
+Vred_max_log = 280    # Maximo voltaje red admisible para no dar aviso log
+Vred_min_log = 180    # Minimo voltaje red admisible para no dar aviso log
 
-t_muestra_max = 6  # valor para grabar en el log si tarda mas el bucle en ejecutarse
+Temp_max_log = 50     # Maxima temperatura admisible para no dar aviso log
+Temp_min_log = -10    # Minima temperatura admisible para no dar aviso log
+
+t_muestra_max = 6     # valor para grabar en el log si tarda mas el bucle en ejecutarse
 
 # -----------------------------------------------
 
@@ -151,8 +156,8 @@ pvoutput_id = "1233455"
 ########################
 ###### Simulacion ######
 ########################
-simular = 0  # Simulacion datos FV --- 1 para simular....0 para no simular
-simular_reles = 0 # Simular reles fisicos
+simular = 0         # Simulacion datos FV --- 1 para simular....0 para no simular
+simular_reles = 0   # Simular reles fisicos
 # -----------------------------------------------
 
 
@@ -164,10 +169,10 @@ usar_mux = 0   # Poner a 0 si no se utiliza un multiplexor de 16 canales de la P
 
 t_muestra_mux = 10 # segundos entre capturas del mux
 
-pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1, #A2_2 = entrada A2 del ADS2, ....
+pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1, #A2_2 = entrada A2 del ADS2
                       #A2_3 = entrada A2 del ADS3, #A2_4 = entrada A2 del ADS4
                       
-pin_ADS_mux2 = ''     #A3_1 = entrada A3 del ADS1, #A3_2 = entrada A3 del ADS2, ...
+pin_ADS_mux2 = ''     #A3_1 = entrada A3 del ADS1, #A3_2 = entrada A3 del ADS2
                       #A3_3 = entrada A3 del ADS3, #A3_4 = entrada A3 del ADS4
 
 R =(68+1.5)/1.5 * 12.94 / 12.72
@@ -220,6 +225,24 @@ iplaca_victron_max = 99
 iplaca_victron_min = 0
 
 # -----------------------------------------------
+ #####################
+###### MUST ######
+#####################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa el MUST o se quiere guardar en BD en la tabla 'must'
+## se debe poner usar must= 1
+
+usar_must = 0              # 1 para leer datos victron ..... 0 para no usar
+n_equipos_must = 0         #número de inversores en paralelo. Si sólo hay uno, marcar 1.
+dev_must = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Must
+
+grabar_datos_must= 0      # 1 = Graba la tabla Must... 0 = No graba
+t_muestra_must = 1         # Tiempo en segundos entre muestras + numero de equipos
+
+iplaca_must_max = 99
+iplaca_must_min = 0
+                    
 #################
 ###### BMV ######
 #################
@@ -248,6 +271,7 @@ usar_sma = 0              # 1 para leer datos del sma ..... 0 para no usar
 usar_si = 0               # 1 para leer datos del SI ..... 0 para no usar
 usar_sb1 = 0              # 1 para leer datos del SB1 ..... 0 para no usar
 usar_sb2 = 0              # 1 para leer datos del SB2 ..... 0 para no usar
+usar_sma_meter = 0        # 1 para leer datos del meter SMA ..... 0 para no usar
 IP_SI = "192.168.0.24"    # IP del SI
 IP_SB1 = "192.168.0.253"  # IP del SB1
 IP_SB2 = "192.168.0.252"  # IP del SB2
@@ -263,6 +287,7 @@ grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar fronius = 1
 
 usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
+usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius                                                                           
 IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
 
 # -----------------------------------------------

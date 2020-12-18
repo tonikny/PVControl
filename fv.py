@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-12-12
-
+# Versión 2020-15-12
 
 import time,sys
 import traceback
@@ -39,7 +38,7 @@ Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 Style: DIM, NORMAL, BRIGHT, RESET_ALL
 """
-print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl') #+Style.RESET_ALL)
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
 
 #Parametros Instalacion FV
 from Parametros_FV import *
@@ -62,16 +61,12 @@ RES3_gain = float(RES3_gain)
 
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
-if str(sys.argv[narg-1]) == '-p1':
-    DEBUG = 1
-elif str(sys.argv[narg-1]) == '-p2':
-    DEBUG = 2
-elif str(sys.argv[narg-1]) == '-p3':
-    DEBUG = 3
-elif str(sys.argv[narg-1]) == '-p':
-    DEBUG = 100
-else:
-    DEBUG = 0
+if str(sys.argv[narg-1]) == '-p1':    DEBUG = 1
+elif str(sys.argv[narg-1]) == '-p2':  DEBUG = 2
+elif str(sys.argv[narg-1]) == '-p3':  DEBUG = 3
+elif str(sys.argv[narg-1]) == '-p':   DEBUG = 100
+else:    DEBUG = 0
+
 print (Fore.RED + 'DEBUG=',DEBUG)
 
 if usar_telegram == 1:
@@ -91,78 +86,80 @@ if (Ibat_sensor + Iplaca_sensor).find ('ADS') >=0:
     # A0=Ibat // A1=Ibat // // A2=Iplaca // A3=Iplaca
     adc = Adafruit_ADS1x15.ADS1115(address=0x4b, busnum=1)
 
+
+#Inicializando las variables del programa
 #---------------------------------------------------------------
 DatosFV = {} #Creamos diccionario para los datos FV
 
-OP = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'prioridad':6,
-      'id_rele2':7,'operacion':8,'parametro':9,'condicion':10,'valor':11}
-OPH = {'id_rele':0,'nombre':1,'modo':2,'estado':3,'grabacion':4,'salto':5,'prioridad':6,
-       'id_rele2':7,'parametro_h':8,'valor_h_ON':9,'valor_h_OFF':10}
-NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'}
-
-#Inicializando las variables del programa
+NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'} # Condiciones de dia de la semana
 
 Grabar = 1 # Contador ciclo grabacion en BD
 
-T_ejecucion_max = 0.0
- 
 hora_m = time.time() #para calcular tiempo entre muestras real
 dia = time.strftime("%Y-%m-%d") # para cambio de dia y reinicializar Wh
 tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+minuto = time.strftime("%H:%M")
 
-t_muestra = 5 # Inicializo Tiempo entre muestra real...idealmente TP[2]
+t_muestra = 5 # Inicializo Tiempo entre muestra real...idealmente TP['t_muestra']
 t_muestra_1 = t_muestra_2 = t_muestra_3 = t_muestra_4 = t_muestra_5 = t_muestra_6 = 0 # muestras t ejecucion intermedias
-T_ejecucion = 0
+T_ejecucion = T_ejecucion_max = 0.0
 
-Ibat = 0.0      # Intensidad Bateria
-Vbat = vsis*12.0     # Voltaje Bateria inicial
-DS = SOC = 0   # control SOC bateria
+#---Variables Bateria --------------------------------
+Ibat = 0.0                  # Intensidad Bateria
+Vbat = vsis * 12.0          # Voltaje Bateria inicial
+DS = SOC = 0                # control SOC bateria
 Mod_bat =''
-
-Iplaca = Vplaca = 0.0   # Voltaje e Intensidad de Placas(valor intensidad tras el regulador)
-
-Aux1 = Aux2 = 0.0       # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
-
-Ired = Vred = EFF = 0.0 # Valores de rec AC
-
-Temp = 0.0      # temperatura baterias
-Mtemp = 60      # Numero de segundos para leer temperatura
-
-Ctemp = 0       # Contador del numero de muestra para leer temperatura
 Vflot = Vabs = Vecu = 0.0   # Voltaje asociado a estado de flotacion/Absorcion/Ecu
 Tflot = Tabs = Tecu = 0.0   # Tiempo asociado a estado de flotacion/Absorcion/Ecu
 Tflot_bulk = Tbulk = 0.0    # Tiempo asociado al paso de FLOT a BULK 
-SOC_max = SOC_min = 0     #Variable para guardar SOC maximo y minimo diario
-Vbat_max = Vbat_min = 0    # Variable para guardar Vbat maximo  y minimo diario
-
-flag_Abs= flag_Flot = 0    # Flags de Absorcion y Flotacion
-Vabs = Vflot = 0           # Valores de Absorcion y Flotacion
-
-Coef_Temp = 0.0             # Coeficiente de compensacion de temperatura para Vflot/Vabs 
-
-Nlog = Nlog_max = 30 # Contador Numero de log maximos cada minuto
-log=''               # Valor del log 
-
-minuto = time.strftime("%H:%M")
-
-n_refresco_rele = 0 #utilizado en secuenciacion escritura de refresco en reles
-
-CD1 = CD2 = CD3 = CD4 = CD5 = 0.0 # contadores que se ponen a cero cada dia
-C1 = C2 = C3 = C4 = C5 = 0.0      # contadores que NO se ponen a cero cada dia
+SOC_max = SOC_min = 0       # Variable para guardar SOC maximo y minimo diario
+Vbat_max = Vbat_min = 0     # Variable para guardar Vbat maximo  y minimo diario
+flag_Abs= flag_Flot = 0     # Flags de Absorcion y Flotacion
+Vabs = Vflot = 0            # Valores de Absorcion y Flotacion
+Wh_bat = Whp_bat = Whn_bat = 0.0
 
 #---Variables calculo SOC --------------------------------
 Ip = Ip1 = Ip2 = DS = 0.0
 
-Puerto = estado = 0
-Wh_bat = Whp_bat = Whn_bat = 0.0
-Wh_red = Whp_red = Whn_red = 0.0
-
+#---Variables Placas --------------------------------
+Wplaca = Iplaca = Vplaca = 0.0   # w, V e Intensidad de Placas(valor intensidad tras el regulador)
 Wh_placa = Wh_consumo = 0.0
 
+#---Variables Auxiliares --------------------------------
+Aux1 = Aux2 = 0.0       # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
+CD1 = CD2 = CD3 = CD4 = CD5 = 0.0 # contadores que se ponen a cero cada dia
+C1 = C2 = C3 = C4 = C5 = 0.0      # contadores que NO se ponen a cero cada dia
+Nlog = Nlog_max = 30 # Contador Numero de log maximos cada minuto
+log=''               # Valor del log 
+
+#---Variables Red Comercial / Generador---------------------------
+Wred = Ired = Vred = EFF = 0.0     # Valores de red AC
+Vred_max = 0  
+Vred_min = 10000                   # Variables para guardar Vred maximo  y minimo diario
+Wh_red = Whp_red = Whn_red = 0.0   # Variables para guardar Wh inyectados o consumidos de red
+EFF_max = 0
+EFF_min = 100                      #Variables para guardar Eficiencia DC/AC maxima y minima diaria
+
+#---Variables temperatura --------------------------------
+Temp = 0.0      # temperatura baterias
+Mtemp = 60      # Numero de segundos para leer temperatura
+Ctemp = 0       # Contador del numero de muestra para leer temperatura
+Coef_Temp = 0.0             # Coeficiente de compensacion de temperatura para Vflot/Vabs 
+
+#---Variables reles --------------------------------
+n_refresco_rele = 0 #utilizado en secuenciacion escritura de refresco en reles
+Puerto = estado = 0
+
+## Definir diccionarios Rele y Rele_Ant
+Rele = {}        # Situacion actual de los reles
+Rele_Ant = {}    # Situacion anterior de los reles
+Rele_H = {}      # Situacion condiciones horario
+Rele_Tiempo = {} # Tiempo activo en segundos de cada rele en el dia
+
+#---Variables PID --------------------------------
 N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
-
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -422,8 +419,8 @@ def Calcular_PID (sensor,objetivo,P,I,D):
 def Calcular_PWM(PWM):
     global Diver #,PWM
     
-    Objetivo_PID= TP[5]   # Variable sensora de PID
-    Diver = Calcular_PID (TP[6],Objetivo_PID,TP[7],TP[8],TP[9]) # 'sensor', objetivo, P,I,D 
+    Objetivo_PID= TP['objetivo_PID']   # Variable sensora de PID
+    Diver = Calcular_PID (TP['sensor_PID'],Objetivo_PID,TP['Kp'],TP['Ki'],TP['Kd']) # 'sensor', objetivo, P,I,D 
     
     Diver_Max = 200 # Ya veremos si lo pongo en Parametros_FV.py
     if Diver > Diver_Max: Diver = Diver_Max
@@ -434,7 +431,7 @@ def Calcular_PWM(PWM):
     if PWM >= PWM_Max: PWM = PWM_Max
     if PWM <= 0: PWM = 0
 
-    #print ('Vbat={0:>5}'.format(Vbat) ,TP[6]+'={0:>5}'.format(round(eval(TP[6]),1)),
+    #print ('Vbat={0:>5}'.format(Vbat) ,TP['sensor_PID']+'={0:>5}'.format(round(eval(TP['sensor_PID']),1)),
     #       ' -- PWM={0:>3} -- Incr={1:>4} -- Ibat={2:>6}'.format(round(PWM,0),round(Diver,1), round(Ibat,1)))
     return PWM
 
@@ -443,7 +440,7 @@ try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
 
-    sql="""SELECT DS, DATE(Tiempo),Whp_bat,Whn_bat,Wh_placa, SOC, Vbat
+    sql="""SELECT DS, DATE(Tiempo),Whp_bat,Whn_bat,Wh_placa, SOC, Vbat,Whp_red,Whn_red
          FROM datos ORDER BY id DESC limit 1"""
                  
     cursor.execute(sql)
@@ -454,9 +451,12 @@ try:
     Vbat_min = Vbat_max = float(var[6])
     
     if HOY == time.strftime("%Y-%m-%d"): #Comprueba que es el mismo dia
-        Whp_bat=float(var[2])
-        Whn_bat=float(var[3])
-        Wh_placa=float(var[4])
+        Whp_bat = float(var[2])
+        Whn_bat = float(var[3])
+        Wh_placa = float(var[4])
+        Whp_red = float(var[7])
+        Whn_red = float(var[8])
+        
         
         sql='SELECT min(SOC), max(SOC), min(Vbat), max(Vbat) FROM datos WHERE Tiempo >= CURDATE()'
         cursor.execute(sql)
@@ -466,37 +466,32 @@ try:
         Vbat_min = float(var[2])
         Vbat_max = float (var[3])        
     else:
-         Whp_bat = Whn_bat = Wh_placa = 0.0
+         Whp_bat = Whn_bat = Wh_placa = Whp_red = Whn_red = 0.0
 
 except Exception as e:
     print ("Sin registros en la tabla datos")
-
-## Definir diccionarios Rele y Rele_Ant
-Rele = {}        # Situacion actual de los reles
-Rele_Ant = {}    # Situacion anterior de los reles
-Rele_H = {}      # Situacion condiciones horario
-Rele_Tiempo = {} # Tiempo activo en segundos de cada rele en el dia
-
 
 ##  ------ inicializamos reles apagandolos  ------------------------
 sql = 'SELECT * FROM reles'
 nreles = cursor.execute(sql)
 nreles = int(nreles)  # = numero de reles
-TR = cursor.fetchall()
+columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
+TR=[] 
+for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
+
 
 Rele_SSR = [ ]
 NGPIO =0 # Num Reles GPIO
 
-for I in range(nreles): #apagado fisico 
-    Rele_Ant[TR[I][0]] = Rele[TR[I][0]] = Rele_H[TR[I][0]] = 0
+for r in TR:
+    Rele[r['id_rele']] = Rele_Ant[r['id_rele']] = Rele_H[r['id_rele']] = 0
+    tipo_rele = int(r['id_rele']/100)
     
-    tipo_rele = int(TR[I][0]/100)
-    
-    act_rele(TR[I][0],0)
+    act_rele(r['id_rele'],0)
 
     if tipo_rele == 4: # Inicializo Rele SSR en GPIO
-        NGPIO_PIN = TR[I][0] % 100
-        #print (NGPIO_PIN , TR[I][0] % 100)
+        NGPIO_PIN = r['id_rele'] % 100
+        #print (NGPIO_PIN , TR[I]['id_rele'] % 100)
   
         GPIO.setup(NGPIO_PIN, GPIO.OUT)
         Rele_SSR.append ([GPIO.PWM(NGPIO_PIN, 5),NGPIO_PIN])# 5hz
@@ -533,7 +528,7 @@ if AH > 1:
 
 print(Fore.RED+'Pulsa Ctrl-C para salir...'+Fore.RESET)
 
-log = ' Arrancando programa fv.py \nBateria = ' + str(Vbat) + 'v' + log
+log = ' Arrancando programa fv.py \nBateria\Red = ' + str(Vbat) + 'v' + log
 logBD(log) # incluyo mensaje en el log
 if usar_telegram == 1:
     try:        
@@ -542,15 +537,16 @@ if usar_telegram == 1:
     except:
         logBD("Error en Msg Telegram") # incluyo mensaje en el log
 
-
 # Inicializo lista reles diver
 Reles_D = [ ] 
-for P in range(nreles):
-    if TR[P][2] == 'PRG' and TR[P][6]!= 0:
-       Reles_D.append([TR[P][0],TR[P][6],TR[P][5]]) #id_rele, prioridad, salto
+for r in TR:
+    if r['modo'] == 'PRG' and r['prioridad']!= 0:
+       Reles_D.append([r['id_rele'],r['prioridad'],r['salto']]) #id_rele, prioridad, salto
 Reles_D_Ord = sorted(Reles_D, key=lambda rr: rr[1])
 Nreles_Diver = len(Reles_D_Ord) # Nº de reles Diver a considerar para reparto excedentes
 PWM_Max = Nreles_Diver * 100
+print ('Reles_D_Ord=',Reles_D_Ord)
+
 
 if DEBUG >= 100: print ('PWM_Max=',PWM_Max)
 
@@ -558,7 +554,7 @@ if DEBUG >= 100: print ('PWM_Max=',PWM_Max)
 # -------------------------------- BUCLE PRINCIPAL --------------------------------------
 #########################################################################################
 
-#nbucle = consumo = 0
+#nbucle = Wconsumo = 0
 try:
     while True:
         #print (time.strftime("%Y-%m-%d %H:%M:%S"),' Bucle',)
@@ -581,40 +577,51 @@ try:
             sql='SELECT * FROM parametros'
             nparametros=cursor.execute(sql)
             nparametros=int(nparametros)  # = numero de filas de parametros.---- debe ser 1
-            TP=cursor.fetchone()
             
-            Mod_bat = TP[10]
-            Vflot = float(TP[11])
-            Vabs = float(TP[12])
-            Tabs_max = float(TP[13])
-            Vequ = float(TP[14])
-            Tequ_max = float(TP[15])
-            
+            columns = [column[0] for column in cursor.description]
+            TP1 = []
+            for row in cursor.fetchall(): TP1.append(dict(zip(columns, row)))
+            TP = TP1[0] # solo la primera fila
+
+            Mod_bat = TP['Mod_bat']
+            Vflot = float(TP['Vflot'])
+            Vabs = float(TP['Vabs'])
+            Tabs_max = float(TP['Tabs'])
+            Vequ = float(TP['Vequ'])
+            Tequ_max = float(TP['Tequ'])
+
             sql='SELECT * FROM reles'
             nreles=cursor.execute(sql)
             nreles=int(nreles)  # = numero de reles
-            TR=cursor.fetchall()
-            
-            for I in range(nreles): # actualizar diccionarios por si se han creado nuevos reles
-                Rele[TR[I][0]] = TR[I][3] # actualizamos diccionario Reles con valor en BD
-                Rele_H[TR[I][0]] = 0 # inicializamos a cero el diccionario para control horario
-           
+
+            columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
+            TR=[] 
+            for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
+                        
+            for r in TR: # actualizar diccionarios por si se han creado nuevos reles
+                Rele[r['id_rele']] = r['estado'] # actualizamos diccionario Reles con valor en BD
+                Rele_H[r['id_rele']] = 0 # inicializamos a cero el diccionario para control horario
 
             sql='SELECT * FROM reles INNER JOIN reles_c ON reles.id_rele = reles_c.id_rele'
             fvcon=cursor.execute(sql)
             fvcon=int(fvcon)  # = numero de condiciones
-            R=cursor.fetchall()
-
-
+            columns = [column[0] for column in cursor.description] # diccionario condiciones FV
+            TCFV = []
+            for row in cursor.fetchall(): TCFV.append(dict(zip(columns, row)))
+            
             sql='SELECT * FROM reles INNER JOIN reles_h ON reles.id_rele = reles_h.id_rele'
             hcon=cursor.execute(sql)
             hcon=int(hcon)  # = numero de condiciones horarias
-            H=cursor.fetchall()
-
+            columns = [column[0] for column in cursor.description] # diccionario condiciones Horarias
+            TCH = []
+            for row in cursor.fetchall(): TCH.append(dict(zip(columns, row)))
+            
             sql='SELECT * FROM condiciones WHERE activado is True ORDER BY id_condicion'
             ncon=cursor.execute(sql)
             ncon=int(ncon)  # = numero de condiciones
-            TC=cursor.fetchall()
+            columns = [column[0] for column in cursor.description] # diccionario condiciones
+            TC = []
+            for row in cursor.fetchall(): TC.append(dict(zip(columns, row)))
             
         ee=20
         t_muestra_8= (time.time()-hora_m)* 1000
@@ -632,8 +639,6 @@ try:
         t_muestra=time.time()-hora_m
         hora_m=time.time()
         
-        i=-1  # ?????? no recuerdo para que es
-        
         if t_muestra > t_muestra_max:
             logBD('TmuestraX='+str(int(t_muestra_1))+'/'+str(int(t_muestra_2))+'/'+str(int(t_muestra_3))+'/'+str(int(t_muestra_4))+'/'+str(int(t_muestra_5))+'/'+str(int(t_muestra_6))+'/'+str(int(t_muestra_7))+'/'+str(int(t_muestra_8)))
        
@@ -649,20 +654,21 @@ try:
             client.publish("PVControl/Opcion/Time",str(int(t_muestra_1))+'/'+str(int(t_muestra_2))+'/'+str(int(t_muestra_3))+'/'+str(int(t_muestra_4))+'/'+str(int(t_muestra_5))+'/'+str(int(t_muestra_6))+'/'+str(int(t_muestra_7))+'/'+str(int(t_muestra_8)))
             
         if simular == 1:
-            Ibat = random.choice([0,12,22,33,46,56,65,78,101,
-                                -10,-20,-30,-40,-50,-60,-70,-80,-90])
+            Ibat = random.choice([0,12,22,33,46,56,65,78,101,-10,-20,-30,-40,-50,-60,-70,-80,-90])
             Iplaca = random.choice([0,10,20,30,45,57,67,77,88,99,102,110])
             Vbat = random.choice([22.5,23.7,24.0,24.4,25.5,26.3,27,27.5,28.2,29.1])
             Vplaca = random.choice([60,59.4,61,59.9,52,60.1,61.6,58.7,62,57.3])
-            Wplaca = random.choice([600,590.40,610,590.90,520,600.10,610.60,580.70,620,570.30])
+            Wplaca = random.choice([600,590,40,610,590,520,600.10,610.60,580.70,620,570])
             Temp = random.choice([10,12,14,16,18,20,22,24,26,28,30,32,34])
             Aux1 = random.choice([0,10,12,14,16,18,20,22,24,26,28,30,32,34])
             Aux2 = random.choice([0,10,12,14,16,18,20,22,24,26,28,30,32,34])
             Vred = random.choice([220,221,222])
             Ired = random.choice([1,2,3,0,-1,-2,-3])
-            EFF = random.choice([1,0.95,0.9])
+            EFF = random.choice([81,90.95,70.9])
             
-            Consumo = Vbat * (Iplaca-Ibat)
+            Wbat = Vbat * Ibat
+            Wred = Vred * Ired
+            Wconsumo = Wplaca - Wbat - Wred
             
         else:
             ## Capturando valores desde xxxxx.pkl
@@ -756,38 +762,28 @@ try:
                 
             ee=34
             
-            if AH > 1 : # hay bateria
-                Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,Ibat_min,Ibat_max)            
-                Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,Vbat_min,Vbat_max)
-                Wbat = Vbat * Ibat # W instantaneos a bateria
-                EFF = Ired = Vred = 0
+            Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,Ibat_min_log,Ibat_max_log)            
+            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,Vbat_min_log,Vbat_max_log)
+            Wbat = Vbat * Ibat # W instantaneos a bateria
             
-            else:       # NO hay bateria
-                Ired, Ired_err = leer_sensor('Ired',Ired_sensor,Ired,Ired_min,Ired_max)            
-                Vred, Vred_err = leer_sensor('Vred',Vred_sensor,Vred,Vred_min,Vred_max)            
-                EFF, EFF_err = leer_sensor('EFF',EFF_sensor,EFF,EFF_min,EFF_max)
-                Wred = Vred * Ired # W instantaneos a red
+            Ired, Ired_err = leer_sensor('Ired',Ired_sensor,Ired,Ired_min_log,Ired_max_log)            
+            Vred, Vred_err = leer_sensor('Vred',Vred_sensor,Vred,Vred_min_log,Vred_max_log)            
+            EFF, EFF_err = leer_sensor('EFF',EFF_sensor,EFF,EFF_min_log,EFF_max_log)
+            Wred = Vred * Ired # W instantaneos a red
                 
-                ################# mientras se piensa que hacer con BD
-                Vbat = Vred
-                Ibat = Ired            
-                SOC = EFF
-                ################
-            Iplaca, Iplaca_err = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,Iplaca_min,Iplaca_max)
+            Iplaca, Iplaca_err = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,Iplaca_min_log,Iplaca_max_log)
             if abs(Iplaca) < Iplaca_error: Iplaca =0 
             
-            Vplaca, Vplaca_err = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,Vplaca_min,Vplaca_max)
+            Vplaca, Vplaca_err = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,Vplaca_min_log,Vplaca_max_log)
              
-            Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,Aux1_min,Aux1_max)
-            Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,Aux2_min,Aux2_max)
+            Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,Aux1_min_log,Aux1_max_log)
+            Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,Aux2_min_log,Aux2_max_log)
         
-            try:
-                # evalua las expresiones definidas en Parametros_FV.py
-                Consumo = float(eval (Consumo_sensor)) 
-                Wplaca = float(eval(Wplaca_sensor))
-            except:
-                Consumo = 0
-                Wplaca = 0
+            # evalua las expresiones definidas en Parametros_FV.py
+            try:    Wconsumo = float(eval (Consumo_sensor)) 
+            except: Wconsumo = 0
+            try:    Wplaca = float(eval(Wplaca_sensor))
+            except: Wplaca = 0
 
             if Temperatura_sensor != '' and Ctemp <= 0:
                 if True: #usar_ds18b20 == 1:
@@ -798,7 +794,7 @@ try:
                     except:
                         logBD('error lectura '+archivo_ram)
                         continue
-                Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min,Temp_max)
+                Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min_log,Temp_max_log)
                 Ctemp=Mtemp # reinicio contador
                 client.publish("PVControl/DatosFV/Temp",Temp)
                 if DEBUG >= 100: print(Fore.BLUE +'Temp=',Temp,Fore.RESET,end='')
@@ -818,24 +814,28 @@ try:
         dia = time.strftime("%Y-%m-%d")
 
         if dia_anterior != dia: #cambio de dia
-            Wh_bat = Whp_bat = Whn_bat = Wh_placa = 0.0
+            Wh_bat = Whp_bat = Whn_bat = Wh_placa = Whp_red = Whn_red = 0.0
             CD1 = CD2 = CD3 = CD4 = CD5 = 0.0
             Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tecu ??
             SOC_min = SOC_max = SOC
             Vbat_max = Vbat_min = Vbat
+            Vred_max = Vred_min = Vred
+            EFF_max = EFF_min = EFF
+                  
             Rele_Tiempo = {} # inicializo diccionaro tiempo de reles 
-            
-        else:
-            if Ibat < 0: 
-                Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
-                Whn_red = Whn_bat
-            else: 
-                Whp_bat = round(Whp_bat + (Wbat * t_muestra/3600),2)
-                Whp_red = Whp_bat
-                        
-            Wh_placa = round(Wh_placa + (Wplaca * t_muestra/3600),2)
+        else: # calculo Wh
+            if Ibat < 0: Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
+            else:        Whp_bat = round(Whp_bat + (Wbat * t_muestra/3600),2)
 
-        if AH > 1:   #Solo si hay batería
+            if Ired < 0: Whn_red = round(Whn_red - (Wred * t_muestra/3600),2)
+            else:        Whp_red = round(Whp_red + (Wred * t_muestra/3600),2)
+            
+            Wh_bat = Whp_bat - Whn_bat
+            Wh_red = Whp_red - Whn_red
+            Wh_placa = round(Wh_placa + (Wplaca * t_muestra/3600),2)
+            Wh_consumo = Wh_placa - Wh_red - Wh_bat
+            
+        if AH > 1:   #Calculo SOC solo si hay batería
             ## -------- CALCULO SOC% A C20 ----------
             if Ibat < 0 :
                 Ip1 = -Ibat; Ip1 = Ip1**CP; Ip1 = AH*Ip1
@@ -850,8 +850,8 @@ try:
             if DS > AH : DS = AH
             if DS < 0 :  DS = 0
 
-            if TP[4] != 0: # Actualizo SOC si en la BD es distinto de 0
-                DS = AH*TP[4]/100
+            if TP['nuevo_soc'] != 0: # Actualizo SOC si en la BD es distinto de 0
+                DS = AH * TP['nuevo_soc']/100
                 cursor.execute("UPDATE parametros SET nuevo_soc=0 WHERE id_parametros=1")
                 db.commit()                
             SOC = round(DS/AH*100,2)
@@ -887,7 +887,7 @@ try:
                     if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
                         Tflot_bulk = Tabs = flag_Abs= 0
                         cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
-                        if TP[6] == 'Vbat': # si sensor_PID es Vbat
+                        if TP['sensor_PID'] == 'Vbat': # si sensor_PID es Vbat
                             cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
                         db.commit()
                         try:
@@ -908,7 +908,7 @@ try:
                     
                     if Tabs >= Tabs_max: # paso de Abs a Flot
                         cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
-                        if TP[6] == 'Vbat':
+                        if TP['sensor_PID'] == 'Vbat':
                             cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vflot)+"'")
                         db.commit()
                         try:
@@ -936,17 +936,12 @@ try:
                 print(' Tbulk={0:.2f} - Tabs={1:.2f} - Tflot={2:.2f}- Tflot_bulk={3:.2f}'.format(Tbulk,Tabs,Tflot,Tflot_bulk),end='')
                 print (' Carga= {0}'.format(Mod_bat))
                 logBD('Err.Alg.Carga='+ str(ee)+ '==' + Mod_bat + '=' + str(Tabs) + '/' + str(Tflot) + '/' + str(Tflot_bulk))            
-                
-        else:   #Solo si NO hay batería
-            if Wred * Ired > 0:
-                Mod_red = 'INYECT'
-            else:
-                Mod_red = 'CONS'
+
+        if Wred > 0:  Mod_red = 'INYECT'
+        else:         Mod_red = 'CONS'
             
-            Mod_bat = Mod_red # para BD mientras no se cambien nombre de campos
-        
         ee=40
-        if Grabar == 1: #publico cada t_muestra*N_muestras
+        if Grabar == 1: #publico MQTT cada t_muestra*N_muestras
             
             client.publish("PVControl/DatosFV/Iplaca",Iplaca)
             client.publish("PVControl/DatosFV/Vplaca",Vplaca)
@@ -955,11 +950,12 @@ try:
             client.publish("PVControl/DatosFV/Aux2",Aux2)
             client.publish("PVControl/Reles/PWM", PWM)  # publico salida PWM
             
-            if AH > 1 :
+            if Vbat > 0 :
                 client.publish("PVControl/DatosFV/Ibat",Ibat)
                 client.publish("PVControl/DatosFV/Vbat",Vbat)
                 client.publish("PVControl/DatosFV/SOC",SOC)
-            else:
+            
+            if Vred > 0:
                 client.publish("PVControl/DatosFV/Ired",Ired)
                 client.publish("PVControl/DatosFV/Vred",Vred)
                 client.publish("PVControl/DatosFV/EFF",EFF)
@@ -967,95 +963,92 @@ try:
         t_muestra_2=(time.time()-hora_m) * 1000
         
         #------------- Asignamos valores al diccionario para parametros condiciones ...
-        DatosFV['Iplaca'] = Iplaca
-        DatosFV['Aux1'] = Aux1
-        DatosFV['Aux2'] = Aux2
-        DatosFV['Temp'] = Temp
-        DatosFV['Vplaca'] = Vplaca
-        DatosFV['Wplaca'] = Wplaca
-        DatosFV['PWM'] = PWM
-        DatosFV['Consumo'] = Consumo
+        DatosFV['Temp'] = Temp                 # Tempertura (Baterias, ...)
+        DatosFV['Vplaca'] = Vplaca             # Voltaje en placas
+        DatosFV['Iplaca'] = Iplaca             # Intensidad de placas (referenciada a bateria si existe)
+        DatosFV['Wplaca'] = Wplaca             # Watios generaos por placas
+        DatosFV['PWM'] = PWM                   # Señal PWM de salida PID
+        DatosFV['Wconsumo'] = Wconsumo         # Watios consumo
         
-        if AH > 1: # FV Con Bateria
-            DatosFV['Vbat'] = Vbat
-            DatosFV['Ibat'] = Ibat
-            DatosFV['SOC'] = SOC
-            DatosFV['Whn_bat'] = Whn_bat           # Wh descargados de bateria
-            DatosFV['Whp_bat'] = Whp_bat           # Wh cargados a bateria
-            DatosFV['Wh_bat'] = Whp_bat - Whn_bat  # Wh balance (cargados - descargados) bateria
-            DatosFV['Wbat'] = Wbat                 # Wbateria  Vbat * Ibat
-            
-        else:
-            DatosFV['Vred'] = Vred
-            DatosFV['Ired'] = Ired
-            DatosFV['EFF'] = EFF
-            DatosFV['Whn_red'] = Whn_red           # Wh consumidos de red
-            DatosFV['Whp_red'] = Whp_red           # Wh inyectados a red
-            DatosFV['Wh_red'] = Whp_red - Whn_red  # Wh balance (inyectados - consumidos) red
-            DatosFV['Wred'] = Wred                 # Wred =  Vred * Ired
-            
-        # ------------------ Calculo del SOCmax, SOCmin, Vbat_max, Vbat_min ------------------
+        DatosFV['Vbat'] = Vbat                 # Voltaje Bateria
+        DatosFV['Ibat'] = Ibat                 # Intensidad a Bateria
+        DatosFV['SOC'] = SOC                   # Estado Carga de Bateria
+        DatosFV['Whn_bat'] = Whn_bat           # Wh descargados de bateria
+        DatosFV['Whp_bat'] = Whp_bat           # Wh cargados a bateria
+        DatosFV['Wh_bat'] = Whp_bat - Whn_bat  # Wh balance (cargados - descargados) bateria
+        DatosFV['Wbat'] = Wbat                 # Wbateria = Vbat * Ibat
+        
+        DatosFV['Vred'] = Vred                 # Voltaje Red AC
+        DatosFV['Ired'] = Ired                 # Intensidad a Red AC
+        DatosFV['EFF'] = EFF                   # Eficiencia conversion DC/AC
+        DatosFV['Whn_red'] = Whn_red           # Wh consumidos de red
+        DatosFV['Whp_red'] = Whp_red           # Wh inyectados a red
+        DatosFV['Wh_red'] = Whp_red - Whn_red  # Wh balance (inyectados - consumidos) red
+        DatosFV['Wred'] = Wred                 # Wred =  Vred * Ired
+        
+        DatosFV['Aux1'] = Aux1                 # Campo auxiliar1
+        DatosFV['Aux2'] = Aux2                 # Campo auxiliar2
+        
+        # ------------------ Calculo del SOCmax,min, Vbat_max,min  Vred_max,min EFF_max,min ------------
         SOC_max = max (SOC, SOC_max)
         SOC_min = min (SOC, SOC_min)
         Vbat_max = max (Vbat, Vbat_max)
         Vbat_min = min (Vbat, Vbat_min)
-
+        Vred_max = max (Vred, Vred_max)
+        Vred_min = min (Vred, Vred_min)
+        EFF_max = max (EFF, EFF_max)
+        EFF_min = min (EFF, EFF_min)
+        
                
       ## ------------------ ALGORITMO CONDICIONES RELES -----------------------------
         ee=50
         #### Cargamos los valores actuales de los reles  en Rele_Ant####
         
-        for I in range(nreles): # Calculo Numero reles wifi y actualizo Rele_Ant
-            Rele_Ant[TR[I][0]] = Rele[TR[I][0]] # ponemos estado del rele en el estado anterior
-            Rele_H[TR[I][0]] = 0 # inicializamos a cero el diccionario para control horario
+        Rele_Ant = Rele # ponemos estado del rele en el estado anterior
+        for r in TR: Rele_H[r['id_rele']] = 0 # inicializamos a cero el diccionario para control horario
         
-            
         #### Encendemos virtualmente y apagamos SI condiciones FV o HORARIAS no se cumplen####
-        
         ee=52
-        for I in range(fvcon): # enciendo reles con condiciones FV
-            if R[I][6] == 0: # no actuo en reles de excedentes (prioridad > 0) 
-                Rele[R[I][0]] = R[I][5] # pongo valor del salto
-                #print ('enciendo condiciones FV - Rele',R[I][0],'=',Rele[R[I][0]])
+        for r in TCFV: # enciendo reles con condiciones FV
+            if r['prioridad'] == 0: # no actuo en reles de excedentes (prioridad > 0) 
+                Rele[r['id_rele']] = r['salto'] # pongo valor del salto
                 # no me gusta... deberia ser al valor ant + salto y ver si no me paso de 100
 
         ee=54
-        for I in range(hcon): # enciendo reles con condiciones horario
-            if H[I][6] == 0: # no actuo en reles de excedentes
-                Rele[H[I][0]] = H[I][5] # pongo valor del salto
-                #print ('enciendo condiciones Horario - Rele',H[I][0],'=',Rele[H[I][6])
-                
+        for r in TCH: # enciendo reles con condiciones horario
+            if r['prioridad'] == 0: # no actuo en reles de excedentes
+                Rele[r['id_rele']] = r['salto'] # pongo valor del salto
                 # no me gusta... deberia ser al valor ant + salto y ver si no me paso de 100
 
         # -------------------- Bucle de condiciones de horario --------------------------
         ee=56
 
-        for I in range(hcon):
-            id_rele = H[I][0]
+        for r in TCH:
+            id_rele = r['id_rele']
             
             diaok = 0 # variables de control para ver si esta dentro de horario
             horaok = 0
-            dias_activos=H[I][OPH['parametro_h']].upper()
+            dias_activos=r['parametro_h'].upper()
             
             if  dias_activos == 'T': #Todos los dias de la semana
                 diaok = 1
             elif NDIA[diasemana] in dias_activos:
                 diaok = 1
 
-            if str(H[I][OPH['valor_h_ON']]).zfill(8) > str(H[I][OPH['valor_h_OFF']]).zfill(8): #True si periodo pasa por 0:00
-                if (hora >= str(H[I][OPH['valor_h_ON']]).zfill(8) and hora <= "23:59:59"): 
+            if str(r['valor_h_ON']).zfill(8) > str(r['valor_h_OFF']).zfill(8): #True si periodo pasa por 0:00
+                if (hora >= str(r['valor_h_ON']).zfill(8) and hora <= "23:59:59"): 
                     horaok = 1                                                       
-                if (hora >= "00:00:00" and hora <= str(H[I][OPH['valor_h_OFF']]).zfill(8)): 
+                if (hora >= "00:00:00" and hora <= str(r['valor_h_OFF']).zfill(8)): 
                     horaok = 1
 
-            elif (hora >= str(H[I][OPH['valor_h_ON']]).zfill(8) and hora <= str(H[I][OPH['valor_h_OFF']]).zfill(8)):
+            elif (hora >= str(r['valor_h_ON']).zfill(8) and hora <= str(r['valor_h_OFF']).zfill(8)):
                 horaok = 1
 
             if diaok == 1 and horaok == 1:
                 Rele_H[id_rele] += 1
 
-        for I in range(hcon):
-            id_rele = H[I][0]
+        for r in TCH:
+            id_rele = r['id_rele']
             
             if Rele_H[id_rele] == 0:
                 Rele[id_rele] = 0 #apago rele
@@ -1064,55 +1057,55 @@ try:
                 Rele_H[id_rele] = -1 # para quitar posibilidad de ser rele Diver en el ciclo
 
         """
-        for I in range(nreles): # ver reles tras Condiciones Hora 
-            id_rele = TR[I][0]
+        for r in TR: # ver reles tras Condiciones Hora 
+            id_rele = r['id_rele']
             #print ('Despues Condiciones Hora- Rele',id_rele,'=',Rele[id_rele], 'Out_H=',Rele_H[id_rele])
         """
 
         # -------------------- Bucle de condiciones de parametros FV --------------------------
         ee=58
-        for I in range(fvcon):
-            id_rele = R[I][0]
+        for r in TCFV:
+            id_rele = r['id_rele']
             
-            if R[I][OP['condicion']] == '<':
-                if R[I][OP['operacion']] == 'ON' and DatosFV[R[I][OP['parametro']]] > R[I][OP['valor']] and Rele_Ant[id_rele] == 0 :
+            if r['condicion'] == '<':
+                if r['operacion'] == 'ON' and DatosFV[r['parametro']] > r['valor'] and Rele_Ant[id_rele] == 0 :
                     Rele[id_rele] = 0
                     # deberia ser quitar salto y ver que no me paso de 0
                     
-                if R[I][OP['operacion']] == 'OFF' and DatosFV[R[I][OP['parametro']]] <= R[I][OP['valor']] :
+                if r['operacion'] == 'OFF' and DatosFV[r['parametro']] <= r['valor'] :
                     Rele[id_rele] = 0
 
-            if R[I][OP['condicion']] == '>':
-                if R[I][OP['operacion']] == 'ON' and DatosFV[R[I][OP['parametro']]] < R[I][OP['valor']] and Rele_Ant[id_rele] == 0 :
+            if r['condicion'] == '>':
+                if r['operacion'] == 'ON' and DatosFV[r['parametro']] < r['valor'] and Rele_Ant[id_rele] == 0 :
                     Rele[id_rele] = 0
-                if R[I][OP['operacion']] == 'OFF' and DatosFV[R[I][OP['parametro']]] >= R[I][OP['valor']] :
+                if r['operacion'] == 'OFF' and DatosFV[r['parametro']] >= r['valor'] :
                     Rele[id_rele] = 0
 
         # -------------------- Bucle de condiciones  --------------------------
         ee=60
-        for I in range(ncon):
+        for r in TC:
             try:
-                TC1 = TC[I][1]
-                TC2 = TC[I][2]
+                TC1 = r['condicion1']
+                TC2 = r['condicion2']
                 #print(TC1],TC2) 
                 if TC1 in ('', ' ','1'): TC1 = 'True'          
                 if TC2 in ('', ' ','1'): TC2 = 'True'
-                if (eval(TC1) and eval(TC2)): exec(TC[I][3]) 
+                if (eval(TC1) and eval(TC2)): exec(r['accion']) 
             except:
-                print ('Error Condicion ',str(TC[I][5]))
-                logBD('Error en id_condicion='+str(TC[I][5]))
+                print ('Error Condicion ',str(r['id_condicion']))
+                logBD('Error en id_condicion='+str(r['id_condicion']))
 
         #-------------------- Bucle encendido/apagado reles ------------------------------------
         ee=62
         Flag_Rele_Encendido = 0
-        for I in range(nreles):
-            id_rele = TR[I][0]
+        for r in TR:
+            id_rele = r['id_rele']
             
             ### forzado ON/OFF
-            if TR[I][OP['modo']] == 'ON' :
+            if r['modo'] == 'ON' :
                 Rele[id_rele] = 100
                 
-            if TR[I][OP['modo']] == 'OFF' :
+            if r['modo'] == 'OFF' :
                 Rele[id_rele] = 0
 
             #print ('Despues Condiciones FV - Rele',id_rele,'=',Rele[id_rele], 'Ant=',Rele_Ant[id_rele], ' Flag=',Flag_Rele_Encendido)
@@ -1130,29 +1123,22 @@ try:
             if Rele[id_rele] == 100 and Flag_Rele_Encendido == 0 and Rele_Ant[id_rele] < 100 :
                 print (tiempo,' - Enciendo rele ',id_rele)
                 act_rele(id_rele,100)
-                if TR[I][6]== 0: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
+                if r['prioridad']== 0: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
             
             ### apagar rele
-            if Rele[id_rele] == 0 and Rele_Ant[id_rele]>0: # and TR[I][6]== 0:
+            if Rele[id_rele] == 0 and Rele_Ant[id_rele]>0: # and r['prioridad']== 0:
                 print (tiempo,' - Apago rele ',id_rele)
                 act_rele(id_rele,0) #apagar rele
         
-            
-            """
-            if Rele[id_rele] != TR[I][3]:
-                sql = "UPDATE reles SET estado =" +str(Rele[id_rele])+ " WHERE id_rele = " + str(id_rele)
-                cursor.execute(sql)
-            """
-            
       ## --------- BUCLE DIVER + ACTIVACION RELES CONTROL DE EXCEDENTES -------------
         t_muestra_3=(time.time()-hora_m) * 1000
         ee=90
         Reles_D = [ ] # inicializo lista reles diver
-        for P in range(nreles):
-            id_rele = TR[P][0]
+        for r in TR:
+            id_rele = r['id_rele']
             
-            if TR[P][2] == 'PRG' and TR[P][6]!= 0 and Rele_H[id_rele] != -1 and Flag_Rele_Encendido != 1:
-               Reles_D.append([TR[P][0],TR[P][6],TR[P][5]]) #id_rele, prioridad, salto
+            if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[id_rele] != -1 and Flag_Rele_Encendido != 1:
+               Reles_D.append([r['id_rele'],r['prioridad'],r['salto']]) #id_rele, prioridad, salto
 
         Reles_D_Ord = sorted(Reles_D, key=lambda rr: rr[1]) # Ordeno lista reles por prioridad
         
@@ -1199,8 +1185,8 @@ try:
         if Grabar == 1: # actualizo BD cada N bucles
             
             for I in range(nreles):
-                id_rele = TR[I][0]
-                if Rele[id_rele] != TR[I][3]:
+                id_rele = TR[I]['id_rele']
+                if Rele[id_rele] != TR[I]['estado']:
                     sql = "UPDATE reles SET estado =" +str(Rele[id_rele])+ " WHERE id_rele = " + str(id_rele)
                     cursor.execute(sql)
         
@@ -1214,9 +1200,9 @@ try:
             
                  
                     
-        if TP[1] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
+        if TP['grabar_reles'] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
             for I in range(nreles):
-                id_rele = TR[I][0]
+                id_rele = TR[I]['id_rele']
                 estado = Rele[id_rele]
                 sql = ('SELECT id_rele,segundos_on,nconmutaciones FROM reles_segundos_on WHERE fecha='+
                       '"'+time.strftime("%Y-%m-%d")+'" and id_rele =' + str(id_rele))
@@ -1226,14 +1212,14 @@ try:
                     nreles_on = cursor.execute(sql)
                     nreles_on = int(nreles_on)
                     if estado > 0 :
-                        segundos_on = float(TP[2] * TP[3])
+                        segundos_on = float(TP['t_muestra'] * TP['n_muestras_grab'])
                         nconmutaciones = 1
 
                         if nreles_on >= 1:
                             TS = cursor.fetchall()
                             
-                            segundos_on = TS[0][1] + round((t_muestra*TP[3]*estado/100),2)  # calculo funcionamiento real reles PWM
-                            if TR[I][3] == 0:
+                            segundos_on = TS[0][1] + round((t_muestra*TP['n_muestras_grab']*estado/100),2)  # calculo funcionamiento real reles PWM
+                            if TR[I]['estado'] == 0:
                                 nconmutaciones = TS[0][2] + 1
                             else:
                                 nconmutaciones = TS[0][2]
@@ -1258,7 +1244,7 @@ try:
                     print ('Error grabacion Reles_segundos_on',ee)
                     logBD('Error grabacion Reles_segundos_on')
                     
-                if TP[1] == "S" and Grabar == 1 and TR[I][4] == "S" and Rele[id_rele] != TR[I][3]:
+                if TP['grabar_reles'] == "S" and Grabar == 1 and TR[I]['grabacion'] == "S" and Rele[id_rele] != TR[I]['estado']:
                     try:
                         cursor.execute("""INSERT INTO reles_grab (Tiempo,id_rele,valor_rele)
                                        VALUES(%s,%s,%s)""",(tiempo,id_rele,estado))
@@ -1270,26 +1256,28 @@ try:
 
         #------------------------Escribir en la tabla valores FV  ---------------------------
         
-        if TP[0] == "S" and Grabar == 1:
+        if TP['grabar_datos'] == "S" and Grabar == 1:
             if DEBUG >=2: print (Fore.RED+'G'+Fore.RESET,end='')
             try:
-                cursor.execute("""INSERT INTO datos (Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat) 
-                       VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                       (tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat))
+                cursor.execute("""INSERT INTO datos (Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,
+                    Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,Mod_bat,Vred,Wred,Whn_red,Whp_red) 
+                    VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    (tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,
+                    Temp,PWM,Mod_bat,Vred,Wred,Whn_red,Whp_red))
                 #db.commit()
             except:
                 db.rollback()
                 logBD('Registro DATOS no grabado')
         
-        if TP[0] == "S" and eval(grabar_datos_s): #grabar datos_s 
+        if TP['grabar_datos'] == "S" and eval(grabar_datos_s): #grabar datos_s 
             if DEBUG >=2: print ('S',end='')
             try:
                 cursor.execute("""INSERT INTO datos_s (Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,
                    Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,
-                   IPWM_P,IPWM_I,IPWM_D,Kp, Ki,Kd) 
-                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-                   (tiempo_us,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,
-                   Wplaca,Wh_placa,Temp,PWM,IPWM_P,IPWM_I,IPWM_D,TP[7],TP[8],TP[9]))
+                   IPWM_P,IPWM_I,IPWM_D,Kp, Ki,Kd,Vred,Wred,Whn_red,Whp_red) 
+                   VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                   (tiempo_us,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,
+                   IPWM_P,IPWM_I,IPWM_D,TP['Kp'],TP['Ki'],TP['Kd'],Vred,Wred,Whn_red,Whp_red))
                 db.commit()
             except:
                 db.rollback()
@@ -1299,34 +1287,31 @@ try:
 
         ## ------------------------------------------------
         t_muestra_5=(time.time()-hora_m) * 1000
+        
         # ----------------- Guardamos datos_fv.json ------
         ee=300
-        if AH > 1: # FV con bateria
-            datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
-                   Ibat,Vbat,SOC,round(DS,2),Aux1,Aux2,
-                   int(Whp_bat),int(Whn_bat),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-                   Temp,int(PWM),round(Consumo,0),Mod_bat,int(Tabs),int(Tflot),
-                   int(Tflot_bulk),SOC_min,SOC_max,Vbat_min,Vbat_max]        
+        datos= [(round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S")),
+                (Vbat,Ibat,round(Wbat),int(Whp_bat),int(Whn_bat),Vbat_min,Vbat_max),
+                (round(DS,2),SOC,SOC_min,SOC_max),
+                (Mod_bat,int(Tabs),int(Tflot),int(Tflot_bulk)),
+                (Vplaca,Iplaca,round(Wplaca),round(Wh_placa)),
+                (Vred,Wred,int(Whp_red),int(Whn_red),Vred_min,Vred_max,EFF,EFF_min,EFF_max),
+                (round(Wconsumo), round(Wh_consumo)),
+                (Temp,int(PWM)),
+                (Aux1,Aux2)
+            ]
         
-        else:   # FV sin bateria
-            datos= [round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S"),
-                   Wred,Vred,EFF,0,Aux1,Aux2,
-                   int(Whp_red),int(Whn_red),Iplaca,Vplaca,round(Wplaca),round(Wh_placa,1),
-                   Temp,int(PWM),round(Consumo,0),Mod_red,0,0,
-                   0,EFF_min,EFF_max,Vred_min,Vred_max]
-                       
         with open('/run/shm/datos_fv.json', 'w') as f:
             json.dump(datos, f)
         
         ee=310
         with open('/run/shm/datos_reles.json', mode='w') as f:
             TRR=[]
-            for I in range(nreles):
-                TRR.append ([TR[I][1]+'('+TR[I][2]+'-P'+str(TR[I][6])+')',Rele[TR[I][0]]])
+            for r in TR: TRR.append ([r['nombre']+'('+r['modo']+'-P'+str(r['prioridad'])+')',Rele[r['id_rele']]])
             json.dump(TRR,f)
         
         Grabar += 1
-        if Grabar >= TP[3] + 1: Grabar = 1
+        if Grabar >= TP['n_muestras_grab'] + 1: Grabar = 1
 
         ###### ajuste fino tiempo bucle
         T_ejecucion = round(time.time() - hora1,2)
@@ -1336,15 +1321,15 @@ try:
         ee=320
         if DEBUG >= 1:
             #print (tiempo,'-',end='')
-            print(' {0:4}ms - Sensor={1}={2:.2f}'.format(int(T_ejecucion*1000),TP[6],TP[5]),end='')
-            print (Fore.CYAN+'/{0:.2f}'.format(eval(TP[6])),end='')
+            print(' {0:4}ms - Sensor={1}={2:.2f}'.format(int(T_ejecucion*1000),TP['sensor_PID'],TP['objetivo_PID']),end='')
+            print (Fore.CYAN+'/{0:.2f}'.format(eval(TP['sensor_PID'])),end='')
             if AH > 0:
-                print (Fore.MAGENTA+' / Vbat={0:.2f}- Iplaca={1:.2f}- Ibat={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vbat,Iplaca,Ibat,Consumo,PWM),Fore.RESET)
+                print (Fore.MAGENTA+' / Vbat={0:.2f}- Iplaca={1:.2f}- Ibat={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vbat,Iplaca,Ibat,Wconsumo,PWM),Fore.RESET)
             else:
-                print (Fore.MAGENTA+' / Vred={0:.2f}- Iplaca={1:.2f}- Ired={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vred,Iplaca,Ired,Consumo,PWM),Fore.RESET)
+                print (Fore.MAGENTA+' / Vred={0:.2f}- Iplaca={1:.2f}- Ired={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vred,Iplaca,Ired,Wconsumo,PWM),Fore.RESET)
                 
         # Repetir bucle cada X segundos
-        espera = TP[2] - T_ejecucion #-0.1
+        espera = TP['t_muestra'] - T_ejecucion #-0.1
         if espera > 0: time.sleep(espera)
         t_muestra_6=(time.time()-hora_m) * 1000
 
