@@ -4,8 +4,8 @@ require('conexion.php');
 
 date_default_timezone_set("UTC");
 
-//Coger datos 2 grafica
-$sql = "SELECT Fecha, TRUNCATE(Whp_bat/1000,2) as kWhp_bat, TRUNCATE(Whn_bat/1000,2) as kWhn_bat
+//Coger datos Wh red
+$sql = "SELECT Fecha, TRUNCATE(Whp_red/1000,2) as kWhp_red, TRUNCATE(Whn_red/1000,2) as kWhn_red
 		FROM diario WHERE Fecha>= SUBDATE(NOW(), INTERVAL 30 DAY)
 		GROUP BY Fecha ORDER BY Fecha";
 
@@ -24,7 +24,7 @@ if($result = mysqli_query($link, $sql)){
 }
 
 
-//Coger datos 3 grafica
+//Coger datos Wh Placa
 $sql = "SELECT Fecha, TRUNCATE(Wh_placa/1000,2) as kWh_placa
 		FROM diario WHERE Fecha>= SUBDATE(NOW(), INTERVAL 30 DAY)
 		GROUP BY Fecha ORDER BY Fecha";
@@ -44,7 +44,7 @@ if($result = mysqli_query($link, $sql)){
 }
 
 
-//Coger datos 4 grafica
+//Coger datos Wh consumo
 $sql = "SELECT Fecha,ABS(TRUNCATE((Wh_placa-(Whp_bat-Whn_bat))/1000,2)) as kWh_consumo
 		FROM diario WHERE Fecha>= SUBDATE(NOW(), INTERVAL 30 DAY)
 		GROUP BY Fecha ORDER BY Fecha";
@@ -68,14 +68,14 @@ mysqli_close($link);
 
 
 
-//Adaptar el tiempo grafica2
+//Adaptar el tiempo grafica1
 for($i=0;$i<count($rawdata1);$i++){
     $time = $rawdata1[$i]["Fecha"];
     $date = new DateTime($time);
     $rawdata1[$i]["Fecha"]=$date->getTimestamp()*1000;
 }
 
-//Adaptar el tiempo grafica3
+//Adaptar el tiempo grafica2
 for($i=0;$i<count($rawdata3);$i++){
     $time = $rawdata3[$i]["Fecha"];
     $date = new DateTime($time);
@@ -83,7 +83,7 @@ for($i=0;$i<count($rawdata3);$i++){
 }
 
 
-//Adaptar el tiempo grafica4
+//Adaptar el tiempo grafica3
 for($i=0;$i<count($rawdata4);$i++){
     $time = $rawdata4[$i]["Fecha"];
     $date = new DateTime($time);
@@ -212,7 +212,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata1);$i++){
                    ?>
-                   data.push([<?php echo $rawdata1[$i]["Fecha"];?>,<?php echo $rawdata1[$i]["kWhp_bat"];?>]);
+                   data.push([<?php echo $rawdata1[$i]["Fecha"];?>,<?php echo $rawdata1[$i]["kWhp_red"];?>]);
                    <?php } ?>
                 return data;
                      })()
@@ -231,7 +231,7 @@ $(function () {
                    <?php
                        for($i = 0 ;$i<count($rawdata1);$i++){
                    ?>
-                   data.push([<?php echo $rawdata1[$i]["Fecha"];?>,<?php echo $rawdata1[$i]["kWhn_bat"];?>]);
+                   data.push([<?php echo $rawdata1[$i]["Fecha"];?>,<?php echo $rawdata1[$i]["kWhn_red"];?>]);
                    <?php } ?>
                 return data;
                      })()

@@ -33,15 +33,16 @@ try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
 
-    sql="SELECT MAX(DATE(Tiempo)), MAX(Vbat), MIN(Vbat), AVG(Vbat), MAX(SOC), MIN(SOC), AVG(SOC), \
+    sql = "SELECT MAX(DATE(Tiempo)), MAX(Vbat), MIN(Vbat), AVG(Vbat), MAX(SOC), MIN(SOC), AVG(SOC), \
         MAX(Ibat), MIN(Ibat), AVG(Ibat), MAX(Iplaca), AVG(Iplaca), MAX(Wh_placa), \
-        MAX(Whp_bat), MAX(Whn_bat), MAX(Wh_placa-(Whp_bat-Whn_bat)), MAX(Temp), MIN(Temp), AVG(Temp) \
+        MAX(Whp_bat), MAX(Whn_bat), MAX(Wh_placa-(Whp_bat-Whn_bat)-(Whp_red-Whn_red)), MAX(Temp), MIN(Temp), AVG(Temp), \
+        MAX(Whp_red), MAX(Whn_red), MAX(Wred), MIN(Wred),AVG(Wred),MAX(Vred), MIN(Vred) \
         FROM datos WHERE Tiempo BETWEEN '" + rango1 + "' AND '" + rango2 +"'"
-    
+
 
     cursor.execute(sql)
     var=cursor.fetchall()
-    
+    print (var)
 except Exception as e:
 
     print (tiempo,"Error, la base de datos no existe")
@@ -77,10 +78,11 @@ try:
             logBD()
     else:
         try:
-            cursor.execute("""UPDATE diario SET maxVbat=%s,minVbat=%s,avgVbat=%s,maxSOC=%s,
-                minSOC=%s,avgSOC=%s,maxIbat=%s,minIbat=%s,avgIbat=%s,maxIplaca=%s,avgIplaca=%s,
-                Wh_placa=%s,Whp_bat=%s,Whn_bat=%s,Wh_consumo=%s,maxTemp=%s,minTemp=%s,
-                avgTemp=%s,Whp_red=%s,Whn_red=%s,maxWred=%s,minWred=%s,avgWred=%s,maxVred=%s,minVred=%s
+            cursor.execute("""UPDATE diario SET
+                maxVbat=%s,minVbat=%s,avgVbat=%s  ,maxSOC=%s   , minSOC=%s  ,avgSOC=%s ,maxIbat=%s,
+                minIbat=%s,avgIbat=%s,maxIplaca=%s,avgIplaca=%s, Wh_placa=%s,Whp_bat=%s,
+                Whn_bat=%s,Wh_consumo=%s,maxTemp=%s,minTemp=%s,avgTemp=%s,Whp_red=%s,
+                Whn_red=%s,maxWred=%s,minWred=%s,avgWred=%s,maxVred=%s,minVred=%s
                 WHERE Fecha=%s""", 
                 (round(var[0][1],2),round(var[0][2],2) ,round(var[0][3],2) ,round(var[0][4],2) ,
                 round(var[0][5],2) ,round(var[0][6],2) ,round(var[0][7],2) ,round(var[0][8],2) ,
@@ -95,7 +97,7 @@ try:
             logBD()
 
         except:
-        
+            print ('error en actualizacion diario ayer')
             db.rollback()
 
             log="Error actualizacion registro diario ayer"
