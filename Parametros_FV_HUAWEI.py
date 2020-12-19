@@ -83,6 +83,9 @@ Ired_min_log = -60    # Minima intensidad red admisible para no dar aviso log
 Vred_max_log = 280    # Maximo voltaje red admisible para no dar aviso log
 Vred_min_log = 180    # Minimo voltaje red admisible para no dar aviso log
 
+EFF_max_log = 110     # Maximo EFF admisible para no dar aviso log
+EFF_min_log = 50      # Minimo EFF admisible para no dar aviso log
+
 Temp_max_log = 50     # Maxima temperatura admisible para no dar aviso log
 Temp_min_log = -10    # Minima temperatura admisible para no dar aviso log
 
@@ -304,7 +307,8 @@ IP_FRONIUS = '192.168.0.95'    # IP del FRONIUS
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
 
 usar_huawei = 1          	# 1 para leer datos del huawei..... 0 para no usar
-IP_HUAWEI = "192.168.0.24"     # IP del huawei
+IP_HUAWEI = "192.168.0.24"  # IP del huawei
+t_muestra_huawei = 5        # Tiempo entre capturas
 
 # -----------------------------------------------
 ##################

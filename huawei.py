@@ -22,7 +22,9 @@ hua.port(502)
 hua.unit_id(0)
 hua.open()
 
-DEBUG = False
+narg = len(sys.argv)
+if str(sys.argv[narg-1]) == '-p':    DEBUG = True
+else: DEBUG = False
 
 time.sleep(1)
 

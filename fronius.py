@@ -20,14 +20,19 @@ if usar_fronius == 0:
         #print (commands.getoutput('sudo systemctl stop srne'))
         print (subprocess.getoutput('sudo systemctl stop fronius'))
         sys.exit()
+
+
+
+
+
     
 class fronius:
 
     def __init__(self):
     
         self.dct = {}
-        self.cmd_meter = 'http://' + IP_fronius + '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'
-        self.cmd_inverter = 'http://' + IP_fronius + '/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=CommonInverterData'
+        self.cmd_meter = 'http://' + IP_FRONIUS + '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'
+        self.cmd_inverter = 'http://' + IP_FRONIUS + '/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=CommonInverterData'
         
         
     def read_data_meter(self):
@@ -54,20 +59,24 @@ class fronius:
             
             if DEBUG: print('Error lectura meter')
             return None
-                        
-    def read_data_inverter(self):
-        try:
             
+            
+    def read_data_inverter(self):
+    
+        try:
+        
             response = requests.get(self.cmd_inverter)
             inverter = json.loads(response.content)
-            print('Vred',inverter)
+            #print('Vred',inverter)
             Vred = float((inverter['Body']['Data']['UAC']['Value']))
+            Ired = float((inverter['Body']['Data']['IAC']['Value']))
             Vplaca = float((inverter['Body']['Data']['UDC']['Value']))
             #EFF = Pout(AC)/Pin(DC) * 100
             #Pin = Vi * Ii
+            if Vplaca == None: Vplaca=0
             Pin = Vplaca * float((inverter['Body']['Data']['IDC']['Value']))
             try:
-                EFF = ((float((inverter['Body']['Data']['PAC']['Value'])) / Pin) * 100)
+                EFF = round(((float((inverter['Body']['Data']['PAC']['Value'])) / Pin) * 100),2)
             except:
                 EFF=100
                 pass
@@ -75,6 +84,7 @@ class fronius:
             if DEBUG: print('Vred',Vred,'Vplaca',Vplaca)
             
             self.dct['Vred'] = Vred
+            self.dct['Ired'] = Ired
             self.dct['Vplaca'] = Vplaca
             self.dct['EFF'] = EFF
             return self.dct
@@ -84,6 +94,7 @@ class fronius:
             if DEBUG: print('Error lectura inverter')
             self.dct['Vred'] = 230
             self.dct['Vplaca'] = 0
+            self.dct['EFF'] = 100
             return self.dct
 
 if __name__ == '__main__':
@@ -98,10 +109,10 @@ if __name__ == '__main__':
             if usar_meter_fronius == 1:
                 datos_meter = ve.read_data_meter()
                 datos_inverter.update(datos_meter)                
-                datos_inverter['Vred'] = datos_inverter['Vred']
                 datos_inverter['Ired'] = datos_meter['Wred']/datos_inverter['Vred']
+                datos_inverter['Vred'] = datos_inverter['Vred']
                 datos_inverter['Iplaca'] = datos_meter['Wplaca']/datos_inverter['Vred']
-                datos_inverter['Wred'] = datos_meter['Wred'] 
+                datos_inverter['Aux1'] = datos_meter['Wred']
                 Temp = 0
                 
             datos= datos_inverter
@@ -118,7 +129,7 @@ if __name__ == '__main__':
                     pickle.dump(datos, f)      
              
             
-            time.sleep(5)
+            time.sleep(2)
             
         except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
             break
