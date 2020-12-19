@@ -83,8 +83,8 @@ $(function () {
       opposite: false,
       
 	  // ########## Valores POTENCIA ######################
-      min: Wred_min,
-      max: Wred_max,
+      min: Escala_Wred_min,
+      max: Escala_Wred_max,
       tickInterval: 500,
       minorGridLineColor: 'transparent',
       labels: {

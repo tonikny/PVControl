@@ -316,7 +316,7 @@ $(function () {
                    fontSize: '18px'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,2) + " V"
+                    return Highcharts.numberFormat(this.y,0) + " V"
                     },
               }
           }]
@@ -858,7 +858,7 @@ $(function () {
             floating:true,
             text: 'Wplaca',
             style: {
-                fontSize: '14px',
+                fontSize: '12px',
                 color: 'red'
                 },
             },
@@ -969,11 +969,11 @@ $(function () {
                     color: 'black'
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " W"
+                    return Highcharts.numberFormat(this.y,0) + " W"
                     },
                 },
             dial: {
-                backgroundColor: (([this.y] <= 0) ? 'red' : 'green')
+                backgroundColor: (([this.y] <= 0) ? 'black' : 'green')
                 }
             },{
             name: 'Wplaca',
@@ -988,11 +988,11 @@ $(function () {
                     color: 'red'
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " W"
+                    return Highcharts.numberFormat(this.y,0) + " W"
                     },
                 },
             dial: {
-                backgroundColor: (([this.y] <= 0) ? 'black' : 'blue')
+                backgroundColor: (([this.y] <= 0) ? 'red' : 'blue')
                 }
 
                 
@@ -1262,7 +1262,7 @@ $(function () {
                    fontSize: '20px'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " V"
+                    return Highcharts.numberFormat(this.y,0) + " V"
                     },
               }
           }]

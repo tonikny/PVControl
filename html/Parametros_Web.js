@@ -37,11 +37,11 @@
 	Consumo_amperios_rojo = 25;
 	Consumo_amperios_max= 40;
 
-	// Reloj Excedentes
-	Wred_min = -5000;
-	Wred_negativo_rojo = -2000;
+	// Reloj WredExcedentes
+	Wred_min = -6000;
+	Wred_negativo_rojo = -4000;
 	Wred_negativo_amarillo = -1000;
-	Wred_positivo_amarillo = 500;
+	Wred_positivo_amarillo = 1000;
 	Wred_positivo_rojo = 2000;
 	Wred_max = 5000;
 
@@ -68,8 +68,8 @@
 	Vcelda_franja_max = 2.5;
 	
 	// Grafico Tiempo Real
-	Escala_Wred_min = -5000;
-	Escala_Wred_max = 5000;
+	Escala_Wred_min = -6000;
+	Escala_Wred_max = 7000;
 
 	Escala_Vred_min = 180;
 	Escala_Vred_max = 280;
