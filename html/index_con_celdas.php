@@ -9,7 +9,7 @@ session_start([
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link href="img/favicon.ico" rel="shortcut icon" type="image/x-icon" />
     <link href="css/index.css" rel="stylesheet" type="text/css" media="screen" />
-    <title>RPi:Control sistema fotovoltaico</title>
+    <title>PVControl+:Control sistema fotovoltaico</title>
 </head>
 
 <body>

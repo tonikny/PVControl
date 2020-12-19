@@ -48,7 +48,7 @@ if AH <1 :
                         
 else:
     print (Fore.CYAN + 'Dada de alta BATERIA de ' + Fore.RED, AH, 'AH'+ Fore.CYAN,
-           ' se configura la WEb como', end='')
+           ' se configura la Web como', end='')
     print(Fore.RED+' --------- FV CON BATERIA a ', end='')
     if vsis == 1:
         print (' 12V -------')
@@ -60,6 +60,7 @@ else:
         print (' 48V -------')
         fichero2 ='/home/pi/PVControl+/html/Parametros_Web_48V.js'
     print()
+    
     if usar_mux > 0:
         print (Fore.CYAN + 'Se ha dado de alta control de ' + Fore.RED, usar_mux, 'Celdas'+ Fore.CYAN,
            ' por lo que se configura la WEb como')
@@ -70,7 +71,7 @@ else:
         print (Fore.CYAN + 'NO se ha dado de alta control de Celdas',
            ' por lo que se configura la WEb como ')
         print (Fore.RED+' ------ FV CON BATERIA y SIN CONTROL CELDAS --------')
-        fichero ='/home/pi/PVControl+/html/index_sin_celdas.php'
+        fichero1 ='/home/pi/PVControl+/html/index_sin_celdas.php'
         
 print()
 

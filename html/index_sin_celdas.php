@@ -9,7 +9,7 @@ session_start([
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link href="img/favicon.ico" rel="shortcut icon" type="image/x-icon" />
     <link href="css/index.css" rel="stylesheet" type="text/css" media="screen" />
-    <title>RPi:Control sistema fotovoltaico</title>
+    <title>PVControl+:Control sistema fotovoltaico</title>
 </head>
 
 <body>
@@ -19,27 +19,33 @@ session_start([
             <a id="logo-header" href="index.php">
                 <span class="site-name"><img src="img/fvcontrol.png" alt="logo" style="width:200px;height:60px;" /></span>
                 
-                <!--
-                <span class="site-desc">
-                    <?php
-                        if($row == 1)
-                                print "<font size = 4 color = yellow><b>EXCEDENTES ON</b></font>";
-                        else
-                                print "<font size = 4 color = red><b>EXCEDENTES OFF</b></font>";
-                    ?>
-                </span>
-                -->
-            </a> <!-- / #logo-header -->
+            </a> 
             <?php
             $recibe_pagina=$_GET['pagina'];
              ?>
 
             <nav>
                 <ul>
-                    <li><a href="index.php?pagina=boton1"
+                    <!-- Inicio -->
+                    <li><a href="index.php?pagina=boton1" 
                         title="Inicio"><img src="img/Home.png" width="20" height="20"> Inicio</a>
                     </li>
                     
+                    <!-- Utilidades -->
+                    <li><a href="#" 
+                        title="Utilidades"><img src="img/util.jpg" width="20" height="20"> Utilidades</a>
+                        <ul>
+                            <li><a href="index.php?pagina=meteo"
+                                title="Gráficas Prevision Meteorologica">Meteorologia</a>
+                            </li>
+                            <li><a href="index.php?pagina=log"
+                                title="Logs del sistema">Log</a>
+                            </li>
+                            
+                        </ul>
+                    </li>
+
+                    <!-- Graficas -->
                     <li><a href="#"
                         title="Gráficas"><img src="img/Graph.png" width="20" height="20"> Gráficas</a>
                         <ul>
@@ -67,26 +73,43 @@ session_start([
                             <li><a href="index.php?pagina=botonH_soh"
                                 title="Histórico Ciclado">Hist_Ciclado</a>
                             </li>
-                            <li><a href="index.php?pagina=botonH_hibrido"
-                                title="Hist_Hibrido">Hibrido</a>
-                            </li>
                             <li><a href="index.php?pagina=boton7"
                                 title="Gráficas Producción y Consumo">Extra</a>
                             </li>
-                            <li><a href="index.php?pagina=boton10"
-                                title="Gráficas Prevision Meteorologica">Meteorologia</a>
-                            </li>
+                            
                             <li><a href="index.php?pagina=boton8"
-                                title="Tabla valores importantes">Diario</a>
+                                title="Tabla resumen diario">Diario</a>
                             </li>
                             <li><a href="index.php?pagina=boton11"
                                 title="Eficiencia Carga/Descarga Bateria">Carga/Descaga</a>
                             </li>
-                            <li><a href="index.php?pagina=boton9"
-                                title="Logs del sistema">Log</a>
+                            
+                        </ul>
+                    </li>
+
+                    <!-- Equipos -->
+                    <li><a href="#" 
+                        title="Equipos"><img src="img/inverter.png" width="20" height="20"> Equipos</a>
+                        <ul>
+                            <li><a href="index.php?pagina=botonH_hibrido"
+                                title="Hist_Hibrido">Hibrido</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="Fronius">Fronius</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="Huawei">Huawei</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="SMA">SMA</a>
+                            </li>
+                            <li><a href="index.php?pagina=xxx"
+                                title="BMV">BMV</a>
                             </li>
                         </ul>
                     </li>
+                    
+                   <!-- Reles -->
                     <li><a href="#"
                         title="Relés"><img src="img/Target.png" width="20" height="20"> Relés</a>
                         <ul>
@@ -97,8 +120,9 @@ session_start([
                                 title="Horas funcionamiento">H.Relés</a>
                             </li>
                         </ul>
-                    </li>
-                    <!-- Para menu celdas 
+                    </li>  
+                    
+                    <!-- Celdas 
                     <li><a href="#"
                         title="Celdas"><img src="img/bateria.png" width="20" height="20"> Celdas</a>
                         <ul>
@@ -109,12 +133,12 @@ session_start([
                                 title="Graficas resumen">Resumen</a>
                             </li>
                         </ul>
-                    </li>-->
-                
+                    </li>
+                    -->
                 </ul>
             </nav>
-        </div>
-
+        </div> 
+                         
     <div id="contenido">
         <br>
         <?php
@@ -184,10 +208,7 @@ session_start([
         <br>
     </div>
 
-
-
 </div>
-
 
 </body>
 </html>

@@ -209,7 +209,7 @@ with open('/home/pi/PVControl+/Parametros_FV.py') as f:
                     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
                     cursor = db.cursor()
                     
-                    if int(ip) < 1:
+                    if float(Valor) < 1.0:
                         AH_valor = 'SIN BATERIA'
                         Sql = """sensor_PID = 'Wred',objetivo_PID = '0', Vabs = '0',Vflot = '0', Vequ = '0' ,
                                  Kp = '0.1',Ki = '0', Kd = '0'"""
