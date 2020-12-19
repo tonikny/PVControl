@@ -173,7 +173,7 @@ session_start([
                     include ("grafica_elige.php");
                     break;
                 case "boton8":
-                    include ("diario.php");
+                    include ("diario_red.php");
                     break;
                 case "log":
                     include ("log.php");
