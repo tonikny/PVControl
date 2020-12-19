@@ -322,7 +322,7 @@ $(function () {
           }]
         });
     
-    chart_EFF = new Highcharts.Chart ({
+    chart_eff = new Highcharts.Chart ({
         chart: {
             renderTo: 'containerEFF',
             type: 'solidgauge',
@@ -335,7 +335,7 @@ $(function () {
             
           },
         title: {
-            y:140,
+            y:130,
             widthAdjust: 0,
             style: {
                 fontSize: '30px'
@@ -378,7 +378,7 @@ $(function () {
             // },
              
             title: {
-                y: 80,//-30,
+                y: 100,//-30,
                 floating: true,
                 //align: 'right',
                 //verticalAlign: 'bottom',
@@ -982,17 +982,17 @@ $(function () {
                 allowOverlap:true,
                 enabled: true,
                 borderWidth: 0,
-                y: 12,
+                y: 25,
                 style: {
                     fontSize: '14px',
-                    color: 'green'
+                    color: 'red'
                     },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,1) + " W"
                     },
                 },
             dial: {
-                backgroundColor: (([this.y] <= 0) ? 'green' : 'red')
+                backgroundColor: (([this.y] <= 0) ? 'black' : 'blue')
                 }
 
                 
@@ -1661,7 +1661,7 @@ $(function () {
                 
             // Actualizacion reloj Wred/Wplaca
             chart_wred.series[0].setData([Wred]); 
-            chart_ibat.series[1].setData([Wplaca]);
+            chart_wred.series[1].setData([Wplaca]);
                       
             // Actualizacion EFF
             chart_eff.series[0].setData([EFF]);
