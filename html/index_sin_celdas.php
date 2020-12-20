@@ -185,7 +185,7 @@ session_start([
                 case "boton8":
                     include ("diario.php");
                     break;
-                case "boton9":
+                case "log":
                     include ("log.php");
                     break;
                 case "boton10":
