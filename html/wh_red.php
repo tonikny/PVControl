@@ -190,26 +190,49 @@ $(function () {
 		   // groupPadding: 0.1 //
 		//}
             //},
-
+            
             plotOptions: {
-                  column: {
+                column: {
                     dataLabels: {
                         enabled: true,
                         crop: false,
-                        overflow: 'none',
+                        overflow: 'allow'
+                    },
+                    enableMouseTracking: false
+                  },
+		spline: {
+                    dataLabels: {
+                        enabled: true,
+                        crop: false,
+                        overflow: 'allow',
+			y: 25,
+			color: 'green',
+			negativeColor: 'lightgreen'
                     },
                     enableMouseTracking: false
                   }
             },
-
-
+           /*
+            plotOptions: {
+	        series: {
+                    dataLabels: {
+                    enabled: true,
+		    crop: false,
+                    overflow: 'none'
+                 }
+              }
+            },
+            */
+	    
+	    
             series: [
 	       {name: 'kWh export',
 		type: 'column',
 		pointWidth: 15,  //Ancho de la columna
-		color: 'rgba(100,149,237,0.8)',  //0.4 nivel de transparecia
-                //color: Highcharts.getOptions().colors[1],
-                tooltip: {
+		//color: 'rgba(100,149,237,0.8)',  //0.4 nivel de transparecia
+                //color: Highcharts.getOptions().colors[2],
+                color: 'red',
+		tooltip: {
                     valueSuffix: ' kWh',
                     valueDecimals: 2,
                 },
@@ -226,9 +249,10 @@ $(function () {
 	       {name: 'kWh import',
                 type: 'column',
 		pointWidth: 15,
-		color: 'rgba(255,0,0,0.8)',
-                //color: Highcharts.getOptions().colors[2],
-                tooltip: {
+		color: 'rgba(100,149,237,0.8)',
+                //color: Highcharts.getOptions().colors[4],
+                //color: 'blue',
+		tooltip: {
                     valueSuffix: ' kWh',
                     valueDecimals: 2,
                 },
@@ -245,8 +269,10 @@ $(function () {
 	      {name: 'kWh neto',
                 type: 'spline',
 		pointWidth: 15,
-		color: 'rgba(255,0,0,0.8)',
+		//color: 'rgba(255,0,0,0.8)',
                 //color: Highcharts.getOptions().colors[2],
+		color: 'green',
+		negativeColor: 'lightgreen',
                 tooltip: {
                     valueSuffix: ' kWh',
                     valueDecimals: 1,
