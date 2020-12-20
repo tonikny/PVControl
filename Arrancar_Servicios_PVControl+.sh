@@ -85,17 +85,10 @@ sudo systemctl enable sma_meter
 sudo systemctl restart sma_meter
 sudo systemctl status sma_meter
 
-sudo ln -s /home/pi/PVControl+/etc/systemd/system/sma_meter.service /etc/systemd/system/daikin.service
+sudo ln -s /home/pi/PVControl+/etc/systemd/system/daikin.service /etc/systemd/system/daikin.service
 sudo systemctl enable daikin
 sudo systemctl restart daikin
 sudo systemctl status daikin
-
-
-
-
-
-
-
 
 
 echo press Enter

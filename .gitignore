@@ -7,3 +7,5 @@ __pycache__/
 *.so
 
 Parametros_FV.py
+Parametros_FV.back
+html/Parametros_Web.js

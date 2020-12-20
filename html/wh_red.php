@@ -5,7 +5,8 @@ require('conexion.php');
 date_default_timezone_set("UTC");
 
 //Coger datos Wh red
-$sql = "SELECT Fecha, TRUNCATE(Whp_red/1000,2) as kWhp_red, TRUNCATE(Whn_red/1000,2) as kWhn_red
+$sql = "SELECT Fecha, TRUNCATE(Whp_red/1000,2) as kWhp_red, TRUNCATE(Whn_red/1000,2) as kWhn_red,
+                TRUNCATE((Whp_red-Whn_red)/1000,2) as kWh_red
 		FROM diario WHERE Fecha>= SUBDATE(NOW(), INTERVAL 30 DAY)
 		GROUP BY Fecha ORDER BY Fecha";
 
@@ -90,6 +91,10 @@ for($i=0;$i<count($rawdata4);$i++){
     $rawdata4[$i]["Fecha"]=$date->getTimestamp()*1000;
 }
 
+$TkWhred = 0;
+for($i=0;$i<count($rawdata1);$i++){
+    $TkWhred = $TkWhred + $rawdata1[$i]["kWh_red"];
+}
 
 ?>
 
@@ -140,7 +145,8 @@ $(function () {
             },
 
             title: {
-                text: 'kWh Red'
+                //text: 'kWh Red '
+		text: 'kWh Red Netos = ' + [<?php echo $TkWhred;?>]
             },
 	    subtitle: {
 		text: 'Puesta a 0, cada día a las 0h. Actualiza cada H:25 y H:55.'
@@ -197,8 +203,8 @@ $(function () {
             },
 
 
-            series: [{
-                name: 'kWh export',
+            series: [
+	       {name: 'kWh export',
 		type: 'column',
 		pointWidth: 15,  //Ancho de la columna
 		color: 'rgba(100,149,237,0.8)',  //0.4 nivel de transparecia
@@ -214,10 +220,10 @@ $(function () {
                    ?>
                    data.push([<?php echo $rawdata1[$i]["Fecha"];?>,<?php echo $rawdata1[$i]["kWhp_red"];?>]);
                    <?php } ?>
-                return data;
+                   return data;
                      })()
-	    }, {
-                name: 'kWh import',
+	       }, 
+	       {name: 'kWh import',
                 type: 'column',
 		pointWidth: 15,
 		color: 'rgba(255,0,0,0.8)',
@@ -235,7 +241,27 @@ $(function () {
                    <?php } ?>
                 return data;
                      })()
-            }]
+              },
+	      {name: 'kWh neto',
+                type: 'spline',
+		pointWidth: 15,
+		color: 'rgba(255,0,0,0.8)',
+                //color: Highcharts.getOptions().colors[2],
+                tooltip: {
+                    valueSuffix: ' kWh',
+                    valueDecimals: 1,
+                },
+                data: (function() {
+                   var data = [];
+                   <?php
+                       for($i = 0 ;$i<count($rawdata1);$i++){
+                   ?>
+                   data.push([<?php echo $rawdata1[$i]["Fecha"];?>,<?php echo $rawdata1[$i]["kWh_red"];?>]);
+                   <?php } ?>
+                return data;
+                     })()
+              }
+	    ]
         });
         var char3 = new Highcharts.Chart ({
             chart: {
