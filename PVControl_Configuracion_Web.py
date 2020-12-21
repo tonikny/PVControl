@@ -78,7 +78,12 @@ print()
 web_act = click.prompt(Fore.GREEN + ' 1= Actualiza Web  --  0: No Actualiza', type=str, default='1')
 
 if web_act == '1':
-    shutil.copy(fichero1, '/home/pi/PVControl+/html/index.php')
+    if os.path.exists('html/index.php'):
+        os.remove('html/index.php')
+    os.symlink(
+        os.path.relpath(fichero1, 'html/'),
+        os.path.join('html', 'index.php')
+    )
     shutil.copy(fichero2, '/home/pi/PVControl+/html/Parametros_Web.js')
     
     print ()
