@@ -188,7 +188,7 @@ session_start([
                 case "log":
                     include ("log.php");
                     break;
-                case "boton10":
+                case "meteo":
                     include ("meteogram.php");
                     break;
                 case "boton11":
