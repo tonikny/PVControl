@@ -73,8 +73,10 @@ if usar_telegram == 1:
     bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
     bot.skip_pending = True # Skip the pending messages
     cid = Aut[0]
-
-bus = SMBus(1) # Activo Bus I2C para ADS o PCF
+try:
+    bus = SMBus(1) # Activo Bus I2C para ADS o PCF
+except:
+    pass
 
 if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor).find ('ADS') >=0 : 
     # Alta ADS1115_1 - pin addr a 3V3
