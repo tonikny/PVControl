@@ -70,7 +70,7 @@
 	Escala_intensidad_max = 200;
 
 	Escala_Vbat_min = 22;
-	Escala_Vbat_max = 70;
+	Escala_Vbat_max = 35;
 
 	Vabs = 28.8;  // linea Vabs
 	Vflot = 27.2; // Linea Vflot
