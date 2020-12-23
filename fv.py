@@ -147,7 +147,7 @@ Ctemp = 0       # Contador del numero de muestra para leer temperatura
 Coef_Temp = 0.0             # Coeficiente de compensacion de temperatura para Vflot/Vabs 
 
 #---Variables reles --------------------------------
-n_refresco_rele = 0 #utilizado en secuenciacion escritura de refresco en reles
+t_refresco_rele = time.time() #utilizado en secuenciacion escritura de refresco en reles
 Puerto = estado = 0
 
 ## Definir diccionarios Rele y Rele_Ant
@@ -478,7 +478,7 @@ nreles = int(nreles)  # = numero de reles
 columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
 TR=[] 
 for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
-
+TR_refresco = TR[:] # lista copia de tabla reles para ir refrescando 1 valor por ciclo en los reles
 
 Rele_SSR = [ ]
 NGPIO =0 # Num Reles GPIO
@@ -1075,7 +1075,7 @@ try:
                 if r['operacion'] == 'OFF' and DatosFV[r['parametro']] <= r['valor'] :
                     Rele[id_rele] = 0
 
-            if r['condicion'] == '>':
+            elif r['condicion'] == '>':
                 if r['operacion'] == 'ON' and DatosFV[r['parametro']] < r['valor'] and Rele_Ant[id_rele] == 0 :
                     Rele[id_rele] = 0
                 if r['operacion'] == 'OFF' and DatosFV[r['parametro']] >= r['valor'] :
@@ -1190,15 +1190,16 @@ try:
                     sql = "UPDATE reles SET estado =" +str(Rele[id_rele])+ " WHERE id_rele = " + str(id_rele)
                     cursor.execute(sql)
         
-                ### refrescar estado rele (uno por ciclo)
-                if I == n_refresco_rele:
-                    #print (tiempo,I,'Refrescando valor Rele(', id_rele, ')=' ,Rele[id_rele])
-                    act_rele(id_rele, Rele[id_rele])
-            
-            n_refresco_rele += 1
-            if n_refresco_rele >= nreles: n_refresco_rele = 0
-            
-                 
+        # Refresco valor de rele 
+        if time.time()-t_refresco_rele > 2: # refrescar 1 rele cada max(t_muestra, 2sg)  
+            t_refresco_rele = time.time()
+            if len(TR_refresco) > 0:
+                act_rele(TR_refresco[0]['id_rele'], Rele[TR_refresco[0]['id_rele']])
+                #print ('refrescando rele',TR_refresco[0])
+                TR_refresco.pop(0)
+            else:
+                TR_refresco = TR
+      
                     
         if TP['grabar_reles'] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
             for I in range(nreles):

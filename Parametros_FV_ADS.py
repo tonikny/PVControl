@@ -22,8 +22,13 @@ Vplaca_sensor = "ADS"     # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],
 Ibat_sensor   = "ADS"     # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
 Iplaca_sensor = "ADS"     # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
 
-Aux1_sensor   = ""     # ADS, etc...
-Aux2_sensor   = ""     # ADS, etc...
+Aux1_sensor   = ""        # ADS, etc...
+Aux2_sensor   = ""        # ADS, etc...
+
+Vred_sensor   = ""        # Sensor Voltaje de red (d_huawei['Vred'],...)
+Ired_sensor   = ""        # Sensor Intensidad de red (d_huawei['Ired'],...)
+EFF_sensor    = ""        # Eficienca Conversion (d_huawei['EFF'],...)
+
 
 Wplaca_sensor  = "Iplaca * Vbat"         # Iplaca * Vbat, d_hibrido['Wplaca'].....
 Consumo_sensor = "Vbat * (Iplaca-Ibat)"    # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
@@ -78,6 +83,10 @@ Ired_max_log = 60     # Maxima intensidad red admisible para no dar aviso log
 Ired_min_log = -60    # Minima intensidad red admisible para no dar aviso log
 Vred_max_log = 280    # Maximo voltaje red admisible para no dar aviso log
 Vred_min_log = 180    # Minimo voltaje red admisible para no dar aviso log
+
+EFF_max_log = 110     # Maximo EFF admisible para no dar aviso log
+EFF_min_log = 50      # Minimo EFF admisible para no dar aviso log
+
 
 Temp_max_log = 50     # Maxima temperatura admisible para no dar aviso log
 Temp_min_log = -10    # Minima temperatura admisible para no dar aviso log

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-05-23
+# Versión 2020-12-22
 
 import time,csv,sys, subprocess
 import traceback
@@ -227,10 +227,27 @@ try:
     cp = 0
     while True:
         ee=34
-        nombres=(['Tiempo_sg', 'Tiempo', 'Ibat','Vbat','SOC','DS','Aux1','Aux2',
-                  'Whp_bat','Whn_bat','Iplaca','Vplaca','Wplaca','Wh_placa',
-                  'Temp','PWM','Consumo','Mod_bat','Tabs','Tflot','Tflot_bulk',
-                  'SOC_min','SOC_max','Vbat_min','Vbat_max'])
+        """ # Estructura datos_fv.json ------
+        datos= [(round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S")),
+                (Vbat,Ibat,round(Wbat),int(Whp_bat),int(Whn_bat),Vbat_min,Vbat_max),
+                (round(DS,2),SOC,SOC_min,SOC_max),
+                (Mod_bat,int(Tabs),int(Tflot),int(Tflot_bulk)),
+                (Vplaca,Iplaca,round(Wplaca),round(Wh_placa)),
+                (Vred,Wred,int(Whp_red),int(Whn_red),Vred_min,Vred_max,EFF,EFF_min,EFF_max),
+                (round(Wconsumo), round(Wh_consumo)),
+                (Temp,int(PWM)),
+                (Aux1,Aux2)      ]
+        """
+        
+        nombres=(['Tiempo_sg', 'Tiempo'],
+                 [ 'Vbat','Ibat','Wbat','Whp_bat','Whn_bat','Vbat_min','Vbat_max'],
+                 ['DS','SOC','SOC_min','SOC_max'],
+                 ['Mod_bat','Tabs','Tflot','Tflot_bulk'],
+                 ['Vplaca','Iplaca','Wplaca','Wh_placa'],
+                 ['Vred','Wred','Whp_red','Whn_red','Vred_min','Vred_max','EFF','EFF_min','EFF_max'],
+                 ['Wconsumo','Wh_consumo'],
+                 ['Temp','PWM'],
+                 ['Aux1','Aux2'])
 
         try:
             archivo_ram='/run/shm/datos_fv.json'
@@ -238,8 +255,11 @@ try:
                 dct = json.load(f)
             
             d_fv={}
-            for i in range (len(nombres)): d_fv[nombres[i]]=dct[i]
-        
+            for n1,d1 in zip(nombres, dct):
+                for n,d in zip(n1, d1):
+                    d_fv[n] = d
+                
+            
             if DEBUG>=1: print(d_fv)
         
             archivo_ram='/run/shm/datos_reles.json'
