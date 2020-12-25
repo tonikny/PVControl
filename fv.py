@@ -1006,7 +1006,7 @@ try:
         ee=50
         #### Cargamos los valores actuales de los reles  en Rele_Ant####
         
-        Rele_Ant = Rele # ponemos estado del rele en el estado anterior
+        Rele_Ant = Rele.copy() # ponemos estado del rele en el estado anterior
         for r in TR: Rele_H[r['id_rele']] = 0 # inicializamos a cero el diccionario para control horario
         
         #### Encendemos virtualmente y apagamos SI condiciones FV o HORARIAS no se cumplen####
