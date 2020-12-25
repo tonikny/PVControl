@@ -46,7 +46,7 @@ if($result = mysqli_query($link, $sql)){
 
 
 //Coger datos Wh consumo
-$sql = "SELECT Fecha,ABS(TRUNCATE((Wh_placa-(Whp_bat-Whn_bat))/1000,2)) as kWh_consumo
+$sql = "SELECT Fecha,ABS(TRUNCATE((Wh_placa-(Whp_red-Whn_red))/1000,2)) as kWh_consumo
 		FROM diario WHERE Fecha>= SUBDATE(NOW(), INTERVAL 30 DAY)
 		GROUP BY Fecha ORDER BY Fecha";
 
