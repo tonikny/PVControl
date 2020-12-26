@@ -1752,7 +1752,7 @@ $(function () {
             
             //Vred_min
             if (Vred <= Vred_min_rojo)  {
-                document.getElementById("Vbat_min").className = "rojo";}
+                document.getElementById("Vred_min").className = "rojo";}
             else if (Vred < Vred_min_naranja)  {
                 document.getElementById("Vred_min").className = "naranja";}
             else  {
