@@ -1592,7 +1592,7 @@ $(function () {
           try {             
             // tiempo_sg, "%d-%B-%Y -- %H:%M:%S"
             fecha = data[0][0][1];
-            pp=pp1
+            
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
             Vbat = data[0][1][0]; 
             Ibat = data[0][1][1]; 
