@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-11-14
+# Versión 2021-01-02
 
-import time,sys
-import datetime
-import MySQLdb 
+# #################### Control Ejecucion Servicio ########################################
+servicio = 'fv_mux'
+control = 'usar_mux'
+exec(open("fv_control_servicio.py").read())
+# ########################################################################################
+
+archivo_ram = '/run/shm/datos_mux.json'
+
+import MySQLdb,json,time
+import telebot # Librería de la API del bot.
+from telebot import types # Tipos para la API del bot.
+import token
 
 from smbus import SMBus
 import Adafruit_ADS1x15 # Import the ADS1x15 module.
-#import telebot # Librería de la API del bot.
-#from telebot import types # Tipos para la API del bot.
-#import token
-#import paho.mqtt.client as mqtt
 
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
-
-import json
-
-import locale
-locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
-
-archivo_ram = '/run/shm/datos_mux.json'
 
 """
 Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
@@ -32,21 +30,16 @@ Style: DIM, NORMAL, BRIGHT, RESET_ALL
 """
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_mux') #+Style.RESET_ALL)
 
-#Parametros Instalacion FV
-from Parametros_FV import *
-
-
 Nlog = Nlog_max = 2 # Contador Numero de log maximos cada minuto
 minuto = time.strftime("%H:%M")
 
 def logBD(texto) : # Incluir en tabla de Log
     global Nlog, minuto
-    #print (minuto, Nlog)
+
     Nlog -=1
     if time.strftime("%H:%M") != minuto:
         minuto = time.strftime("%H:%M")
         Nlog = Nlog_max
-
     if Nlog > 0:
         try:
             cursor.execute("""INSERT INTO log (Tiempo,log) VALUES(%s,%s)""",(tiempo,texto))
@@ -55,16 +48,9 @@ def logBD(texto) : # Incluir en tabla de Log
             print()
             print (Fore.RED,'Error log', texto)
             db.rollback()
-
     return
 
-
-if usar_mux == 0:
-    print (subprocess.getoutput('sudo systemctl stop fv_mux'))
-    sys.exit()
-
-
-#Comprobacion argumentos en comando de fv.py
+#Comprobacion argumentos en comando 
 narg = len(sys.argv)
 if str(sys.argv[narg-1]) == '-p1':
     DEBUG = 1
@@ -74,6 +60,8 @@ elif str(sys.argv[narg-1]) == '-p3':
     DEBUG = 3
 elif str(sys.argv[narg-1]) == '-p':
     DEBUG = 100
+elif str(sys.argv[narg-1]) == '-t':
+    DEBUG = 50
 else:
     DEBUG = 0
 print (Fore.RED + 'DEBUG=',DEBUG)
@@ -97,6 +85,8 @@ if pin_ADS_mux2[0:2] == 'A3': #activo Mux2
     print (' Activando Mux2 en ',pin_ADS_mux2)
 
 DatosMux = {}  #diccionario para los datos de cada celda
+DatosMux_ant = {}  #diccionario para los datos anteriores de las celdas
+
 DatosMux_v = {}  #diccionario para los datos de entrada al Mux en voltaje a conector
 DatosMux_n = {}  #Creamos diccionario para los datos Mux en numero capturado en ADS
 DatosMux_err = {}  #Creamos diccionario para ver margen de error en captura
@@ -104,11 +94,12 @@ Vcelda_max = [0.0] * usar_mux # Maximo de cada celda diaria
 Vcelda_min = [1000.0] * usar_mux # Minino de cada celda diaria
 
 dia = time.strftime("%Y-%m-%d")
-        
 
 #-------BUCLE ----------------------------------------------
-
+flag_primer_bucle = True
 while True:
+    crono = [] # cronografo tiempo ejecucion
+    t0=time.time()
     
     ### B2---------------------- LECTURA FECHA / HORA ----------------------
     tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -125,8 +116,9 @@ while True:
         Vcelda_max = [0.0] * 16 
         Vcelda_min = [1000.0] * 16
 
-
     #### CAPTURA VALORES MUX ############
+    crono.append(time.time())
+    
     for K in range(usar_mux): #para mux2 faltan temas  
         
         bus.write_byte(32,K) # escribo en PCF 32
@@ -136,14 +128,14 @@ while True:
             if estado != K:
                 print ('Error en escritura/lectura PCF 32 con datos', K,'/',estado)
        
-        time.sleep(0.1)
+        time.sleep(0.001)
         
         try:
             ###### Lectura Mux 1       
             Suma = 0; Max=-40000; Min=-Max
-            N = 20
+            N = 5
             for i in range(N):
-                l = adc1.read_adc(2, gain=1,data_rate=250)
+                l = adc1.read_adc(2, gain=1,data_rate=32)
                 Suma += l
                 Max = max(Max,l)
                 Min = min(Min,l)
@@ -151,22 +143,35 @@ while True:
             
             DatosMux_n['C'+str(K)] = lectura_ADS  # Valor numerico capturado
             DatosMux_err['C'+str(K)] = Max-Min    # Rango error valor numerico capturado
-            DatosMux_v['C'+str(K)] = round(lectura_ADS * 0.000125 * r_mux1[K],2) #    4,096V/32767=0.000125    
+            DatosMux_v['C'+str(K)] = round(lectura_ADS * 0.000125 * r_mux1[K]* r_mux1_c[K],4) #    4,096V/32767=0.000125    
             
        
         except:
             logBD('-ERROR MEDIDA MUX1-'+ str(K))
     
+    crono.append(['ADS',round(time.time() - t0,2)])
     # CALCULO VALORES CELDAS
-    DatosMux['C0'] = DatosMux_v['C0']
+    DatosMux_ant = DatosMux.copy() #situacion anterior
     
-    CeldaMax = CeldaMin = ('C0',DatosMux['C0'])
-    Vcelda_max[0] = max(Vcelda_max[0],DatosMux['C0'])
-    Vcelda_min[0] = min(Vcelda_min[0],DatosMux['C0'])
+    DatosMux['C0'] = DatosMux_v['C0']
     for K in range(1,usar_mux):
         K1 = 'C'+str(K)
         DatosMux[K1] = round(DatosMux_v[K1] - DatosMux_v['C'+str(K-1)],2)
+    
+    
+    if flag_primer_bucle: 
+        flag_primer_bucle = False
+        continue # ejecuta un nuevo ciclo
+    
+    #Filtro variaciones rapidas    
+    for x in DatosMux:
+        salto_max = 0.1       
+        if x[0] =='C':
+            if (DatosMux[x] - DatosMux_ant[x]) > salto_max:  DatosMux[x] = DatosMux_ant[x] + salto_max
+            elif (DatosMux[x] - DatosMux_ant[x]) < -salto_max:  DatosMux[x] = DatosMux_ant[x] - salto_max  
         
+    CeldaMax = CeldaMin = ('C0',DatosMux['C0'])
+    for K in range(usar_mux):
         Vcelda_max[K] = max(Vcelda_max[K],DatosMux[K1])
         Vcelda_min[K] = min(Vcelda_min[K],DatosMux[K1])
         
@@ -174,17 +179,19 @@ while True:
         if DatosMux[K1] < CeldaMin[1]: CeldaMin = (K1,DatosMux[K1])
     DifCeldas = round(CeldaMax[1]-CeldaMin[1],2)
 
-
-
+    crono.append(['Listas',round(time.time() - t0,2)])
     # PRINT dependiendo argumentos
-    if DEBUG >= 3:
+    if DEBUG >= 2:
         print(Fore.GREEN,'Valores capturados=',DatosMux_n.values())
         print('----------')
-    if DEBUG >= 2:
+    if DEBUG >= 3:
         print(Fore.RED,'Error en ',N, 'Capturas=',DatosMux_err.values())
         print('----------')
-    if DEBUG >= 1:
+    if DEBUG >= 2:
+        print()
+        print('#' * 80)
         print(Fore.BLUE,'Voltajes capturados =',*DatosMux_v.values())
+        print('#' * 80)
         print(Fore.MAGENTA,'Vceldas =',end='')
         print(*DatosMux.values(),sep=' / ')
         
@@ -195,8 +202,8 @@ while True:
         
         print (Fore.CYAN,'CeldaMax=',CeldaMax, ' -- CeldaMin=',CeldaMin,
                ' -- Dif=',round(DifCeldas,2))
-
-
+               
+    crono.append(['print',round(time.time() - t0,2)])
     #### REGISTRO EN BD ############
     try:
         db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
@@ -223,22 +230,9 @@ while True:
         print('error, BD', Sql)
         db.rollback()
         pass
-    
+    crono.append(['BD',round(time.time() - t0,2)])
     ####  ARCHIVO RAM ############ 
-    """
-    try:
-        DatosMux['Tiempo_sg'] =  time.time()
-
-        with open(archivo_ram, 'w') as f:
-            json.dump(DatosMux, f)
-        
-        del DatosMux['Tiempo_sg'] # borramos clave diccionario
-        
-    except:
-        print('error, Grabacion archivo RAM',archivo_ram)
-    """
-
-
+   
     try:
         with open(archivo_ram, mode='w') as f:
             MUX=[]
@@ -251,21 +245,23 @@ while True:
             MUX_aux=[]
             for K in range(usar_mux): MUX_aux.append (DatosMux['C'+str(K)])
             MUX.append (MUX_aux)
+            
+            #if DEBUG >= 1: print(MUX_aux) 
+            
             MUX_aux=[]
             for K in range(usar_mux): MUX_aux.append (Vcelda_min[K])
             MUX.append (MUX_aux)
             
+            if DEBUG >= 1: print (MUX)
             
-            
-                #,+'='+str(Vcelda_max[K])+'-'+str(Vcelda_min[K]),DatosMux['C'+str(K)]])
-                #MUX.append (['C'+str(K+1)+'='+str(Vcelda_max[K])+'-'+str(Vcelda_min[K]),DatosMux['C'+str(K)]])
-            #print (MUX)
             json.dump(MUX,f)
     except:
         print('error, Grabacion archivo RAM',archivo_ram)
     
-    # Print de control 
-    if DEBUG == 0: print (Fore.BLUE,round(time.time()-tiempo_sg,2),end='/',flush=True)
+    crono.append(['RAM',round(time.time() - t0,2)])
+    if DEBUG == 50:
+        print ('Crono =', crono[1:])
+    elif DEBUG == 0: print (Fore.BLUE,round(time.time()-tiempo_sg,2),end='/',flush=True) # Print de control
     
     
     time.sleep(t_muestra_mux - (time.time()-tiempo_sg))

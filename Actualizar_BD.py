@@ -57,6 +57,16 @@ for tabla in ["diario"]:
             print(campo[0],'... ya estaba creado')
 
 
+# #### Tabla reles_segundos_on          
+Sql = 'ALTER TABLE `control_solar`.`reles_segundos_on` ADD UNIQUE `id_rele_dia` (`id_rele`, `fecha`)'
+try:
+    cursor.execute(Sql)
+    print ('Clave (`id_rele`, `fecha`) creada en reles_sendos_on')
+except:
+    print ('la Clave (`id_rele`, `fecha`) ya estaba creada en reles_sendos_on')
+
+
+
 db.commit()
 cursor.close()
 db.close()

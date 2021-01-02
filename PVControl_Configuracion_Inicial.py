@@ -17,10 +17,8 @@ colorama.init()
 Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
 Style: DIM, NORMAL, BRIGHT, RESET_ALL
-"""
-
-from Parametros_FV import * # para conexion a la BD
-
+""" 
+    
 print()
 print (Style.BRIGHT + Fore.YELLOW +'#' * 90)
 print('  PROGRAMA DE CONFIGURACION INICIAL DE PVControl+')
@@ -118,6 +116,13 @@ print (Fore.CYAN + texto)
 narg = len(sys.argv)
 if str(sys.argv[narg-1]) == '-sim':    parametros += parametros_simular
 
+try:
+    from Parametros_FV import * # para conexion a la BD
+except:
+    print (Fore.RED, '#' * 80)
+    print (Fore.CYAN,'NO EXISTE EL FICHERO Parametros_FV.py - Ejecute de nuevo y elija otra opcion')
+    print (Fore.RED, '#' * 80)
+    sys.exit()
 
 # ######## ACTUALIZACION BD (CAMPOS,..) 
 try:
@@ -227,18 +232,7 @@ with open('/home/pi/PVControl+/Parametros_FV.py') as f:
                     db.commit()
                     cursor.close()
                     db.close()
-                """
-                elif 'usar_mux' in p: # adaptacion inicio.php e index.php dependiendo de si se usa mux o no
-                    if int(ip) > 0:
-                        shutil.copy('/home/pi/PVControl+/html/inicio_con_celdas.php', '/home/pi/PVControl+/html/inicio.php')
-                        #shutil.copy('/home/pi/PVControl+/html/index_con_celdas.php', '/home/pi/PVControl+/html/index.php')
-                        print (Fore.CYAN +'Pagina index.php configuradas CON celdas')
-                    else:
-                        shutil.copy('/home/pi/PVControl+/html/inicio_sin_celdas.php', '/home/pi/PVControl+/html/inicio.php')
-                        #shutil.copy('/home/pi/PVControl+/html/index_sin_celdas.php', '/home/pi/PVControl+/html/index.php')
-                        print (Fore.CYAN +'Pagina index.php configuradas SIN celdas')
-                """    
-                
+              
                 break # siguiente parametro
                 
             else:

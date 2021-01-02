@@ -1,3 +1,10 @@
+
+# #################### Control Ejecucion Servicio ########################################
+servicio = 'sma_meter'
+control = 'usar_sma_meter'
+exec(open("fv_control_servicio.py").read())
+# ########################################################################################
+
 import socket
 import struct
 import binascii
@@ -5,17 +12,11 @@ import struct
 import time
 import threading
 import pickle
-import subprocess, sys
 
-if usar_sma_meter == 0:
-        #print (commands.getoutput('sudo systemctl stop srne'))
-        print (subprocess.getoutput('sudo systemctl stop sma_meter'))
-        sys.exit()
 DEBUG = False
 
 MCAST_GRP = '239.12.255.254'
 MCAST_PORT = 9522
-
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)

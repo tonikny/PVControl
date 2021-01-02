@@ -1,19 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #--------------------------------------------------------------------------
-from Parametros_FV import *
+
+# #################### Control Ejecucion Servicio ########################################
+servicio = 'sma'
+control = 'usar_sma'
+exec(open("fv_control_servicio.py").read())
+# ########################################################################################
+
+
 from pyModbusTCP.client import ModbusClient
 import os
 import time
-import subprocess,commands
-import sys
+import commands
 import pickle #,csv
 import MySQLdb 
 DEBUG = False
-
-if usar_sma == 0:
-    print (commands.getoutput('sudo systemctl stop sma'))
-    sys.exit()
 
 SOC_si = 0
 t_to_abs = 0

@@ -1589,10 +1589,10 @@ $(function () {
       $.ajax({
         url: 'datos_fv.php',
         success: function(data) {
-                        
+          try {             
             // tiempo_sg, "%d-%B-%Y -- %H:%M:%S"
             fecha = data[0][0][1];
-            
+            pp=pp1
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
             Vbat = data[0][1][0]; 
             Ibat = data[0][1][1]; 
@@ -1777,9 +1777,29 @@ $(function () {
             chart_reles.xAxis[0].setCategories(tCategories);
             
             //console.log(data)
-            
-            setTimeout(recibirDatosFV, 3000);
+           
+          }
+           
+          catch {
+            var d = new Date();
+            s = d.getSeconds()
+            t = d.getHours() + ':' + d.getMinutes() + ':' + s;
+                
+            chart_vplaca.series[0].setData([s]); //Vplaca
+            chart_temp.series[0].setData([s]);    //Temp 
+                
+            grafica_t_real.setTitle({
+                text: 'SIN RESPUESTA - Hora=' + t,
+                 });
+              
+            }       
           },
+          
+        // código a ejecutar sin importar si la petición falló o no
+        complete : function(xhr, status) {
+            setTimeout(recibirDatosFV, 3000);
+           },
+          
         cache: false
       });
       }

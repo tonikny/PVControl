@@ -1771,7 +1771,8 @@ $(function () {
       $.ajax({
         url: 'datos_fv.php',
         success: function(data) {
-                        
+         
+          try {         
             chart_vbat.series[0].setData([data[0][3]]);
             chart_vbat.yAxis[0].setTitle({
               text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
@@ -1917,12 +1918,33 @@ $(function () {
             //console.log(data[2])
             //console.log(data[3])
             //console.log(tCategories)
-            
-            setTimeout(recibirDatosFV, 3000);
+
+            //setTimeout(recibirDatosFV, 3000);
+          }
+ 
+          catch {
+            var d = new Date();
+            s = d.getSeconds()
+            t = d.getHours() + ':' + d.getMinutes() + ':' + s;
+                
+            chart_vplaca.series[0].setData([s]); //Vplaca
+            chart_temp.series[0].setData([s]);    //Temp 
+                
+            grafica_t_real.setTitle({
+                text: 'SIN RESPUESTA - Hora=' + t,
+                 });
+              
+            //setTimeout(recibirDatosFV, 3000);
+            }       
           },
+          
+         // código a ejecutar sin importar si la petición falló o no
+        complete : function(xhr, status) {
+            setTimeout(recibirDatosFV, 3000);
+           },
         cache: false
       });
-      }
+    }
 
     function round(value, precision) {
         var multiplier = Math.pow(10, precision || 0);

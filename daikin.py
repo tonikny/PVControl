@@ -1,22 +1,29 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# Versión 2021-01-02
+
+# ########################   Control Ejecucion Servicio ##################################
+servicio = 'daikin'
+control = 'usar_daikin'
+exec(open("fv_control_servicio.py").read())
+# ########################################################################################
+
+archivo_ram='/run/shm/datos_fv.json' # se lee... no se escribe archivo
+Nodo = 'PVControl/Reles/27'  #el rele virtual sera el '27'+'1', ver mas abajo de donde sale el 1
+DEBUG = False
+
 import requests
 from requests.exceptions import HTTPError
 import json
 import time
 import pickle
-import subprocess, sys
-from Parametros_FV import *
+
 from csvFv import CsvFv
 import csv
 import datetime
 #import broadlink
 import paho.mqtt.client as mqtt
-
-Nodo = 'PVControl/Reles/27'  #el rele virtual sera el '27'+'1', ver mas abajo de donde sale el 1
-DEBUG = False
-
-if usar_daikin == 0:
-        print (subprocess.getoutput('sudo systemctl stop daikin'))
-        sys.exit()
 
 estado = 0
 estado_ant = 0

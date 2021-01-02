@@ -2,7 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # Versión 2019-10-19
- 
+
+# #################### Control Ejecucion Servicio ########################################
+servicio = 'fvbot'
+control = 'usar_telegram'
+exec(open("fv_control_servicio.py").read())
+# ########################################################################################
+
 import telebot # Librería de la API del bot.
 from telebot import types # Tipos para la API del bot.
 import time # Librería para hacer que el programa que controla el bot no se acabe.
@@ -10,19 +16,11 @@ import random
 import datetime
 import token
 import os
-import subprocess
 
 import MySQLdb
-import sys
 import paho.mqtt.client as mqtt
 
 import requests,glob # control del motion via web
-
-from Parametros_FV import *
-
-if usar_telegram == 0:
-    print (subprocess.getoutput('sudo systemctl stop fvbot'))
-    sys.exit('')
 
 bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
 bot.skip_pending=True # Skip the pending messages
