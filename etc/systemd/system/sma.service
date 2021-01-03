@@ -3,7 +3,7 @@ Description= PVControl+ - Lectura SMA
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python2 /home/pi/PVControl+/sma.py
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/sma.py
 Restart=always
 RestartSec=30
 
