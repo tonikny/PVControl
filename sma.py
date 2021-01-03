@@ -96,9 +96,9 @@ while True:
             else:
                 Ibat =  (65535-Ibat[1]+(65535-Ibat[0])*65536)*0.001
                     
-            if DEBUG: print 'Vbat', Vbat,'Ibat',Ibat, 'Frec', Aux1
+            if DEBUG: print ('Vbat', Vbat,'Ibat',Ibat, 'Frec', Aux1)
         except:
-            if DEBUG: print 'error de lectura SI'
+            if DEBUG: print ('error de lectura SI')
             logBD('Error de Lectura SI Vbat,Ibat...')
             si.close()
             time.sleep(3)
@@ -119,7 +119,7 @@ while True:
                 SOC_si = si.read_holding_registers(30845, 2)
                 SOC_si = SOC_si[1]
             except:
-                print 'Error lectura V Objetivo'
+                print ('Error lectura V Objetivo')
                 logBD('Error de Lectura SI Temp,SOC...')
                 Vobj = Vobj + 0.5
                 si.close()
@@ -136,7 +136,7 @@ while True:
                 Vobj = 65.00
                     
             if DEBUG: 
-                print '   Vabs', v_abs,'V_flot',v_flot, 't_to_abs', t_to_abs,'Vobj',Vobj,'SOC',SOC_si
+                print ('   Vabs', v_abs,'V_flot',v_flot, 't_to_abs', t_to_abs,'Vobj',Vobj,'SOC',SOC_si)
                 logBD('Prueba log')
             try:
                 db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
@@ -175,11 +175,11 @@ while True:
             
             t = t5-t4
             Vplaca = VP11
-            if DEBUG: print '   VP11',VP11,'VP12',VP12,'IP11',IP11,'IP12',IP12
+            if DEBUG: print ('   VP11',VP11,'VP12',VP12,'IP11',IP11,'IP12',IP12)
             
     except:
             
-        print 'error lectura SB1'
+        print ('error lectura SB1')
         logBD('Error lectura SB1')
         sb1.close()
         time.sleep(3)
@@ -206,11 +206,11 @@ while True:
             Consumo = (pot1+pot2+p_desc[1]-p_carg[1])
             Iplaca = (pot1+pot2)*1.0001
             Iplaca= Iplaca/Vbat
-            if DEBUG: print '       VP21',VP21,'VP22',VP22,'IP21',IP21,'IP22',IP22
+            if DEBUG: print ('       VP21',VP21,'VP22',VP22,'IP21',IP21,'IP22',IP22)
             
             
     except:
-        print 'error lectura SB2'
+        print ('error lectura SB2')
         logBD('Error lectura SB2')
         sb2.close()
         time.sleep(3)
@@ -224,7 +224,7 @@ while True:
         tiempo_sg = time.time()
         
         datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Ibat':Ibat,'Vbat':Vbat,'Iplaca': Iplaca,
-                 'Vplaca':Vplaca,'Aux1':Aux1,'Consumo':Consumo,'Temp':Temp,'Vobj':Vobj,'SOC_si':SOC_si})
+                 'Vplaca':Vplaca,'Aux1':Aux1,'Consumo':Consumo,'Temp':Temp,'Vobj':Vobj,'SOC_si':SOC_si}
         
         with open('/run/shm/datos_sma.pkl', mode='wb') as f:
             pickle.dump(datos, f)
@@ -240,7 +240,7 @@ while True:
         
         try:
             
-            if DEBUG: print tiempo,Vbat,Ibat,SOC_si,t_to_abs,VP11,VP12,VP21,VP22,IP11,IP12,IP21,IP22
+            if DEBUG: print (tiempo,Vbat,Ibat,SOC_si,t_to_abs,VP11,VP12,VP21,VP22,IP11,IP12,IP21,IP22)
             
             db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
             cursor = db.cursor()
@@ -263,7 +263,7 @@ while True:
         cont=0
         tant=time.time()
         if ((time.time()-tant) >6):
-            print 'Vbat',Vbat,'Ibat',round(Ibat,2),'Pplaca',round(Iplaca*Vbat,2),'tlecturas',round(time.time()-tant,3)
+            print ('Vbat',Vbat,'Ibat',round(Ibat,2),'Pplaca',round(Iplaca*Vbat,2),'tlecturas',round(time.time()-tant,3))
         
     
 
