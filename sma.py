@@ -5,7 +5,7 @@
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'sma'
 control = 'usar_sma'
-exec(open("fv_control_servicio.py").read())
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 
 

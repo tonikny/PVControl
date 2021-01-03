@@ -2,7 +2,7 @@
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'sma_meter'
 control = 'usar_sma_meter'
-exec(open("fv_control_servicio.py").read())
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 
 import socket
