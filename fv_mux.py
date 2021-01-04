@@ -6,7 +6,7 @@
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fv_mux'
 control = 'usar_mux'
-exec(open("fv_control_servicio.py").read())
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 
 archivo_ram = '/run/shm/datos_mux.json'

@@ -6,7 +6,7 @@
 # ########################   Control Ejecucion Servicio ##################################
 servicio = 'daikin'
 control = 'usar_daikin'
-exec(open("fv_control_servicio.py").read())
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 
 archivo_ram='/run/shm/datos_fv.json' # se lee... no se escribe archivo

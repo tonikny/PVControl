@@ -6,7 +6,7 @@
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fvbot'
 control = 'usar_telegram'
-exec(open("fv_control_servicio.py").read())
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 
 import telebot # Librería de la API del bot.

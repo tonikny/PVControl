@@ -5,7 +5,7 @@ After=mysql.service
 [Service]
 ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_oled.py
 Restart=always
-RestartSec=60
+RestartSec=3600
 
 [Install]
 WantedBy=multi-user.target

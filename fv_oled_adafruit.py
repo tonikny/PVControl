@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-01-03
+# Versión 2020-12-22
 
-import time,sys #, subprocess
+import time,csv,sys, subprocess
 import traceback
-#import glob
+import datetime,glob
 import pickle,json
 
 basepath = '/home/pi/PVControl+/'
@@ -15,15 +15,14 @@ print ('Arrancando_PVControl+- OLED')
 #Parametros Instalacion FV
 from Parametros_FV import *
 
-from luma.core.interface.serial import i2c
-from luma.core.render import canvas
-from luma.oled.device import ssd1306
-
+#Pantalla OLED
+import Adafruit_SSD1306
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
-from pathlib import Path
 
+RST = 24 #parametro OLED
+#Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
 if str(sys.argv[narg-1]) == '-p1':
     DEBUG = 1
@@ -38,13 +37,12 @@ else:
 
 if DEBUG !=0: print ('DEBUG=',DEBUG)
 
+
 # Comprobacion numero de OLED instaladas
 NUM_OLED = 0
 try:
-    serial = i2c(port=1, address=0x3C)
-    disp1 = ssd1306(serial,rotate=0)
-
-    
+    disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
+    disp1.begin()
     NUM_OLED += 1
     #print('OLED 3C')
 except:
@@ -55,8 +53,8 @@ except:
 
 if NUM_OLED == 1:
     try:
-        serial = i2c(port=1, address=0x3D)
-        disp2 = ssd1306(serial,rotate=0)
+        disp2 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3D) 
+        disp2.begin()
         NUM_OLED += 1
         print ('OLED 3C y 3D')
     except:
@@ -64,8 +62,8 @@ if NUM_OLED == 1:
         pass
 else:
     try:
-        serial = i2c(port=1, address=0x3C)
-        disp1 = ssd1306(serial,rotate=0)
+        disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3D) 
+        disp1.begin()
         NUM_OLED += 1
         print ('OLED 3D')
     except:
@@ -77,10 +75,11 @@ if NUM_OLED == 0:
     sys.exit()
 
 if NUM_OLED >= 1:
-    
-    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')    
-    disp1.display(image.convert(disp1.mode))   
-    
+    disp1.clear()
+    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
+    disp1.image(image)
+    disp1.display()
+
     width = disp1.width
     height = disp1.height
     image = Image.new('1', (width, height))
@@ -94,15 +93,15 @@ if NUM_OLED >= 1:
     font11 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 15)
     font6 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 10)
 
-    OLED_contador1 = 0 # contador del pantallazo que presenta en secuencial
+    OLED_contador1=0 # contador del pantallazo que presenta en secuencial
     OLED_salida_opcion1 = -1 # para elegir entre salida fija o secuencial
                             # se controla por MQTT con PVControl/Oled
                             # -1= secuencial....0,1,2,3... fija la pantalla marcada
-
 if NUM_OLED == 2:
-    #image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')    
-    disp2.display(image.convert(disp2.mode))   
-
+    disp2.clear()
+    image2 = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
+    disp2.image(image2)
+    disp2.display()
     OLED_contador2 = 0 # contador del pantallazo que presenta en secuencial
     OLED_salida_opcion2 = -1
 
@@ -115,11 +114,11 @@ def OLED(pantalla,modo):
         #image1 = Image.open('pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
         image1 = Image.open(basepath+'pvcontrol_128_64.png').convert('1')
         if pantalla == 1:
-            disp1.display(image1.convert(disp1.mode))   
-
+            disp1.image(image1)
+            disp1.display()
         else:
-            disp2.display(image1.convert(disp2.mode))   
-
+            disp2.image(image1)
+            disp2.display()
 
     elif modo == 1:
         draw.rectangle((0, 0, 127, 20), outline=255, fill=0)
@@ -210,12 +209,16 @@ def OLED(pantalla,modo):
             draw.text((10, 10), str(d_fv['SOC'])+'%', font=font34, fill=255)
         
     if modo > 0:
-        if pantalla == 1:  disp1.display(image.convert(disp1.mode))   
+        if pantalla == 1:
+            disp1.clear()
+            disp1.image(image)
+            disp1.display()
             
-        if pantalla == 2:  disp2.display(image.convert(disp2.mode))   
+        if pantalla == 2:
+            disp2.clear()
+            disp2.image(image)
+            disp2.display()
 
- 
- 
 #########################################################################################
 # -------------------------------- BUCLE PRINCIPAL OLED --------------------------------------
 #########################################################################################
@@ -297,7 +300,7 @@ try:
                 if OLED_contador2 >= len(OLED_salida2):
                     OLED_contador2=0
             else:
-                OLED(2,OLED_salida_opcion2)
+                 OLED(2,OLED_salida_opcion2)
         
         time.sleep(5)
         
@@ -308,23 +311,3 @@ except:
     traceback.print_exc()
 finally:
     pass    
-
-
-
-
-
-
-
-
-"""
-serial = i2c(port=1, address=0x3C)
-device = ssd1306(serial,rotate=0)
-
-with canvas(device, dither=True) as draw:
-#with canvas(device) as draw:
-    draw.rectangle(device.bounding_box, outline="white", fill="black")
-    draw.text((10, 40), "Hello World", fill="white")
-    draw.text((40, 40), "Hello World", fill="white")
-    
-    draw.rectangle((10, 10, 30, 30), outline="white", fill="red")
-"""
