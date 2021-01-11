@@ -64,7 +64,7 @@ if NUM_OLED == 1:
         pass
 else:
     try:
-        serial = i2c(port=1, address=0x3C)
+        serial = i2c(port=1, address=0x3d)
         disp1 = ssd1306(serial,rotate=0)
         NUM_OLED += 1
         print ('OLED 3D')

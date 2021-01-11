@@ -3,6 +3,8 @@ import sys,subprocess
 #Parametros Instalacion FV
 from Parametros_FV import *
 
+parar_servicio = False
+
 try:
     if eval(control) == 0: parar_servicio = True
 except:
