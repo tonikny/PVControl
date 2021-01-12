@@ -1,4 +1,5 @@
 <?php
+include("cabecera.inc");
 
 require('conexion.php');
 
@@ -36,17 +37,7 @@ $filas = count($rawdata);
 
 ?>
 
-<HTML>
-    
-<head>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" media="screen" />
-<style>
-</style>
-</head>
-
-<body>
-
-<meta charset="utf-8">
 
 <script src="https://code.jquery.com/jquery.js"></script>
 
@@ -123,7 +114,6 @@ $filas = count($rawdata);
 </div>
 
 
-</body>
 
 <script>
 $(function () {
@@ -782,4 +772,6 @@ $(document).ready(function() {
 
 
 </script>
-</html>
+<?php
+include ("pie.inc");
+?>

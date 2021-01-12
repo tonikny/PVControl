@@ -1,4 +1,6 @@
 <?php
+include ("cabecera.inc");
+
  require('conexion.php');
  date_default_timezone_set("UTC");
  $rango="ASEM";
@@ -138,13 +140,6 @@
 
 ?>
 
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
-
-
 <script src="https://code.jquery.com/jquery.js"></script>
 
 <script src="http://code.highcharts.com/highcharts.js"></script>
@@ -171,9 +166,6 @@
 <div id="container1" style="width: auto;height: 60vh;margin-left: 5;margin-right:5"></div>
 <br>
 
-
-
-</body>
 
 <script>
 $(function () {
@@ -269,4 +261,8 @@ $(function () {
 
 
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>
+

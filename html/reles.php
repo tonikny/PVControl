@@ -1,7 +1,6 @@
-<html>
-<body>
-
 <?php
+include ("cabecera.inc");
+
 
 echo 'RELÉS';
 // --------------------- TABLA RELES -----------------------------------------------
@@ -391,7 +390,6 @@ Eliminar relé tabla horarios
 }
 ?>
 
-
-
-</body>
-</html>
+<?php
+include ("pie.inc");
+?>

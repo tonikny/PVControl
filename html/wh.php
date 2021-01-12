@@ -1,4 +1,5 @@
 <?php
+include ("cabecera.inc");
 
 require('conexion.php');
 
@@ -93,11 +94,6 @@ for($i=0;$i<count($rawdata4);$i++){
 
 ?>
 
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
 
 <script src="https://code.jquery.com/jquery.js"></script>
 
@@ -407,4 +403,7 @@ $(function () {
 
 
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>

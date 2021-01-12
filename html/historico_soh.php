@@ -1,4 +1,5 @@
 <?php
+include ("cabecera.inc");
 
 require('conexion.php');
 
@@ -44,14 +45,6 @@ for($i=0;$i<count($rawdata);$i++){
 
 ?>
 
-
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
-
-
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
 <script src="js/jquery.js"></script>
 <script src="js/stock/highstock.js"></script>
@@ -77,8 +70,6 @@ for($i=0;$i<count($rawdata);$i++){
 <div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
 
 <br>
-
-</body>
 
 <script>
 $(function () {
@@ -369,4 +360,8 @@ $(function () {
 
 });
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>
+

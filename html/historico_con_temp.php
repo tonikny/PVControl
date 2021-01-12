@@ -1,5 +1,7 @@
 
 <?php
+include ("cabecera.inc");
+
 require('conexion.php');
 
 if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
@@ -39,13 +41,6 @@ mysqli_close($link);
 
 ?>
 
-<HTML>
-<body>
-
-<meta charset="utf-8">
-
-<script src="Parametros_Web.js"></script>
-
 
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi
 <script src="js/jquery.js"></script>
@@ -74,8 +69,6 @@ mysqli_close($link);
 <div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
 
 <br>
-
-</body>
 
 <script>
 
@@ -354,4 +347,6 @@ $(function () {
 
 });
 </script>
-</html>
+<?php
+include ("pie.inc");
+?>

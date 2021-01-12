@@ -1,4 +1,5 @@
 <?php
+include ("cabecera.inc");
 
 require('conexion.php');
 
@@ -120,12 +121,6 @@ for($i=0;$i<count($rawdata4);$i++){
 
 ?>
 
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
-
 <script src="https://code.jquery.com/jquery.js"></script>
 
 <script src="http://code.highcharts.com/highcharts.js"></script>
@@ -142,7 +137,6 @@ for($i=0;$i<count($rawdata4);$i++){
 <div id="container4"  style="width: 100%; height: 240px; margin-left:5; float: left"></div>
 <div style="clear:both; height:10px;"/></div>
 
-</body>
 
 <script>
 $(function () {
@@ -466,4 +460,7 @@ $(function () {
 
 
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>

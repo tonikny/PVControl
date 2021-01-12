@@ -1,4 +1,6 @@
 <?php
+include ("cabecera.inc");
+
 
 // --------------------- TABLA RELES -----------------------------------------------
 
@@ -138,11 +140,6 @@ if( $_POST["id_rele"] ) {
 
 ?>
 
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
 
 <script src="https://code.jquery.com/jquery.js"></script>
 
@@ -170,9 +167,6 @@ echo "id_rele: ";
 
 <div id="container1" style="width: 48%; height: 240px;  margin: 5px; float: left"></div>
 <div id="container2" style="width: 90%; height: 240px; margin: 5px; float: left"></div>
-
-
-</body>
 
 <script>
 $(function () {
@@ -334,4 +328,7 @@ function secondsTimeSpanToHMS(s) {
 
 
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>
