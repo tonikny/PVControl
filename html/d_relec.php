@@ -12,7 +12,7 @@ $sql = "DELETE FROM reles_c WHERE id_rele=$id_rele";
 
 if(mysqli_query($link, $sql)){
         sleep(2);
-	header("Location: index.php?pagina=boton5");
+	header("Location: reles.php");
 } else{
 
         echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);

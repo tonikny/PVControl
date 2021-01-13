@@ -16,7 +16,7 @@ $sql = "INSERT INTO reles_h (id_rele, parametro_h, valor_h_ON, valor_h_OFF) VALU
 
 if(mysqli_query($link, $sql)){
         sleep(2);
-        header("Location: index.php?pagina=boton5");
+        header("Location: reles.php");
 //	echo "Records added successfully.";
 
 } else{

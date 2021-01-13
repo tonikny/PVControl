@@ -13,7 +13,7 @@ $sql = "UPDATE reles SET modo='$modo' WHERE id_rele=$id_rele";
 
 if(mysqli_query($link, $sql)){
 	sleep(2);
-	header("Location: index.php?pagina=boton5");
+	header("Location: reles.php");
 //	echo "Records added successfully.";
 
 } else{

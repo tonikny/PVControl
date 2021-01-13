@@ -19,7 +19,7 @@ $sql2 = "DELETE FROM reles_h WHERE id_rele=$id_rele";
 
 mysqli_query($link, $sql2);
 
-header("Location: index.php?pagina=boton5");
+header("Location: reles.php");
 
 // close connection
 

@@ -10,7 +10,7 @@ $soc = mysqli_real_escape_string($link, $_POST['SOC']);
 $sql = "UPDATE parametros SET nuevo_soc='$soc'";
 
 if(mysqli_query($link, $sql)){
-	header("Location: index.php?pagina=boton5");
+	header("Location: reles.php");
 //	echo "Records added successfully.";
 
 } else{
