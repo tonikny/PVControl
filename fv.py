@@ -1200,7 +1200,7 @@ try:
                 #print ('refrescando rele',TR_refresco[0])
                 TR_refresco.pop(0)
             else:
-                TR_refresco = TR
+                TR_refresco = TR[:]
       
                     
         if TP['grabar_reles'] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
