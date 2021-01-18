@@ -1,8 +1,6 @@
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
+<?php
+include ("cabecera.inc");
+?>
 
 
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
@@ -14,10 +12,6 @@
     <input type = "submit" value = "Ver" />
 </form>
 <br>
-
-</body>
-</html>
-
 
 
 <?php
@@ -95,7 +89,8 @@ if($result = mysqli_query($link, $sql)){
 
 mysqli_close($link);
 
-//echo "<br \>";
+
+include ("pie.inc");
 
 ?>
 

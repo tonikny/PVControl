@@ -12,19 +12,22 @@ $valor_h_OFF = mysqli_real_escape_string($link, $_POST['valor_h_OFF']);
 
 // attempt insert query execution
 
-$sql = "INSERT INTO reles_h (id_rele, parametro_h, valor_h_ON, valor_h_OFF) VALUES ('$id_rele', '$parametro_h', '$valor_h_ON', '$valor_h_OFF')";
+if ($_POST['id_rele']) {
+	$sql = "INSERT INTO reles_h (id_rele, parametro_h, valor_h_ON, valor_h_OFF) VALUES ('$id_rele', '$parametro_h', '$valor_h_ON', '$valor_h_OFF')";
 
-if(mysqli_query($link, $sql)){
-        sleep(2);
-        header("Location: reles.php");
-//	echo "Records added successfully.";
+	if(mysqli_query($link, $sql)){
+		sleep(2);
+		header("Location: reles.php");
+	//	echo "Records added successfully.";
 
-} else{
+	} else{
 
-	echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+		echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 
+	}
+} else {
+	echo "ERROR: no hay relé seleccionado";
 }
-
 // close connection
 
 mysqli_close($link);

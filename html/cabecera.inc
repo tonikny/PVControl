@@ -12,10 +12,10 @@ session_start([
     <link href="css/inicio.css" rel="stylesheet" type="text/css" media="screen" />
     <style type="text/css">
         body {
-            #color: purple;
-            background: linear-gradient(to bottom, white, #fafafa);}
+            /* color: purple;
+            background: linear-gradient(to bottom, white, #fafafa);*/}
     </style>
-    <title>PVControl+:Control sistema fotovoltaico</title>
+    <title><?php echo $titulo; ?>:PVControl+:Control sistema fotovoltaico</title>
 </head>
 
 <body>
@@ -43,6 +43,9 @@ session_start([
                         <ul>
                             <li><a href="meteogram.php"
                                 title="Gráficas Prevision Meteorologica">Meteorologia</a>
+                            </li>
+                            <li><a href="actualizar_soc.php"
+                                title="Actualizar SOC">SOC</a>
                             </li>
                             <li><a href="log.php"
                                 title="Logs del sistema">Log</a>

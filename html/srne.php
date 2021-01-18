@@ -1,4 +1,5 @@
 <?php
+$titulo="SRNE";
 include ("cabecera.inc");
 ?>
 

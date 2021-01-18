@@ -1,4 +1,5 @@
 <?php
+$titulo="Inicio";
 include("cabecera.inc");
 ?>
 

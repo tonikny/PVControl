@@ -2,13 +2,13 @@
 
 require('conexion.php');
 
-$id_rele = mysqli_real_escape_string($link, $_POST['id_rele']);
+$id_reles_c = mysqli_real_escape_string($link, $_POST['id_reles_c']);
 
 
 // attempt insert query execution
 
 
-$sql = "DELETE FROM reles_c WHERE id_rele=$id_rele";
+$sql = "DELETE FROM reles_c WHERE id_reles_c=$id_reles_c";
 
 if(mysqli_query($link, $sql)){
         sleep(2);
