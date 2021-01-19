@@ -1,4 +1,5 @@
 <?php
+$titulo="Meteo";
 include ("cabecera.inc");
 
 $municipio = "Els Hostalets de Pierola";

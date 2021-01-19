@@ -1,4 +1,5 @@
 <?php
+$titulo="Extra";
 include ("cabecera.inc");
 
  require('conexion.php');

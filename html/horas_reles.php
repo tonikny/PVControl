@@ -1,4 +1,5 @@
 <?php
+$titulo="Horas reles";
 include ("cabecera.inc");
 
 

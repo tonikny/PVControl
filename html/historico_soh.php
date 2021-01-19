@@ -1,4 +1,5 @@
 <?php
+$titulo="Historico Ciclado";
 include ("cabecera.inc");
 
 require('conexion.php');

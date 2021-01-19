@@ -1,4 +1,5 @@
 <?php
+$titulo="Reles";
 include ("cabecera.inc");
 ?>
 <!-- Latest compiled and minified JavaScript -->
@@ -10,6 +11,29 @@ include ("cabecera.inc");
 
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
+
+
+<!-- TimePicker -->
+<link rel="stylesheet" media="all" type="text/css" href="http://code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css"/> 
+<link rel="stylesheet" media="all" type="text/css" 
+              href="https://cdnjs.cloudflare.com/ajax/libs/jquery-ui-timepicker-addon/1.6.3/jquery-ui-timepicker-addon.min.css" />
+<script type="text/javascript" src="http://code.jquery.com/ui/1.11.0/jquery-ui.min.js"></script> 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ui-timepicker-addon/1.6.3/jquery-ui-timepicker-addon.min.js"> </script> 
+<script type="text/javascript"> 
+    $(function () { 
+	$(".dateTimePicker").timepicker({ 
+	    timeFormat: "H:mm", 
+	    addSliderAccess: true, 
+	    sliderAccessArgs: { touchonly: true },
+	    currentText: "Ahora",
+	    closeText: "Ok",
+	    timeOnlyTitle: "Elige hora",
+	    hourText: "Hora",
+	    minuteText: "Minuto",
+	    showTime: false,
+	}); 
+    }); 
+</script> 
 
 <?php
 $password = "3c77f4029be2e609c22bba665f13b101";
@@ -251,13 +275,13 @@ if($result = mysqli_query($link, $sql)){
 	<td><form action="c_rele.php" method="post">
         	<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
 		<button type="submit" name="modo" value="PRG" style="border: 0; background: transparent">
-			<img src="img/pulazult.png" width="40" alt="submit" />
+			<img src="img/pulazult.png" width="30" alt="submit" />
 		</button>
         	<button type="submit" name="modo" value="ON" style="border: 0; background: transparent">
-			<img src="img/pulverdet.png" width="40" alt="submit" />
+			<img src="img/pulverdet.png" width="30" alt="submit" />
 		</button>
         	<button type="submit" name="modo" value="OFF" style="border: 0; background: transparent">
-			<img src="img/pulrojot.png" width="40" alt="submit" />
+			<img src="img/pulrojot.png" width="30" alt="submit" />
 		</button>
 	</form></td>
 	
@@ -265,7 +289,7 @@ if($result = mysqli_query($link, $sql)){
         	<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
 
 		<button type="submit" style="border: 0; background: transparent" title="Eliminar Relé" onclick="return confirm('Estás seguro de eliminar relé de todas las tablas?')">
-			<img src="img/delete.png" width="40" alt="submit" />
+			<img src="img/delete.png" width="30" alt="submit" />
 		</button>
 	</form></td>
 <?php	
@@ -353,7 +377,7 @@ if($result = mysqli_query($link, $sql)){
 
 		echo "<tr>";
 		for($j=0;$j<$columnas-1;$j++){
-			echo "<td>".$rawdata[$i][$j]."</td>";
+			echo "<td>".htmlentities($rawdata[$i][$j])."</td>";
 		}
 		if ($_SESSION['logged']){
 ?>			
@@ -361,7 +385,7 @@ if($result = mysqli_query($link, $sql)){
         	<input type="hidden" name="id_reles_c" value="<?php echo $rawdata[$i]["id_reles_c"]; ?>" >
 
 		<button type="submit" style="border: 0; background: transparent" title="Eliminar Condición (<?php echo $rawdata[$i]["id_reles_c"]; ?>)" onclick="return confirm('Estás seguro de eliminar la condición?')">
-			<img src="img/delete.png" width="40" alt="submit" />
+			<img src="img/delete.png" width="30" alt="submit" />
 		</button>
 	</form></td>
 <?php	
@@ -411,8 +435,8 @@ Añadir condiciones FV para relé
                 <option value="OFF">OFF</option>
 	</select></td>
         <td><select name="condicion">
-                <option value=">" selected="selected">></option>
-                <option value="<"><</option>
+                <option value=">" selected="selected">&gt;</option>
+                <option value="<">&lt;</option>
         </select></td>
         <td><input type="text" name="valor" id="valor"></td>
 	<td><input type="submit" value="Añadir"></td>
@@ -461,7 +485,6 @@ if($result = mysqli_query($link, $sql)){
 	echo "</tr>";
 
 	for($i=0;$i<$filas;$i++){
-
 		echo "<tr>";
 		for($j=0;$j<$columnas-1;$j++){
 			echo "<td>".$rawdata[$i][$j]."</td>";
@@ -472,7 +495,7 @@ if($result = mysqli_query($link, $sql)){
         	<input type="hidden" name="id_reles_h" value="<?php echo $rawdata[$i]["id_reles_h"]; ?>" >
 
 		<button type="submit" style="border: 0; background: transparent" title="Eliminar Condición <?php echo $rawdata[$i]["id_reles_h"]; ?>" onclick="return confirm('Estás seguro de eliminar la condición?')">
-			<img src="img/delete.png" width="40" alt="submit" />
+			<img src="img/delete.png" width="30" alt="submit" />
 		</button>
 	</form></td>
 <?php	
@@ -519,8 +542,8 @@ Añadir horario para relé
                 <option value="S">Sábado</option>
                 <option value="D">Domingo</option>
         </select></td>
-        <td><input type="text" name="valor_h_ON" id="valor_h_ON"></td>
-        <td><input type="text" name="valor_h_OFF" id="valor_h_OFF"></td>
+        <td><input type="text" name="valor_h_ON" id="valor_h_ON" class="dateTimePicker"></td>
+        <td><input type="text" name="valor_h_OFF" id="valor_h_OFF" class="dateTimePicker"></td>
 	<td><input type="submit" value="Añadir"></td>
 	</tr>
     </table>
@@ -569,7 +592,7 @@ if($result = mysqli_query($link, $sql)){
 
 		echo "<tr>";
 		for($j=0;$j<$columnas;$j++){
-			echo "<td>".$rawdata[$i][$j]."</td>";
+			echo "<td>".htmlentities($rawdata[$i][$j])."</td>";
 		}
 		if ($_SESSION['logged']){
 ?>			
@@ -577,7 +600,7 @@ if($result = mysqli_query($link, $sql)){
         	<input type="hidden" name="id_condicion" value="<?php echo $rawdata[$i]["id_condicion"]; ?>" >
         	<input type="hidden" name="activado" value="<?php echo $rawdata[$i]["activado"]; ?>" >
 		<button type="submit" style="border: 0; background: transparent" title="<?php echo ($rawdata[$i]["activado"])?'Desactivar':'Activar'; ?> Condición">
-			<img src="<?php echo ($rawdata[$i]["activado"])?'img/pause.png':'img/play.png'; ?>" width="40" alt="submit" />
+			<img src="<?php echo ($rawdata[$i]["activado"])?'img/pause.png':'img/play.png'; ?>" width="30" alt="submit" />
 		</button>
 	</form></td>
 <?php	

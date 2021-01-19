@@ -1,4 +1,5 @@
 <?php
+$titulo="Promedios 30 dias";
 include("cabecera.inc");
 
 require('conexion.php');

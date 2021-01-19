@@ -1,4 +1,5 @@
 <?php
+$titulo="Historico Mes";
 include ("cabecera.inc");
 
 require('conexion.php');

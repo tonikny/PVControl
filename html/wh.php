@@ -1,4 +1,5 @@
 <?php
+$titulo="KWh";
 include ("cabecera.inc");
 
 require('conexion.php');

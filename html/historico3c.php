@@ -1,4 +1,5 @@
 <?php
+$titulo="Historico 3 Dias";
 include ("cabecera.inc");
 
 require('conexion.php');

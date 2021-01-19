@@ -1,4 +1,5 @@
 <?php
+$titulo="Historico Horas";
 include ("cabecera.inc");
 
 require('conexion.php');

@@ -1,4 +1,5 @@
 <?php
+$titulo="Carga/Descarga";
 include ("cabecera.inc");
 
 require('conexion.php');

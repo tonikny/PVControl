@@ -5,7 +5,7 @@ require('conexion.php');
 $id_cond = mysqli_real_escape_string($link, $_POST['id_condicion']);
 
 $ac = mysqli_real_escape_string($link, $_POST['activado']);
-$ac = ($ac)?0:1;
+$ac = ($ac)?0:1; //cambiar valor
 
 // attempt insert query execution
 
