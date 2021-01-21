@@ -40,10 +40,11 @@ if salir == "1": pass
 else: sys.exit()
 
 print ()
+version="";
 if AH <1 :
     print ('NO se ha dado de alta una BATERIA,por lo que se configura la WEb como.. ', end='')
     print(Fore.RED+' ---- FV SIN BATERIA ----')
-    fichero1 ='/home/pi/PVControl+/html/index_red.php'
+    version="RD";
     fichero2 ='/home/pi/PVControl+/html/Parametros_Web_red.js'
                         
 else:
@@ -65,25 +66,29 @@ else:
         print (Fore.CYAN + 'Se ha dado de alta control de ' + Fore.RED, usar_mux, 'Celdas'+ Fore.CYAN,
            ' por lo que se configura la WEb como')
         print (Fore.RED+' ------ FV CON BATERIA y CONTROL CELDAS -------')
-        fichero1 ='/home/pi/PVControl+/html/index_con_celdas.php'
-        
+        version="CC";
     else:
         print (Fore.CYAN + 'NO se ha dado de alta control de Celdas',
            ' por lo que se configura la WEb como ')
         print (Fore.RED+' ------ FV CON BATERIA y SIN CONTROL CELDAS --------')
-        fichero1 ='/home/pi/PVControl+/html/index_sin_celdas.php'
+        version="SC";
         
 print()
 
 web_act = click.prompt(Fore.GREEN + ' 1= Actualiza Web  --  0: No Actualiza', type=str, default='1')
 
 if web_act == '1':
-    if os.path.exists('html/index.php'):
-        os.remove('html/index.php')
-    os.symlink(
-        os.path.relpath(fichero1, 'html/'),
-        os.path.join('html', 'index.php')
-    )
+    # tipo de instalacion
+    template =  """<?php
+// Version de la web
+// SC = bat sin celdas, CC = bat con celdas, RD = sin bat
+$version = "{version}";
+?>
+""" 
+    context = { "version" : version } 
+    with  open('/home/pi/PVControl+/html/version.inc','w') as myfile:
+        myfile.write(template.format(**context))
+    # valores web
     shutil.copy(fichero2, '/home/pi/PVControl+/html/Parametros_Web.js')
     
     print ()

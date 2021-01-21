@@ -1,5 +1,6 @@
 
 <?php
+$titulo="Historico con Temp";
 include ("cabecera.inc");
 
 require('conexion.php');

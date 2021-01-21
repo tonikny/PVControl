@@ -1,4 +1,6 @@
 <?php
+$titulo="Historico Celdas";
+include ("cabecera.inc");
 
 require('conexion.php');
 
@@ -42,13 +44,6 @@ mysqli_close($link);
 
 ?>
 
-
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
-
 <script src="Parametros_Web.js"></script>
 
 
@@ -85,7 +80,6 @@ mysqli_close($link);
 
 <br>
 
-</body>
 
 <script>
 $(function () 
@@ -522,4 +516,7 @@ $(function ()
 
   });
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>

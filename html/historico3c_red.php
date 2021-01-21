@@ -1,4 +1,7 @@
 <?php
+$titulo="Historico 3 Dias";
+include ("cabecera.inc");
+
 
 require('conexion.php');
 
@@ -23,12 +26,6 @@ mysqli_close($link);
 
 ?>
 
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
-
 <script src="Parametros_Web.js"></script>
 
 <script src="https://code.jquery.com/jquery.js"></script>
@@ -42,7 +39,6 @@ mysqli_close($link);
 
 <br>
 
-</body>
 
 <script>
 $(function () {
@@ -252,4 +248,7 @@ $(function () {
 
   });
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>

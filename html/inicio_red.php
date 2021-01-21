@@ -1,4 +1,7 @@
 <?php
+$titulo="Inicio";
+include ("cabecera.inc");
+
 
 require('conexion.php');
 //Coger datos grafica tiempo real
@@ -22,39 +25,6 @@ mysqli_close($link);
 
 ?>
 
-<HTML>
-
-<head>
-<link href="css/inicio.css" rel="stylesheet" type="text/css" media="screen" />
-<style type="text/css">
-body {
-color: purple;
-
-background: linear-gradient(to bottom, white, #fafafa);}
-</style>
-
-</head>
-
-
-<body>
-
-<meta charset="utf-8">
-
-<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
-<script src="js/jquery.js"></script>
-
-<script src="js/highcharts.js"></script>
-<script src="js/highcharts-more.js"></script>
-<script src="js/highcharts-3d.js"></script>
-
-<script src="js/themes/grid.js"></script>
-
-<script src="js/modules/solid-gauge.js"></script>
-<script src="http://code.highcharts.com/themes/grid.js"></script>
--->
-
-
-<script src="Parametros_Web.js"></script>
 
 
 
@@ -68,7 +38,7 @@ background: linear-gradient(to bottom, white, #fafafa);}
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
-<div class="divTable"style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
+<div class="divTable" style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
     <div class="divTableBody">
         <div class="divTableRow">
                 <div class="divTableCell">Wh Placa</div>
@@ -134,10 +104,7 @@ background: linear-gradient(to bottom, white, #fafafa);}
 <br style="clear:both;"/>
 <br>
 
-</body>
-
 <script>
-
 
 $(function () {
     
@@ -1818,4 +1785,7 @@ $(function () {
 });
 
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>

@@ -1,4 +1,5 @@
 <?php
+$titulo="Historico Hibrido";
 include ("cabecera.inc");
 
 require('conexion.php');

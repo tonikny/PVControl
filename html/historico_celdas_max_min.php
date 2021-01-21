@@ -1,4 +1,6 @@
 <?php
+$titulo="Resumen Celdas";
+include ("cabecera.inc");
 
 require('conexion.php');
 
@@ -63,18 +65,7 @@ if($result = mysqli_query($link, $sql)){
     }
 mysqli_close($link);
 
-
 ?>
-
-
-<HTML>
-
-<body>
-
-<meta charset="utf-8">
-
-<script src="Parametros_Web.js"></script>
-
 
 
 <!-- Importo el archivo Javascript directamente desde la webr -->
@@ -114,7 +105,6 @@ mysqli_close($link);
 
 <br>
 
-</body>
 
 <script>
 $(function () 
@@ -1229,4 +1219,7 @@ $(function ()
 
   });
 </script>
-</html>
+
+<?php
+include ("pie.inc");
+?>

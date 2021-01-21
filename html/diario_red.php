@@ -1,4 +1,6 @@
 <?php
+$titulo="Diario";
+include ("cabecera.inc");
 
 require('conexion.php');
 
@@ -24,21 +26,11 @@ $filas = count($rawdata);
 
 ?>
 
-<html>
-<head>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" media="screen" />
 <!--
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" media="screen" />
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css" media="screen" />
 -->
-
-<style>
-
-</style>
-</head>
-
-
-<body>
 <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
 <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
 
@@ -85,7 +77,6 @@ $filas = count($rawdata);
 </div>
 
 
-</body>
 
 <script>
 $(document).ready(function() {
@@ -102,4 +93,7 @@ $(document).ready(function() {
 
 </script>
     
-</html>
+<?php
+include ("pie.inc");
+?>
+
