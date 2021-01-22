@@ -23,6 +23,10 @@ session_start([
     <script src="Parametros_Web.js"></script>
     <?php
     include_once("version.inc");
+    if ($version!="SC" and $version!="CC" and $version!="RD") {
+        print ("Error: Falta archivo de configuracion!");
+        exit(1);
+    }
     $menu_inicio["Inicio"] = ["Inicio","/"];
     $menu["Utilidades"]["Meteo"] = ["Meteorología","meteogram.php"];
     ($version=="RD")? : $menu["Utilidades"]["SOC"] = ["SOC","actualizar_soc.php"];
