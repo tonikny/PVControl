@@ -426,9 +426,24 @@ Añadir condiciones FV para relé
                 <option value="Vbat">Vbat</option>
                 <option value="Ibat">Ibat</option>
                 <option value="Iplaca">Iplaca</option>
-                <option value="Vflot">Vflot</option>
+                <option value="Vplaca">Vplaca</option>
+                <option value="Wplaca">Wplaca</option>
+                <option value="PWM">PWM</option>
                 <option value="Temp">Temp</option>
-                <option value="Diver">Diver</option>
+                <option value="Wconsumo">Wconsumo</option>
+                <option value="Whn_bat">Whn_bat</option>
+                <option value="Whp_bat">Whp_bat</option>
+                <option value="Wh_bat">Wh_bat</option>
+                <option value="Wbat">Wbat</option>
+                <option value="Vred">Vred</option>
+                <option value="Ired">Ired</option>
+                <option value="EFF">EFF</option>
+                <option value="Whn_red">Whn_red</option>
+                <option value="Whp_red">Whp_red</option>
+                <option value="Wh_red">Wh_red</option>
+                <option value="Wred">Wred</option>
+                <option value="Aux1">Aux1</option>
+                <option value="Aux2">Aux2</option>
         </select></td>
         <td><select name="operacion">
                 <option value="ON" selected="selected">ON</option>
