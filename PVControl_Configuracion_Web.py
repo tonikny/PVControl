@@ -79,17 +79,15 @@ web_act = click.prompt(Fore.GREEN + ' 1= Actualiza Web  --  0: No Actualiza', ty
 
 if web_act == '1':
     # tipo de instalacion
-    template =  """<?php
-// Version de la web
-// SC = bat sin celdas, CC = bat con celdas, RD = sin bat
-$version = "{version}";
-?>
-""" 
-    context = { "version" : version } 
-    with  open('/home/pi/PVControl+/html/version.inc','w') as myfile:
-        myfile.write(template.format(**context))
+    with open('/home/pi/PVControl+/html/version.inc','w') as f:
+        f.write('<?php\n'
+                '// Version de la web\n'
+                '// SC = bat sin celdas, CC = bat con celdas, RD = sin bat\n'
+               f'$version = "{version}";\n'
+                '?>')
     # valores web
     shutil.copy(fichero2, '/home/pi/PVControl+/html/Parametros_Web.js')
     
     print ()
     print ('WEB ACTUALIZADA')
+
