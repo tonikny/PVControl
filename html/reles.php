@@ -224,7 +224,26 @@ $(function () {
 	}
 });
 </script>
+<style>
+.block {
+  display: block;
+  width: 100%;
+  padding-top: 100%;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  padding: 1px 1px;
+  font-size: 14px;
+  font-family: monospace;
+  cursor: pointer;
+  text-align: right;
+}
 
+.block:hover {
+  background-color: #ddd;
+  color: black;
+}
+</style>
 <?php
 // --------------------- TABLA RELES -----------------------------------------------
 echo '<strong>RELES</strong>';
@@ -253,7 +272,7 @@ if($result = mysqli_query($link, $sql)){
 	$filas = count($rawdata);
 
 
-	$numreles = count($rawdata);    //Contar numero de reles para filas de LEDS
+	//$numreles = count($rawdata);    //Contar numero de reles para filas de LEDS
 
 	//Añadimos los titulos
 	echo "<tr>";
@@ -267,11 +286,21 @@ if($result = mysqli_query($link, $sql)){
 	for($i=0;$i<$filas;$i++){
 
 		echo "<tr>";
-		for($j=0;$j<$columnas;$j++){
+		for($j=0;$j<$columnas-1;$j++){
 			echo "<td>".$rawdata[$i][$j]."</td>";
 		}
-		if ($_SESSION['logged']){
-?>			
+	?>
+	<td><span style="display: inline-block;"><?=$rele[$i][$columnas-1]; ?></span>
+		<?php if ($_SESSION['logged']){ ?>
+		<span style="display: inline-block;float: right;padding-right: 1em;"><form action="c_rele.php" method="post">
+			<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
+			<input type="hidden" name="prioridad" value="<?php echo $rele[$i][$columnas-1]; ?>" >
+			<span style="display: inline-block;"><button type="submit" name="nueva_prio" value="+1" class="block">+</button></span>
+			<span style="display: inline-block;"><button type="submit" name="nueva_prio" value="-1" class="block">-</button></span>
+		</form>
+		<?php }?>
+	</span></td>
+		<?php if ($_SESSION['logged']){ ?>						
 	<td><form action="c_rele.php" method="post">
         	<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
 		<button type="submit" name="modo" value="PRG" style="border: 0; background: transparent">
