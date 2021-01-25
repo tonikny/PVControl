@@ -4,7 +4,7 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
-if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
+if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
     $fecha1 = $_POST["fecha1"];
     $fecha2 = $_POST["fecha2"];
 
@@ -326,6 +326,7 @@ $(function () {
       data: (function() {
         var data = [];
         <?php
+          if(!isset($rawdata)) {$rawdata=[];}
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
               data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["SOC"];?>]);

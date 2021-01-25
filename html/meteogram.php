@@ -2,10 +2,10 @@
 $titulo="Meteo";
 include ("cabecera.inc");
 
-$municipio = "Titulcia";
-$codigo_aemet = "titulcia-id28147";
-$latitud = "40.13751";
-$longitud = "-3.530851";
+$municipio = "Els Hostalets de Pierola";
+$codigo_aemet = "hostalets-de-pierola-els-id08162";
+$latitud = "41.543424";
+$longitud = "1.812539";
 ?>
 
 <h1 style="text-align: center"><?php echo $municipio; ?></h1>

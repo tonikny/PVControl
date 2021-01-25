@@ -5,7 +5,7 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
-if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
+if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
    $fecha1 = $_POST["fecha1"];
    $fecha2 = $_POST["fecha2"];
    if ( $_POST["nseg_punto"] ) {

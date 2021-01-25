@@ -1743,7 +1743,7 @@ $(function () {
            
           }
            
-          catch {
+          catch (e) {
             var d = new Date();
             s = d.getSeconds()
             t = d.getHours() + ':' + d.getMinutes() + ':' + s;

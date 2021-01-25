@@ -62,7 +62,7 @@ if($result = mysqli_query($link, $sql)){
 echo "<br \>";
 
 
-if( $_POST["id_rele"] ) {
+if( isset($_POST["id_rele"]) ) {
 
     require('conexion.php');
     $rele = $_POST["id_rele"];

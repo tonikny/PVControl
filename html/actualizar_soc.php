@@ -1,4 +1,5 @@
 <?php
+$titulo="SOC";
 include ("cabecera.inc");
 
 
@@ -15,7 +16,7 @@ if($result = mysqli_query($link, $sql)){
 mysqli_close($link);
 
 $password = "3c77f4029be2e609c22bba665f13b101";
-if ((md5($_POST['password']) != $password) && empty($_SESSION['logged'])) {
+if ((!isset($_POST['password']) or (md5($_POST['password'])) != $password) && !isset($_SESSION['logged'])) {
 ?>
 	<!--- <h3>Login</h3> ---->
 	<form name="form" method="post" action="">
@@ -39,7 +40,7 @@ SOC (%): <?php echo $data["SOC"]; ?>
 </h2>
 
 <?php
-if ($_SESSION['logged']){
+if (isset($_SESSION['logged'])){
 ?>
 <br />
 

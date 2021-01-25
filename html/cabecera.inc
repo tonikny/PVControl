@@ -10,11 +10,6 @@ session_start([
     <link href="img/favicon.ico" rel="shortcut icon" type="image/x-icon" />
     <link href="css/index.css" rel="stylesheet" type="text/css" media="screen" />
     <link href="css/inicio.css" rel="stylesheet" type="text/css" media="screen" />
-    <style type="text/css">
-        body {
-            /* color: purple;
-            background: linear-gradient(to bottom, white, #fafafa);*/}
-    </style>
     <title><?php echo $titulo; ?>:PVControl+:Control sistema fotovoltaico</title>
 
 </head>

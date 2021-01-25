@@ -19,7 +19,7 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
-if (!$_POST["rango"] ) {
+if (!isset($_POST["rango"])) {
 
     $rango = "DAY";
 
@@ -59,13 +59,13 @@ if($result = mysqli_query($link, $sql)){
 	}
 
 	echo '<table width="56%" border="1" style="text-align:center;">';
-	$columnas = count($rawdata[0])/2;
+	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 
 
 	//Añadimos los titulos
 
-	for($i=1;$i<count($rawdata[0]);$i=$i+2){
+	for($i=0;$i<$columnas;$i++){
 		next($rawdata[0]);
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);

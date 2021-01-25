@@ -37,7 +37,7 @@ include ("cabecera.inc");
 
 <?php
 $password = "3c77f4029be2e609c22bba665f13b101";
-if ((md5($_POST['password']) != $password) && empty($_SESSION['logged'])) {
+if ((!isset($_POST['password']) or (md5($_POST['password'])) != $password) && !isset($_SESSION['logged'])) {
 ?>
 	<!--- <h3>Login</h3> ---->
 	<form name="form" method="post" action="">
@@ -198,7 +198,7 @@ $(function () {
 	    chart_reles.xAxis[0].setCategories(tCategories);
 	  }
 	   
-	  catch {
+	  catch (e) {
 	    var d = new Date();
 	    s = d.getSeconds()
 	    t = d.getHours() + ':' + d.getMinutes() + ':' + s;
@@ -244,6 +244,7 @@ $(function () {
   color: black;
 }
 </style>
+
 <?php
 // --------------------- TABLA RELES -----------------------------------------------
 echo '<strong>RELES</strong>';
@@ -268,15 +269,12 @@ if($result = mysqli_query($link, $sql)){
 	}
 
 	echo '<table width="80%" border="1" style="text-align:center;">';
-	$columnas = count($rawdata[0])/2;
+	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
-
-
-	//$numreles = count($rawdata);    //Contar numero de reles para filas de LEDS
 
 	//Añadimos los titulos
 	echo "<tr>";
-	for($i=1;$i<count($rawdata[0]);$i=$i+2){
+	for($i=0;$i<$columnas;$i++){
 		next($rawdata[0]);
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);
@@ -291,7 +289,7 @@ if($result = mysqli_query($link, $sql)){
 		}
 	?>
 	<td><span style="display: inline-block;"><?=$rele[$i][$columnas-1]; ?></span>
-		<?php if ($_SESSION['logged']){ ?>
+		<?php if (isset($_SESSION['logged'])){ ?>
 		<span style="display: inline-block;float: right;padding-right: 1em;"><form action="c_rele.php" method="post">
 			<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
 			<input type="hidden" name="prioridad" value="<?php echo $rele[$i][$columnas-1]; ?>" >
@@ -300,7 +298,7 @@ if($result = mysqli_query($link, $sql)){
 		</form>
 		<?php }?>
 	</span></td>
-		<?php if ($_SESSION['logged']){ ?>						
+		<?php if (isset($_SESSION['logged'])){ ?>						
 	<td><form action="c_rele.php" method="post">
         	<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
 		<button type="submit" name="modo" value="PRG" style="border: 0; background: transparent">
@@ -331,7 +329,7 @@ if($result = mysqli_query($link, $sql)){
         echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 }
 
-if ($_SESSION['logged']){
+if (isset($_SESSION['logged'])){
 ?>
 Añadir relé
 <div style="border:1px solid; width:80%">
@@ -391,12 +389,12 @@ if($result = mysqli_query($link, $sql)){
 	echo "<br \>";
 
 	echo '<table width="80%" border="1" style="text-align:center;">';
-	$columnas = count($rawdata[0])/2;
+	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 
 	//Añadimos los titulos
 	echo "<tr>";
-	for($i=1;$i<count($rawdata[0])-1;$i=$i+2){
+	for($i=0;$i<$columnas-1;$i++){
 		next($rawdata[0]);
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);
@@ -408,7 +406,7 @@ if($result = mysqli_query($link, $sql)){
 		for($j=0;$j<$columnas-1;$j++){
 			echo "<td>".htmlentities($rawdata[$i][$j])."</td>";
 		}
-		if ($_SESSION['logged']){
+		if (isset($_SESSION['logged'])){
 ?>			
 	<td width="10px"><form action="d_relec.php" method="post">
         	<input type="hidden" name="id_reles_c" value="<?php echo $rawdata[$i]["id_reles_c"]; ?>" >
@@ -428,7 +426,7 @@ if($result = mysqli_query($link, $sql)){
 
         echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 }
-if ($_SESSION['logged']){
+if (isset($_SESSION['logged'])){
 ?>
 Añadir condiciones FV para relé
 <div style="border:1px solid; width:80%;">
@@ -514,14 +512,12 @@ if($result = mysqli_query($link, $sql)){
 
 
 	echo "<br \>";
-
 	echo '<table width="80%" border="1" style="text-align:center;">';
-	$columnas = count($rawdata[0])/2;
+	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
-
 	//Añadimos los titulos
 	echo "<tr>";
-	for($i=1;$i<count($rawdata[0])-1;$i=$i+2){
+	for($i=0;$i<$columnas-1;$i++){
 		next($rawdata[0]);
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);
@@ -533,7 +529,7 @@ if($result = mysqli_query($link, $sql)){
 		for($j=0;$j<$columnas-1;$j++){
 			echo "<td>".$rawdata[$i][$j]."</td>";
 		}
-		if ($_SESSION['logged']){
+		if (isset($_SESSION['logged'])){
 ?>			
 	<td width="10px"><form action="d_releh.php" method="post">
         	<input type="hidden" name="id_reles_h" value="<?php echo $rawdata[$i]["id_reles_h"]; ?>" >
@@ -554,7 +550,7 @@ if($result = mysqli_query($link, $sql)){
         echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 }
 
-if ($_SESSION['logged']){
+if (isset($_SESSION['logged'])){
 ?>
 
 Añadir horario para relé
@@ -598,7 +594,7 @@ Añadir horario para relé
 <?php
 }
 
-echo '<br>';
+echo '<br><br>';
 echo '<strong>CONDICIONES AVANZADAS</strong>';
 // --------------------- TABLA CONDICIONES -----------------------------------------
 
@@ -620,12 +616,12 @@ if($result = mysqli_query($link, $sql)){
 	echo "<br \>";
 
 	echo '<table width="80%" border="1" style="text-align:center;">';
-	$columnas = count($rawdata[0])/2;
+	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 
 	//Añadimos los titulos
 	echo "<tr>";
-	for($i=1;$i<count($rawdata[0]);$i=$i+2){
+	for($i=0;$i<$columnas;$i++){
 		next($rawdata[0]);
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);
@@ -638,7 +634,7 @@ if($result = mysqli_query($link, $sql)){
 		for($j=0;$j<$columnas;$j++){
 			echo "<td>".htmlentities($rawdata[$i][$j])."</td>";
 		}
-		if ($_SESSION['logged']){
+		if (isset($_SESSION['logged'])){
 ?>			
 	<td width="10px"><form action="c_condicion.php" method="post">
         	<input type="hidden" name="id_condicion" value="<?php echo $rawdata[$i]["id_condicion"]; ?>" >

@@ -4,7 +4,7 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
-if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
+if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
    $fecha1 = $_POST["fecha1"];
    $fecha2 = $_POST["fecha2"];
    if ( $_POST["nseg_punto"] ) {
@@ -26,7 +26,7 @@ $sql = "SELECT Tiempo, AVG(Vbus) as Vbus,(AVG(Vbus)/Avg(Vbat))*30 as Vbus_Vbat, 
         GROUP BY DAY(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 //echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
-
+$rawdata=[];
 if($result = mysqli_query($link, $sql)){
    $i=0;
    while($row = mysqli_fetch_assoc($result)) {

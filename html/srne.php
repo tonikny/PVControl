@@ -13,7 +13,7 @@ include ("cabecera.inc");
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
-<div class="divTable"style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
+<div class="divTable" style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
 </div>
 <div id="containervbat"  style="width: 20%; height: 180px; margin-left: 2%; margin-right: 0%;margin-top: -1%; float: left">
   <p>&nbsp;</p>
@@ -646,25 +646,6 @@ $(function () {
                  },
 
         series: [{
-            /*name: 'Ibat',
-            data: [],
-            dataLabels: {
-                allowOverlap:true,
-                enabled: true,
-                borderWidth: 0,
-                y: 0,
-                style: {
-                    fontSize: '14px',
-                    color: 'red'
-                    },
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " A"
-                    },
-                },
-            dial: {
-                backgroundColor: (([this.y] <= 0) ? 'red' : 'green')
-                }
-            },{*/
             name: 'Iplaca',
             data: [],
             dataLabels: {
@@ -957,221 +938,6 @@ $(function () {
           }]
         });
                              
-    grafica_t_real = new Highcharts.Chart ({
-        chart: {
-         renderTo: 'grafica_t_real',
-         backgroundColor: null,//'#ffffff',//'#f2f2f2',
-         borderColor: null,
-         plotBorderWidth: 1,
-         zoomType: 'xy',
-         alignTicks: false,
-         animation: Highcharts.svg, // don't animate in old IE
-         //marginRight: 10,
-               },
-       title: {
-            text: '',
-            floating:true,
-            y: 12,
-            x:-0
-            },
-        subtitle: {
-            text: 'Prueba Dinamica',
-            floating:true,
-            align: 'right',
-            verticalAlign: 'bottom',
-            y: 25,
-            },
-        credits: {
-            enabled: false
-            },
-        xAxis: {
-            type: 'datetime'
-            },
-        yAxis: [
-           {// ########## Valores eje Intensidad ####################
-            gridLineWith: 2,
-            min: Escala_intensidad_min,
-            max: Escala_intensidad_max,
-            opposite: true,
-            tickInterval:40,
-            gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            //endOnTick: true,
-            //maxPadding: 0.2,
-            //tickAmount: 7,
-            labels: {
-                //format: '{value} A',
-                style: {
-                    color: Highcharts.getOptions().colors[2]
-                    }
-                },
-            title: {
-                text: null,
-                },
-            //opposite: false,
-            },
-            { // ########## Valores eje Vbat ######################
-            opposite: false,
-            min: Escala_Vbat_min,
-            max: Escala_Vbat_max,
-            tickInterval: 1,
-            //gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            labels: {
-                format: '{value} V',
-                style: {
-                    color: Highcharts.getOptions().colors[0]
-                    }
-                },
-            title: {
-                text: '',
-                },
-            plotLines: 
-              [{ // ########## Valores Linea Vabs #####################
-                value: Vabs,
-                width: 2,
-                color: 'green',
-                dashStyle: 'shortdash',
-                label: {
-                    text: 'Vabs'
-                    }
-                },
-                {// ########## Valores Linea Vflot ######################
-                value: Vflot,
-                width: 2,
-                color: 'red',
-                dashStyle: 'shortdash',
-                label: {
-                    text: 'Vflot'
-                    }
-              }]
-            },
-            { // ########## Valores eje PWM ######################
-            opposite: true,
-            min: 0,
-            max: Escala_PWM_max,
-            tickInterval: 20,
-            gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            
-            title: {
-                text: '',
-                },
-            },
-            { // ########## Valores eje Vplaca ######################
-            opposite: false,
-            min: 0,
-            max: Escala_Vplaca_max,
-            tickInterval: 20,
-            gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            
-            title: {
-                text: '',
-                },
-            }
-            ],
-          
-        tooltip: {
-            crosshairs: true,
-            shared: true,
-            valueDecimals: 2
-            },
-        navigation: {
-            buttonOptions: {
-                enabled: false
-                }
-            },
-        plotOptions: {
-            series: {
-                marker: {
-                    enabled: false
-            }
-        }
-        },
-
-        legend: {
-            layout: 'horizontal',
-            floating: true,
-            align: 'left',
-            verticalAlign: 'bottom',
-            //x: -100,
-            y: 20,
-            borderWidth: 0
-            },
-        series: [
-           {name: 'Ibat',
-            yAxis: 0,
-            color: Highcharts.getOptions().colors[2],
-            data: (function() {
-                var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Ibat"];?>]);
-                <?php } ?>
-              return data;
-              })()
-
-            },
-        
-           {name: 'IPlaca',
-            yAxis: 0,
-            color: Highcharts.getOptions().colors[3],
-            data: (function() {
-                var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Iplaca"];?>]);
-                <?php } ?>
-              return data;
-              })()
-
-            },
-            {name: 'Vbat',
-            color: Highcharts.getOptions().colors[0],
-            yAxis: 1,
-            data: (function() {
-                var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vbat"];?>]);
-                <?php } ?>
-              return data;
-              })()
-            
-            },
-            {name: 'VPlaca',
-            yAxis: 3,
-                data: (function () {
-                     var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vplaca"];?>]);
-                <?php } ?>
-                    return data;
-                }())
-            },
-            {name: 'PWM',
-            yAxis: 2,
-            color: Highcharts.getOptions().colors[4],
-            data: (function() {
-                var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["PWM"];?>]);
-                <?php } ?>
-              return data;
-              })()
-            },
-            ]
-                                
-      });
-      
 
     function recibirDatosFV() {
       $.ajax({
@@ -1189,11 +955,9 @@ $(function () {
             Wplaca = Iplaca * Vbat
             TempBat = data["Temp0"];
             TempReg = data["Temp1"];
-            
-            
+                        
             $('#fecha').text(fecha);
 
-            
             // Actualizacion reloj Vbat 
             chart_vbat.series[0].setData([Vbat]);
             chart_iplaca.series[0].setData([Iplaca]); 
@@ -1214,11 +978,9 @@ $(function () {
              // Actualizacion reloj Wplaca 
             chart_wplaca.series[0].setData([Wplaca]); 
 
-            x = (new Date()).getTime(); // current time                            
-           
-          }
-           
-          catch {
+            x = (new Date()).getTime(); // current time                                       
+          }           
+          catch (e) {
             var d = new Date();
             s = d.getSeconds()
             t = d.getHours() + ':' + d.getMinutes() + ':' + s;
@@ -1226,12 +988,11 @@ $(function () {
             chart_vplaca.series[0].setData([s]); //Vplaca
             chart_temp.series[0].setData([s]);    //Temp 
                 
-            grafica_t_real.setTitle({
-                text: 'SIN RESPUESTA - Hora=' + t,
-                 });
-              
-            }       
-          },
+            //grafica_t_real.setTitle({
+            //    text: 'SIN RESPUESTA - Hora=' + t,
+            //     });              
+          }
+        },
           
         // código a ejecutar sin importar si la petición falló o no
         complete : function(xhr, status) {
@@ -1244,7 +1005,7 @@ $(function () {
 
     function round(value, precision) {
         var multiplier = Math.pow(10, precision || 0);
-    return Math.round(value * multiplier) / multiplier;
+        return Math.round(value * multiplier) / multiplier;
     }
 
 });

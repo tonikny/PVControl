@@ -16,7 +16,7 @@ include ("cabecera.inc");
  $vartitulo = "Producción Anual kWh por Semanas";
  $anchocol= 20;
 
- if(( $_POST["parametro"] ) && ($_POST["rango"] )) {//|| (($rango=="MONTH") && ($parametro=="Produccion")){
+ if(( isset($_POST["parametro"]) ) && (isset($_POST["rango"]) )) {//|| (($rango=="MONTH") && ($parametro=="Produccion")){
     $parametro = $_POST["parametro"];
     $rango = $_POST["rango"];
 

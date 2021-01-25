@@ -1753,7 +1753,7 @@ $(function () {
             //setTimeout(recibirDatosFV, 3000);
           }
  
-          catch {
+          catch (e) {
             var d = new Date();
             s = d.getSeconds()
             t = d.getHours() + ':' + d.getMinutes() + ':' + s;

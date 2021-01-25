@@ -21,7 +21,7 @@ if($result = mysqli_query($link, $sql)){
     }
 mysqli_close($link);
 
-$columnas = count($rawdata[0])/2;
+$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 $filas = count($rawdata);
 
 ?>
@@ -42,7 +42,7 @@ $filas = count($rawdata);
             <tr>
              <?php
                 //Añadimos los titulos
-                for($i=1;$i<count($rawdata[0]);$i=$i+2){
+                for($i=0;$i<$columnas;$i++){
                     next($rawdata[0]);
                     echo "<th><b>".key($rawdata[0])."</b></th>";
                     next($rawdata[0]);
