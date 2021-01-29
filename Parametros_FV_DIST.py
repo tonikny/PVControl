@@ -309,6 +309,17 @@ t_muestra_fronius = 5
 usar_huawei = 0          	# 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"     # IP del huawei
 t_muestra_huawei = 5
+# -----------------------------------------------
+#################
+####  GOODWE ####
+#################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
+
+usar_goodwe = 0          	# 1 para leer datos del huawei..... 0 para no usar
+IP_GOODWE = "192.168.0.100"     # IP del huawei
+t_muestra_goodwe = 5
 
 # -----------------------------------------------
 ##################
@@ -340,6 +351,22 @@ usar_eastron = 0       # 1 para leer datos srne ..... 0 para no usar
 dev_eastron = ""       # /dev/ttyUSB0" # USB  
 
 # -----------------------------------------------
+##################
+### BROADLINK ####
+##################
+
+## Indicar si se tiene instalado algún equipo de broadlink para uso AA
+
+
+array_IP = ['192.168.1.234','192.168.1.235']  # Indicar IP´s de equipos Broadlnk
+array_reles = [271,281]     #Indicar relés en el mismo orden que las IPs anteriores a asignar a los relés.
+
+
+# -----------------------------------------------
+
+
+
+
 ###########################
 ###### Pantalla OLED ######
 ###########################
