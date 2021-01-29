@@ -70,6 +70,11 @@ sudo systemctl enable huawei
 sudo systemctl restart huawei
 sudo systemctl status huawei
 
+sudo ln -s /home/pi/PVControl+/etc/systemd/system/goodwe.service /etc/systemd/system/goodwe.service
+sudo systemctl enable goodwe
+sudo systemctl restart goodwe
+sudo systemctl status goodwe
+
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/must.service /etc/systemd/system/must.service
 sudo systemctl enable must
 sudo systemctl restart must
