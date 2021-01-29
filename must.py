@@ -15,7 +15,7 @@ modbus = ModbusClient(method='rtu', port=dev_must, baudrate=19200, timeout=1)
 modbus.connect()
 time.sleep(0.5)
 
-DEBUG = False
+DEBUG = True
 
 datos = [[None]*6 for i in range(n_equipos_must)]
 prod  = [[1.0]* n_equipos_must for i in range(1)]
@@ -31,8 +31,8 @@ def leer_datos(a,b):
     time.sleep(0.5)
     I2 = modbus.read_holding_registers(25274, 1, unit=b)
     try:
-        #print('a',a,'b',b,'R1',R1,'I1',I1,'I2',I2)
-        Vbat = R1.registers[1]*0.1
+        print('a',a,'b',b,'R1',R1.registers,'I1',I1.registers,'I2',I2.registers)
+        Vbat = I1.registers[0]*0.1
         Ibat = I2.registers[0]
         Vplaca = R1.registers[0]*0.1
         Iplaca = R1.registers[3]
@@ -69,33 +69,32 @@ while True:
     time.sleep(t_muestra_must)
     
     for i in range(n_equipos_must):    
-        datos[i] = leer_datos(i+1,i+4)
+        datos[i] = leer_datos(i+4,i+4)
     #print(datos)  
-
-    for i in range(6):
-        for j in range(n_equipos_must):    
-           res[i][0] += prod[0][j] * datos[j][i]
+    if datos !=None:
+        for i in range(6):
+            for j in range(n_equipos_must):    
+                res[i][0] += prod[0][j] * datos[j][i]
            
-    Vbat = round(res[0][0] / n_equipos_must,2)
-    Vplaca = round(res[1][0] / n_equipos_must,2)
-    Iplaca = round(res[2][0]/Vbat,2)
-    Consumo = res[3][0]
-    Pred = res[4][0]
-    Ibat= res[5][0]
+        Vbat = round(res[0][0] / n_equipos_must,2)
+        Vplaca = round(res[1][0] / n_equipos_must,2)
+        Iplaca = round(res[2][0]/Vbat,2)
+        Consumo = res[3][0]
+        Pred = res[4][0]
+        Ibat= res[5][0]
            
-    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-    tiempo_sg = time.time()
+        tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+        tiempo_sg = time.time()
     
-    res=[[0], [0], [0], [0], [0], [0]]
+        res=[[0], [0], [0], [0], [0], [0]]
     
     
-    datos_p = {'Tiempo_sg': tiempo_sg,'Tiempo':tiempo,'Vbat':Vbat,'Vplaca':Vplaca,'Iplaca':Iplaca,'Consumo':Consumo,'Pred':Pred,'Ibat':Ibat}
-    if DEBUG: print(datos_p)
-    if datos != None :
+        datos_p = {'Tiempo_sg': tiempo_sg,'Tiempo':tiempo,'Vbat':Vbat,'Vplaca':Vplaca,'Iplaca':Iplaca,'Consumo':Consumo,'Pred':Pred,'Ibat':Ibat,'Wplaca':Vbat*Iplaca}
+        if DEBUG: print(datos_p)
+    
         with open('/run/shm/datos_must.pkl', mode='wb') as f:
             pickle.dump(datos_p, f)
         
       
     
     
-
