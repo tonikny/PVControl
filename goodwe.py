@@ -2,6 +2,7 @@ import socket
 import sys
 import time
 import struct
+import pickle
 from Parametros_FV import *
 
 
@@ -15,6 +16,8 @@ if str(sys.argv[narg-1]) == '-p': DEBUG = True
 else: DEBUG = False
 
 EFF=100
+
+
 a = [0xaa,0x55,0xc0,0x7f,0x01,0x06,0x00,0x02,0x45]
 b = bytearray(a)
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
@@ -37,18 +40,20 @@ while True:
     if len(data)==142:
         d = struct.unpack('>7B 2h 1B 2h 25B 4h 1B 5h 22B 1h 58B',data)
         datos ={}
+        datos['Tiempo'] = time.strftime("%Y-%m-%d %H:%M:%S") 
+        datos['Tiempo_sg'] = time.time()
         datos['Wplaca'] = round((d[7]*d[8]+d[10]*d[11])/100,2)
         datos['Vred'] = d[37]/10
         datos['Fred'] = d[40]/100
         datos['Winv'] = d[69]
         datos['IE'] = d[73]
-        if datos['Wplaca'] > 0 : datos['EFF']=round((Winv/Wplaca)*100,2)
+        if datos['Wplaca'] > 0 : datos['EFF']=round((datos['Winv']/datos['Wplaca'])*100,2)
         else: datos['EFF'] = 100
-        datos['Wred'] = round(d[39],2)*(-1)**(IE+1)        
-        datos['Consumo'] = round(Winv-Wred,2)
-        datos['Vplaca'] = (d[7]+d[10])/2
-        datos['Iplaca'] = datos['Wplaca'] / datos['Vred']
-        datos['Ired'] = datos['Wred'] / datos['Vred']
+        datos['Wred'] = round(d[39],2)*(-1)**(datos['IE']+1)        
+        datos['Consumo'] = round(datos['Winv']-datos['Wred'],2)
+        datos['Vplaca'] = (d[7]+d[10])/20
+        datos['Iplaca'] = round(datos['Wplaca'] / datos['Vred'],2)
+        datos['Ired'] = round(datos['Wred'] / datos['Vred'],2)
         
         if DEBUG:print(datos)
         
