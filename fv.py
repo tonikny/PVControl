@@ -732,7 +732,17 @@ try:
                         d_huawei = pickle.load(f)
                 except:
                     logBD('error lectura '+archivo_ram)
-                    continue       
+                    continue 
+            
+            if usar_goodwe == 1:
+                archivo_ram='/run/shm/datos_goodwe.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_goodwe = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue 
+                          
             
             ee=30.43             
             if usar_must == 1:
