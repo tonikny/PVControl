@@ -25,6 +25,7 @@ sudo ln -s /home/pi/PVControl+/etc/systemd/system/bmv.service /etc/systemd/syste
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/srne.service /etc/systemd/system/srne.service
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/fronius.service /etc/systemd/system/fronius.service
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/huawei.service /etc/systemd/system/huawei.service
+sudo ln -s /home/pi/PVControl+/etc/systemd/system/goodwe.service /etc/systemd/system/goodwe.service
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/must.service /etc/systemd/system/must.service
 
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/sma.service /etc/systemd/system/sma.service
