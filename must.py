@@ -15,7 +15,11 @@ modbus = ModbusClient(method='rtu', port=dev_must, baudrate=19200, timeout=1)
 modbus.connect()
 time.sleep(0.5)
 
-DEBUG = True
+DEBUG = False
+
+narg = len(sys.argv)
+if str(sys.argv[narg-1]) == '-p': DEBUG = True
+else: DEBUG = False
 
 datos = [[None]*6 for i in range(n_equipos_must)]
 prod  = [[1.0]* n_equipos_must for i in range(1)]
@@ -31,7 +35,7 @@ def leer_datos(a,b):
     time.sleep(0.5)
     I2 = modbus.read_holding_registers(25274, 1, unit=b)
     try:
-        print('a',a,'b',b,'R1',R1.registers,'I1',I1.registers,'I2',I2.registers)
+        if DEBUG:print('a',a,'b',b,'R1',R1.registers,'I1',I1.registers,'I2',I2.registers)
         Vbat = I1.registers[0]*0.1
         Ibat = I2.registers[0]
         Vplaca = R1.registers[0]*0.1
