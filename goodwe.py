@@ -39,6 +39,7 @@ while True:
     
     if len(data)==142:
         d = struct.unpack('>7B 2h 1B 2h 25B 4h 1B 5h 22B 1h 58B',data)
+        if DEBUG:print(d)
         datos ={}
         datos['Tiempo'] = time.strftime("%Y-%m-%d %H:%M:%S") 
         datos['Tiempo_sg'] = time.time()
@@ -54,6 +55,7 @@ while True:
         datos['Vplaca'] = (d[7]+d[10])/20
         datos['Iplaca'] = round(datos['Wplaca'] / datos['Vred'],2)
         datos['Ired'] = round(datos['Wred'] / datos['Vred'],2)
+        datos['Temp'] = d[48]/10
         
         if DEBUG:print(datos)
         
