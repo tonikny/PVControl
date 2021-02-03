@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: localhost:3306
--- Tiempo de generación: 24-11-2020 a las 21:40:14
--- Versión del servidor: 10.3.22-MariaDB-0+deb10u1
+-- Tiempo de generación: 01-02-2021 a las 00:19:54
+-- Versión del servidor: 10.3.25-MariaDB-0+deb10u1
 -- Versión de PHP: 7.2.9-1+b2
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -81,7 +81,11 @@ CREATE TABLE `datos` (
   `Wh_placa` float NOT NULL DEFAULT 0 COMMENT 'Watios hora generados por la placas',
   `Temp` float NOT NULL DEFAULT 0 COMMENT 'Temperatura baterias',
   `PWM` float NOT NULL DEFAULT 0 COMMENT 'PWM total para excedentes',
-  `Mod_bat` enum('OFF','BULK','FLOT','ABS','EQU') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'BULK'
+  `Mod_bat` enum('OFF','BULK','FLOT','ABS','EQU','INYECT','CONS') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'BULK',
+  `Vred` float NOT NULL DEFAULT 0 COMMENT 'V red AC',
+  `Wred` float NOT NULL DEFAULT 0 COMMENT 'W inyectados o consumidos de red',
+  `Whn_red` float NOT NULL DEFAULT 0 COMMENT 'Wh consumidos de red',
+  `Whp_red` float NOT NULL DEFAULT 0 COMMENT 'Wh inyectados a red'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
 -- --------------------------------------------------------
@@ -108,7 +112,11 @@ CREATE TABLE `datos_c` (
   `Wh_placa` float DEFAULT NULL,
   `Temp` float DEFAULT NULL,
   `PWM` float DEFAULT NULL,
-  `Mod_bat` enum('OFF','BULK','FLOT','ABS','EQU') COLLATE latin1_spanish_ci DEFAULT NULL
+  `Mod_bat` enum('OFF','BULK','FLOT','ABS','EQU','INYECT','CONS') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'BULK',
+  `Vred` float NOT NULL DEFAULT 0 COMMENT 'V red AC',
+  `Wred` float NOT NULL DEFAULT 0 COMMENT 'W inyectados o consumidos de red',
+  `Whn_red` float NOT NULL DEFAULT 0 COMMENT 'Wh consumidos de red',
+  `Whp_red` float NOT NULL DEFAULT 0 COMMENT 'Wh inyectados a red'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
 -- --------------------------------------------------------
@@ -168,7 +176,11 @@ CREATE TABLE `datos_s` (
   `IPWM_D` float(5,2) NOT NULL DEFAULT 0.00,
   `Kp` float NOT NULL DEFAULT 0,
   `Ki` float NOT NULL DEFAULT 0,
-  `Kd` float NOT NULL DEFAULT 0
+  `Kd` float NOT NULL DEFAULT 0,
+  `Vred` float NOT NULL DEFAULT 0 COMMENT 'V red AC',
+  `Wred` float NOT NULL DEFAULT 0 COMMENT 'W inyectados o consumidos de red',
+  `Whn_red` float NOT NULL DEFAULT 0 COMMENT 'Wh consumidos de red',
+  `Whp_red` float NOT NULL DEFAULT 0 COMMENT 'Wh inyectados a red'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
 -- --------------------------------------------------------
@@ -197,7 +209,14 @@ CREATE TABLE `diario` (
   `Wh_consumo` float NOT NULL DEFAULT 0,
   `maxTemp` float NOT NULL DEFAULT 0,
   `minTemp` float NOT NULL DEFAULT 0,
-  `avgTemp` float NOT NULL DEFAULT 0
+  `avgTemp` float NOT NULL DEFAULT 0,
+  `Whn_red` float NOT NULL DEFAULT 0 COMMENT 'Wh consumidos de red',
+  `Whp_red` float NOT NULL DEFAULT 0 COMMENT 'Wh inyectados a red',
+  `maxWred` float NOT NULL DEFAULT 0 COMMENT 'maximo W inyectados a red',
+  `minWred` float NOT NULL DEFAULT 0 COMMENT 'minimo W consumidos de red',
+  `avgWred` float NOT NULL DEFAULT 0 COMMENT 'media W de red',
+  `maxVred` float NOT NULL DEFAULT 0 COMMENT 'maxima Vred',
+  `minVred` float NOT NULL DEFAULT 0 COMMENT 'minima Vred'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
 -- --------------------------------------------------------
@@ -212,14 +231,14 @@ CREATE TABLE `hibrido` (
   `Tiempo` datetime NOT NULL,
   `Vgen` float NOT NULL DEFAULT 0,
   `Fgen` float NOT NULL DEFAULT 0,
-  `Iplaca` smallint(3) NOT NULL DEFAULT 0,
+  `Iplaca` float NOT NULL DEFAULT 0,
   `Vplaca` float NOT NULL DEFAULT 0,
   `Wplaca` smallint(5) NOT NULL DEFAULT 0,
   `Vbat` float NOT NULL DEFAULT 0,
   `Vbus` smallint(3) NOT NULL DEFAULT 0,
-  `Ibatp` smallint(3) NOT NULL DEFAULT 0,
-  `Ibatn` smallint(3) NOT NULL DEFAULT 0,
-  `temp` tinyint(3) NOT NULL DEFAULT 0,
+  `Ibatp` float NOT NULL DEFAULT 0,
+  `Ibatn` float NOT NULL DEFAULT 0,
+  `temp` float NOT NULL DEFAULT 0,
   `PACW` smallint(5) NOT NULL DEFAULT 0,
   `PACVA` smallint(5) NOT NULL DEFAULT 0,
   `Flot` tinyint(1) NOT NULL DEFAULT 0,
@@ -253,7 +272,7 @@ CREATE TABLE `parametros` (
   `n_muestras_grab` int(3) NOT NULL,
   `nuevo_soc` float NOT NULL DEFAULT 0 COMMENT 'valor distinto de 0 actualiza',
   `objetivo_PID` float NOT NULL COMMENT 'Valor objetivo a conseguir por el control PID',
-  `sensor_PID` set('Aux1','Aux2','Vplaca','Vbat','Hz','Vplaca_Vbat','Ibat') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'Vbat' COMMENT 'Variable de control PID',
+  `sensor_PID` set('Aux1','Aux2','Vplaca','Iplaca','Wplaca','Vbat','Ibat','Wbat','SOC','Hz','Vred','Ired','Wred') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'Vbat' COMMENT 'Variable de control PID',
   `Kp` float NOT NULL DEFAULT 10 COMMENT 'Constante proporcional PID',
   `Ki` float NOT NULL DEFAULT 0 COMMENT 'Constante Integral PID',
   `Kd` float NOT NULL DEFAULT 0 COMMENT 'Constante derivativa PID',
@@ -267,6 +286,13 @@ CREATE TABLE `parametros` (
   `coef_temp` float NOT NULL DEFAULT 0 COMMENT 'Coeficiente Compesancion Temperatura para Vflot y Vabs',
   `id_parametros` tinyint(4) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `parametros`
+--
+
+INSERT INTO `parametros` (`grabar_datos`, `grabar_reles`, `t_muestra`, `n_muestras_grab`, `nuevo_soc`, `objetivo_PID`, `sensor_PID`, `Kp`, `Ki`, `Kd`, `Mod_bat`, `Vflot`, `Vabs`, `Tabs`, `Vequ`, `Tequ`, `Icola`, `coef_temp`, `id_parametros`) VALUES
+('S', 'S', 5, 1, 0, 28.8, 'Vbat', 10, 0, 0, 'BULK', 27.2, 28.8, 3600, 29.6, 3600, 4, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -339,7 +365,7 @@ CREATE TABLE `reles_grab` (
 DROP TABLE IF EXISTS `reles_h`;
 CREATE TABLE `reles_h` (
   `id_rele` int(3) DEFAULT NULL,
-  `parametro_h` varchar(10) COLLATE latin1_spanish_ci DEFAULT 'T',
+  `parametro_h` varchar(1) CHARACTER SET latin1 DEFAULT 'T',
   `valor_h_ON` time DEFAULT NULL,
   `valor_h_OFF` time DEFAULT NULL,
   `id_reles_h` int(11) NOT NULL

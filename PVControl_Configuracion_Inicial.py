@@ -49,6 +49,7 @@ parametros_simular = ['simular =','simular_reles']
 parametros_hibrido = ['dev_hibrido','t_muestra_hibrido']
 parametros_fronius = ['_sensor','_fronius','IP_FRONIUS']
 parametros_huawei = ['_sensor','_huawei','IP_HUAWEI']
+parametros_goodwe = ['_sensor','_goodwe','IP_GOODWE']
 
 f_salida = open("/home/pi/PVControl+/Parametros_FV.aux", "w") # Fichero auxiliar
 
@@ -65,6 +66,7 @@ print()
 print ( Fore.CYAN +'   ########## SISTEMAS SIN BATERIA ##############'+Fore.GREEN)
 print ('     11 = FRONIUS SIN BATERIA (copia el archivo Parametros_FV_FRONIUS.py en Parametros_FV.py y continua)')
 print ('     12 = HUAWEI SIN BATERIA (copia el archivo Parametros_FV_HUAWEI.py en Parametros_FV.py y continua)')
+print ('     13 = GOODWE SIN BATERIA (copia el archivo Parametros_FV_GOODWE.py en Parametros_FV.py y continua)')
 
 print()
 print ( Fore.CYAN +'   ########## OTROS SISTEMAS ##############'+Fore.GREEN)
@@ -100,6 +102,13 @@ elif Tipo_instalacion == '12': # Huawei
     texto = ' Configuracion para HUAWEI'
     fichero1 ='/home/pi/PVControl+/Parametros_FV_HUAWEI.py'
     shutil.copy(fichero1, fichero2)
+
+elif Tipo_instalacion == '13': # goodwe
+    parametros = parametros_goodwe
+    texto = ' Configuracion para GOODWE'
+    fichero1 ='/home/pi/PVControl+/Parametros_FV_GOODWE.py'
+    shutil.copy(fichero1, fichero2)
+
     
 elif Tipo_instalacion == '99': # Otros
     parametros = parametros_bateria + parametros_ads + parametros_hibrido + parametros_mezcla
@@ -245,7 +254,7 @@ f_salida.close()
 print()
 print (Fore.RED + '  --- CONFIGURACION Parametros_FV.py FINALIZADA --- ') 
 print()
-confirmacion = click.prompt(Fore.GREEN + '    Pulsa 1 para grabar o 0 para cancelar', type=str, default='0')
+confirmacion = click.prompt(Fore.GREEN + '    Pulsa 1 para grabar o 0 para cancelar', type=str, default='1')
 
 if confirmacion == '1':
     os.rename('/home/pi/PVControl+/Parametros_FV.py', '/home/pi/PVControl+/Parametros_FV.back')
