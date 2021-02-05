@@ -85,36 +85,58 @@ print(Fore.GREEN+'MODO ='+MODO)
 print()
 print(Fore.RED+'Pulsa Ctrl-C para salir...')
 print()
-print(Fore.GREEN+f'Ganancia Ibat/Iplaca= {I_gain}  -- SHUNT1/SHUNT2= {SHUNT1}/{SHUNT2}',)
+print(Fore.GREEN+f'Ganancia Ibat/Iplaca= {I_gain}  -- SHUNT1/SHUNT2= {SHUNT1:.2}/{SHUNT2:.2}',)
 print(f'Ganancias Vbat/Vaux1/Vplaca/Vaux2 = {RES0_gain}/{RES1_gain}/{RES2_gain}/{RES3_gain}')
 print (Fore.RESET)
 
 
 
 if MODO == 'Vbat':
-    N = 20
+    N = 10
+    rate = 32
+    L_Vbat = ([0.0] * N)
     while True:
         try:
             #### Vbat
-            Suma = 0
-            Max = -40000
-            Min = 40000
+            t1 = time.time()
             for i in range(N):
-                l = adc.read_adc(0, gain= RES0_gain)
-                Suma += l
-                Max = max(Max,l)
-                Min = min(Min,l)
-            ADS = Suma/N    
-            Vbat = round(ADS* 0.000125 * RES0 / RES0_gain ,2)
+                L_Vbat[i] = adc.read_adc(0, gain= RES0_gain, data_rate = rate)    
+            t2 = time.time() -t1
+            
+            Max = max(L_Vbat)
+            Min = min(L_Vbat)
+            MED = sum(L_Vbat)/N
+                        
+            Vbat = round(MED* 0.000125 * RES0 / RES0_gain ,4)
             Vbat_err=  round((Max-Min) * 0.000125 * RES0 / RES0_gain ,2)
             
-            print (Fore.GREEN+'Vbat=',Fore.RESET,Vbat,'V '+ Fore.RED+ 'Error=',Fore.RESET,
-                   Max,'/',Min,'(',round((Max-Min)* 0.125 / RES0_gain,2),'mV en ADS)-',
-                   Fore.RED,'(',round((Max-Min)* 0.125 * RES0 / RES0_gain,2) ,'mV en conector)')
+            L_Vbat_ord = L_Vbat.copy()
+            L_Vbat_ord.sort()
+            L_Vbat_dif = []
+            for i in range(len(L_Vbat_ord)-1):
+                L_Vbat_dif.append (L_Vbat_ord[i+1]-L_Vbat_ord[i])
+                
+            L_Vbat_dif = [i for i in L_Vbat_dif if i != 0]
+            L_Vbat_dif.sort()
+            
+            #print (L_Vbat)
+            #print (L_Vbat_ord)
+            #print (L_Vbat_dif)
+            
+            print (Fore.GREEN+'Vbat='+ Fore.RESET+f'{Vbat}V'+ Fore.RED+ ' Error='+Fore.RESET,
+                   f'{Max}/{Min}(',round((Max-Min)* 0.125 / RES0_gain,2),'mV ADS)-'+
+                   Fore.RED+'(',round((Max-Min)* 0.125 * RES0 / RES0_gain,2) ,'mV conector)', end='')
+            
+            print ( Fore.GREEN,f'T.Ejec en {N}ciclos/rate={rate} = {t2:.3}', end='')
+            if len(L_Vbat_dif) > 0:
+                if L_Vbat_dif[0] < 16: print (Fore.GREEN,'-- ADS1115')
+                else:                  print (Fore.RED,'-- ADS1015')
+            else:                      print (Fore.BLUE,'-- ??')
         except:
             print ('Error ADS 1 - A0')
         
         time.sleep(0.2)
+        
     
 elif MODO == 'V':
     print(Fore.YELLOW+'LECTURA ADS 1 =')
