@@ -1,4 +1,5 @@
 import time
+import math
 
 """
 Uso desde cualquier archivo:
@@ -14,9 +15,6 @@ class Utils:
     @staticmethod
     def pausa(x,y):
         t=time.time()
-        a=round(t*1000,3)
-        b=round(t,)*1000
-        c=(a-b)%x
-        if c < y: time.sleep((y-c)/1000)
-        else: time.sleep((x+y-c)/1000)
-    
+        resto=round(10000*(t/10-math.floor(t/10)),2)%x
+        if resto<y:time.sleep((y-resto)/1000)
+        else:time.sleep((x+y-resto)/1000)
