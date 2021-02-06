@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-11-01
+# Versión 2021-02-06
 
 # ----------------------------------------------------------------------------------------------
 #### Este Programa NO importa los datos de Parametros_FV.py por lo que ES NECESARIO dar de alta
@@ -13,6 +13,7 @@
 
 #       python3 TEST_ADS1115.py    
 #       python3 TEST_ADS1115.py -Vbat
+#       python3 TEST_ADS1115.py -CVbat  (modo continuo en ADS)
 #       python3 TEST_ADS1115.py -V
 #       ......    
 
@@ -70,6 +71,8 @@ adc1 = Adafruit_ADS1x15.ADS1115(address=0x4b, busnum=1)
 narg = len(sys.argv)
 if str(sys.argv[narg-1]) == '-Vbat':
     MODO = 'Vbat'
+elif str(sys.argv[narg-1]) == '-CVbat':
+    MODO = 'CVbat'
 elif str(sys.argv[narg-1]) == '-Ibat':
     MODO = 'Ibat'
 elif str(sys.argv[narg-1]) == '-V':
@@ -92,15 +95,13 @@ print (Fore.RESET)
 
 
 if MODO == 'Vbat':
-    N = 10
-    rate = 32
-    L_Vbat = ([0.0] * N)
+    N = 40
+    rate = 250
     while True:
         try:
             #### Vbat
             t1 = time.time()
-            for i in range(N):
-                L_Vbat[i] = adc.read_adc(0, gain= RES0_gain, data_rate = rate)    
+            L_Vbat = [adc.read_adc(0, gain= RES0_gain, data_rate = rate) for i in range(N) ]
             t2 = time.time() -t1
             
             Max = max(L_Vbat)
@@ -112,10 +113,8 @@ if MODO == 'Vbat':
             
             L_Vbat_ord = L_Vbat.copy()
             L_Vbat_ord.sort()
-            L_Vbat_dif = []
-            for i in range(len(L_Vbat_ord)-1):
-                L_Vbat_dif.append (L_Vbat_ord[i+1]-L_Vbat_ord[i])
-                
+            
+            L_Vbat_dif = [L_Vbat_ord[i+1]-L_Vbat_ord[i] for i in range(len(L_Vbat_ord)-1)]
             L_Vbat_dif = [i for i in L_Vbat_dif if i != 0]
             L_Vbat_dif.sort()
             
@@ -123,7 +122,7 @@ if MODO == 'Vbat':
             #print (L_Vbat_ord)
             #print (L_Vbat_dif)
             
-            print (Fore.GREEN+'Vbat='+ Fore.RESET+f'{Vbat}V'+ Fore.RED+ ' Error='+Fore.RESET,
+            print (Fore.GREEN+'Vbat='+ Fore.RESET+f'{Vbat:.4}V'+ Fore.RED+ ' Error='+Fore.RESET,
                    f'{Max}/{Min}(',round((Max-Min)* 0.125 / RES0_gain,2),'mV ADS)-'+
                    Fore.RED+'(',round((Max-Min)* 0.125 * RES0 / RES0_gain,2) ,'mV conector)', end='')
             
@@ -137,7 +136,66 @@ if MODO == 'Vbat':
         
         time.sleep(0.2)
         
-    
+
+elif MODO == 'CVbat':
+    N = 100
+    rate = 860
+    L_Vbat = ([0.0] * N)
+    #adc = Adafruit_ADS1x15.ADS1015(address=0x48, busnum=1)
+
+    adc.start_adc(0, gain=RES0_gain, data_rate=rate) #8,16,32,64,128,250,475,860
+                                                 # start_adc_difference() para diferencial
+    while True:
+        try:
+            #### Vbat
+            t1 = time.time()
+            for i in range(N):
+                L_Vbat[i] = adc.get_last_result() 
+                time.sleep (1/rate)   
+            t2 = time.time() -t1
+            
+            Max = max(L_Vbat)
+            Min = min(L_Vbat)
+            MED = sum(L_Vbat)/N
+                        
+            Vbat = round(MED* 0.000125 * RES0 / RES0_gain ,4)
+            Vbat_err=  round((Max-Min) * 0.000125 * RES0 / RES0_gain ,2)
+            
+            L_Vbat_ord = L_Vbat.copy()
+            L_Vbat_ord.sort()
+            #L_Vbat_dif = []
+            #for i in range(len(L_Vbat_ord)-1):
+            #    L_Vbat_dif.append (L_Vbat_ord[i+1]-L_Vbat_ord[i])
+            
+            L_Vbat_dif = [L_Vbat_ord[i+1]-L_Vbat_ord[i] for i in range(len(L_Vbat_ord)-1) ]
+            
+            L_Vbat_dif_red = [i for i in L_Vbat_dif if i != 0]
+            L_Vbat_dif_red.sort()
+            
+            L_Vbat_v = [ round(i * 0.000125 * RES0/ RES0_gain, 3) for i in L_Vbat ]
+            
+            print (L_Vbat_v)
+            print ('-' * 50)
+            #print (L_Vbat_ord)
+            #print ('-' * 50)
+            print (L_Vbat_dif)
+            #print (L_Vbat_dif_red)
+            
+            print (Fore.GREEN+'Vbat='+ Fore.RESET+f'{Vbat}V'+ Fore.RED+ ' Error='+Fore.RESET,
+                   f'{Max}/{Min}(',round((Max-Min)* 0.125 / RES0_gain,2),'mV ADS)-'+
+                   Fore.RED+'(',round((Max-Min)* 0.125 * RES0 / RES0_gain,2) ,'mV conector)', end='')
+            
+            print ( Fore.GREEN,f'T.Ejec en {N}ciclos/rate={rate} = {t2:.3}', end='')
+            if len(L_Vbat_dif_red) > 0:
+                if L_Vbat_dif_red[0] < 16: print (Fore.GREEN,'-- ADS1115')
+                else:                  print (Fore.RED,'-- ADS1015')
+            else:                      print (Fore.BLUE,'-- ??')
+        except:
+            print ('Error ADS 1 - A0')
+        
+        time.sleep(0.2)
+        
+
 elif MODO == 'V':
     print(Fore.YELLOW+'LECTURA ADS 1 =')
     print()
