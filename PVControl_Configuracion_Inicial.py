@@ -264,7 +264,7 @@ if confirmacion == '1':
     print()
     
     # ############# Adaptacion Web #########################################
-    exec(open("PVControl_Configuracion_Web.py").read()) # adaptacion Web segun Parametros_FV.py
+    exec(open("/home/pi/PVControl+/PVControl_Configuracion_Web.py").read()) # adaptacion Web segun Parametros_FV.py
     # #######################################################################
     
     print (Fore.CYAN +'#' * 50)
