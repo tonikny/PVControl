@@ -714,11 +714,11 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue
             
-            if usar_sma_meter == 1:
-                archivo_ram='/run/shm/datos_sma_meter.pkl'
+            if usar_smameter == 1:
+                archivo_ram='/run/shm/datos_smameter.pkl'
                 try:
                     with open(archivo_ram, 'rb') as f:
-                        d_sma_meter = pickle.load(f)
+                        d_smameter = pickle.load(f)
                 except:
                     logBD('error lectura '+archivo_ram)
                     continue

@@ -1,7 +1,7 @@
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'sma_meter'
-control = 'usar_sma_meter'
+control = 'usar_smameter'
 exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 
@@ -13,7 +13,7 @@ import time
 import threading
 import pickle
 
-DEBUG = False
+DEBUG = True
 
 MCAST_GRP = '239.12.255.254'
 MCAST_PORT = 9522
@@ -127,19 +127,22 @@ def captura(sock):
         ]
         if DEBUG: print(json_body)
         a = (smatext['2.4']/10.0-smatext['1.4']/10.0)
-       
-        return(a)
+        b = smatext['32.4']/1000
+        return[a,b]
     finally:
         pass
 
 
 while True:
-    Wred = captura(sock)
-    if DEBUG: print('Wred',Wred)
+    res = captura(sock)
+    Wred = res[0]
+    Vred = res[1]
+    Ired = round(Wred/Vred,2)
+    if DEBUG: print('Wred',Wred,'Vred',Vred,'Ired',Ired)
     tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
     tiempo_sg = time.time()
-    datos ={'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Wred':Wred}
+    datos ={'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Wred':Wred,'Vred':Vred,'Ired':Ired,'EFF':100}
     if datos != None :
-        with open('/run/shm/datos_sma_meter.pkl', mode='wb') as f:
+        with open('/run/shm/datos_smameter.pkl', mode='wb') as f:
             pickle.dump(datos, f)
     time.sleep(2)
