@@ -714,7 +714,17 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue
             
-            ee=30.41        
+             if usar_sma_meter == 1:
+                archivo_ram='/run/shm/datos_sma_meter.pkl'
+                try:
+                    with open(archivo_ram, 'rb') as f:
+                        d_sma_meter = pickle.load(f)
+                except:
+                    logBD('error lectura '+archivo_ram)
+                    continue
+            
+            ee=30.41  
+            
             if usar_fronius == 1:
                 archivo_ram='/run/shm/datos_fronius.pkl'
                 try:
@@ -722,7 +732,9 @@ try:
                         d_fronius = pickle.load(f)
                 except:
                     logBD('error lectura '+archivo_ram)
-                    continue       
+                    continue   
+
+                        
             
             ee=30.42        
             if usar_huawei == 1:
