@@ -714,7 +714,7 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue
             
-             if usar_sma_meter == 1:
+            if usar_sma_meter == 1:
                 archivo_ram='/run/shm/datos_sma_meter.pkl'
                 try:
                     with open(archivo_ram, 'rb') as f:
