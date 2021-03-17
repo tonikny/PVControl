@@ -8,7 +8,7 @@ echo
 #crear base de datos
 
 echo "Creando base de datos..."
-sudo mysql -h localhost -u root -p$PVControl+ < PVControl+.sql
+sudo mysql -h localhost -u root -p$PVControl+ < /home/pi/PVControl+/PVControl+.sql
 echo "Base de datos control_solar creada"
 
 echo "Creando usuario rpi"
