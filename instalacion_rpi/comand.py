@@ -31,6 +31,7 @@ lista = [#clonacion PVControl+
          'sudo apt install mariadb-server mariadb-client -y',
          'echo "CREATE USER \'rpi\'@\'localhost\' IDENTIFIED BY \'fv\';" | sudo mysql -uroot',
          'echo "GRANT ALL PRIVILEGES ON *.* TO \'rpi\'@\'localhost\' WITH GRANT OPTION;"  | sudo mysql -uroot',
+         'echo "create database phpmyadmin character set utf8"  | sudo mysql -uroot',
          'sudo mysql_secure_installation',
          'sudo apt-get install python3-mysqldb',
          
@@ -45,7 +46,7 @@ lista = [#clonacion PVControl+
          'sudo a2enconf phpmyadmin',
          'sudo systemctl reload apache2',
          'sudo mkdir /usr/share/phpmyadmin/tmp/',
-         'sudo chown -R www-data:www-data /usr/share/phpmyadmin/tmp/',
+         'sudo chown -R www-data:www-data /usr/share/phpmyadmin/tmp/',                 
          
          # WiringPi
          'cd /tmp',
@@ -71,8 +72,9 @@ lista = [#clonacion PVControl+
          'sudo pip3 install pymodbusTCP',
          '/home/pi/PVControl+/./install_BD.sh',
          'python3 /home/pi/PVControl+/Actualizar_BD.py',
-         'sudo chown root PVControl+/etc/cron.d/pvcontrol'
-         
+         'sudo chown root PVControl+/etc/cron.d/pvcontrol',
+         'sudo pip3 install timeout_decorator',
+         'sudo pip3 install crc16'       
          
          
          ]
