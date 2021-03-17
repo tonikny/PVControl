@@ -10,19 +10,22 @@ time.sleep(1)
 
 
 lista = [#clonacion PVControl+
-         'git clone https://git.code.sf.net/p/pvcontrol/code PVControl+'
+		 'sudo apt install git',		 
+         'git clone https://git.code.sf.net/p/pvcontrol/code PVControl+',
     
          # Sistema
-         'apt update',
-         'apt upgrade -y',
-         'apt install ca-certificates apt-transport-https lsb-release gnupg curl nano unzip -y',
-         'wget -q https://packages.sury.org/php/apt.gpg -O- | apt-key add -',
-         'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list',
-         'apt update',
+         'sudo apt update',
+         'sudo apt upgrade -y',
+         'sudo apt install python3-pip',         
+         'sudo apt install ca-certificates apt-transport-https lsb-release gnupg curl nano unzip -y',
+         'wget -q https://packages.sury.org/php/apt.gpg -O- | sudo apt-key add -',
+         'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list',
+         'sudo apt update',
+         'sudo dpkg-reconfigure locales',
          
          # Apache & php
-         'apt install apache2 -y',
-         'apt install php8.0 php8.0-cli php8.0-common php8.0-curl php8.0-gd php8.0-intl php8.0-mbstring php8.0-mysql php8.0-opcache php8.0-readline php8.0-xml php8.0-xsl php8.0-zip php8.0-bz2 libapache2-mod-php8.0 -y',
+         'sudo apt install apache2 -y',
+         'sudo apt install php8.0 php8.0-cli php8.0-common php8.0-curl php8.0-gd php8.0-intl php8.0-mbstring php8.0-mysql php8.0-opcache php8.0-readline php8.0-xml php8.0-xsl php8.0-zip php8.0-bz2 libapache2-mod-php8.0 -y',
          
          # MariaDB
          'sudo apt install mariadb-server mariadb-client -y',
@@ -33,15 +36,16 @@ lista = [#clonacion PVControl+
          
          # Phpmyadmin
          'wget https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip -O phpmyadmin.zip',
-         'unzip phpmyadmin.zip',
-         'rm phpmyadmin.zip',
-         'mv phpMyAdmin-*-all-languages /usr/share/phpmyadmin',
-         'chmod -R 0755 /usr/share/phpmyadmin',
-         'wget pvcontrol.adnsolar.eu/phpmyadmin.conf','mv phpmyadmin.conf /etc/apache2/conf-available/phpmyadmin.conf',
-         'a2enconf phpmyadmin',
-         'systemctl reload apache2',
-         'mkdir /usr/share/phpmyadmin/tmp/',
-         'chown -R www-data:www-data /usr/share/phpmyadmin/tmp/',
+         'sudo unzip phpmyadmin.zip',
+         'sudo rm phpmyadmin.zip',
+         'sudo mv phpMyAdmin-*-all-languages /usr/share/phpmyadmin',
+         'sudo chmod -R 0755 /usr/share/phpmyadmin',
+         'wget pvcontrol.adnsolar.eu/phpmyadmin.conf',
+         'sudo mv phpmyadmin.conf /etc/apache2/conf-available/phpmyadmin.conf',
+         'sudo a2enconf phpmyadmin',
+         'sudo systemctl reload apache2',
+         'sudo mkdir /usr/share/phpmyadmin/tmp/',
+         'sudo chown -R www-data:www-data /usr/share/phpmyadmin/tmp/',
          
          # WiringPi
          'cd /tmp',
@@ -55,6 +59,20 @@ lista = [#clonacion PVControl+
          'sudo bash -c \'echo "allow_anonymous false" > /etc/mosquitto/conf.d/default.conf\'',
          'sudo bash -c \'echo -n "password_file /home/pi/PVControl+/passwd_mosquitto" >> /etc/mosquitto/conf.d/default.conf\'',       
          'sudo systemctl restart mosquitto',
+         
+         # PVControl
+         'sudo pip3 install smbus',
+         'sudo pip3 install Adafruit_ADS1x15',
+         'sudo pip3 install pytelegrambotapi',
+         'sudo pip3 install colorama',         
+         'pip3 install click',
+         'sudo pip3 install RPi.GPIO',
+         'sudo pip3 install pymodbus',
+         'sudo pip3 install pymodbusTCP',
+         '/home/pi/PVControl+/./install_BD.sh',
+         'python3 /home/pi/PVControl+/Actualizar_BD.py',
+         'sudo chown root PVControl+/etc/cron.d/pvcontrol'
+         
          
          
          ]
