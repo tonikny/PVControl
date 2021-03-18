@@ -30,9 +30,11 @@ lista = [#clonacion PVControl+
          # MariaDB
          'sudo apt install mariadb-server mariadb-client -y',
          'echo "CREATE USER \'rpi\'@\'localhost\' IDENTIFIED BY \'fv\';" | sudo mysql -uroot',
-         'echo "GRANT ALL PRIVILEGES ON *.* TO \'rpi\'@\'localhost\' WITH GRANT OPTION;"  | sudo mysql -uroot',
-         'echo "create database phpmyadmin character set utf8"  | sudo mysql -uroot',
+         'echo "GRANT ALL PRIVILEGES ON *.* TO \'rpi\'@\'localhost\' WITH GRANT OPTION;"  | sudo mysql -uroot',        
          'sudo mysql_secure_installation',
+         #'echo "create database phpmyadmin character set utf8"  | sudo mysql -uroot',
+        
+         #'mysql u- rpi -pfv < /home/pi/phpmyadmin.sql',         
          'sudo apt-get install python3-mysqldb',
          
          # Phpmyadmin
@@ -74,8 +76,13 @@ lista = [#clonacion PVControl+
          'python3 /home/pi/PVControl+/Actualizar_BD.py',
          'sudo chown root PVControl+/etc/cron.d/pvcontrol',
          'sudo pip3 install timeout_decorator',
-         'sudo pip3 install crc16'       
-         
+         'sudo pip3 install crc16' , 
+         # Configuracion phpmyadmin
+         'wget https://pvcontrol.adnsolar.eu/phpmyadmin.sql',
+         'sudo mysql -u root -pfv < phpmyadmin.sql',
+         'wget https://pvcontrol.adnsolar.eu/conf_phpmyadmin',
+         'sudo cp conf_phpmyadmin /usr/share/phpmyadmin/config.inc.php',
+         'sudo service apache2 restart'        
          
          ]
 
