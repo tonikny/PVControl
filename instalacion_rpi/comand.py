@@ -18,8 +18,10 @@ lista = [#clonacion PVControl+
          'sudo apt upgrade -y',
          'sudo apt install python3-pip',         
          'sudo apt install ca-certificates apt-transport-https lsb-release gnupg curl nano unzip -y',
-         'wget -q https://packages.sury.org/php/apt.gpg -O- | sudo apt-key add -',
-         'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list',
+         #'wget -q https://packages.sury.org/php/apt.gpg -O- | sudo apt-key add -',   #descomentar para raspbian
+         #'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list', # descomentar para raspbian
+         'sudo apt install software-properties-common -y', # comentar para raspbian
+         'sudo add-apt-repository ppa:ondrej/php', # comentar para raspbian
          'sudo apt update',
          'sudo dpkg-reconfigure locales',
          
