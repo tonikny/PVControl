@@ -54,8 +54,8 @@ while True:
         datos['Consumo'] = round(datos['Winv']-datos['Wred'],2)
         datos['Vplaca'] = (d[7]+d[10])/20
         
-        if usar_batgoodwe : datos['Iplaca'] = round(datos['Wplaca'] / datos['Vred'],2)
-        else: datos['Iplaca'] = round(datos['Wplaca'] / datos['Vbat'],2)
+        if usar_batgoodwe : datos['Iplaca'] = round(datos['Wplaca'] / datos['Vbat'],2)
+        else: datos['Iplaca'] = round(datos['Wplaca'] / datos['Vred'],2)
         
         datos['Ired'] = round(datos['Wred'] / datos['Vred'],2)
         datos['Temp'] = d[48]/10
