@@ -280,7 +280,7 @@ usar_sma = 0              # 1 para leer datos del sma ..... 0 para no usar
 usar_si = 0               # 1 para leer datos del SI ..... 0 para no usar
 usar_sb1 = 0              # 1 para leer datos del SB1 ..... 0 para no usar
 usar_sb2 = 0              # 1 para leer datos del SB2 ..... 0 para no usar
-usar_sma_meter = 0        # 1 para leer datos del meter SMA ..... 0 para no usar
+usar_smameter = 0        # 1 para leer datos del meter SMA ..... 0 para no usar
 IP_SI = "192.168.0.24"    # IP del SI
 IP_SB1 = "192.168.0.253"  # IP del SB1
 IP_SB2 = "192.168.0.252"  # IP del SB2
@@ -321,6 +321,7 @@ IP_HUAWEI = "192.168.0.24"     # IP del huawei
 usar_goodwe = 0          	# 1 para leer datos del goodwe..... 0 para no usar
 IP_GOODWE = "192.168.0.100"     # IP del goodwe
 t_muestra_goodwe = 5
+usar_batgoodwe = 0
 
 # -----------------------------------------------
 ##################

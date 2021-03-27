@@ -46,7 +46,7 @@ while True:
         datos['Vbat'] = round((d[13]*256+d[14])*0.1,2)
         datos['Ibat'] = round((d[21]*256+d[22])*0.1,2)*(-1)**(d[33]+1)
         modo_bat = d[33]
-        print(datos['Vbat'],datos['Ibat'],'Mod_bat',modo_bat)
+        #print(datos['Vbat'],datos['Ibat'],'Mod_bat',modo_bat)
         datos['Wplaca'] = round((d[7]*d[8]+d[10]*d[11])/100,2)
         datos['Vred'] = d[37]/10
         
@@ -61,7 +61,8 @@ while True:
         #datos['Wbat'] =         
         datos['Consumo'] = round(datos['Winv']-datos['Wred'],2)
         datos['Vplaca'] = (d[7]+d[10])/20
-        datos['Iplaca'] = round(datos['Wplaca'] / datos['Vbat'],2)
+        if usar_batgoodwe: datos['Iplaca'] = round(datos['Wplaca'] / datos['Vbat'],2)
+        else: datos['Iplaca'] = round(datos['Wplaca'] / datos['Vred'],2)
         #datos['Ired'] = round(datos['Wred'] / datos['Vred'],2)
         datos['Temp'] = d[48]/10
         
