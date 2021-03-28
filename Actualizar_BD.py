@@ -66,7 +66,28 @@ except:
     print ('la Clave (`id_rele`, `fecha`) ya estaba creada en reles_sendos_on')
 
 
+Sql = """CREATE TABLE `equipos` (
+  `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
+  `sensores` varchar(500) COLLATE latin1_spanish_ci NOT NULL
+) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+"""
 
+try:
+    cursor.execute(Sql)
+    print ('Creada tabla equipos')
+except:
+    print ('tabla equipos ya estaba creada ')
+
+
+Sql = """ALTER TABLE `equipos`
+  ADD UNIQUE KEY `sensor` (`id_equipo`);
+  """
+try:
+    cursor.execute(Sql)
+    print ('Creada clave en tabla equipos')
+except:
+    print ('clave en tabla equipos ya estaba creada ')
+  
 db.commit()
 cursor.close()
 db.close()

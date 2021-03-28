@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2019-12-15
+# Versión 2021-03-08
 
 from datetime import datetime
-import requests, time
+import requests, time, sys
 import MySQLdb
 
 from Parametros_FV import *
+import colorama # colores en ventana Terminal
+from colorama import Fore, Back, Style
+colorama.init()
 
-PV_OUTPUT_URL_TEMPLATE = "https://pvoutput.org/service/r2/addstatus.jsp?key="+ pvoutput_key +"&sid=" + pvoutput_id +"&d={}&t={}&v1={}&v3={}&v5={}&v6={}"
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' pvoutput_live.py') #+Style.RESET_ALL)
+
+#Comprobacion argumentos en comando
+arg = [x.upper() for x in sys.argv]
+arg= arg[1:] # quito argumento con nombre del archivo
+
+print(Fore.BLUE+'Comandos='+Fore.GREEN,arg)
+
+DEBUG = 0 
+for x in arg:
+    if x[0]=='-': x= x[1:]
+    exec(x)
+
+print (Fore.RED + 'DEBUG=',DEBUG)
 
 def update_pvoutput():
     attempt = 0
@@ -17,33 +33,44 @@ def update_pvoutput():
     while(attempt < 5):
         db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)    
         cursor = db.cursor()
-        sql='SELECT  Wh_placa, Whp_bat, Whn_bat, Vbat, Temp FROM datos ORDER BY id DESC LIMIT 1'
+        sql='SELECT  Wh_placa, Whp_bat, Whn_bat, Vbat, Temp, Whp_red, Whn_red FROM datos ORDER BY id DESC LIMIT 1'
         cursor.execute(sql)
-        energy_data=cursor.fetchone()
-
-        energy_generated = int(energy_data[0])
-        print ('energy_generated=',energy_generated)
-        print ('Whp_bat=', int(energy_data[1]))
-        print ('Whn_bat=', int(energy_data[2]))
-        energy_consumed = energy_generated - (int(energy_data[1]) - int(energy_data[2]))
-        print ('energy_consumed=',energy_consumed)
-        Vbat = float(energy_data[3])
-        print ('Vbat=', Vbat)
-        Temp = float(energy_data[4])
-        print ('Temp=', Temp)
+        datos = cursor.fetchone()
+        
+        Wh_placa = int(datos[0])
+        Whp_bat = int(datos[1])
+        Whn_bat = int(datos[2])
+        Vbat = float(datos[3])
+        Temp = float(datos[4])
+        Whp_red = int(datos[5])
+        Whn_red = int(datos[6])
+        
+        Wh_consumo = Wh_placa - (Whp_bat-Whn_bat) - (Whp_red-Whn_red)
+        
+        if DEBUG >= 1:
+            print (Fore.GREEN+f'Wh_placa={Wh_placa} - Wh_bat={Whp_bat-Whn_bat} - Wh_red={Whp_red-Whn_red}- Wh_con={Wh_consumo}')
 
         cursor.close()
         db.close()
 
-        date = datetime.today().strftime('%Y%m%d')
+        dia = datetime.today().strftime('%Y%m%d')
         hora = time.strftime("%H:%M")
+ 
+        PV_OUTPUT_URL = ('https://pvoutput.org/service/r2/addstatus.jsp?'
+                          f'key={pvoutput_key}&sid={pvoutput_id}'
+                          f'&d={dia}&t={hora}&v1={Wh_placa}&v3={Wh_consumo}&v5={Vbat}&v6={Temp}'
+                        )
 
-
-        PV_OUTPUT_URL = PV_OUTPUT_URL_TEMPLATE.format(date, hora, energy_generated, energy_consumed, Temp, Vbat)
+        if DEBUG >=2: 
+            print (Fore.GREEN+PV_OUTPUT_URL)
+            print (Fore.YELLOW,'#' * 60)    
+  
         r = requests.get(PV_OUTPUT_URL)
+##        print (r,r.status_code,requests.codes.ok)
         attempt += 1
-        if(r.status_code != requests.codes.ok):
+        if (r.status_code != requests.codes.ok):
             time.sleep(3)
+            print (Fore.RED, "ERROR")
         else:
             break
 
@@ -51,4 +78,4 @@ if __name__ == '__main__':
     if usar_pvoutput == 1:
         update_pvoutput()
     else:
-        print ("Registro PVoutput no actualizado -- Variable usar_pvoutput esta a 0 en Parametros_FV.py")
+        print (Fore.RED+"Registro PVoutput no actualizado -- Variable usar_pvoutput esta a 0 en Parametros_FV.py")

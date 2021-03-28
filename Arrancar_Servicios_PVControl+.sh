@@ -33,6 +33,7 @@ sudo systemctl status fvmux
 
 
 ## Sercivio crontab
+sudo chown root /home/pi/PVControl+/etc/cron.d/pvcontrol
 sudo ln -s /home/pi/PVControl+/etc/cron.d/pvcontrol /etc/cron.d/pvcontrol 
 
 ## Servicios Utilidades
