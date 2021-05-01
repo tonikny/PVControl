@@ -1157,49 +1157,50 @@ try:
       ## --------- BUCLE DIVER + ACTIVACION RELES CONTROL DE EXCEDENTES -------------
         t_muestra_3=(time.time()-hora_m) * 1000
         ee=90
-        Reles_D = [ ] # inicializo lista reles diver
+        reles_exc_prio = {}  # inicializacion dict reles excedentes por prioridad
+        PWM_max = 0
         for r in TR:
-            id_rele = r['id_rele']
-            
-            if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[id_rele] != -1 and Flag_Rele_Encendido != 1:
-               Reles_D.append([r['id_rele'],r['prioridad'],r['salto']]) #id_rele, prioridad, salto
+            if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[r['id_rele']] != -1 and Flag_Rele_Encendido != 1:
+                if r['prioridad'] not in reles_exc_prio.keys():
+                    reles_exc_prio [r['prioridad']] = []
+                reles_exc_prio[r['prioridad']].append({'id_rele': r['id_rele'], 'salto': r['salto']})
+            PWM_max += 100
 
-        Reles_D_Ord = sorted(Reles_D, key=lambda rr: rr[1]) # Ordeno lista reles por prioridad
-        
-        Nreles_Diver = len(Reles_D_Ord) # Nº de reles Diver a considerar para reparto excedentes
-        PWM_Max= Nreles_Diver * 100
-    
         ee=100
         if PWM >=0 : # situacion normal, se puede anular la entrada aqui poniendo en condiciones PWM = -1
-            #print ('Reles diver=',Nreles_Diver)
-            #print (Reles_D_Ord)
-            if Nreles_Diver > 0:
+            if reles_exc_prio:
                 # Repartimos PWM entre los reles
                 PWM_R = PWM
-                for P in range(Nreles_Diver):
-                    id_rele = Reles_D_Ord[P][0]
+
+                prios = [*reles_exc_prio]  # lista de prioridades usadas
+                prios.sort()
+                for prio in prios:
+                    nreles_prio = len(reles_exc_prio[prio])
+                    reles_exc_prio[prio].sort(key=lambda d:(-d['salto']))  # ordenamos por salto descendente
                     
-                    valor = min(100,PWM_R)
-                    salto = Reles_D_Ord[P][2]
-                    
-                    Rele[id_rele] =  int(salto * round(valor/salto))
-                    
-                    if Rele[id_rele] != Rele_Ant[id_rele]:
-                        act_rele(id_rele,Rele[id_rele])
-                        #Rele_Ant[id_rele] = Rele[id_rele]
-                    
-                    PWM_R -= Rele[id_rele]
-                    PWM_R = max(0,PWM_R)
-                    #print('Rele',id_rele,Rele[id_rele],int(PWM_R))
-                #print('.....................')
+                    for rele_prio in reles_exc_prio[prio]:
+                        id_rele = rele_prio['id_rele']
+                        valor = min(100,round(PWM_R/nreles_prio))
+                        salto = rele_prio['salto']
+                        nivel_rele =  int(salto * round(valor/salto))
+                        Rele[id_rele] = (min(PWM_R, nivel_rele) // salto) * salto
+
+                        if Rele[id_rele] != Rele_Ant[id_rele]:
+                            act_rele(id_rele, Rele[id_rele])
+
+                        PWM_R -= Rele[id_rele]
+                        PWM_R = max(0,PWM_R)
+                        nreles_prio -= 1
+                        if DEBUG >= 100: print('Reles PWM: ', id_rele, '->', Rele[id_rele], '(salto=',salto,'PWM_R=', PWM_R,')')
                     
         else: #salida manual de reles de excedentes por si se manipulan en condiciones
-            for P in range(Nreles_Diver):
-                id_rele = Reles_D_Ord[P][0]
-                
-                if Rele[id_rele] != Rele_Ant[id_rele]:
-                    act_rele(id_rele,Rele[id_rele])
-                    Rele_Ant[id_rele]=Rele[id_rele]
+            for prio in reles_exc_prio.keys():
+                for rele_prio in reles_exc_prio[prio]:
+                    id_rele = rele_prio['id_rele']
+
+                    if Rele[id_rele] != Rele_Ant[id_rele]:
+                        act_rele(id_rele,Rele[id_rele])
+                        Rele_Ant[id_rele]=Rele[id_rele]
             
 
       ## --------- Escribir en la BD Tabla Reles el Estado RELES -------------------------
