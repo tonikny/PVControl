@@ -1,4 +1,4 @@
-# Versión 24/Junio/2021 
+# Versión 24/Junio/2021
 # SSR por semiciclos o Ángulo de Fase
 # Lógica positiva o negativa
 # Sensor temperatura por pin D4
