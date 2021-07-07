@@ -1,7 +1,9 @@
 <?php
 $titulo="Inicio";
-include ("cabecera.inc");
+include("cabecera.inc");
+?>
 
+<?php
 require('conexion.php');
 //Coger datos grafica tiempo real
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Ibat, Iplaca, Vbat, PWM, Vplaca
@@ -19,10 +21,9 @@ if($result = mysqli_query($link, $sql)){
 } else{
         echo "ERROR: No se puede ejecutar $sql. " . mysqli_error($link);
 }
-
 mysqli_close($link);
-
 ?>
+            
 
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://code.jquery.com/jquery.js"></script>
@@ -34,9 +35,7 @@ mysqli_close($link);
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
-
-<!--<div id="grafica_intensidad" style="width: 25%; height: 260px; margin-left: -25%; margin-top: 260px;margin-right: 0%; float: left"></div>-->
-<div class="divTable"style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
+<div class="divTable" style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
     <div class="divTableBody">
         <div class="divTableRow">
                 <div class="divTableCell">Wh Placa</div>
@@ -44,7 +43,7 @@ mysqli_close($link);
         </div>
         <div class="divTableRow">
             <div class="divTableCell">Wh Cons</div>
-            <div id= "Wh_Cons" class="divTableCell">&nbsp;</div>
+            <div id= "Wh_cons" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
             <div class="divTableCell">Wh Bat+</div>
@@ -56,26 +55,26 @@ mysqli_close($link);
         </div>
         <div class="divTableRow">
             <div class="divTableCell">&nbsp;SOC máx</div>
-            <div id = "maxSOC" class="divTableCell">&nbsp;</div>
+            <div id = "SOC_max" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
             <div class="divTableCell">SOC mín</div>
-            <div id ="minSOC" class="divTableCell">&nbsp;</div>
+            <div id ="SOC_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
             <div class="divTableCell">&nbsp;Vbat mín</div>
-            <div id = "minVbat" class="divTableCell">&nbsp;</div>
+            <div id = "Vbat_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
             <div class="divTableCell">&nbsp;Vbat máx</div>
-               <div id ="maxVbat" class="divTableCell">&nbsp;</div>
+               <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
             </div>
         <div class="divTableRow">
             <div class="divTableCell"></div>
             <div class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">Estado</div>
+            <div class="divTableCell">Mod_bat</div>
             <div id ="Mod_bat" class="divTableCell">&nbsp;</div>
         </div>
         </div>
@@ -85,40 +84,23 @@ mysqli_close($link);
 <div id="containervbat"  style="width: 20%; height: 180px; margin-left: 2%; margin-right: 0%;margin-top: -1%; float: left">
   <p>&nbsp;</p>
   <p>&nbsp;</p>
-  </div>
+</div>
 <div id="containeribat"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: -1%; float: left"></div>
 <div id="containertemp"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: -1%; float: left"></div>
 <div id="containervplaca"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: -1%; float: left"></div>
-
 <div id="containerSOC"  style="width: 23%; height: 180px; margin-bottom: 0%; margin-left: 9%;margin-top: -2%; float: left"></div>
 <div id="containerconsumo"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 <div id="containerwplaca"  style="width: 20%; height: 180px; margin-left: 0%; margin-top: 0%;margin-top: -2%; float: left"></div>
 
-<div id="container_celdas" style="width: 45%; height: 160px; margin-left: 1%;float: left"></div>
+<div id="container_celdas" style="width: 40%; height: 160px; margin-left: 1%;float: left"></div>
 
-<div id="container_reles" style="width: 40%; height: 160px; margin-left: 1%;float: left"></div>
-
-
-<div id="grafica_intensidad" style="width: 100%; height: 280px; margin-left: 0%; margin-bottom: 0% ;float: left"></div>
-
-<!--
-<script src='https://openweathermap.org/themes/openweathermap/assets/vendor/owm/js/d3.min.js'></script>
-
-<script>window.myWidgetParam ? window.myWidgetParam : window.myWidgetParam = []; 
- window.myWidgetParam.push({id: 11,cityid: '6359366',appid: '755658d8a95ced40e5fd850f33183f9d',units: 'metric',containerid: 'openweathermap-widget-11',  }); 
- (function() {var script = document.createElement('script');script.async = true;script.charset = "utf-8";
- script.src = "https://openweathermap.org/themes/openweathermap/assets/vendor/owm/js/weather-widget-generator.js";
- var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(script, s);  })();
- </script>
-
-<div id="openweathermap-widget-11"></div>
--->
+<div id="container_reles" style="width: 40%; height: 200px; margin-left: 1%;float: left"></div>
+<div id="grafica_t_real" style="width: 100%; height: 280px; margin-left: 0%; margin-bottom: 0% ;float: left"></div>
 
 
 <br>
 <br style="clear:both;"/>
 <br>
-
 
 <script>
 
@@ -155,8 +137,16 @@ $(function () {
             backgroundColor: null,//'#ffffff',//'#f2f2f2',
             borderColor: null,
             },
+        
+        caption: {
+                align : 'center',
+                floating: true,
+                y: -20,
+                text : 'kkkk'
+                },
+            
         title: {
-            y:140,
+            y:155,
             floating: true,
             /*style:{
                 color: 'Purple',
@@ -232,7 +222,7 @@ $(function () {
                 style: {
                    fontSize: '16px'
                   },
-                text: 'pp1' //'V_BAT'
+                text: 'pp1' 
                 },
             subtitle: {
                 y:50,//-30,
@@ -266,7 +256,6 @@ $(function () {
                 to: Vbat_alto_rojo,
                 color: '#DDDF0D' // yellow
               },
-          
               {
                 from: Vbat_alto_rojo,
                 to: Vbat_max,
@@ -309,8 +298,7 @@ $(function () {
             plotShadow: false,
             backgroundColor: null,//'#ffffff',//'#f2f2f2',
             borderColor: null
-            
-            //
+              
           },
         title: {
             y:60,
@@ -394,7 +382,6 @@ $(function () {
           },
         series: [{
             name: '%',
-            
             title: {
                 floating:true,
                 y:150,//-30,
@@ -404,7 +391,6 @@ $(function () {
                    fontSize: '15px'
                   },
                 },
-            
             data: [],
             dataLabels: {
                 y:-35,
@@ -427,7 +413,7 @@ $(function () {
             borderColor: null
           },
         title: {
-            y:140,
+            y:155,
             floating: true,
             text: 'Temp',
           },
@@ -474,7 +460,7 @@ $(function () {
             endAngle: 150,
             background: []
           }],
-            // the value axis
+            
         yAxis: [{
             min: Temp_bat_min,
             max: Temp_bat_max,
@@ -601,7 +587,7 @@ $(function () {
                 x: 0,
                 style: {
                     fontSize: '15px',
-                    color: 'red'            
+                    color: 'red'
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "ºC Rpi"
@@ -627,7 +613,7 @@ $(function () {
             borderColor: null
           },
         title: {
-            y:140,
+            y:155,
             floating: true,
             text: 'Consumo',
           },
@@ -681,9 +667,10 @@ $(function () {
           }],
 
         yAxis: [
-          {
+          {//Wconsum0
             min: Consumo_watios_min,
             max: Consumo_watios_max,
+            pane: 0,
             minorTickInterval: 'auto',
             minorTickWidth: 1,
             minorTickLength: 10,
@@ -718,19 +705,18 @@ $(function () {
                 color: '#DF5353' // red
               }]
           },
-          { // A consumo
+          {// Aconsumo
             reversed: true,
             min: Consumo_amperios_min,
             max: Consumo_amperios_max,
             pane: 1,
-
             minorTickInterval: 'auto',
             minorTickWidth: 1,
             minorTickLength: 10,
             minorTickPosition: 'inside',
             minorTickColor: '#666',
             tickPixelInterval: 30,
-            tickInterval: Consumo_amperios_max/5,
+            tickInterval: 40, // posible parametro a considerar
             tickWidth: 2,
             tickPosition: 'inside',
             tickLength: 10,
@@ -765,7 +751,7 @@ $(function () {
             enabled: false
           },
         series: [
-          { // WConsumo
+          { // Wconsumo
             yAxis: 0,
             name: 'Consumo W',
             data: [],
@@ -787,7 +773,7 @@ $(function () {
                 radius: '80%' //longitud de la aguja
               },
           },
-          {//Aconsumo
+          { // Aconsumo
             yAxis: 1,
             name: '',
             data: [],
@@ -798,7 +784,8 @@ $(function () {
                 y: 20,
                 x: 0,
                 style: {
-                    fontSize: '15px'
+                    fontSize: '15px',
+                    color: 'red'
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "A"
@@ -824,16 +811,16 @@ $(function () {
             borderColor: null
             },
         title: {
-            y:130,
+            y:145,
             floating:true,
             text: 'Ibat',
             style: {
                 fontSize: '12px',
-                color: 'red'
+                color: 'black'
                 },
             },
         subtitle: {
-            y:142,
+            y:155,
             floating:true,
             text: 'Iplaca',
             style: {
@@ -841,7 +828,6 @@ $(function () {
                 color: 'green'
                 },
             },
-            
             
         credits: {
                 enabled: false
@@ -884,27 +870,25 @@ $(function () {
         yAxis: {
                 min: Intensidad_min,
                 max: Intensidad_max,
+
                 minorTickInterval: 'auto',
                 minorTickWidth: 1,
                 minorTickLength: 10,
                 minorTickPosition: 'inside',
                 minorTickColor: '#666',
 
-                //TickInterval: 1000,
-                tickPixelInterval: 40,
+                tickPixelInterval: 30,
                 tickWidth: 2,
                 tickPosition: 'inside',
                 tickLength: 10,
                 tickColor: '#666',
                 labels: {
-                    allowOverlap:false,
                     step: 2,
                     rotation: 'auto'
                 },
                 title: {
                     y:20,
                     text: null, //'I_BAT'
-                    reserveSpace:false,
                 },
                 plotBands: [{
                     from: 0,
@@ -989,7 +973,7 @@ $(function () {
             borderColor: null
             },
         title: {
-            y:140,
+            y:155,
             floating:true,
             text: 'Wplaca',
             },
@@ -1052,6 +1036,7 @@ $(function () {
             title: {
                 y:20,//-30,
                 x:0,
+                allowOverlap:true,
                 style: {
                    fontSize: '16px'
                   },
@@ -1102,6 +1087,7 @@ $(function () {
                 }
             }]
         });
+        
     chart_vplaca = new Highcharts.Chart ({
         chart: {
             renderTo: 'containervplaca',
@@ -1114,7 +1100,7 @@ $(function () {
             borderColor: null,
             },
         title: {
-            y:140,
+            y:155,
             floating: true,
             style: {
                     color: 'Red',
@@ -1168,6 +1154,7 @@ $(function () {
             minorTickLength: 10,
             minorTickPosition: 'inside',
             minorTickColor: '#666',
+            
             tickPixelInterval: 30,
             tickWidth: 2,
             tickPosition: 'inside',
@@ -1350,9 +1337,11 @@ $(function () {
              }
 
       });
+    
  
  
-    chart_celdas =new Highcharts.Chart({
+  
+      chart_celdas =new Highcharts.Chart({
         chart: {
             renderTo: 'container_celdas',
             backgroundColor: null,//'#ffffff',//'#f2f2f2',
@@ -1508,10 +1497,10 @@ $(function () {
              }
 
       });
-       
-    grafica_i = new Highcharts.Chart ({
+  
+    grafica_t_real = new Highcharts.Chart ({
         chart: {
-         renderTo: 'grafica_intensidad',
+         renderTo: 'grafica_t_real',
          backgroundColor: null,//'#ffffff',//'#f2f2f2',
          borderColor: null,
          plotBorderWidth: 1,
@@ -1532,7 +1521,6 @@ $(function () {
             align: 'right',
             verticalAlign: 'bottom',
             y: 25,
-            
             },
         credits: {
             enabled: false
@@ -1540,7 +1528,8 @@ $(function () {
         xAxis: {
             type: 'datetime'
             },
-        yAxis: [{
+        yAxis: [
+           {// ########## Valores eje Intensidad ####################
             gridLineWith: 2,
             min: Escala_intensidad_min,
             max: Escala_intensidad_max,
@@ -1561,9 +1550,8 @@ $(function () {
                 text: null,
                 },
             //opposite: false,
-            },{
-            
-            // ########## Valores eje Vbat ######################
+            },
+            { // ########## Valores eje Vbat ######################
             opposite: false,
             min: Escala_Vbat_min,
             max: Escala_Vbat_max,
@@ -1598,9 +1586,8 @@ $(function () {
                     text: 'Vflot'
                     }
               }]
-            },{
-            
-            // ########## Valores eje PWM ######################
+            },
+            { // ########## Valores eje PWM ######################
             opposite: true,
             min: 0,
             max: Escala_PWM_max,
@@ -1611,9 +1598,8 @@ $(function () {
             title: {
                 text: '',
                 },
-            },{
-            
-            // ########## Valores eje Vplaca ######################
+            },
+            { // ########## Valores eje Vplaca ######################
             opposite: false,
             min: 0,
             max: Escala_Vplaca_max,
@@ -1625,8 +1611,6 @@ $(function () {
                 text: '',
                 },
             }
-            
-            
             ],
           
         tooltip: {
@@ -1657,7 +1641,7 @@ $(function () {
             borderWidth: 0
             },
         series: [
-        {name: 'Ibat',
+           {name: 'Ibat',
             yAxis: 0,
             color: Highcharts.getOptions().colors[2],
             data: (function() {
@@ -1672,7 +1656,7 @@ $(function () {
 
             },
         
-        {name: 'IPlaca',
+           {name: 'IPlaca',
             yAxis: 0,
             color: Highcharts.getOptions().colors[3],
             data: (function() {
@@ -1700,7 +1684,7 @@ $(function () {
               })()
             
             },
-        {      name: 'VPlaca',
+            {name: 'VPlaca',
             yAxis: 3,
                 data: (function () {
                      var data = [];
@@ -1725,9 +1709,7 @@ $(function () {
               return data;
               })()
             },
-            
-        
-                ]
+            ]
                                 
       });
       
@@ -1736,131 +1718,183 @@ $(function () {
       $.ajax({
         url: 'datos_fv.php',
         success: function(data) {
-         
-          try {         
-            chart_vbat.series[0].setData([data[0][3]]);
+          try {             
+            // tiempo_sg, "%d-%B-%Y -- %H:%M:%S"
+            fecha = data[0][0][1];
+            
+            //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
+            Vbat = data[0][1][0]; 
+            Ibat = data[0][1][1]; 
+            Wbat = data[0][1][2]; 
+            Whp_bat = data[0][1][3];
+            Whn_bat = data[0][1][4];
+            Wh_bat = Whp_bat -Whn_bat;
+            Vbat_min = data[0][1][5];
+            Vbat_max = data[0][1][6];
+            
+            //DS,SOC,SOC_min,SOC_max
+            DS = data[0][2][0];
+            SOC = data[0][2][1];
+            SOC_min = data[0][2][2];
+            SOC_max = data[0][2][3];
+            
+            //Mod_bat,Tabs,Tflot,Tflot_bulk
+            Mod_bat = data[0][3][0];
+            Tabs = data[0][3][1];
+            Tflot = data[0][3][2];
+            Tflot_bulk = data[0][3][3];
+            
+            // Vplaca,Iplaca,Wplaca,Wh_placa
+            Vplaca = data[0][4][0];
+            Iplaca = data[0][4][1];
+            Wplaca = data[0][4][2]
+            Wh_placa = data[0][4][3];
+            
+            //(Vred,Wred,Whp_red,Whn_red,Vred_min,Vred_max,EFF,EFF_min,EFF_max)
+            Vred = data[0][5][0];
+            Wred = data[0][5][1];
+            Whp_red = data[0][5][2];
+            Whn_red = data[0][5][3];
+            Wh_red = Whp_red -Whn_red;
+            Vred_min = data[0][5][4];
+            Vred_max = data[0][5][5];
+            EFF = data[0][5][6];
+            EFF_min = data[0][5][7];
+            EFF_max = data[0][5][8];
+            Ired = Wred / Vred
+            
+            //Wconsumo, Wh_consumo
+            Wconsumo = data[0][6][0];
+            Wh_consumo = data[0][6][1];
+            
+            //Temp,int(PWM)
+            Temp = data[0][7][0];
+            PWM  = data[0][7][1];          
+            
+            // Actualizacion reloj Vbat 
+            chart_vbat.series[0].setData([Vbat]);
             chart_vbat.yAxis[0].setTitle({
-              text: data[0][8] - data[0][9]+ ' Wh' //Wh bateria  posi-neg
+              text: Wh_bat + ' Wh' 
                 });
-            
             chart_vbat.setSubtitle({
-              text: data[0][8]+'/'+ data[0][9]+ ' Wh' //Wh bateria  posi-neg
+              text: Whp_bat + '/' + Whn_bat + ' Wh'
+                });
+            
+            chart_vbat.caption.update({
+                text: Vbat_min +'/'+ Vbat_max+ ' V'
                 });
                 
+            // Actualizacion reloj Ibat/Iplaca
+            chart_ibat.series[0].setData([Ibat]); 
+            chart_ibat.series[1].setData([Iplaca]); 
             
-            chart_soc.series[0].setData([data[0][4]]);
+            // Actualizacion SOC   
+            chart_soc.series[0].setData([SOC]);
             chart_soc.yAxis[0].setTitle({
-              //text: data[0][16] // Mod_bat
-              text: 'Tabs='+data[0][18] +'sg - Tflot='+ data[0][19]+ 'sg' // Tabs /Tflot
+              text: 'Tabs='+Tabs +'sg - Tflot='+ Tflot + 'sg' // Tabs /Tflot
                 });
                 
-            chart_temp.series[0].setData([data[0][14]]); //Temp Bat
-            chart_temp.series[1].setData([data[1]]);     //CPU
+            // Actualizacion reloj Temp
+            chart_temp.series[0].setData([Temp]);    //Temp 
+            chart_temp.series[1].setData([data[1]]); //CPU
 
-            chart_ibat.series[0].setData([data[0][2]]);  //Ibat
-            chart_ibat.series[1].setData([data[0][10]]); //Iplaca
-            
-            chart_wplaca.series[0].setData([data[0][12]]); //Wplaca
-            
+             // Actualizacion reloj Wplaca 
+            chart_wplaca.series[0].setData([Wplaca]); 
             //chart_wplaca.setTitle({
             //  text: data[0][12] // ejem de cambio de titulo
             //   });
             chart_wplaca.yAxis[0].setTitle({
-              text: [data[0][13]+' Wh'] // Wh_placa
+              text: [Wh_placa + ' Wh']
                 });
             
+            // Actualizacion reloj Consumo            
+            chart_consumo.series[0].setData([Wconsumo]); // Consumo
+            chart_consumo.series[1].setData([Iplaca-Ibat]); // Iplaca - Ibat
+            chart_consumo.setSubtitle({
+              text: Wh_consumo + ' Wh'
+                });
+                
             //var consumo_wh= parseInt(data[0][13] - (data[0][8] -data[0][9]))
             //var consumo_wh= Math.round(data[0][13] - (data[0][8] -data[0][9]))
-            var consumo_wh= round(data[0][13] - (data[0][8] -data[0][9]),1)
+           
+            // Actualizacion reloj Vplaca
+            chart_vplaca.series[0].setData([Vplaca]); //Vplaca
             
-            chart_consumo.series[0].setData([data[0][16]]); // Consumo
-            chart_consumo.series[1].setData([data[0][10]-data[0][2]]); // Iplaca - Ibat
-            chart_consumo.setSubtitle({
-              text: consumo_wh + ' Wh'//data[0][13]-(data[0][8] - data[0][9]))//+ " Wh"
+            // Actualizacion Grafica a tiempor real
+            grafica_t_real.setTitle({
+              text: 'Fecha: ' + fecha
                 });
-            
-            
-            chart_vplaca.series[0].setData([data[0][11]]); //Vplaca
-            
-            grafica_i.setTitle({
-              text: 'Fecha: ' + data[0][1]
+            grafica_t_real.setSubtitle({
+              text: 'PWM=' + PWM
                 });
-            grafica_i.setSubtitle({
-              text: 'PWM=' + data[0][15]
-                });
-            
             
             x = (new Date()).getTime(); // current time
             
-            grafica_i.series[0].addPoint([x, data[0][2]], true, true); //Ibat
-            grafica_i.series[1].addPoint([x, data[0][10]], true, true); //Iplaca
-            grafica_i.series[3].addPoint([x, data[0][11]], true, true); //Vplaca
-            //grafica_i.series[3].addPoint([x, data[0][6]], true, true); //Aux1
-            grafica_i.series[4].addPoint([x, data[0][15]], true, true); //PWM
-            grafica_i.series[2].addPoint([x, data[0][3]], true, true); //Vbat
+            grafica_t_real.series[0].addPoint([x, Ibat], true, true); //Ibat
+            grafica_t_real.series[1].addPoint([x, Iplaca], true, true); //Iplaca
+            grafica_t_real.series[3].addPoint([x, Vplaca], true, true); //Vplaca
+            //grafica_t_real.series[3].addPoint([x, Aux1], true, true); //Aux1
+            grafica_t_real.series[4].addPoint([x, PWM], true, true); //PWM
+            grafica_t_real.series[2].addPoint([x, Vbat], true, true); //Vbat
             
             //Valores de la tabla
-            $("#Wh_placa").text(data[0][13]+ " Wh");
-            //$("#Wh_Cons").text((data[0][13])-(data[0][8] - data[0][9])+ " Wh");
-            $("#Wh_Cons").text(consumo_wh +' Wh')
-            $("#Whp_bat").text(data[0][8]+ " Wh");
-            $("#Whn_bat").text(data[0][9]+ " Wh");
-            $("#Mod_bat").text(data[0][17]);
-            $("#minSOC").text(data[0][21] + "%");
-            $("#maxSOC").text(data[0][22]+ "%");
-            $("#minVbat").text(data[0][23]+ "V");
-            $("#maxVbat").text(data[0][24]+ "V");
+            $("#Wh_placa").text(Wh_placa + " Wh");
+            $("#Wh_cons").text(Wh_consumo +' Wh')
+            $("#Whp_bat").text(Whp_bat + " Wh");
+            $("#Whn_bat").text(Whn_bat + " Wh");
+            $("#SOC_min").text(SOC_min + "%");
+            $("#SOC_max").text(SOC_max + "%");
+            $("#Vbat_min").text(Vbat_min + "V");
+            $("#Vbat_max").text(Vbat_max + "V");
             
-            //Evaluacion del color de la celda segun la variable Mod_bat, SOCmax... (Colores definidos en inicio.css)
-            //MOD_BAT
-            if (data[0][17] == "ABS")  {
+            $("#Mod_bat").text(Mod_bat);
+            
+            //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
+            if (Mod_bat == "ABS")  {
                 document.getElementById("Mod_bat").className = "ABS";}
-            else if (data[0][17] == "BULK")  {
+            else if (Mod_bat == "BULK")  {
                 document.getElementById("Mod_bat").className = "BULK";}
-            else if (data[0][17] == "FLOT")  {
+            else if (Mod_bat == "FLOT")  {
                 document.getElementById("Mod_bat").className = "FLOT";}
-            else if (data[0][17] == "EQU")  {
+            else if (Mod_bat == "EQU")  {
                 document.getElementById("Mod_bat").className = "EQU";};
-             
-              
+                
             //SOC_min
-            if (data[0][21] <= SOC_min_rojo)  {
-                document.getElementById("minSOC").className = "rojo";}
-            else if (data[0][21] < SOC_min_naranja)  {
-                document.getElementById("minSOC").className = "naranja";}
+            if (SOC_min <= SOC_min_rojo)  {
+                document.getElementById("SOC_min").className = "rojo";}
+            else if (SOC_min < SOC_min_naranja)  {
+                document.getElementById("SOC_min").className = "naranja";}
             else  {
-                document.getElementById("minSOC").className = "verde";};
+                document.getElementById("SOC_min").className = "verde";};
              
             //SOC_max
-            if (data[0][22] <= SOC_max_rojo)  {
-                document.getElementById("maxSOC").className = "rojo";}
-            else if (data[0][22] < SOC_max_naranja)  {
-                document.getElementById("maxSOC").className = "naranja";}
+            if (SOC_max <= SOC_max_rojo)  {
+                document.getElementById("SOC_max").className = "rojo";}
+            else if (SOC_max < SOC_max_naranja)  {
+                document.getElementById("SOC_max").className = "naranja";}
             else  {
-                document.getElementById("maxSOC").className = "verde";};
+                document.getElementById("SOC_max").className = "verde";};
             
-            //minVbat
-            if (data[0][23] <= Vbat_min_rojo)  {
-                document.getElementById("minVbat").className = "rojo";}
-            else if (data[0][23] < Vbat_min_naranja)  {
-                document.getElementById("minVbat").className = "naranja";}
+            //Vbat_min
+            if (Vbat_min <= Vbat_min_rojo)  {
+                document.getElementById("Vbat_min").className = "rojo";}
+            else if (Vbat_min < Vbat_min_naranja)  {
+                document.getElementById("Vbat_min").className = "naranja";}
             else  {
-                document.getElementById("minVbat").className = "verde";};
+                document.getElementById("Vbat_min").className = "verde";};
             
-            //maxVbat
-            if (data[0][24] >= Vbat_max_alta_rojo)  {
-                document.getElementById("maxVbat").className = "rojo";}
-            else if (data[0][24] >= Vbat_max_alta_naranja)  {
-                document.getElementById("maxVbat").className = "naranja";}
-            else if (data[0][24] <= Vbat_max_baja_rojo)  {
-                document.getElementById("maxVbat").className = "rojo";}
-            else if (data[0][24] <= Vbat_max_baja_naranja)  {
-                document.getElementById("maxVbat").className = "naranja";}
+            //Vbat_max
+            if (Vbat_max >= Vbat_max_alta_rojo)  {
+                document.getElementById("Vbat_max").className = "rojo";}
+            else if (Vbat_max >= Vbat_max_alta_naranja)  {
+                document.getElementById("Vbat_max").className = "naranja";}
+            else if (Vbat_max <= Vbat_max_baja_rojo)  {
+                document.getElementById("Vbat_max").className = "rojo";}
+            else if (Vbat_max <= Vbat_max_baja_naranja)  {
+                document.getElementById("Vbat_max").className = "naranja";}                
+            else  {
+                document.getElementById("Vbat_max").className = "verde";};
                 
-            else  {
-                document.getElementById("maxVbat").className = "verde";};
-
-            
             // Actualizacion Reles     
             var tCategories = [];
             chart_reles.series[0].setData(data[2]);
@@ -1871,6 +1905,8 @@ $(function () {
             
             chart_reles.xAxis[0].setCategories(tCategories);
             
+            
+            
             // Actualizacion Vceldas     
             
             chart_celdas.xAxis[0].setCategories(data[3][0]);
@@ -1878,15 +1914,10 @@ $(function () {
             chart_celdas.series[1].setData(data[3][2]);
             chart_celdas.series[2].setData(data[3][3]);
             
-            
             //console.log(data)
-            //console.log(data[2])
-            //console.log(data[3])
-            //console.log(tCategories)
-
-            //setTimeout(recibirDatosFV, 3000);
+           
           }
- 
+           
           catch (e) {
             var d = new Date();
             s = d.getSeconds()
@@ -1899,17 +1930,17 @@ $(function () {
                 text: 'SIN RESPUESTA - Hora=' + t,
                  });
               
-            //setTimeout(recibirDatosFV, 3000);
             }       
           },
           
-         // código a ejecutar sin importar si la petición falló o no
+        // código a ejecutar sin importar si la petición falló o no
         complete : function(xhr, status) {
             setTimeout(recibirDatosFV, 3000);
            },
+          
         cache: false
       });
-    }
+      }
 
     function round(value, precision) {
         var multiplier = Math.pow(10, precision || 0);
@@ -1917,8 +1948,9 @@ $(function () {
     }
 
 });
-
 </script>
+
+
 <?php
-include ("pie.inc");
+include("pie.inc");
 ?>
