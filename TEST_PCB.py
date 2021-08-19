@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-07-16
+# Versión 2021-06-06
 
 import time
 import datetime,glob
 from smbus import SMBus
 import Adafruit_ADS1x15 # Import the ADS1x15 module.
 
-
 #Parametros Instalacion FV
 from Parametros_FV import *
+
+basepath = '/home/pi/PVControl+/'
 
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
@@ -25,61 +26,71 @@ print('    ',sensores)
 print()
 print(' Pantallas OLED detectadas')
 
-import Adafruit_SSD1306
+#import Adafruit_SSD1306
+from luma.core.interface.serial import i2c
+from luma.core.render import canvas
+from luma.oled.device import ssd1306
+
 from PIL import Image
 from PIL import ImageDraw
 from PIL import ImageFont
+from pathlib import Path
+
 
 RST = 24
 NUM_OLED = 0
+# Comprobacion numero de OLED instaladas
+NUM_OLED = 0
 try:
-    disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3C)
-    disp1.begin()
+    serial = i2c(port=1, address=0x3C)
+    disp1 = ssd1306(serial,rotate=0) 
     NUM_OLED += 1
+    #print('OLED 3C')
 except:
+    print(' No detectada OLED 3C')
+    
+    time.sleep(1)
     pass
+
 if NUM_OLED == 1:
     try:
-        disp2 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3D) 
-        disp2.begin()
+        serial = i2c(port=1, address=0x3D)
+        disp2 = ssd1306(serial,rotate=0)
         NUM_OLED += 1
-        print ('   OLED 3C y 3D')
+        print ('OLED 3C y 3D')
     except:
-        print ('   OLED 3C')
+        print ('OLED 3C')
         pass
 else:
     try:
-        disp1 = Adafruit_SSD1306.SSD1306_128_64(rst=RST, i2c_address=0x3D) 
-        disp1.begin()
+        serial = i2c(port=1, address=0x3d)
+        disp1 = ssd1306(serial,rotate=0)
         NUM_OLED += 1
-        print ('   OLED 3D')
+        print ('OLED 3D')
     except:
         pass
-    
-if NUM_OLED >= 1:
-    disp1.clear()
-    image = Image.open('/home/pi/PVControl+/pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
-    disp1.image(image)
-    disp1.display()
 
+if NUM_OLED == 0: print ('NO detectada OLED')
+elif NUM_OLED >= 1: 
+    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')    
+    disp1.display(image.convert(disp1.mode))   
+    
     width = disp1.width
     height = disp1.height
     image = Image.new('1', (width, height))
     draw = ImageDraw.Draw(image)
 
     font = ImageFont.load_default()
-    font34 = ImageFont.truetype('/home/pi/PVControl+/Minecraftia-Regular.ttf', 34)
-    font16 = ImageFont.truetype('/home/pi/PVControl+/Minecraftia-Regular.ttf', 16)
-    font12 = ImageFont.truetype('/home/pi/PVControl+/Minecraftia-Regular.ttf', 12)
-    font10 = ImageFont.truetype('/home/pi/PVControl+/Minecraftia-Regular.ttf', 10)
-    font11 = ImageFont.truetype('/home/pi/PVControl+/SmallTypeWriting.ttf', 15)
-    font6 = ImageFont.truetype('/home/pi/PVControl+/SmallTypeWriting.ttf', 10)
+    font34 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 34)
+    font16 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 16)
+    font12 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 12)
+    font10 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 10)
+    font11 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 15)
+    font6 = ImageFont.truetype(basepath+'SmallTypeWriting.ttf', 10)
 
-if NUM_OLED == 2:
-    disp2.clear()
-    image2 = Image.open('/home/pi/PVControl+/pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')
-    disp2.image(image2)
-    disp2.display()
+elif NUM_OLED == 2:
+    #image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')    
+    disp2.display(image.convert(disp2.mode))   
 
 bus = SMBus(1) # Bus I2C
 
@@ -207,6 +218,7 @@ while True:
 ###### DS18B20 
     print ()
     print (Fore.GREEN,'#######   Lectura sensores DS18B20 ######')
+    NT = 0
     for sensor in sensores:
         tfile = open(sensor)
         texto = tfile.read()
@@ -214,10 +226,15 @@ while True:
         temp_datos = texto.split("\n")[1].split(" ")[9]
         temp= round(float(temp_datos[2:]) / 1000,2)
         print (Fore.WHITE,sensor,Fore.YELLOW,' Temperatura=',temp)
+        NT += 1
         time.sleep(1)
-
+    if NT==0:print (Fore.RED,'#######   NO DETECTADOS sensores DS18B20 ######',Fore.GREEN)
+    print()
+    
 ###### OLED
-    print ('Numero de OLED detectadas =', NUM_OLED)
+    print ('#' * 35)
+    print (' Numero de OLED detectadas =', NUM_OLED)
+    print ('#' * 35)
     try:   
         if NUM_OLED >= 1:
             ee=800
@@ -235,8 +252,9 @@ while True:
             ee=820
             disp1.clear()
             ee=830
-            disp1.image(image)
-            disp1.display()
+            disp1.display(image.convert(disp1.mode))
+            #disp1.image(image)
+            #disp1.display()
             ee=840
         if NUM_OLED == 2:
             ee=850
@@ -244,9 +262,10 @@ while True:
             for n in range (4):
                 draw.text((6, 20+10*n),  'RES'+str(n)+'='+str(round(values30[n],5)), font=font, fill=255)
             disp2.clear()
-            disp2.image(image)
+            #disp2.image(image)
             ee=880
-            disp2.display()
+            disp2.display(image.convert(disp2.mode))
+            #disp2.display()
     except:
         print (Fore.RED,'Error OLED',ee)
 
