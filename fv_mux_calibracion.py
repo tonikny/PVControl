@@ -122,14 +122,25 @@ try:
         warnings.simplefilter('ignore')
         cursor.execute(sql_create)
     
-    Sql='SELECT * FROM datos_mux' # Nº de campos de celdas en BD
+    try: # se actualiza el nombre de la tabla desde imagen 2020
+      cursor.execute("""RENAME TABLE `datos_mux_1` TO `datos_mux`""")
+      db.commit()
+    except:
+        pass
+    
+    try: # se actualiza el nombre del indice desde imagen 2020
+      cursor.execute("""ALTER TABLE `datos_mux` CHANGE `id_mux_1` `id_mux` INT(11) NOT NULL AUTO_INCREMENT""")
+      db.commit()
+    except:
+        pass
+    
+    Sql='SELECT * FROM datos_mux' 
     nreg=cursor.execute(Sql)
-    nreg=int(nreg)
-   
-    TCEL=cursor.fetchone()
-    ncel = len(TCEL)-2 # Nº de celdas declaradas en BD
+    ncel = len(cursor.description) - 2 # Nº de campos de celdas en BD
+    
     if ncel < usar_mux:
-        print (Fore.RED+ "ATENCION... el nº de campos en BD es menor que el nº de celdas declaradas en Parametros_FV.py")
+        print (Fore.RED+ f"ATENCION... el nº de celdas en BD es ={ncel}")
+        print (f" es menor que el nº de celdas declaradas en Parametros_FV.py = {usar_mux}")
         print ( " se crean nuevos campos en tabla datos_mux")
         print ("-" * 50)
         salir = click.prompt(Fore.CYAN + '  .... pulse una 0 para seguir o 1 para abortar ', type=str, default='0')
@@ -144,7 +155,8 @@ try:
             except:
                 if DEBUG >= 2: print (Fore.GREEN,f'Campo de celda C{K} ya estaba creado')
     elif ncel > usar_mux:
-        print (Fore.RED+ "ATENCION... el nº de campos en BD es mayor que el nº de celdas declaradas en Parametros_FV.py")
+        print (Fore.RED+ f"ATENCION... el nº de celda en BD ={ncel}")
+        print (f"es mayor que el nº de celdas declaradas en Parametros_FV.py= {usar_mux}")
         print ( " se borraran los campos sobrantes.... si hay datos en estos campos se perderan")
         print ("-" * 50)
         salir = click.prompt(Fore.CYAN + '  .... pulse una 0 para seguir o 1 para abortar ', type=str, default='0')
@@ -204,6 +216,11 @@ while True:
         except:
             print('-ERROR MEDIDA MUX-'+ str(K))
                 
+        try: # compruebo si esta dado de alta el ratio en la BD
+            i = d_['r_mux'][K]
+        except:
+            d_['r_mux'].append(0.0)
+            
         # CALCULO VALORES CELDAS
         DatosMux_n['C'+str(K)] = lectura_ADS  # Valor numerico capturado
         DatosMux_err['C'+str(K)] = Max-Min    # Rango error valor numerico capturado
@@ -215,8 +232,11 @@ while True:
         print (f'mV en ADS= {DatosMux_v_l["C"+str(K)]:.2f} --- Ratio actual={d_["r_mux"][K]:.4f}')
 
         VceldaReal[K] = click.prompt(Fore.CYAN + 'Voltaje real en  '+Fore.RESET+f'celda{K+1}='+ Fore.CYAN, type=float, default=DatosMux_v["C"+str(K)])
-        VceldaRatio[K] = round(VceldaReal[K] / DatosMux_v_l['C'+str(K)]*1000,5)
-        
+        if DatosMux_v_l['C'+str(K)] != 0:
+            VceldaRatio[K] = round(VceldaReal[K] / DatosMux_v_l['C'+str(K)]*1000,5)
+        else:
+            VceldaRatio[K] = 0
+            
         print(Fore.GREEN,f'Nuevo Ratio para la Celda{K+1}={VceldaRatio[K]}')
         print (Fore.RED, '=' * 80)
         

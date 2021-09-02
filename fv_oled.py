@@ -248,22 +248,21 @@ try:
                  ['Aux1','Aux2'])
 
         try:
+            ee = 10
             archivo_ram='/run/shm/datos_fv.json'
             with open(archivo_ram, 'rb') as f:
                 dct = json.load(f)
-            
+            ee = 20
             d_fv={}
             for n1,d1 in zip(nombres, dct):
                 for n,d in zip(n1, d1):
                     d_fv[n] = d
-                
-            
+            ee = 30    
             if DEBUG>=1: print(d_fv)
-        
             archivo_ram='/run/shm/datos_reles.json'
             with open(archivo_ram, 'rb') as f:
                 d_reles = json.load(f)
-            
+            ee = 40
             nreles=len(d_reles)
             
             if DEBUG >= 1: 
@@ -273,9 +272,9 @@ try:
             else:
                 cp += 1
                 print('x', end='',flush=True)
-                if cp > 100: cp=0;print();print(tiempo,end='')
+                if cp > 100: cp=0;print();print(d_fv['Tiempo'],end='')
         except:
-            print ('error lectura datos.json')
+            print (f'error {ee} en lectura datos_fv.json')
             time.sleep(0.3)
             continue
             

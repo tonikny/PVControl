@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-08-29
+# Versión 2021-09-02
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fv_mux'
@@ -120,12 +120,23 @@ try:
     except:
         pass
     
-    Sql='SELECT * FROM datos_mux' # Nº de campos de celdas en BD
+    try: # se actualiza el nombre de la tabla desde imagen 2020
+      cursor.execute("""RENAME TABLE `datos_mux_1` TO `datos_mux`""")
+      db.commit()
+    except:
+        pass
+    
+    try: # se actualiza el nombre del indice desde imagen 2020
+      cursor.execute("""ALTER TABLE `datos_mux` CHANGE `id_mux_1` `id_mux` INT(11) NOT NULL AUTO_INCREMENT""")
+      db.commit()
+    except:
+        pass
+    
+    
+    Sql='SELECT * FROM datos_mux' 
     nreg=cursor.execute(Sql)
-    nreg=int(nreg)
-   
-    TCEL=cursor.fetchone()
-    ncel = len(TCEL)-2 # Nº de celdas declaradas en BD
+    ncel = len(cursor.description) - 2 # Nº de celdas declaradas en BD
+    
     if ncel < usar_mux:
         print (Fore.RED+ "ATENCION... el nº de campos en BD es menor que el nº de celdas declaradas en Parametros_FV.py")
         print ( " se crean nuevos campos en tabla datos_mux")
@@ -153,7 +164,7 @@ try:
     cursor.close()
     db.close()        
 except:
-    print ('ERROR inicializando BD')
+    print (Fore.RED,'ERROR inicializando BD')
     sys.exit()
 # ==========================================================
 #----------------- BUCLE -----------------------------------
@@ -243,7 +254,7 @@ while True:
         DatosMux['C0'] = DatosMux_v['C0']
         for K in range(1,usar_mux):
             K1 = 'C'+str(K)
-            DatosMux[K1] = round(DatosMux_v[K1] - DatosMux_v['C'+str(K-1)],2)
+            DatosMux[K1] = round(DatosMux_v[K1] - DatosMux_v['C'+str(K-1)],2) # Voltaje en Celda(N) - Voltaje en Celda(N-1)
     
     if flag_primer_bucle: # ejecuta un nuevo ciclo lectura en el primer bucle para tener datos anteriores y actuales
         flag_primer_bucle = False
