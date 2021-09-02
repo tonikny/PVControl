@@ -21,8 +21,12 @@ if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
  }
 
 //Coger datos grafica 
-$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15
-        FROM datos_mux_1 WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+//$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15
+//        FROM datos_mux WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+//        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+
+$sql = "SELECT  *
+        FROM datos_mux WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 
@@ -39,6 +43,14 @@ if($result = mysqli_query($link, $sql)){
 
         echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 }
+
+
+//Adaptar el tiempo grafica 
+for($i=0;$i<count($rawdata);$i++){
+   $time = $rawdata[$i]["Tiempo"];
+   $date = new DateTime($time);
+   $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
+ }
 
 mysqli_close($link);
 

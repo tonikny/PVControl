@@ -21,7 +21,7 @@ $sql = "SELECT UNIX_TIMESTAMP(CONCAT(YEAR(Tiempo),'-',MONTH(Tiempo),'-',DAY(Tiem
         max(C13) as 'Max_C13',min(C13) as 'Min_C13',avg(C13) as 'Med_C13',
         max(C14) as 'Max_C14',min(C14) as 'Min_C14',avg(C14) as 'Med_C14',
         max(C15) as 'Max_C15',min(C15) as 'Min_C15',avg(C15) as 'Med_C15'
-        FROM datos_mux_1 WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY) 
+        FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY) 
         GROUP BY DAY(Tiempo)";
 
 if($result = mysqli_query($link, $sql)){
@@ -51,7 +51,7 @@ $sql = "SELECT  max(C0) as 'Max_C0',min(C0) as 'Min_C0',
         max(C13) as 'Max_C13',min(C13) as 'Min_C13',
         max(C14) as 'Max_C14',min(C14) as 'Min_C14',
         max(C15) as 'Max_C15',min(C15) as 'Min_C15'
-        FROM datos_mux_1 WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY)";
+        FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY)";
 
 if($result = mysqli_query($link, $sql)){
     $i=0;
