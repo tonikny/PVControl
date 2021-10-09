@@ -1,15 +1,13 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import time
 import random # para simulacion usando random.choice
 
 import paho.mqtt.client as mqtt
+from Parametros_FV import *
 
 ###### Parametros ############################
-servidor = '192.168.1.15'
-usuario = 'rpi'
-clave = 'fv'
 openevse_current="openevse/rapi/in/$SC"
 openevse_disable="openevse/rapi/in/$FD"
 openevse_enable="openevse/rapi/in/$FE"
@@ -35,7 +33,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(client, userdata, rc):
         if rc != 0:
-            print "Unexpected MQTT disconnection. Will auto-reconnect"
+            print ("Unexpected MQTT disconnection. Will auto-reconnect")
         else:
             client.loop_stop()
             client.disconnect()
@@ -45,18 +43,18 @@ def on_message(client, userdata, msg):
     global diver,ibat,soc,mode
 
     if msg.topic == "PVControl/Reles/Diver":
-       diver=str(msg.payload)
+       diver=(msg.payload).decode()
        diver=int(diver)
     elif msg.topic == "PVControl/DatosFV/Ibat":
-       ibat=str(msg.payload)
+       ibat=(msg.payload).decode()
        ibat=float(ibat)
     elif msg.topic == "PVControl/DatosFV/SOC":
-       soc=str(msg.payload)
+       soc=(msg.payload).decode()
        soc=float(soc)
     elif msg.topic == "PVControl/Reles/EvseMode":
-       mode=str(msg.payload)
+       mode=(msg.payload).decode()
     else :
-       print msg.topic,msg.payload
+       print (msg.topic,msg.payload)
 
 
 client = mqtt.Client("openevse_mqtt") #crear nueva instancia
@@ -64,9 +62,9 @@ client.on_connect = on_connect
 client.on_disconnect = on_disconnect
 client.on_message = on_message
 client.reconnect_delay_set(3,15)
-client.username_pw_set(usuario, password=clave)
+client.username_pw_set(mqtt_usuario, password=mqtt_clave)
 try:
-    client.connect(servidor, 1883) #conectar al broker: url, puerto
+    client.connect(mqtt_broker, port=mqtt_puerto) #conectar al broker: url, puerto
 except:
     print('Error de conexion al servidor MQTT')
 time.sleep(.5)
@@ -85,7 +83,7 @@ try:
         if mode == "Auto":
             if diver == 0:  #Sin Excedentes
             
-	        if ibat < 0: #Bajo intensidad un nivel. Si he llegado al mínimo, desactivo cargador
+                if ibat < 0: #Bajo intensidad un nivel. Si he llegado al mínimo, desactivo cargador
                      #if current == min_current:
                      #    client.publish(openevse_disable)
                      #    sleep_evse=1
@@ -126,7 +124,7 @@ try:
         time.sleep(delay)
 
 except:
-    print "exiting"
+    print ("exiting")
     client.loop_stop()
     client.disconnect()
 

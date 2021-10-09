@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import MySQLdb
@@ -6,16 +6,10 @@ import time
 import random # para simulacion usando random.choice
 
 import paho.mqtt.client as mqtt
+from Parametros_FV import *
 
 ###### Parametros ############################
-servidor = '192.168.1.15'
-servidor2 = 'localhost'
-usuario = 'rpi'
-clave = 'fv'
-basedatos = 'control_solar'
 
-openevse_energy_usage="openevse/rapi/in/$GU"
-openevse_ACK="openevse/rapi/out"
 delay=1
 update=0
 
@@ -27,25 +21,28 @@ date = time.strftime("%Y-%m-%d")
 def logBD() :
     try:
         cursor.execute("""INSERT INTO log (Tiempo,log) VALUES(%s,%s)""",(tiempo,log))
-        print tiempo,' ', log
+        print (tiempo,' ', log)
         db.commit()
     except:
         db.rollback()
-        print tiempo,'Error en logBD()'
+        print (tiempo,'Error en logBD()')
 
     return
 
 
 try:
-    db = MySQLdb.connect(host = servidor2, user = usuario, passwd = clave, db = basedatos)
+    print ("1")
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
 
+    print ("2")
     # Datos de Hoy
     sql="SELECT Fecha,Kwh_evse FROM open_evse_partial WHERE DATE(Fecha) = DATE(CURDATE()) ORDER BY Fecha"
     cursor.execute(sql)
     var=cursor.fetchall()
     nreg=cursor.rowcount
 
+    print ("3",nreg)
 
     # Sumamos los kWh de las posibles sesiones diarias de la tabla de parciales
     partial_kWh = var[0][1]
@@ -59,8 +56,8 @@ try:
 
     total_kWh = total_kWh + partial_kWh 
 
-    #print 'Partial kWh:',partial_kWh
-    #print 'Total kWh:',total_kWh
+    print ('Partial kWh:',partial_kWh)
+    print ('Total kWh:',total_kWh)
 
     # Datos de Hoy
     sql="SELECT DATE(Fecha),kWh_evse FROM open_evse WHERE DATE(Fecha) = DATE(CURDATE())"

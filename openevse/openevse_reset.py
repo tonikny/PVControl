@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import time
@@ -23,14 +23,14 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(client, userdata, rc):
         if rc != 0:
-            print "Unexpected MQTT disconnection. Will auto-reconnect"
+            print ("Unexpected MQTT disconnection. Will auto-reconnect")
         else:
             client.loop_stop()
             client.disconnect()
 
 
 def on_message(client, userdata, msg):
-    print msg.topic,msg.payload
+    print (msg.topic,msg.payload)
 
 
 client = mqtt.Client("openevse_reset") #crear nueva instancia
@@ -53,7 +53,7 @@ try:
     time.sleep(delay)
 
 except:
-    print "exiting"
+    print ("exiting")
     client.loop_stop()
     client.disconnect()
 
