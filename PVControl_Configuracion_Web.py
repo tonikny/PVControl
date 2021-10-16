@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-12-10
+# Versión 2021-09-24
 
 import time,sys,os
 import MySQLdb 
@@ -13,28 +13,20 @@ import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
-"""
-Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Style: DIM, NORMAL, BRIGHT, RESET_ALL
-"""
-
 from Parametros_FV import * # para ver valores usar_mux  y AH
 
 print()
 print (Style.BRIGHT + Fore.YELLOW +'#' * 90)
 print('  PROGRAMA DE CONFIGURACION PAGINA PRINCIPAL WEB DE PVControl+')
 print(Fore.CYAN)
-print(' Este programa realiza una adaptacion de index.php segun archivo Parametros_FV.py')
-#print (' Para un uso mas avanzado edite y modifique el fichero Parametros_FV.py')
+print(' Este programa realiza una adaptacion de la WEB segun archivo Parametros_FV.py')
 print (Fore.YELLOW)
 print('#' * 90)
 
 print()
-print (Fore.RED + '  ATENCION.. SE CAMBIARAN EL ARCHIVO index.php')
-#salir = input(Fore.CYAN +'Si no esta seguro pulse 0 para salir o 1 para continuar ')
+print (Fore.RED + '  ATENCION.. SE CAMBIARAN LOS ARCHIVOS '+ Fore.YELLOW + '(version.inc y Parametros_Web_red.js')
 print()
-salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 para continuar ', type=str, default='0')
+salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 para continuar ', type=str, default='1')
 
 if salir == "1": pass
 else: sys.exit()

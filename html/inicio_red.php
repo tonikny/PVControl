@@ -1,6 +1,6 @@
 <?php
 $titulo="Inicio";
-include ("cabecera.inc");
+include("cabecera.inc");
 
 
 require('conexion.php');
@@ -223,7 +223,7 @@ $(function () {
                 style: {
                    fontSize: '16px'
                   },
-                text: 'pp1' //'V_BAT'
+                text: 'pp1' 
                 },
             subtitle: {
                 y:50,//-30,
@@ -1561,58 +1561,61 @@ $(function () {
         url: 'datos_fv.php',
         success: function(data) {
           try {
-            // tiempo_sg, "%d-%B-%Y -- %H:%M:%S"
-            fecha = data[0][0][1];
-            /* 
+            //console.log(data)               
+            // tiempo: "%d-%B-%Y -- %H:%M:%S"
+            fecha = data['FV']['tiempo'];
+            
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
-            Vbat = data[0][1][0]; 
-            Ibat = data[0][1][1]; 
-            Wbat = data[0][1][2]; 
-            Whp_bat = data[0][1][3];
-            Whn_bat = data[0][1][4];
+            Vbat = data['FV']['Vbat']; 
+            Ibat = data['FV']['Ibat']; 
+            Wbat = data['FV']['Wbat']; 
+            Whp_bat = data['FV']['Whp_bat'];
+            Whn_bat = data['FV']['Whn_bat'];
             Wh_bat = Whp_bat -Whn_bat;
-            Vbat_min = data[0][1][5];
-            Vbat_max = data[0][1][6];
+            Vbat_min = data['FV']['Vbat_min'];
+            Vbat_max = data['FV']['Vbat_max'];
             
             //DS,SOC,SOC_min,SOC_max
-            DS = data[0][2][0];
-            SOC = data[0][2][1];
-            SOC_min = data[0][2][2];
-            SOC_max = data[0][2][3];
+            DS = data['FV']['DS'];
+            SOC = data['FV']['SOC'];
+            SOC_min = data['FV']['SOC_min'];
+            SOC_max = data['FV']['SOC_max'];
             
             //Mod_bat,Tabs,Tflot,Tflot_bulk
-            Mod_bat = data[0][3][0];
-            Tabs = data[0][3][1];
-            Tflot = data[0][3][2];
-            Tflot_bulk = data[0][3][3];
-            */
+            Mod_bat = data['FV']['Mod_bat'];
+            Tabs = data['FV']['Tabs'];
+            Tflot = data['FV']['Tflot'];
+            Tflot_bulk = data['FV']['Tflot_bulk'];
+            
             // Vplaca,Iplaca,Wplaca,Wh_placa
-            Vplaca = data[0][4][0];
-            Iplaca = data[0][4][1];
-            Wplaca = data[0][4][2]
-            Wh_placa = data[0][4][3];
+            Vplaca = data['FV']['Vplaca'];
+            Iplaca = data['FV']['Iplaca'];
+            Wplaca = data['FV']['Wplaca']
+            Wh_placa = data['FV']['Wh_placa'];
             
             //(Vred,Wred,Whp_red,Whn_red,Vred_min,Vred_max,EFF,EFF_min,EFF_max)
-            Vred = data[0][5][0];
-            Wred = data[0][5][1];
-            Whp_red = data[0][5][2];
-            Whn_red = data[0][5][3];
+            Vred = data['FV']['Vred'];
+            Wred = data['FV']['Wred'];
+            Whp_red = data['FV']['Whp_red'];
+            Whn_red = data['FV']['Whn_red'];
             Wh_red = Whp_red -Whn_red;
-            Vred_min = data[0][5][4];
-            Vred_max = data[0][5][5];
-            EFF = data[0][5][6];
-            EFF_min = data[0][5][7];
-            EFF_max = data[0][5][8];
+            Vred_min = data['FV']['Vred_min'];
+            Vred_max = data['FV']['Vred_max'];
+            EFF = data['FV']['EFF'];
+            EFF_min = data['FV']['EFF_min'];
+            EFF_max = data['FV']['EFF_max'];
             Ired = Wred / Vred
             
             //Wconsumo, Wh_consumo
-            Wconsumo = data[0][6][0];
-            Wh_consumo = data[0][6][1];
+            Wconsumo = data['FV']['Wconsumo'];
+            Wh_consumo = data['FV']['Wh_consumo'];
+            
             
             //Temp,int(PWM)
-            Temp = data[0][7][0];
-            PWM  = data[0][7][1];          
-           
+            Temp = data['FV']['Temp'];
+            PWM  = data['FV']['PWM'];          
+
+            
             // Actualizacion reloj Vred
             chart_vred.series[0].setData([Vred]);
             chart_vred.yAxis[0].setTitle({
@@ -1638,15 +1641,15 @@ $(function () {
             
              // Actualizacion reloj Temp
             chart_temp.series[0].setData([Temp]);    //Temp 
-            chart_temp.series[1].setData([data[1]]); //CPU
+            chart_temp.series[1].setData([data['TEMP']['Temp_cpu']]); //CPU
 
             // Actualizacion reloj Wplaca 
-            chart_wplaca.series[0].setData([Wplaca]);
+            chart_wplaca.series[0].setData([Wplaca]); 
             //chart_wplaca.setTitle({
             //  text: data[0][12] // ejem de cambio de titulo
             //   });
             chart_wplaca.yAxis[0].setTitle({
-              text: Wh_placa+' Wh' 
+              text: Wh_placa+" Wh"
                 });
             
             // Actualizacion reloj Consumo 
@@ -1655,10 +1658,8 @@ $(function () {
             chart_consumo.setSubtitle({
               text: Wh_consumo + ' Wh'
                 });
+                
             
-            //var consumo_wh= parseInt(data[0][13] - (data[0][8] -data[0][9]))
-            //var consumo_wh= Math.round(data[0][13] - (data[0][8] -data[0][9]))
-           
             // Actualizacion reloj Vplaca
             chart_vplaca.series[0].setData([Vplaca]); //Vplaca
             
@@ -1734,19 +1735,29 @@ $(function () {
                 document.getElementById("Vred_max").className = "rojo";}
             else if (Vred <= Vred_max_baja_naranja)  {
                 document.getElementById("Vred_max").className = "naranja";}
+                                                                          
                 
             else  {
                 document.getElementById("Vred_max").className = "verde";};
 
             // Actualizacion Reles     
-            var tCategories = [];
-            chart_reles.series[0].setData(data[2]);
+            var t_Datos_Reles = [];
+            for (var i in data['RELES']) {
+                n= data['RELES'][i]['nombre']+'</br>'+data['RELES'][i]['modo']+'-P'+ data['RELES'][i]['prioridad']+'-'+
+                  data['RELES'][i]['potencia']+'w-'+data['RELES'][i]['retardo']+'sg';
+                t_Datos_Reles.push([n,data['RELES'][i]['estado']]);
+            }
+            t_Datos_Reles.pop(); // quito el ultimo elemento dado que es la fecha
             
+            chart_reles.series[0].setData(t_Datos_Reles);
+            
+            var tCategories = []; // se cambian los nombres en funcion de los datos recibidos
             for (i = 0; i < chart_reles.series[0].data.length; i++) {
-                tCategories.push(chart_reles.series[0].data[i].name);
+                tCategories.push(chart_reles.series[0].data[i].name); 
             }
             
-            chart_reles.xAxis[0].setCategories(tCategories);            
+            chart_reles.xAxis[0].setCategories(tCategories);
+                                                    
             
             //console.log(data)
 
@@ -1765,14 +1776,14 @@ $(function () {
                 text: 'SIN RESPUESTA - Hora=' + t,
                  });
               
-            //setTimeout(recibirDatosFV, 3000);
             }       
           },
           
-         // código a ejecutar sin importar si la petición falló o no
+        // código a ejecutar sin importar si falla o no la petición
         complete : function(xhr, status) {
             setTimeout(recibirDatosFV, 3000);
-           },    
+           },
+          
         cache: false
       });
       }
@@ -1787,5 +1798,5 @@ $(function () {
 </script>
 
 <?php
-include ("pie.inc");
+include("pie.inc");
 ?>

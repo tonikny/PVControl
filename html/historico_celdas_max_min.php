@@ -4,65 +4,61 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
-$sql = "SELECT UNIX_TIMESTAMP(CONCAT(YEAR(Tiempo),'-',MONTH(Tiempo),'-',DAY(Tiempo)))*1000 as Fecha,
-        max(C0) as 'Max_C0',min(C0) as 'Min_C0',avg(C0) as 'Med_C0',
-        max(C1) as 'Max_C1',min(C1) as 'Min_C1',avg(C1) as 'Med_C1',
-        max(C2) as 'Max_C2',min(C2) as 'Min_C2',avg(C2) as 'Med_C2',
-        max(C3) as 'Max_C3',min(C3) as 'Min_C3',avg(C3) as 'Med_C3',
-        max(C4) as 'Max_C4',min(C4) as 'Min_C4',avg(C4) as 'Med_C4',
-        max(C5) as 'Max_C5',min(C5) as 'Min_C5',avg(C5) as 'Med_C5',
-        max(C6) as 'Max_C6',min(C6) as 'Min_C6',avg(C6) as 'Med_C6',
-        max(C7) as 'Max_C7',min(C7) as 'Min_C7',avg(C7) as 'Med_C7',
-        max(C8) as 'Max_C8',min(C8) as 'Min_C8',avg(C8) as 'Med_C8',
-        max(C9) as 'Max_C9',min(C9) as 'Min_C9',avg(C9) as 'Med_C9',
-        max(C10) as 'Max_C10',min(C10) as 'Min_C10',avg(C10) as 'Med_C10',
-        max(C11) as 'Max_C11',min(C11) as 'Min_C11',avg(C11) as 'Med_C11',
-        max(C12) as 'Max_C12',min(C12) as 'Min_C12',avg(C12) as 'Med_C12',
-        max(C13) as 'Max_C13',min(C13) as 'Min_C13',avg(C13) as 'Med_C13',
-        max(C14) as 'Max_C14',min(C14) as 'Min_C14',avg(C14) as 'Med_C14',
-        max(C15) as 'Max_C15',min(C15) as 'Min_C15',avg(C15) as 'Med_C15'
-        FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY) 
-        GROUP BY DAY(Tiempo)";
+$sql = "SELECT * FROM datos_mux LIMIT 1";
+$resultado = mysqli_query($link,$sql);
+
+if (!$resultado) {
+    echo 'No se pudo ejecutar la consulta: ' . mysqli_error($link);
+    exit;
+}
+/* devuelve N campos */
+$ncampos =mysqli_num_fields($resultado)-2;
+
+$sql="SELECT UNIX_TIMESTAMP(CONCAT(YEAR(Tiempo),'-',MONTH(Tiempo),'-',DAY(Tiempo)))*1000 as Fecha,\n";
+for ($i = 0; $i < $ncampos-1; $i++) {
+    $sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."',avg(C".$i.") as 'Med_C".$i."',\n";
+}
+$sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."',avg(C".$i.") as 'Med_C".$i."'\n";
+$sql = $sql."FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY) GROUP BY DAY(Tiempo)";
 
 if($result = mysqli_query($link, $sql)){
     $i=0;
     while ($row = mysqli_fetch_array($result)){
         $rawdata2[$i]=$row;
         $i++;
-        
     }
 } else {
     echo "ERROR: No se puede ejecutar $sql. " . mysqli_error($link);
     }
 
-$sql = "SELECT  max(C0) as 'Max_C0',min(C0) as 'Min_C0',
-        max(C1) as 'Max_C1',min(C1) as 'Min_C1',
-        max(C2) as 'Max_C2',min(C2) as 'Min_C2',
-        max(C3) as 'Max_C3',min(C3) as 'Min_C3',
-        max(C4) as 'Max_C4',min(C4) as 'Min_C4',
-        max(C5) as 'Max_C5',min(C5) as 'Min_C5',
-        max(C6) as 'Max_C6',min(C6) as 'Min_C6',
-        max(C7) as 'Max_C7',min(C7) as 'Min_C7',
-        max(C8) as 'Max_C8',min(C8) as 'Min_C8',
-        max(C9) as 'Max_C9',min(C9) as 'Min_C9',
-        max(C10) as 'Max_C10',min(C10) as 'Min_C10',
-        max(C11) as 'Max_C11',min(C11) as 'Min_C11',
-        max(C12) as 'Max_C12',min(C12) as 'Min_C12',
-        max(C13) as 'Max_C13',min(C13) as 'Min_C13',
-        max(C14) as 'Max_C14',min(C14) as 'Min_C14',
-        max(C15) as 'Max_C15',min(C15) as 'Min_C15'
-        FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY)";
+//Creacion SQL Max-Min de cada Celda..salida en una unica fila
+$sql="SELECT ";
+for ($i = 0; $i < $ncampos-1; $i++) {
+    $sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."',\n";
+}
+$sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."'\n";
+$sql = $sql."FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY)";
 
+// Creo la variable $r con una lista de pareados [max,min] de cada celda
 if($result = mysqli_query($link, $sql)){
+    $row = mysqli_fetch_array($result,$resulttype = MYSQLI_NUM);
     $i=0;
-    while ($row = mysqli_fetch_array($result)){
-        $rawdata3[$i]=$row;
-        $i++;
-        
+    while ($i < $ncampos*2){
+        $r = $r."[".$row[$i].",".$row[$i+1]."],";
+        $i = $i+2;
     }
 } else {
     echo "ERROR: No se puede ejecutar $sql. " . mysqli_error($link);
     }
+
+$cat="";// Nombres de las celdas para Eje X grafico
+for ($i = 1; $i < $ncampos; $i++) {
+    $cat = $cat."'C".$i."', ";
+}
+$cat = $cat."'C".$i."'";
+
+//echo $cat;
+
 mysqli_close($link);
 
 ?>
@@ -150,7 +146,7 @@ $(function ()
         enabled: false
     },
     xAxis: {
-        categories: ['C1', 'C2', 'C3', 'C4', 'C5','C6', 'C7', 'C8', 'C9', 'C10','C11','C12', 'C13', 'C14','C15','C16']
+        categories: [<?php echo $cat;?>]
     },
 
     yAxis: {
@@ -186,24 +182,7 @@ $(function ()
 
     series: [{
         name: 'Vceldas',
-        data: [
-            [<?php echo $rawdata3[0]["Min_C0"];?>,<?php echo $rawdata3[0]["Max_C0"];?>],
-            [<?php echo $rawdata3[0]["Min_C1"];?>,<?php echo $rawdata3[0]["Max_C1"];?>],
-            [<?php echo $rawdata3[0]["Min_C2"];?>,<?php echo $rawdata3[0]["Max_C2"];?>],
-            [<?php echo $rawdata3[0]["Min_C3"];?>,<?php echo $rawdata3[0]["Max_C3"];?>],
-            [<?php echo $rawdata3[0]["Min_C4"];?>,<?php echo $rawdata3[0]["Max_C4"];?>],
-            [<?php echo $rawdata3[0]["Min_C5"];?>,<?php echo $rawdata3[0]["Max_C5"];?>],
-            [<?php echo $rawdata3[0]["Min_C6"];?>,<?php echo $rawdata3[0]["Max_C6"];?>],
-            [<?php echo $rawdata3[0]["Min_C7"];?>,<?php echo $rawdata3[0]["Max_C7"];?>],
-            [<?php echo $rawdata3[0]["Min_C8"];?>,<?php echo $rawdata3[0]["Max_C8"];?>],
-            [<?php echo $rawdata3[0]["Min_C9"];?>,<?php echo $rawdata3[0]["Max_C9"];?>],
-            [<?php echo $rawdata3[0]["Min_C10"];?>,<?php echo $rawdata3[0]["Max_C10"];?>],
-            [<?php echo $rawdata3[0]["Min_C11"];?>,<?php echo $rawdata3[0]["Max_C11"];?>],
-            [<?php echo $rawdata3[0]["Min_C12"];?>,<?php echo $rawdata3[0]["Max_C12"];?>],
-            [<?php echo $rawdata3[0]["Min_C13"];?>,<?php echo $rawdata3[0]["Max_C13"];?>],
-            [<?php echo $rawdata3[0]["Min_C14"];?>,<?php echo $rawdata3[0]["Max_C14"];?>],
-            [<?php echo $rawdata3[0]["Min_C15"];?>,<?php echo $rawdata3[0]["Max_C15"];?>]
-        ]
+        data: [<?php echo $r;?>]
     }]
 
 });

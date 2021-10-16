@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2019-08-29
+# Versión 2021-10-13
 
 import os, sys, time
+import serial
+
 import subprocess
 import timeout_decorator
 
@@ -17,7 +19,7 @@ from telebot import types # Tipos para la API del bot.
 import token
 import paho.mqtt.client as mqtt
 
-import pickle
+import pickle,json
 
 from Parametros_FV import *
 
@@ -25,14 +27,32 @@ if usar_hibrido == 0:
     print (subprocess.getoutput('sudo systemctl stop hibrido'))
     sys.exit()
 
+#Comprobacion argumentos en comando
+narg = len(sys.argv)
+if str(sys.argv[narg-1]) == '-s': simular= 1 # para desarrollo permite simular respuesta Hibrido a QPIGS con una captura fija
+else: simular = 0
+    
 if usar_telegram == 1:
     bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
     bot.skip_pending = True # Skip the pending messages
     cid = Aut[0]
     bot.send_message(cid, 'Arrancando Programa Control Hibrido')
 
-# inicializar grabacion en archivo
-archivo_ram = '/run/shm/datos_hibrido.pkl' # archivo en ram 
+
+# Comprobacion BD
+try:
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    try: #inicializamos registro en BD RAM
+        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                      ('HIBRIDO','{}'))
+        db.commit()
+    except:
+        pass
+except:
+    print (Fore.RED,'ERROR inicializando BD RAM')
+    sys.exit()
+
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -51,7 +71,7 @@ def on_disconnect(client, userdata, rc):
 
 def on_message(client, userdata, msg):
     global hora,t_muestra,nbucle
-
+    ee = '0'
     try:
         tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
         tiempo_sg = time.time()
@@ -62,17 +82,24 @@ def on_message(client, userdata, msg):
             nbucle -= 1
         
         #print(msg.topic+" "+str(msg.payload))
-        
+        ee = '10'
         if msg.topic== "PVControl/Hibrido":
+            ee = '10a'
             #print ('payload=',msg.payload)
             cmd=msg.payload#.decode()#.upper()
             #print ('cmd en message=',cmd)
             
-            r= comando(cmd)
-            
-            #print(r)
-            
-            r = [i.decode() for i in r]
+            if simular == 1:
+                ee = '10b'
+                r= ['2021-09-23', '20:39:33', 'QPIGS', '000.0', '00.0', '230.1', '50.0', '0069', '0006',
+                    '001', '407', '25.20', '000', '082', '0031', '0000', '000.0', '00.00', '00000',
+                    '00010000', '00', '00', '00000', '010']
+            else:
+                ee = '10c'
+                r= comando(cmd)
+                ee = '10d'
+                #print(r)
+                r = [i.decode() for i in r]
             #print (r)
             #print ('cmd=',cmd)
             
@@ -81,7 +108,7 @@ def on_message(client, userdata, msg):
                 #            CAMBIAR INDICES  DE r[] DEPENDIENDO DEL MODELO DE HIBRIDO
                 ##########################################################################
                 #print ('Respuesta Hibrido=',r)
-                
+                ee = '20'
                 Vgen = float(r[3]) # Voltaje AC entrada Linea
                 Fgen = float(r[4]) # Frecuencia AC entrada Linea
                 
@@ -107,30 +134,31 @@ def on_message(client, userdata, msg):
                 
                 Iplaca = float(Wplaca)/float(Vbat)  # Intensidad producida por placas en relacion a Vbat
                 Ibat  = float(Ibatp) - float(Ibatn) # Intensidad de bateria             
-                
+                ee = '30'
                 ##########################################################################
-                
-                client.publish("PVControl/Hibrido/Iplaca",Iplaca)
-                client.publish("PVControl/Hibrido/Vplaca",Vplaca)
-                client.publish("PVControl/Hibrido/Wplaca",Wplaca)
+                if publicar_hibrido_mqtt == 1:
+                    client.publish("PVControl/Hibrido/Iplaca",Iplaca)
+                    client.publish("PVControl/Hibrido/Vplaca",Vplaca)
+                    client.publish("PVControl/Hibrido/Wplaca",Wplaca)
 
-                client.publish("PVControl/Hibrido/Vbat",Vbat)
-                client.publish("PVControl/Hibrido/Vbus",Vbus)
-                
-                client.publish("PVControl/Hibrido/Ibatp",Ibatp)
-                client.publish("PVControl/Hibrido/Ibatn",Ibatn)
-                client.publish("PVControl/Hibrido/Ibat",Ibat)
-                
+                    client.publish("PVControl/Hibrido/Vbat",Vbat)
+                    client.publish("PVControl/Hibrido/Vbus",Vbus)
+                    
+                    client.publish("PVControl/Hibrido/Ibatp",Ibatp)
+                    client.publish("PVControl/Hibrido/Ibatn",Ibatn)
+                    client.publish("PVControl/Hibrido/Ibat",Ibat)
+                    
 
-                client.publish("PVControl/Hibrido/PACW",PACW)
-                client.publish("PVControl/Hibrido/PACVA",PACVA)
-                
-                client.publish("PVControl/Hibrido/Temp",Temp)
-                             
-                client.publish("PVControl/Hibrido/Flot",Flot)
-                client.publish("PVControl/Hibrido/OnOff",OnOff)
+                    client.publish("PVControl/Hibrido/PACW",PACW)
+                    client.publish("PVControl/Hibrido/PACVA",PACVA)
+                    
+                    client.publish("PVControl/Hibrido/Temp",Temp)
+                                 
+                    client.publish("PVControl/Hibrido/Flot",Flot)
+                    client.publish("PVControl/Hibrido/OnOff",OnOff)
                 
                 if grabar_datos_hibrido == 1:
+                    ee = '50'
                     try:
                         db1 = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
                         cursor1 = db1.cursor()
@@ -150,22 +178,28 @@ def on_message(client, userdata, msg):
                         pass
 
                 try:
-                    datos = {'Tiempo_sg': tiempo_sg,'Tiempo': tiempo,'Iplaca': Iplaca,'Vplaca': Vplaca,'Wplaca': Wplaca,
-                            'Vbat': Vbat,'Vbus':Vbus,'Ibatp':Ibatp,'Ibatn':Ibatn,
-                            'PACW':PACW,'PACVA':PACVA,'Temp':Temp,'Flot':Flot,'OnOff':OnOff,'Ibat':Ibat }
-                    
-                    with open(archivo_ram, 'wb') as f:
-                        pickle.dump(datos, f)
-                
-                except:
-                    print ('Error grabacion fichero datos_hibrido')
+                    ee = '60'
+                    datos = {'Vbat': Vbat,'Ibat':Ibat,'Ibatp':Ibatp,'Ibatn':Ibatn,'Iplaca': Iplaca,
+                             'Vplaca': Vplaca,'Wplaca': Wplaca,'Vbus':Vbus,'PACW':PACW,'PACVA':PACVA,
+                             'Temp':Temp,'Flot':Flot,'OnOff':OnOff,'Ibat':Ibat }
 
+                    ####  ARCHIVOS RAM en BD ############ 
+                
+                    salida = json.dumps(datos)
+                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'HIBRIDO'") # grabacion en BD RAM
+                    cursor.execute(sql)            
+                except:
+                    print(Fore.RED+'error, Grabacion tabla RAM equipos')
+                
+                db.commit()
                     
             elif cmd == b'QPIGSBD':
+                ee = '70'
                 print ('X', end = '')
                 pass
 
             else:
+                ee = '80'
                 print (r, len(r)) 
                 client.publish("PVControl/Hibrido/Respuesta",str(r))
                 if usar_telegram == 1: 
@@ -176,7 +210,7 @@ def on_message(client, userdata, msg):
                     bot.send_message(cid, tg_msg)
             
     except:
-        print ('error en on_message')
+        print (f' -- error {ee} en on_message ')
 
 client = mqtt.Client("hibrido") #crear nueva instancia
 client.on_connect = on_connect
@@ -228,32 +262,35 @@ def comando(cmd):
         #print ('Comando=',cmd_crc)
         err=20
         if os.path.exists(dev_hibrido):
-            fd = open(dev_hibrido,'rb+')
-            time.sleep(.15)
-            
-            fd.write(cmd_crc[:8])
-            
-            if len(cmd_crc) > 8:
-                fd.flush()
-                fd.write(cmd_crc[8:16])
+            if dev_hibrido[-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
                 err=21
-                if (cmd1 == b"PBEQA1") or (cmd1 == b"PBEQA0"):
-                    fd.write(cmd_crc[8:16]) ######
-                    err = 22
-
-            if len(cmd_crc) > 16:
-                fd.flush()
-                fd.write(cmd_crc[16:])      
+                ser = serial.Serial(dev_hibrido, 2400, timeout = 1) 
+                err=22
+                time.sleep(.15)
+                ser.write(bytes(cmd_crc)) # Envio comando al Hibrido
+                err=30
+                r = ser.readline()  # lectura respuesta Hibrido
+            else:   # Hibridos con puerto tipo  /dev/hidraw
+                err=21
+                fd = open(dev_hibrido,'rb+')
+                err=22
+                if len(cmd_crc) > 8:
+                    fd.flush()
+                    fd.write(cmd_crc[8:16])
+                    err=21
+                    if (cmd1 == b"PBEQA1") or (cmd1 == b"PBEQA0"):
+                        fd.write(cmd_crc[8:16]) ######
+                        err = 22
+                if len(cmd_crc) > 16:
+                    fd.flush()
+                    fd.write(cmd_crc[16:])        
+                time.sleep(.5)
                 
-            time.sleep(.5)
-            
-            err=30
-            r = fd.read(5)
-
-            while r.find(b'\r') == -1 :
-                time.sleep(.02)
-                r = r + fd.read(1)
-
+                err=30
+                r = fd.read(5)
+                while r.find(b'\r') == -1 :
+                    time.sleep(.02)
+                    r = r + fd.read(1)
             err=40
             r = r[0:len(r)-3] # quita CRC
             #print (r)
@@ -276,16 +313,21 @@ def comando(cmd):
                  b'20',b'21',b'22',b'23',b'24',b'25',b'26',b'27',b'28']
             """       
     except:
-        #print('Error Comando ',err)
+        print('Error Comando ',err,sys.exc_info([0]))
+        
         t_muestra=12
         s = 'Error Hibrido'+str(err)
         
+        
     finally:
         #print ('finally')
-        try:
-            fd.close()
-        except:
-            pass
+        if dev_hibrido[-7:-1] == "ttyUSB":
+            ser.flush() #limpia el buffer
+        else:
+            try:
+                fd.close()
+            except:
+                pass
         #print (s)
         return s
 

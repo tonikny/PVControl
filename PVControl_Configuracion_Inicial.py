@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-03-28
+# Versión 2021-09-23
 
 import time,sys,os
 import MySQLdb 
@@ -13,12 +13,11 @@ import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
-"""
-Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Style: DIM, NORMAL, BRIGHT, RESET_ALL
-""" 
-    
+# Asegurar que los permisos estan OK
+subprocess.run(['sudo','chown', '-R','pi:pi', '/home/pi/PVControl+'], check=True)
+subprocess.run(['sudo','chown', '-R','root:root', '/home/pi/PVControl+/etc/cron.d'], check=True)
+#################################
+
 print()
 print (Style.BRIGHT + Fore.YELLOW +'#' * 90)
 print('  PROGRAMA DE CONFIGURACION INICIAL DE PVControl+')
@@ -30,7 +29,6 @@ print('#' * 90)
 
 print()
 print (Fore.RED + '  ATENCION.. SE CAMBIARAN LOS PARAMETROS DEL FICHERO Parametros_FV.py')
-#salir = input(Fore.CYAN +'Si no esta seguro pulse 0 para salir o 1 para continuar ')
 print()
 salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 para continuar ', type=str, default='0')
 
@@ -39,7 +37,7 @@ else: sys.exit()
 
 parametros_bateria = ['AH','CP','EC','vsis']
 parametros_ads     = ['RES','SHUNT','Temperatura_sensor',
-                      'usar_mux','pin_ADS_mux1' ]
+                      '_mux' ]
 parametros_mezcla =  ['_sensor',
                       'usar_', '_hibrido', '_victron', '_bmv','_sma','_si','_sb1','_sb2',
                       'IP_','_srne']
@@ -151,7 +149,7 @@ print (Fore.YELLOW +'#' * 90)
 print('  INTRODUCCION DE PARAMETROS DE PVControl+')
 print(Fore.CYAN)
 print(' Introduzca los datos de los parametros y pulse "INTRO"')
-print (' Pulsar "INTRO" sin incluir el dato selecciona el valor que aparece por defecto')
+print (' Pulsar "INTRO" asigna el valor que aparece por defecto entre corchetes ..[xxx]')
 print (Fore.YELLOW)
 print('#' * 90)
 
@@ -191,8 +189,7 @@ with open('/home/pi/PVControl+/Parametros_FV.py') as f:
                 if 'vsis' in p: # Adaptacion tabla parametros en BD
                     print()
                     print (Fore.RED + '  ATENCION.. SE ADAPTARA LA BASE DE DATOS PARA EL VOLTAJE SELECCIONADO')
-                    print ('  Para una adaptacion optima :')
-                    print ('   - Adaptar la tabla paramemtros de la Base de Datos')
+                    print ('  Para una adaptacion mas personal cambiar la tabla parametros de la Base de Datos')
                     
                     print()
                     bd_act = click.prompt(Fore.GREEN + ' 1= Actualiza BD  --  0: No Actualiza', type=str, default='1')
@@ -263,8 +260,14 @@ if confirmacion == '1':
     print (Fore.RED + '  --- NUEVO FICHERO Parametros_FV.py CREADO... ')
     print()
     
+    
     # ############# Adaptacion Web #########################################
-    exec(open("/home/pi/PVControl+/PVControl_Configuracion_Web.py").read()) # adaptacion Web segun Parametros_FV.py
+    try:
+        exec(open("/home/pi/PVControl+/PVControl_Configuracion_Web.py").read()) # adaptacion Web segun Parametros_FV.py
+    except:
+        print (Fore.BLUE+ '#' * 60)
+        print (Fore.RED+ '--------- ERROR en configuracion WEB ---------')
+        print (Fore.BLUE+ '#' * 60)
     # #######################################################################
     
     print (Fore.CYAN +'#' * 50)

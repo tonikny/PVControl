@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-26
+# Versión 2021-01-03
 
 import time,sys #, subprocess
 import traceback
 #import glob
-import MySQLdb,json 
+import pickle,json
 
+import paho.mqtt.client as mqtt
+
+print ('Arrancando_PVControl+- ... fv_oled_remoto')
 basepath = '/home/pi/PVControl+/'
-
-print ('Arrancando_PVControl+- OLED')
 
 #Parametros Instalacion FV
 from Parametros_FV import *
+
+OLED_salida1 =[4] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo
+OLED_salida2 =[5] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo
+
 
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
@@ -38,12 +43,64 @@ else:
 
 if DEBUG !=0: print ('DEBUG=',DEBUG)
 
+d_fv = {} # diccionario datos recibidos por MQTT
+
+# -----------------------MQTT MOSQUITTO ------------------------
+Nmensajes= 0
+
+topics = ['SOC', 'Vbat', 'Ibat']
+for i in topics: d_fv[i] = 0
+    
+def on_connect(client, userdata, flags, rc):
+    for i in topics:
+        i = 'PVControl/DatosFV/' + i
+        if DEBUG > 0: print ('Topic =',i)
+        client.subscribe(i)
+     
+def on_disconnect(client, userdata, rc):
+        if rc != 0:
+            print ("Desconexion MQTT - Intentando reconexion")
+        else:
+            client.loop_stop()
+            client.disconnect()
+
+def on_message(client, userdata, msg):
+    global d_fv, Nmensajes
+    
+    Nmensajes += 1
+    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+    #print (Fore.BLUE,tiempo, ' - Mensajes=',Nmensajes)
+    
+    try:    
+        d_fv[msg.topic[18:]] = json.loads(msg.payload)
+        if DEBUG > 0:
+            print(msg.topic+" "+str(msg.payload))
+            print (d_fv)
+            print ('#' *60)
+        
+    except:
+        pass
+    
+client = mqtt.Client("fv_oled_remoto") #crear nueva instancia
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.on_message = on_message
+client.reconnect_delay_set(3,15)
+client.username_pw_set(mqtt_usuario, password=mqtt_clave)
+try:
+    client.connect(mqtt_broker, mqtt_puerto) #conectar al broker: url, puerto
+except:
+    print('Error de conexion al servidor MQTT')
+time.sleep(.2)
+client.loop_start()
+
+dia = time.strftime("%Y-%m-%d")
+
 # Comprobacion numero de OLED instaladas
 NUM_OLED = 0
 try:
     serial = i2c(port=1, address=0x3C)
     disp1 = ssd1306(serial,rotate=0)
-
     
     NUM_OLED += 1
     #print('OLED 3C')
@@ -87,7 +144,12 @@ if NUM_OLED >= 1:
     draw = ImageDraw.Draw(image)
 
     font = ImageFont.load_default()
+    font38 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 38)
+    
     font34 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 34)
+    font32 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 32)
+    font30 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 30)
+
     font16 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 16)
     font12 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 12)
     font10 = ImageFont.truetype(basepath+'Minecraftia-Regular.ttf', 10)
@@ -123,19 +185,16 @@ def OLED(pantalla,modo):
 
     elif modo == 1:
         draw.rectangle((0, 0, 127, 20), outline=255, fill=0)
-        draw.text((8, 0), 'SOC='+str(d_['FV']['SOC'])+'%', font=font16, fill=255)
+        draw.text((8, 0), 'SOC='+str(d_fv['SOC'])+'%', font=font16, fill=255)
         draw.rectangle((0, 20, 64, 46), outline=255, fill=0)
         draw.rectangle((64, 20, 127, 46), outline=255, fill=0)
-        draw.text((4, 22),  'Vbat='+str(d_['FV']['Vbat']), font=font, fill=255)
-        draw.text((69, 22), 'Ibat='+str(d_['FV']['Ibat']), font=font, fill=255)
-        draw.text((4, 34),  'Vpla='+str(d_['FV']['Vplaca']), font=font, fill=255)
-        draw.text((69, 34), 'Ipla='+str(d_['FV']['Iplaca']), font=font, fill=255)
+        draw.text((4, 22),  'Vbat='+str(d_fv['Vbat']), font=font, fill=255)
+        draw.text((69, 22), 'Ibat='+str(d_fv['Ibat']), font=font, fill=255)
+        draw.text((4, 34),  'Vpla='+str(d_fv['Vplaca']), font=font, fill=255)
+        draw.text((69, 34), 'Ipla='+str(d_fv['Iplaca']), font=font, fill=255)
 
         L4 = 'R('
         """
-        for r in d_['RELES']:
-        
-
         for I in range(nreles): # Reles wifi
             Puerto = (TR[I][0] % 10) - 1
             addr = int((TR[I][0]-Puerto) / 10)
@@ -163,31 +222,31 @@ def OLED(pantalla,modo):
 
     elif modo == 2:
         draw.rectangle((0, 0, 90, 31), outline=255, fill=0)
-        draw.text((8, 1), 'Vbat='+str(d_['FV']['Vbat']), font=font11, fill=255)
-        draw.text((8, 14), 'Ibat='+str(round(d_['FV']['Ibat'],0)), font=font11, fill=255)
+        draw.text((8, 1), 'Vbat='+str(d_fv['Vbat']), font=font11, fill=255)
+        draw.text((8, 14), 'Ibat='+str(round(d_fv['Ibat'],0)), font=font11, fill=255)
         draw.rectangle((0, 31, 90, 63), outline=255, fill=0)     
-        draw.text((8, 31), 'Vpla='+str(round(d_['FV']['Vplaca'],1)), font=font11, fill=255)
-        draw.text((8, 45), 'Ipla='+str(round(d_['FV']['Iplaca'],0)), font=font11, fill=255)
+        draw.text((8, 31), 'Vpla='+str(round(d_fv['Vplaca'],1)), font=font11, fill=255)
+        draw.text((8, 45), 'Ipla='+str(round(d_fv['Iplaca'],0)), font=font11, fill=255)
 
         draw.rectangle((90, 0, 127, 20), outline=255, fill=255)     
         draw.text((100, 0), 'SOC', font=font, fill=0)
-        draw.text((93, 10), str(d_['FV']['SOC']), font=font, fill=0)
+        draw.text((93, 10), str(d_fv['SOC']), font=font, fill=0)
         
         draw.rectangle((90, 22, 127, 42), outline=255, fill=255)     
         draw.text((95, 22), 'Temp', font=font, fill=0)
-        draw.text((93, 32), str(d_['FV']['Temp']), font=font, fill=0)
+        draw.text((93, 32), str(d_fv['Temp']), font=font, fill=0)
         
         
         draw.rectangle((90, 44, 127, 63), outline=255, fill=255)     
         draw.text((95, 44), 'Exced.', font=font, fill=0)
-        draw.text((100, 54), str(d_['FV']['PWM']), font=font, fill=0)
+        draw.text((100, 54), str(d_fv['PWM']), font=font, fill=0)
 
     elif modo==3:
         lineax=0
         lineay=0
         
-        for rele in d_['RELES']:
-            valor = float(rele[1])
+        for rele in d_reles:
+            valor = rele[1]
             if valor > 0:
                 fill1=0
                 fill2=255
@@ -202,7 +261,7 @@ def OLED(pantalla,modo):
                 lineay=0
         
     elif modo == 4:
-        if d_['FV']['SOC'] == 100:
+        if d_fv['SOC'] == 100:
             draw.rectangle((0, 0, 127, 63), outline=255, fill=255)
             draw.rectangle((3, 3, 124, 60), outline=255, fill=0)
             draw.rectangle((10, 10, 117, 53), outline=255, fill=255)
@@ -210,63 +269,43 @@ def OLED(pantalla,modo):
             draw.text((13, 10), '100%', font=font34, fill=0)
         else:
             draw.rectangle((0, 0, 127, 63), outline=255, fill=0)
-            draw.text((10, 10), str(d_['FV']['SOC'])+'%', font=font34, fill=255)
+            #draw.text((10, 10), str(round(d_fv['SOC'],0))+'%', font=font34, fill=255)
+            draw.text((10, 10), ' '+ str(int(d_fv['SOC']))+' %', font=font38, fill=255)
+
+    elif modo == 5:        
+        
+        #d_fv['Ibat'] = 67.8
+        
+        I = int(d_fv['Ibat'])
+        
+        if I >= 0:
+            IT= str(I) 
+            draw.rectangle((0, 0, 127, 63), outline=255, fill=255)
+            #draw.rectangle((3, 3, 124, 60), outline=255, fill=0)
+            #draw.rectangle((10, 10, 117, 53), outline=255, fill=255)           
+            draw.text((13, 10), IT +' A', font=font38, fill=0)
+            
+        else:
+            IT= str(-I)
+            draw.rectangle((0, 0, 127, 63), outline=255, fill=0)
+            draw.text((10, 10), IT +' A', font=font38, fill=255)
         
     if modo > 0:
         if pantalla == 1:  disp1.display(image.convert(disp1.mode))   
             
         if pantalla == 2:  disp2.display(image.convert(disp2.mode))   
 
- 
- 
+
 #########################################################################################
 # -------------------------------- BUCLE PRINCIPAL OLED --------------------------------------
 #########################################################################################
 try:
     
-    time.sleep(10) # espera para que fv.py ponga en tabla equipos
+    time.sleep(2) # espera para que fv.py ponga datos_fv.json
     cp = 0
     while True:
-        ee=10
+        ee=34
         
-        try:
-            ## Capturando valores desde BD en tabla equipos
-            ee=10.1
-            db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-            cursor = db.cursor()
-  
-            sql = 'SELECT * FROM equipos' # WHERE id_equipo IN' ('FV','RELES')'# capturo todo...quizas lo logico solo FV y RELES
-            nequipos = int(cursor.execute(sql))
-           
-            d_={}
-            for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
-            if DEBUG == 100:
-                print ('#'*40)
-                print ('Equipos =',d_)
-            cursor.close()
-            db.close()
-            
-            ee=10.2    
-            d_reles = d_['RELES']
-            ee = 10.3
-            nreles=len(d_['RELES'])
-            ee = 10.4
-            
-            if DEBUG >= 1: 
-                print('nreles=',nreles)
-                print ('reles=',d_['RELES'])
-                print('--------------------------------------------------')
-            else:
-                cp += 1
-                print('x', end='',flush=True)
-                if cp > 100: cp=0;print();print(time.strftime("%Y-%m-%d %H:%M:%S"),end='')
-            
-        except:
-            print (f'error {ee} en lectura tabla equipos')
-            time.sleep(0.3)
-            break
-            continue
-            
       ## ------- Salida por pantalla OLED -------
         
         if NUM_OLED >= 1: #OLED numero 1

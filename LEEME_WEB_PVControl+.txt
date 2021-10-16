@@ -1,12 +1,20 @@
-Estrategia WEB
+==========================================================================================
+
+LO NORMAL ES USAR EL PROGRAMA DE CONFIGURACION INICIAL DE PVControl+ 
+para que se ejecute automaticamente lo que se explica debajo y 
+se parametrice la aplicación
+
+La explicacion siguiente es a titulo informativo y por si se quiere realizar manualmente
+
+==========================================================================================
 
 1.- CONFIGURACION PAGINA INICIAL WEB DE PVControl+
     
-    Se tienen creados ../PVControl+/html los siguientes archivos index_xxx.php
+    Se tienen creados ../PVControl+/html los siguientes archivos .php
 	
-	- index_sin celdas.php  # FV con Bateria
-	- index_con celdas.php  # FV con bateria y sin control de celdas (uso del mux de la PCB)
-	- index_red.php         # FV sin baterias
+	- inicio_sin celdas.php  # FV con Bateria
+	- inicio_con celdas.php  # FV con bateria y sin control de celdas (uso del mux de la PCB)
+	- inicio_red.php         # FV sin baterias
 	
 	En estos archivos se establece:
 	
@@ -14,7 +22,7 @@ Estrategia WEB
 		- Los distintos archivos xxx.php a los que direcciona cada opcion de menu
 	
 	Por ejemplo :
-		- index_sin celdas.php NO mostrara el menu de celdas y usa
+		- inicio_sin celdas.php NO mostrara el menu de celdas y usa
 	   
 			- inicio_sin celdas.php   # pagina principal
 			- historico1.php          # grafico de carga del dia
@@ -22,7 +30,7 @@ Estrategia WEB
 		    - wh.php                  # grafico Kwh resumen 30 dias
 		    - ....
 			
-		- index_con celdas.php SI mostrara el menu de celdas y usa
+		- inicio_con celdas.php SI mostrara el menu de celdas y usa
 	   
 			- inicio_con celdas.php   # pagina principal
 			- historico1.php          # grafico de carga del dia
@@ -31,7 +39,7 @@ Estrategia WEB
 		    - .....
 			
 		
-		- index_red.php NO mostrara el menu de celdas y usa
+		- innicio_red.php NO mostrara el menu de celdas y usa
 	   
 			- inicio_red.php         # pagina principal
 			- historico1_red.php     # grafico de carga del dia
@@ -39,12 +47,16 @@ Estrategia WEB
 		    - wh_red.php             # grafico Kwh resumen 30 dias
 		    - .....
 			
-	Simplemente hay que poner el index_xxx.php como index.php para que se use en la WEB
+	Simplemente hay que poner en el archivo .../html/version.inc la configuracion a usarsegun: 
+	 SC = bat sin celdas
+	 CC = bat con celdas
+	 RD = sin bat
 	
-	Estos se puede hacer de forma manual o utilizando una de las siguiente utilidades:
 	
-		- PVControl_Configuracion_Inicial.py              # Programa de Configuracion Inicial de PVControl+
-		- PVControl_Configuracion_Web.py # Programa de Configuracion WEB de PVControl+
+	Estos se puede hacer de forma manual editando el archivo o utilizando una de las siguiente utilidades:
+	
+		- PVControl_Configuracion_Inicial.py     # Programa de Configuracion Inicial de PVControl+
+		- PVControl_Configuracion_Web.py         # Programa de Configuracion WEB de PVControl+
 	
 Ademas hay que tener el cuenta la configuracion de escalas/parametros WEB de acuerdo con el siguiente apartado
 		
@@ -61,8 +73,7 @@ Ademas hay que tener el cuenta la configuracion de escalas/parametros WEB de acu
 		- Parametros_Web_48V.js    # Para sistemas FV de 48V
 		- Parametros_Web_red.js    # Para sistemas FV sin bateria
 	
-	Al igual que con index_xxx.php la idea es poner Parametros_Web_xxx.js como Parametros_Web.js para 
-	que sea usado por la WEB
+	La idea es poner Parametros_Web_xxx.js como Parametros_Web.js para 	que sea usado por la WEB
 	
 	Estos se puede hacer de forma manual o utilizando una de las siguiente utilidades:
 	
@@ -70,6 +81,4 @@ Ademas hay que tener el cuenta la configuracion de escalas/parametros WEB de acu
 		- PVControl_Configuracion_Web.py       # Programa de Configuracion WEB de PVControl+
 	 
 	
-	  
-	
- 
+	 

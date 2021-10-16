@@ -1,3 +1,9 @@
+import sys
+print ("Programa sin actualizar - NO USAR")
+sys.exit()
+
+
+
 import tkinter as tk
 
 from tkinter import *

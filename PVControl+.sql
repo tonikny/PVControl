@@ -1,14 +1,13 @@
 -- phpMyAdmin SQL Dump
--- version 4.9.0.1
+-- version 5.1.0
 -- https://www.phpmyadmin.net/
 --
--- Servidor: localhost:3306
--- Tiempo de generación: 28-03-2021 a las 15:59:12
--- Versión del servidor: 10.3.25-MariaDB-0+deb10u1
--- Versión de PHP: 7.2.9-1+b2
+-- Servidor: localhost
+-- Tiempo de generación: 02-10-2021 a las 00:33:26
+-- Versión del servidor: 10.3.29-MariaDB-0+deb10u1
+-- Versión de PHP: 8.0.11
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -21,7 +20,7 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `control_solar`
 --
-CREATE DATABASE IF NOT EXISTS `control_solar` DEFAULT CHARACTER SET latin1 COLLATE latin1_spanish_ci;
+CREATE DATABASE IF NOT EXISTS `control_solar` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `control_solar`;
 
 -- --------------------------------------------------------
@@ -30,7 +29,6 @@ USE `control_solar`;
 -- Estructura de tabla para la tabla `bmv`
 --
 
-DROP TABLE IF EXISTS `bmv`;
 CREATE TABLE IF NOT EXISTS `bmv` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL COMMENT 'Fecha captura',
@@ -49,7 +47,6 @@ CREATE TABLE IF NOT EXISTS `bmv` (
 -- Estructura de tabla para la tabla `condiciones`
 --
 
-DROP TABLE IF EXISTS `condiciones`;
 CREATE TABLE IF NOT EXISTS `condiciones` (
   `activado` tinyint(1) NOT NULL DEFAULT 0 COMMENT '1 para activar la condicion',
   `condicion1` text COLLATE latin1_spanish_ci NOT NULL COMMENT 'expresión a evaluar 1 ',
@@ -58,15 +55,15 @@ CREATE TABLE IF NOT EXISTS `condiciones` (
   `descripcion` text COLLATE latin1_spanish_ci NOT NULL,
   `id_condicion` int(11) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (`id_condicion`)
-) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=106 DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `condiciones`
 --
 
 INSERT INTO `condiciones` (`activado`, `condicion1`, `condicion2`, `accion`, `descripcion`, `id_condicion`) VALUES
-(0, 'hora > \'18:00:00\'', 'Rele_Tiempo[411] < 1000', 'PWM = 80', 'Ejemplo1\r\nSi la hora es mayor de las 18:00 y el rele 411 lleva encendido en el dia menos de 1000sg pone el PWM a 80', 1),
-(0, '', 'PWM > 200', 'Rele[201] = 100', 'Ejemplo2\r\nEnciende el rele 201 si el PWM es mayor de 200', 2);
+(0, '', '', 'cursor.execute(\"UPDATE parametros SET Mod_bat=\'ABS\'\")', '', 100),
+(0, '', '', 'PWM = 72', 'Simula Excedentes a un valor', 105);
 
 -- --------------------------------------------------------
 
@@ -74,7 +71,6 @@ INSERT INTO `condiciones` (`activado`, `condicion1`, `condicion2`, `accion`, `de
 -- Estructura de tabla para la tabla `datos`
 --
 
-DROP TABLE IF EXISTS `datos`;
 CREATE TABLE IF NOT EXISTS `datos` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Identificador captura',
   `Tiempo` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha/hora de la captura',
@@ -107,7 +103,6 @@ CREATE TABLE IF NOT EXISTS `datos` (
 -- Estructura de tabla para la tabla `datos_c`
 --
 
-DROP TABLE IF EXISTS `datos_c`;
 CREATE TABLE IF NOT EXISTS `datos_c` (
   `id` int(10) UNSIGNED NOT NULL,
   `Tiempo` datetime DEFAULT NULL,
@@ -137,12 +132,11 @@ CREATE TABLE IF NOT EXISTS `datos_c` (
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `datos_mux_1`
+-- Estructura de tabla para la tabla `datos_mux`
 --
 
-DROP TABLE IF EXISTS `datos_mux_1`;
-CREATE TABLE IF NOT EXISTS `datos_mux_1` (
-  `id_mux_1` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE IF NOT EXISTS `datos_mux` (
+  `id_mux` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL DEFAULT current_timestamp(),
   `C0` float NOT NULL DEFAULT 0,
   `C1` float NOT NULL DEFAULT 0,
@@ -156,21 +150,17 @@ CREATE TABLE IF NOT EXISTS `datos_mux_1` (
   `C9` float NOT NULL DEFAULT 0,
   `C10` float NOT NULL DEFAULT 0,
   `C11` float NOT NULL DEFAULT 0,
-  `C12` float NOT NULL DEFAULT 0,
-  `C13` float NOT NULL DEFAULT 0,
-  `C14` float NOT NULL DEFAULT 0,
-  `C15` float NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id_mux_1`),
+  PRIMARY KEY (`id_mux`),
   KEY `Tiempo` (`Tiempo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
 -- --------------------------------------------------------
 
+
 --
 -- Estructura de tabla para la tabla `datos_s`
 --
 
-DROP TABLE IF EXISTS `datos_s`;
 CREATE TABLE IF NOT EXISTS `datos_s` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT 'Indentificador Captura',
   `Tiempo` datetime(1) DEFAULT NULL COMMENT 'Fecha/Hora Captura',
@@ -208,7 +198,6 @@ CREATE TABLE IF NOT EXISTS `datos_s` (
 -- Estructura de tabla para la tabla `diario`
 --
 
-DROP TABLE IF EXISTS `diario`;
 CREATE TABLE IF NOT EXISTS `diario` (
   `Fecha` date NOT NULL DEFAULT current_timestamp(),
   `maxVbat` float NOT NULL DEFAULT 0,
@@ -245,10 +234,10 @@ CREATE TABLE IF NOT EXISTS `diario` (
 -- Estructura de tabla para la tabla `equipos`
 --
 
-DROP TABLE IF EXISTS `equipos`;
 CREATE TABLE IF NOT EXISTS `equipos` (
   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
-  `sensores` varchar(500) COLLATE latin1_spanish_ci NOT NULL,
+  `tiempo` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha Actualizacion',
+  `sensores` varchar(1000) COLLATE latin1_spanish_ci NOT NULL,
   PRIMARY KEY (`id_equipo`)
 ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
@@ -258,20 +247,19 @@ CREATE TABLE IF NOT EXISTS `equipos` (
 -- Estructura de tabla para la tabla `hibrido`
 --
 
-DROP TABLE IF EXISTS `hibrido`;
 CREATE TABLE IF NOT EXISTS `hibrido` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL,
   `Vgen` float NOT NULL DEFAULT 0,
   `Fgen` float NOT NULL DEFAULT 0,
-  `Iplaca` smallint(3) NOT NULL DEFAULT 0,
+  `Iplaca` float NOT NULL DEFAULT 0,
   `Vplaca` float NOT NULL DEFAULT 0,
   `Wplaca` smallint(5) NOT NULL DEFAULT 0,
   `Vbat` float NOT NULL DEFAULT 0,
   `Vbus` smallint(3) NOT NULL DEFAULT 0,
-  `Ibatp` smallint(3) NOT NULL DEFAULT 0,
-  `Ibatn` smallint(3) NOT NULL DEFAULT 0,
-  `temp` tinyint(3) NOT NULL DEFAULT 0,
+  `Ibatp` float NOT NULL DEFAULT 0,
+  `Ibatn` float NOT NULL DEFAULT 0,
+  `temp` float NOT NULL DEFAULT 0,
   `PACW` smallint(5) NOT NULL DEFAULT 0,
   `PACVA` smallint(5) NOT NULL DEFAULT 0,
   `Flot` tinyint(1) NOT NULL DEFAULT 0,
@@ -286,13 +274,19 @@ CREATE TABLE IF NOT EXISTS `hibrido` (
 -- Estructura de tabla para la tabla `log`
 --
 
-DROP TABLE IF EXISTS `log`;
 CREATE TABLE IF NOT EXISTS `log` (
   `id_log` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL,
   `log` varchar(50) CHARACTER SET latin1 NOT NULL,
   PRIMARY KEY (`id_log`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `log`
+--
+
+INSERT INTO `log` (`id_log`, `Tiempo`, `log`) VALUES
+(1, '2021-10-02 00:28:01', 'Error en la creacion del registro diario');
 
 -- --------------------------------------------------------
 
@@ -300,7 +294,6 @@ CREATE TABLE IF NOT EXISTS `log` (
 -- Estructura de tabla para la tabla `parametros`
 --
 
-DROP TABLE IF EXISTS `parametros`;
 CREATE TABLE IF NOT EXISTS `parametros` (
   `grabar_datos` set('S','N') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'S',
   `grabar_reles` set('S','N') COLLATE latin1_spanish_ci NOT NULL DEFAULT 'N',
@@ -334,18 +327,33 @@ INSERT INTO `parametros` (`grabar_datos`, `grabar_reles`, `t_muestra`, `n_muestr
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `parametros1`
+--
+
+CREATE TABLE IF NOT EXISTS `parametros1` (
+  `id_parametro` int(11) NOT NULL,
+  `nombre` varchar(100) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
+  `valor` varchar(100) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
+  PRIMARY KEY (`id_parametro`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `reles`
 --
 
-DROP TABLE IF EXISTS `reles`;
 CREATE TABLE IF NOT EXISTS `reles` (
   `id_rele` int(3) NOT NULL DEFAULT 0,
-  `nombre` text CHARACTER SET latin1 DEFAULT NULL,
-  `modo` varchar(3) CHARACTER SET latin1 DEFAULT 'PRG',
-  `estado` tinyint(3) DEFAULT 0,
-  `grabacion` varchar(1) CHARACTER SET latin1 DEFAULT 'N',
-  `salto` tinyint(3) NOT NULL DEFAULT 100,
-  `prioridad` tinyint(2) NOT NULL DEFAULT 0,
+  `nombre` text COLLATE latin1_spanish_ci DEFAULT NULL,
+  `modo` varchar(3) COLLATE latin1_spanish_ci DEFAULT 'PRG',
+  `estado` int(1) DEFAULT 0,
+  `grabacion` varchar(1) COLLATE latin1_spanish_ci DEFAULT 'N',
+  `salto` int(3) DEFAULT 100,
+  `prioridad` int(2) DEFAULT 0 COMMENT 'Define la prioridad en la asignacion de excedentes \r\n - 0 no se utiliza en la asignacion de excedentes)\r\n\r\n - 1 Primera prioridad\r\n\r\n - 2 - Segunda prioridad\r\n\r\n - Etc',
+  `potencia` int(11) DEFAULT 0 COMMENT 'Watios potencia maxima que controla el rele',
+  `retardo` int(11) DEFAULT 0 COMMENT 'Segundos a esperar entre dos cambios de estado del rele',
+  `calibracion` varchar(500) COLLATE latin1_spanish_ci NOT NULL DEFAULT '[[0,0],[5,38],[10,44],[20,51],[30,56],[40,60],[50,67],[60,68],[70,84],[80,90],[90,85],[95,87],[100,100]]' COMMENT 'Calibracion respuesta SSR [%Potencia, Duty PWM]',
   PRIMARY KEY (`id_rele`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
 
@@ -353,9 +361,8 @@ CREATE TABLE IF NOT EXISTS `reles` (
 -- Volcado de datos para la tabla `reles`
 --
 
-INSERT INTO `reles` (`id_rele`, `nombre`, `modo`, `estado`, `grabacion`, `salto`, `prioridad`) VALUES
-(201, 'Rele WIFI', 'PRG', 0, 'N', 100, 0),
-(411, 'Rele GPIO 411', 'PRG', 0, 'N', 5, 1);
+INSERT INTO `reles` (`id_rele`, `nombre`, `modo`, `estado`, `grabacion`, `salto`, `prioridad`, `potencia`, `retardo`, `calibracion`) VALUES
+(511, 'Rele TASMOTA', 'PRG', 0, 'N', 100, 1, 1000, 0, '[[0,0],[5,38],[10,44],[20,51],[30,56],[40,60],[50,67],[60,68],[70,84],[80,90],[90,85],[95,87],[100,100]]');
 
 -- --------------------------------------------------------
 
@@ -363,7 +370,6 @@ INSERT INTO `reles` (`id_rele`, `nombre`, `modo`, `estado`, `grabacion`, `salto`
 -- Estructura Stand-in para la vista `reles_activos_hoy`
 -- (Véase abajo para la vista actual)
 --
-DROP VIEW IF EXISTS `reles_activos_hoy`;
 CREATE TABLE IF NOT EXISTS `reles_activos_hoy` (
 `id_rele` int(3)
 ,`fecha` date
@@ -378,7 +384,6 @@ CREATE TABLE IF NOT EXISTS `reles_activos_hoy` (
 -- Estructura de tabla para la tabla `reles_c`
 --
 
-DROP TABLE IF EXISTS `reles_c`;
 CREATE TABLE IF NOT EXISTS `reles_c` (
   `id_rele` int(3) DEFAULT NULL,
   `operacion` text CHARACTER SET latin1 DEFAULT NULL,
@@ -395,7 +400,6 @@ CREATE TABLE IF NOT EXISTS `reles_c` (
 -- Estructura de tabla para la tabla `reles_grab`
 --
 
-DROP TABLE IF EXISTS `reles_grab`;
 CREATE TABLE IF NOT EXISTS `reles_grab` (
   `Tiempo` datetime DEFAULT NULL,
   `id_rele` int(3) DEFAULT NULL,
@@ -410,10 +414,9 @@ CREATE TABLE IF NOT EXISTS `reles_grab` (
 -- Estructura de tabla para la tabla `reles_h`
 --
 
-DROP TABLE IF EXISTS `reles_h`;
 CREATE TABLE IF NOT EXISTS `reles_h` (
   `id_rele` int(3) DEFAULT NULL,
-  `parametro_h` varchar(10) COLLATE latin1_spanish_ci DEFAULT 'T',
+  `parametro_h` varchar(1) CHARACTER SET latin1 DEFAULT 'T',
   `valor_h_ON` time DEFAULT NULL,
   `valor_h_OFF` time DEFAULT NULL,
   `id_reles_h` int(11) NOT NULL AUTO_INCREMENT,
@@ -426,7 +429,6 @@ CREATE TABLE IF NOT EXISTS `reles_h` (
 -- Estructura de tabla para la tabla `reles_segundos_on`
 --
 
-DROP TABLE IF EXISTS `reles_segundos_on`;
 CREATE TABLE IF NOT EXISTS `reles_segundos_on` (
   `id_rele` int(3) DEFAULT NULL,
   `fecha` date DEFAULT NULL,
@@ -443,7 +445,6 @@ CREATE TABLE IF NOT EXISTS `reles_segundos_on` (
 -- Estructura de tabla para la tabla `sma`
 --
 
-DROP TABLE IF EXISTS `sma`;
 CREATE TABLE IF NOT EXISTS `sma` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL,
@@ -469,7 +470,6 @@ CREATE TABLE IF NOT EXISTS `sma` (
 -- Estructura de tabla para la tabla `soh`
 --
 
-DROP TABLE IF EXISTS `soh`;
 CREATE TABLE IF NOT EXISTS `soh` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
@@ -486,7 +486,6 @@ CREATE TABLE IF NOT EXISTS `soh` (
 -- Estructura de tabla para la tabla `srne`
 --
 
-DROP TABLE IF EXISTS `srne`;
 CREATE TABLE IF NOT EXISTS `srne` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL,
@@ -504,10 +503,21 @@ CREATE TABLE IF NOT EXISTS `srne` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `test`
+--
+
+CREATE TABLE IF NOT EXISTS `test` (
+  `id` text COLLATE utf8_bin DEFAULT NULL,
+  `label` text COLLATE utf8_bin DEFAULT NULL,
+  `size` text COLLATE utf8_bin DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `victron`
 --
 
-DROP TABLE IF EXISTS `victron`;
 CREATE TABLE IF NOT EXISTS `victron` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `Tiempo` datetime NOT NULL,
@@ -526,9 +536,10 @@ CREATE TABLE IF NOT EXISTS `victron` (
 --
 DROP TABLE IF EXISTS `reles_activos_hoy`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`rpi`@`localhost` SQL SECURITY DEFINER VIEW `reles_activos_hoy`  AS  select `reles_segundos_on`.`id_rele` AS `id_rele`,`reles_segundos_on`.`fecha` AS `fecha`,`reles_segundos_on`.`segundos_on` AS `segundos_on`,`reles_segundos_on`.`nconmutaciones` AS `nconmutaciones`,`reles_segundos_on`.`id_reles_segundos_on` AS `id_reles_segundos_on` from `reles_segundos_on` where `reles_segundos_on`.`fecha` = curdate() ;
+CREATE ALGORITHM=UNDEFINED DEFINER=`rpi`@`localhost` SQL SECURITY DEFINER VIEW `reles_activos_hoy`  AS SELECT `reles_segundos_on`.`id_rele` AS `id_rele`, `reles_segundos_on`.`fecha` AS `fecha`, `reles_segundos_on`.`segundos_on` AS `segundos_on`, `reles_segundos_on`.`nconmutaciones` AS `nconmutaciones`, `reles_segundos_on`.`id_reles_segundos_on` AS `id_reles_segundos_on` FROM `reles_segundos_on` WHERE `reles_segundos_on`.`fecha` = curdate() ;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+

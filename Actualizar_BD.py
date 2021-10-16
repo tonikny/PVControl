@@ -57,7 +57,10 @@ for tabla in ["diario"]:
             print(campo[0],'... ya estaba creado')
 
 
-# #### Tabla reles_segundos_on          
+# #### Tabla reles_segundos_on
+print ( "#" * 30)
+print("Tabla = reles_segundos_on")
+
 Sql = 'ALTER TABLE `control_solar`.`reles_segundos_on` ADD UNIQUE `id_rele_dia` (`id_rele`, `fecha`)'
 try:
     cursor.execute(Sql)
@@ -65,28 +68,47 @@ try:
 except:
     print ('la Clave (`id_rele`, `fecha`) ya estaba creada en reles_sendos_on')
 
-
-Sql = """CREATE TABLE `equipos` (
-  `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
-  `sensores` varchar(500) COLLATE latin1_spanish_ci NOT NULL
-) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
-"""
+print ( "#" * 30)
+print("Tabla = parametros1")
 
 try:
-    cursor.execute(Sql)
-    print ('Creada tabla equipos')
+    sql = """CREATE TABLE IF NOT EXISTS `parametros1` (
+              `id_parametro` int(11) NOT NULL,
+              `nombre` varchar(100) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
+              `valor` varchar(100) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
+              PRIMARY KEY (`id_parametro`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+         """    
+    import warnings # quitamos el warning que da si existe la tabla
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        cursor.execute(sql)
+    print ('Creada tabla parametros1')
 except:
-    print ('tabla equipos ya estaba creada ')
+    print ('Error en creacion tabla parametros1')
+  
+# #### Tabla Reles
+print ( "#" * 30)
+print("Tabla = RELES")
 
+def c_campo(campo,sql):
+    try:
+        cursor.execute(Sql)
+        print (f'Creado campo {campo}')
+    except: 
+        print (f'Campo {campo} ya estaba creado')
 
-Sql = """ALTER TABLE `equipos`
-  ADD UNIQUE KEY `sensor` (`id_equipo`);
-  """
-try:
-    cursor.execute(Sql)
-    print ('Creada clave en tabla equipos')
-except:
-    print ('clave en tabla equipos ya estaba creada ')
+Sql = "ALTER TABLE `reles` CHANGE `prioridad` `prioridad` INT(2) NULL DEFAULT '0' COMMENT 'Define la prioridad en la asignacion de excedentes \r\n - 0 no se utiliza en la asignacion de excedentes)\r\n\r\n - 1 Primera prioridad\r\n\r\n - 2 - Segunda prioridad\r\n\r\n - Etc'"
+cursor.execute(Sql)
+
+Sql="ALTER TABLE `reles` ADD `potencia` INT(11) NULL DEFAULT '0' COMMENT 'Watios potencia maxima que controla el rele'"            
+c_campo('potencia',Sql)
+    
+Sql="ALTER TABLE `reles` ADD `retardo` INT(11) NULL DEFAULT '0' COMMENT 'Segundos a esperar entre dos cambios de estado del rele'"            
+c_campo('retardo',Sql)
+
+Sql="ALTER TABLE `reles` ADD `calibracion` VARCHAR(500) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL DEFAULT '[[0,0],[5,38],[10,44],[20,51],[30,56],[40,60],[50,67],[60,68],[70,84],[80,90],[90,85],[95,87],[100,100]]' COMMENT 'Calibracion respuesta SSR [%Potencia, Duty PWM]'"            
+c_campo('calibracion',Sql)
   
 db.commit()
 cursor.close()

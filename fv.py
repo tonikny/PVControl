@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-15-12
+# Versión 2021-09-26
 
 import time,sys
 import traceback
@@ -143,10 +143,8 @@ EFF_max = 0
 EFF_min = 100                      #Variables para guardar Eficiencia DC/AC maxima y minima diaria
 
 #---Variables temperatura --------------------------------
-Temp = 0.0      # temperatura baterias
-Mtemp = 60      # Numero de segundos para leer temperatura
-Ctemp = 0       # Contador del numero de muestra para leer temperatura
-Coef_Temp = 0.0             # Coeficiente de compensacion de temperatura para Vflot/Vabs 
+Temp = 0.0         # temperatura baterias
+Coef_Temp = 0.0    # Coeficiente de compensacion de temperatura para Vflot/Vabs 
 
 #---Variables reles --------------------------------
 t_refresco_rele = time.time() #utilizado en secuenciacion escritura de refresco en reles
@@ -154,14 +152,55 @@ Puerto = estado = 0
 
 ## Definir diccionarios Rele y Rele_Ant
 Rele = {}        # Situacion actual de los reles
+Rele_Dict = {}   # Diccionario completo de la tabla de Reles
+
 Rele_Ant = {}    # Situacion anterior de los reles
 Rele_H = {}      # Situacion condiciones horario
 Rele_Tiempo = {} # Tiempo activo en segundos de cada rele en el dia
+
 
 #---Variables PID --------------------------------
 N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
+
+
+# Creacion tabla RAM equipos en BD si no existe
+try:
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    
+    # Comprobacion si tabla equipos existe y si no se crea
+    sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
+                  `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
+                  `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
+                  `sensores` varchar(1000) COLLATE latin1_spanish_ci NOT NULL,
+                   PRIMARY KEY (`id_equipo`)
+                 ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
+
+    import warnings # quitamos el warning que da si existe la tabla equipos
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        cursor.execute(sql_create)
+        
+    try: #inicializamos registros en BD RAM
+        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                      ('FV','"en espera"'))
+        db.commit()              
+    except:
+        pass
+    try: 
+        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                      ('RELES','"en espera"'))
+        db.commit()
+    except:
+        pass    
+        
+except:
+    print (Fore.RED,'ERROR inicializando tabla equipos')
+    sys.exit()
+
+
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -219,12 +258,28 @@ time.sleep(.2)
 client.loop_start()
 
 # --------------------- DEFINICION DE FUNCIONES --------------
+def calibracion_rele(adr,out): # linealiza la respuesta del SSR por cada rele segun campo calibracion en tabla reles
+    try: 
+        out1 = out #estado original
+        ssr = json.loads(Rele_Dict[adr]['calibracion'])
+        if len(ssr) > 0: # solo si existe calibracion
+            for i in range(len(ssr)):
+                if ssr[i][0] > out : break
+            x1, y1 =  ssr[i-1][0], ssr[i-1][1] # puntos de la recta
+            x2, y2 =  ssr[i][0], ssr[i][1]
+            out = int(y1 + (y2-y1)/(x2-x1)*(out-x1)) # ecuacion recta
+    except:
+        pass 
+    #print ('ssr=',ssr)
+    #print (adr,' Potencia=',out1, 'PWM=',out)
+    return out
 
 def act_rele(adr,out) : # Activar Reles
    
     if simular_reles == 0:
-        if int(adr/100) == 2: #Rele WIFI
+        if int(adr/100) == 2: #Rele WIFI por MQTT
             try:
+                out = calibracion_rele(adr,out)
                 client.publish("PVControl/Reles/"+str(adr),int(out))  # via MQTT
                 #print("PVControl/Reles/"+str(adr),int(out))
             except:
@@ -249,7 +304,7 @@ def act_rele(adr,out) : # Activar Reles
                 if simular != 1:
                     logBD('Error bus I2C '+str(adr)+ '='+ str(out))
 
-        elif int(adr/100) == 4: # Rele GPIO
+        elif int(adr/100) == 4: # Rele GPIO .. esta por regulacion SC
             try:
                 #if DEBUG >= 2: print('rele GPIO=',adr, int(out))
                 for I in range (NGPIO):
@@ -274,17 +329,17 @@ def act_rele(adr,out) : # Activar Reles
                 print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out)         
 
         elif int(adr/100) == 5: #Rele Sonoff (tasmota)
-            #print("Rele Sonoff")
-            if out == 100: out = "ON"
-            else:          out = "OFF"
-            
             try:
-                client.publish("cmnd/PVControl/Reles/"+str(adr)+"/POWER",str(out))  # via MQTT
-                #print("cmnd/PVControl/Reles/"+str(adr)+"/POWER",str(out))
+                if int(adr/10) >= 58: # Dejo 58X y 59X para reles ON/OFF, resto PWM
+                    if out == 100: out = "ON"
+                    else:          out = "OFF"
+                    client.publish("cmnd/PVControl/Reles/"+str(adr)+"/POWER",str(out))  # via MQTT
+                else:
+                    out = calibracion_rele(adr,out)
+                    client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # PWM via MQTT  
+                      
             except:
-                logBD('Error rele sonoff '+str(adr)+'='+ str(out)) 
-
-
+                logBD('Error rele TASMOTA '+str(adr)+'='+ str(out)) 
 
 
     return
@@ -355,6 +410,8 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
         elif sensor =='':
             return anterior, y_err
         else:
+            y = float(eval(sensor))
+            """
             pp1=[idx for idx, x in enumerate(sensor) if x=='_']    # indices de todos los '_'
             pp2=[idx for idx, x in enumerate(sensor) if x=='[']    # indices de todos los '['
 
@@ -367,15 +424,17 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
             else:
                 dif += time.time() - eval("float("+sensor[:pp2[0]]+"['Tiempo_sg'])")
                 #print('Caso pp2=',sensor[pp2[0]])
-                
+               
             if dif < 10: y = float(eval(sensor))
             elif dif <20: y = float(anterior)
             else: y = 0.0
+            """ 
     except:
         traceback.print_exc()
         print ('Error en sensor ', n_sensor, sensor)
         y = anterior
-        logBD('-ERROR MEDIDA -'+n_sensor+ '='+sensor)    
+        logBD('-ERROR MEDIDA -'+n_sensor+ '='+sensor)
+        time.sleep(5)
 
     if y < minimo or y > maximo:
         logBD('lectura incoherente '+n_sensor+'='+str(y))
@@ -547,7 +606,7 @@ for r in TR:
 Reles_D_Ord = sorted(Reles_D, key=lambda rr: rr[1])
 Nreles_Diver = len(Reles_D_Ord) # Nº de reles Diver a considerar para reparto excedentes
 PWM_Max = Nreles_Diver * 100
-print ('Reles_D_Ord=',Reles_D_Ord)
+print ('Reles para excedentes = Reles_D_Ord[Id_rele, salto, prioridad] =',Reles_D_Ord)
 
 
 if DEBUG >= 100: print ('PWM_Max=',PWM_Max)
@@ -603,7 +662,9 @@ try:
             for r in TR: # actualizar diccionarios por si se han creado nuevos reles
                 Rele[r['id_rele']] = r['estado'] # actualizamos diccionario Reles con valor en BD
                 Rele_H[r['id_rele']] = 0 # inicializamos a cero el diccionario para control horario
-
+                Rele_Dict[r['id_rele']] = r # guado todo los campos de la tabla Reles en BD
+                
+                
             sql='SELECT * FROM reles INNER JOIN reles_c ON reles.id_rele = reles_c.id_rele'
             fvcon=cursor.execute(sql)
             fvcon=int(fvcon)  # = numero de condiciones
@@ -668,22 +729,25 @@ try:
             Ired = random.choice([1,2,3,0,-1,-2,-3])
             EFF = random.choice([81,90.95,70.9])
             
+            ## Evaluo expresiones genericas
             Wbat = Vbat * Ibat
             Wred = Vred * Ired
             Wconsumo = Wplaca - Wbat - Wred
             
         else:
-            ## Capturando valores desde xxxxx.pkl
+            ## Capturando valores desde BD en tabla equipos
             ee=30.1
-            if usar_hibrido == 1:
-                archivo_ram='/run/shm/datos_hibrido.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_hibrido = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
+            sql = 'SELECT * FROM equipos'
+            nequipos = int(cursor.execute(sql))
 
+            d_={}
+            for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
+            if DEBUG == 100:
+                print ('#'*40)
+                print (Fore.BLUE+'Equipos =',d_)
+                
+            ## Capturando valores desde xxxxx.pkl...esta opcion se ira eliminando dejando solo la tabla de equipos
+            
             ee=30.2
             if usar_victron == 1:
                 archivo_ram='/run/shm/datos_victron.pkl'
@@ -723,8 +787,7 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue
             
-            ee=30.41  
-            
+            ee=30.41              
             if usar_fronius == 1:
                 archivo_ram='/run/shm/datos_fronius.pkl'
                 try:
@@ -734,8 +797,6 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue   
 
-                        
-            
             ee=30.42        
             if usar_huawei == 1:
                 archivo_ram='/run/shm/datos_huawei.pkl'
@@ -755,7 +816,6 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue 
                           
-            
             ee=30.43             
             if usar_must == 1:
                 archivo_ram='/run/shm/datos_must.pkl'
@@ -773,19 +833,7 @@ try:
                     logBD('error lectura archivo ram SRNE')
                     continue
             
-            ee=30.6
-            if usar_mux > 0:
-                archivo_ram='/run/shm/datos_mux.json'
-                try:
-                    with open(archivo_ram, 'r') as f:
-                        d_mux = json.load(f)
-                        #print(d_mux)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-                
-            ee=34
-            
+            ee=34            
             Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,Ibat_min_log,Ibat_max_log)            
             Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,Vbat_min_log,Vbat_max_log)
             Wbat = Vbat * Ibat # W instantaneos a bateria
@@ -803,28 +851,14 @@ try:
             Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,Aux1_min_log,Aux1_max_log)
             Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,Aux2_min_log,Aux2_max_log)
         
+            Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min_log,Temp_max_log)
+                
             # evalua las expresiones definidas en Parametros_FV.py
             try:    Wconsumo = float(eval (Consumo_sensor)) 
             except: Wconsumo = 0
             try:    Wplaca = float(eval(Wplaca_sensor))
             except: Wplaca = 0
-
-            if Temperatura_sensor != '' and Ctemp <= 0:
-                if True: #usar_ds18b20 == 1:
-                    archivo_ram='/run/shm/datos_ds18b20.pkl'
-                    try:
-                        with open(archivo_ram, 'rb') as f:
-                            d_ds18b20 = pickle.load(f)
-                    except:
-                        logBD('error lectura '+archivo_ram)
-                        continue
-                Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min_log,Temp_max_log)
-                Ctemp=Mtemp # reinicio contador
-                client.publish("PVControl/DatosFV/Temp",Temp)
-                if DEBUG >= 100: print(Fore.BLUE +'Temp=',Temp,Fore.RESET,end='')
-            else:
-                Ctemp -= t_muestra # resto t_muestra
-
+            
       ### ------------------ Control Excedentes...Cálculo salida PWM ----------
         ee=36
         PWM = Calcular_PWM(PWM)
@@ -965,24 +999,6 @@ try:
         else:         Mod_red = 'CONS'
             
         ee=40
-        if Grabar == 1: #publico MQTT cada t_muestra*N_muestras
-            
-            client.publish("PVControl/DatosFV/Iplaca",Iplaca)
-            client.publish("PVControl/DatosFV/Vplaca",Vplaca)
-            client.publish("PVControl/DatosFV/Wplaca",Wplaca)
-            client.publish("PVControl/DatosFV/Aux1",Aux1)
-            client.publish("PVControl/DatosFV/Aux2",Aux2)
-            client.publish("PVControl/Reles/PWM", PWM)  # publico salida PWM
-            
-            if Vbat > 0 :
-                client.publish("PVControl/DatosFV/Ibat",Ibat)
-                client.publish("PVControl/DatosFV/Vbat",Vbat)
-                client.publish("PVControl/DatosFV/SOC",SOC)
-            
-            if Vred > 0:
-                client.publish("PVControl/DatosFV/Ired",Ired)
-                client.publish("PVControl/DatosFV/Vred",Vred)
-                client.publish("PVControl/DatosFV/EFF",EFF)
             
         t_muestra_2=(time.time()-hora_m) * 1000
         
@@ -1080,12 +1096,6 @@ try:
                 
                 Rele_H[id_rele] = -1 # para quitar posibilidad de ser rele Diver en el ciclo
 
-        """
-        for r in TR: # ver reles tras Condiciones Hora 
-            id_rele = r['id_rele']
-            #print ('Despues Condiciones Hora- Rele',id_rele,'=',Rele[id_rele], 'Out_H=',Rele_H[id_rele])
-        """
-
         # -------------------- Bucle de condiciones de parametros FV --------------------------
         ee=58
         for r in TCFV:
@@ -1133,14 +1143,12 @@ try:
                 Rele[id_rele] = 0
 
             #print ('Despues Condiciones FV - Rele',id_rele,'=',Rele[id_rele], 'Ant=',Rele_Ant[id_rele], ' Flag=',Flag_Rele_Encendido)
-            
 
             ### dejar rele como esta     
             if Rele[id_rele] == 100 and Rele_Ant[id_rele] < 100 and Flag_Rele_Encendido == 1 : 
                 #print ('Dejo el rele ', id_rele, ' para encender en otro ciclo por flag ', Rele[id_rele] ,'/', Rele_Ant[id_rele] )
                 Rele[id_rele] = Rele_Ant[id_rele]      #dejar rele en el estado anterior
                 
-
             ### encender rele
             #print (id_rele,Rele[id_rele],Rele_Ant[id_rele])
             #if Rele[id_rele] != Rele_Ant[id_rele] and Flag_Rele_Encendido == 0 :
@@ -1197,16 +1205,13 @@ try:
             for prio in reles_exc_prio.keys():
                 for rele_prio in reles_exc_prio[prio]:
                     id_rele = rele_prio['id_rele']
-
                     if Rele[id_rele] != Rele_Ant[id_rele]:
                         act_rele(id_rele,Rele[id_rele])
                         Rele_Ant[id_rele]=Rele[id_rele]
             
-
       ## --------- Escribir en la BD Tabla Reles el Estado RELES -------------------------
         t_muestra_4=(time.time()-hora_m) * 1000
         ee=200
-
         if Grabar == 1: # actualizo BD cada N bucles
             
             for I in range(nreles):
@@ -1224,7 +1229,6 @@ try:
                 TR_refresco.pop(0)
             else:
                 TR_refresco = TR[:]
-      
                     
         if TP['grabar_reles'] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
             for I in range(nreles):
@@ -1316,26 +1320,48 @@ try:
         
         # ----------------- Guardamos datos_fv.json ------
         ee=300
-        datos= [(round(tiempo_sg,2), time.strftime("%d-%B-%Y -- %H:%M:%S")),
-                (Vbat,Ibat,round(Wbat),int(Whp_bat),int(Whn_bat),Vbat_min,Vbat_max),
-                (round(DS,2),SOC,SOC_min,SOC_max),
-                (Mod_bat,int(Tabs),int(Tflot),int(Tflot_bulk)),
-                (Vplaca,Iplaca,round(Wplaca),round(Wh_placa)),
-                (Vred,Wred,int(Whp_red),int(Whn_red),Vred_min,Vred_max,EFF,EFF_min,EFF_max),
-                (round(Wconsumo), round(Wh_consumo)),
-                (Temp,int(PWM)),
-                (Aux1,Aux2)
-            ]
+        datos_FV =  {'Vbat':Vbat,'Ibat':Ibat,'Wbat':round(Wbat),'Whp_bat':int(Whp_bat),'Whn_bat':int(Whn_bat),
+                     'Vbat_min':Vbat_min,'Vbat_max':Vbat_max,
+                     'DS':round(DS,2),'SOC':SOC,'SOC_min':SOC_min,'SOC_max':SOC_max,
+                     'Mod_bat':Mod_bat,'Tabs':int(Tabs),'Tflot':int(Tflot),'Tflot_bulk':int(Tflot_bulk),
+                     'Vplaca':Vplaca,'Iplaca':Iplaca,'Wplaca':round(Wplaca),'Wh_placa':round(Wh_placa),
+                     'Vred':Vred,'Wred':Wred,'Whp_red':int(Whp_red),'Whn_red':int(Whn_red),
+                     'Vred_min':Vred_min,'Vred_max':Vred_max,'EFF':EFF,'EFF_min':EFF_min,'EFF_max':EFF_max,
+                     'Wconsumo':round(Wconsumo),'Wh_consumo': round(Wh_consumo),
+                     'Temp':Temp,'PWM':int(PWM),
+                     'Aux1':Aux1,'Aux2':Aux2
+                     }
         
-        with open('/run/shm/datos_fv.json', 'w') as f:
-            json.dump(datos, f)
-        
+        salida_FV = json.dumps(datos_FV)
+        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_FV}' WHERE id_equipo = 'FV'") # grabacion en BD RAM
+        cursor.execute(sql)
+                    
         ee=310
-        with open('/run/shm/datos_reles.json', mode='w') as f:
-            TRR=[]
-            for r in TR: TRR.append ([r['nombre']+'('+r['modo']+'-P'+str(r['prioridad'])+')',Rele[r['id_rele']]])
-            json.dump(TRR,f)
+        salida_RELES = json.dumps(Rele_Dict)
+        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_RELES}' WHERE id_equipo = 'RELES'") # grabacion en BD RAM
+        cursor.execute(sql)
         
+        ###### PUBLICACION MQTT ##########      
+        if Grabar == 1: #publico MQTT cada t_muestra*N_muestras
+            client.publish("PVControl/DatosFV/Iplaca",Iplaca)
+            client.publish("PVControl/DatosFV/Vplaca",Vplaca)
+            client.publish("PVControl/DatosFV/Wplaca",Wplaca)
+            client.publish("PVControl/DatosFV/Aux1",Aux1)
+            client.publish("PVControl/DatosFV/Aux2",Aux2)
+            client.publish("PVControl/Reles/PWM", PWM)  
+            if Vbat > 0 :
+                client.publish("PVControl/DatosFV/Ibat",Ibat)
+                client.publish("PVControl/DatosFV/Vbat",Vbat)
+                client.publish("PVControl/DatosFV/SOC",SOC)
+            if Vred > 0:
+                client.publish("PVControl/DatosFV/Ired",Ired)
+                client.publish("PVControl/DatosFV/Vred",Vred)
+                client.publish("PVControl/DatosFV/EFF",EFF)
+    
+            if usar_mqtt_homeassistant == 1: #publica en topic PVControl/DatosFV para poder ser usado por Home Assistant
+                client.publish("PVControl/DatosFV",salida_FV)
+                client.publish("PVControl/DatosFV/RELES",salida_RELES)
+                    
         Grabar += 1
         if Grabar >= TP['n_muestras_grab'] + 1: Grabar = 1
 

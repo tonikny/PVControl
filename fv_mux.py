@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-02
+# Versión 2021-09-23
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fv_mux'
@@ -23,11 +23,6 @@ import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
-"""
-Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Style: DIM, NORMAL, BRIGHT, RESET_ALL
-"""
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_mux') #+Style.RESET_ALL)
 
 Nlog = Nlog_max = 2 # Contador Numero de log maximos cada minuto
@@ -104,7 +99,8 @@ try:
     # Comprobacion si tabla equipos existe y si no se crea
     sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
                   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
-                  `sensores` varchar(500) COLLATE latin1_spanish_ci NOT NULL,
+                  `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
+                  `sensores` varchar(1000) COLLATE latin1_spanish_ci NOT NULL,
                    PRIMARY KEY (`id_equipo`)
                  ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
 
@@ -115,7 +111,7 @@ try:
 
     try: #inicializamos registro en BD RAM
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('MUX','en espera'))
+                      ('MUX','"en espera"'))
         db.commit()
     except:
         pass
@@ -331,7 +327,9 @@ while True:
     crono.append(['BD',round(time.time() - t0,2)])
     
     ####  ARCHIVOS RAM en BD ############ 
+    
     try:
+        """
         MUX=[]
         MUX_aux=[]
         for K in range(usar_mux): MUX_aux.append ('C'+str(K+1))
@@ -348,13 +346,30 @@ while True:
         MUX_aux=[]
         for K in range(usar_mux): MUX_aux.append (Vcelda_min[K])
         MUX.append (MUX_aux)
+        """
+        
+        MUX={}
+        MUX_aux=[]
+        for K in range(usar_mux): MUX_aux.append ('C'+str(K+1))
+        MUX['Nombre'] = MUX_aux
+        
+        MUX_aux=[]
+        for K in range(usar_mux): MUX_aux.append (Vcelda_max[K])
+        MUX['Max'] = MUX_aux
+        
+        MUX_aux=[]
+        for K in range(usar_mux): MUX_aux.append (DatosMux['C'+str(K)])
+        MUX['Valor'] = MUX_aux
+        
+        MUX_aux=[]
+        for K in range(usar_mux): MUX_aux.append (Vcelda_min[K])
+        MUX['Min'] = MUX_aux
         
         if DEBUG >= 1: print (MUX)
+         
         
-        with open(archivo_ram, mode='w') as f: json.dump(MUX,f) # grabacion en fichero RAM
-            
         salida = json.dumps(MUX)
-        sql = (f"UPDATE equipos SET sensores = '{salida}' WHERE id_equipo = 'MUX'") # grabacion en BD RAM
+        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'MUX'") # grabacion en BD RAM
         cursor.execute(sql)
             
     except:

@@ -26,6 +26,7 @@ session_start([
     $menu["Utilidades"]["Meteo"] = ["Meteorología","meteogram.php"];
     ($version=="RD")? : $menu["Utilidades"]["SOC"] = ["SOC","actualizar_soc.php"];
     $menu["Utilidades"]["Log"] = ["Log","log.php"];
+    
     $menu["Gráficas"]["KWh"] = ($version!="RD")?["KWh Batería, Producción y Consumo","wh.php"]: ["KWh Red, Producción y Consumo","wh_red.php"];
     $menu["Gráficas"]["Promedios"] = ["Promedios 30 días","prom_30.php"];
     ($version=="RD")? : $menu["Gráficas"]["Hist_Temp"] = ["Histórico Temp","historico_con_temp.php"];
@@ -37,16 +38,20 @@ session_start([
     $menu["Gráficas"]["Extra"] = ["Gráficas Producción y Consumo","grafica_elige.php"];
     $menu["Gráficas"]["Diario"] = ($version!="RD")? ["Tabla resumen diario","diario.php"] :["Tabla resumen diario","diario_red.php"] ;
     ($version=="RD")? : $menu["Gráficas"]["Carga/Desc"] = ["Eficiencia Carga/Descarga Batería","wh_2.php"];
+    
+    $menu["Equipos"]["Equipos"] = ["Tabla equipamiento en uso","equipos.php"];
     $menu["Equipos"]["Hibrido"] = ["Histórico Hibrido","historico_hibrido.php"];
     $menu["Equipos"]["Fronius"] = ["Fronius",".php"];
     $menu["Equipos"]["Huawei"] = ["Huawei",".php"];
     $menu["Equipos"]["SMA"] = ["SMA",".php"];
     $menu["Equipos"]["BMV"] = ["BMV",".php"];
     $menu["Equipos"]["SRNE"] = ["SRNE","srne.php"];
+    
     $menu["Relés"]["T.Relés"] = ["Gestión Relés","reles.php"];
     $menu["Relés"]["H.Relés"] = ["Horas Funcionamiento Relés","horas_reles.php"];
     ($version!="CC")? : $menu["Celdas"]["Día"] = ["Gráfica diaria","historico_celdas.php"];
     ($version!="CC")? : $menu["Celdas"]["Resumen"] = ["Gráficas resumen","historico_celdas_max_min.php"];
+    
     $icono["Inicio"] = "img/Home.png";
     $icono["Utilidades"] = "img/util.jpg";
     $icono["Gráficas"] = "img/Graph.png";

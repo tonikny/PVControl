@@ -84,7 +84,7 @@ sudo systemctl status must
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/sma.service /etc/systemd/system/sma.service
 sudo systemctl enable sma
 sudo systemctl restart sma
-sudo systemctl ststus sma
+sudo systemctl status sma
 
 sudo ln -s /home/pi/PVControl+/etc/systemd/system/sma_meter.service /etc/systemd/system/sma_meter.service
 sudo systemctl enable sma_meter
@@ -95,6 +95,11 @@ sudo ln -s /home/pi/PVControl+/etc/systemd/system/daikin.service /etc/systemd/sy
 sudo systemctl enable daikin
 sudo systemctl restart daikin
 sudo systemctl status daikin
+
+sudo ln -s /home/pi/PVControl+/etc/systemd/system/fv_mqtt.service /etc/systemd/system/fv_mqtt.service
+sudo systemctl enable fv_mqtt
+sudo systemctl restart fv_mqtt
+sudo systemctl status fv_mqtt
 
 
 echo press Enter

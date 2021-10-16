@@ -6,7 +6,7 @@
 N= 25 # repeticion lecturas
 data_rate= 128 # data_rate apliacado en ADS
 
-import sys,json,time,datetime
+import sys,json,time,datetime,subprocess
 import MySQLdb 
 from smbus import SMBus
 import Adafruit_ADS1x15 # Import the ADS1x15 module.
@@ -34,6 +34,11 @@ else:
     DEBUG = 0
 print (Fore.RED + 'DEBUG=',DEBUG)
 
+print (Fore.CYAN+'Parando servicio fv_mux')
+print (subprocess.getoutput('sudo systemctl stop fv_mux')) # para servicio fv_mux
+
+time.sleep(1)    
+
 bus = SMBus(1) # Activo Bus I2C
 
 
@@ -41,7 +46,7 @@ bus = SMBus(1) # Activo Bus I2C
 db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
 cursor = db.cursor()
 try:
-    sql = """CREATE TABLE IF NOT EXISTS `parametros2` (
+    sql = """CREATE TABLE IF NOT EXISTS `parametros1` (
               `id_parametro` int(11) NOT NULL,
               `nombre` varchar(100) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
               `valor` varchar(100) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
@@ -70,7 +75,7 @@ try:
         for row in cursor.fetchall(): d_['r_mux'] = json.loads(row[2])
         i= 'Tabla Parametros1 en BD'
         
-    print(f'Calibracion Mux actual en {i}=',d_['r_mux'])      
+    print(Fore.BLUE,f'Calibracion Mux actual en {i}=',d_['r_mux'])      
 except:
     print(f'Error en datos calibracion MUX en {i}')
     sys.exit()
@@ -109,18 +114,6 @@ dia = time.strftime("%Y-%m-%d")
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
-    
-    # Comprobacion si tabla equipos existe y si no se crea
-    sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
-                  `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
-                  `sensores` varchar(500) COLLATE latin1_spanish_ci NOT NULL,
-                   PRIMARY KEY (`id_equipo`)
-                 ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
-
-    import warnings # quitamos el warning que da si existe la tabla equipos
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        cursor.execute(sql_create)
     
     try: # se actualiza el nombre de la tabla desde imagen 2020
       cursor.execute("""RENAME TABLE `datos_mux_1` TO `datos_mux`""")
@@ -283,9 +276,11 @@ while True:
             print ('Error grabacion tabla parametros1')
     db.commit()
     try:
-        click.confirm('Continuar?', abort=True)
+        click.confirm('Otra calibracion?', abort=True)
     except:
-        sys.exit()
+        break
 
 cursor.close()
-db.close()        
+db.close()
+print (subprocess.getoutput('sudo systemctl start fv_mux')) # arranca servicio fv_mux
+print (Fore.CYAN+  'Arrancando servicio fv_mux')

@@ -186,16 +186,30 @@ $(function () {
 	success: function(data) {
 	  try {             
 	    // tiempo_sg, "%d-%B-%Y -- %H:%M:%S"
-	    fecha = data[0][0][1];
-		
+	    fecha = data['FV']['tiempo'];
+            
+	    chart_reles.setTitle({
+              text: 'SITUACION RELES  - '+ fecha
+                });
+            
 	    // Actualizacion Reles     
-	    var tCategories = [];
-	    chart_reles.series[0].setData(data[2]);
-	    
-	    for (i = 0; i < chart_reles.series[0].data.length; i++) {
-		tCategories.push(chart_reles.series[0].data[i].name);
-	    }
-	    chart_reles.xAxis[0].setCategories(tCategories);
+	    var t_Datos_Reles = [];
+            
+            for (var i in data['RELES']) {
+                n= data['RELES'][i]['nombre']+'</br>'+data['RELES'][i]['modo']+'-P'+ data['RELES'][i]['prioridad']+'-'+
+                  data['RELES'][i]['potencia']+'w-'+data['RELES'][i]['retardo']+'sg';
+                t_Datos_Reles.push([n,data['RELES'][i]['estado']]);
+            }
+            t_Datos_Reles.pop(); // quito el ultimo elemento dado que es la fecha
+            
+            chart_reles.series[0].setData(t_Datos_Reles);
+            
+            var tCategories = []; // se cambian los nombres en funcion de los datos recibidos
+            for (i = 0; i < chart_reles.series[0].data.length; i++) {
+                tCategories.push(chart_reles.series[0].data[i].name); 
+            }
+            chart_reles.xAxis[0].setCategories(tCategories);
+            
 	  }
 	   
 	  catch (e) {
