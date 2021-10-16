@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 ##########################################################################
@@ -35,7 +35,7 @@ def on_connect(client, userdata, flags, rc):
 
 def on_disconnect(client, userdata, rc):
         if rc != 0:
-            print "Unexpected MQTT disconnection. Will auto-reconnect"
+            print ("Unexpected MQTT disconnection. Will auto-reconnect")
         else:
             client.loop_stop()
             client.disconnect()
@@ -44,16 +44,16 @@ def on_disconnect(client, userdata, rc):
 def on_message(client, userdata, msg):
     global kWh_openevse
 
-    print msg.topic,msg.payload
+    #print (msg.topic,msg.payload)
     if msg.topic == openevse_ACK:
-        payload=str(msg.payload)    
+        payload=(msg.payload).decode() 
         response=payload[:3]
 
-        #print "resp:",response,"six:",payload[5:6],"seven:",payload[6:7]
+        #print ("resp:",response,"six:",payload[5:6],"seven:",payload[6:7])
 
-        if (response == "$OK" and payload[5:6] <> "^" and payload[6:7] <> "^"):
+        if (response == "$OK" and payload[5:6] != "^" and payload[6:7] != "^"):
             i=4
-            while payload[i] <> " ":
+            while payload[i] != " ":
                 i += 1
             kWh_openevse=(float(payload[4:i])/3600)/1000
 
@@ -65,11 +65,11 @@ date = time.strftime("%Y-%m-%d")
 def logBD() :
     try:
         cursor.execute("""INSERT INTO log (Tiempo,log) VALUES(%s,%s)""",(tiempo,log))
-        print tiempo,' ', log
+        print (tiempo,' ', log)
         db.commit()
     except:
         db.rollback()
-        print tiempo,'Error en logBD()'
+        print (tiempo,'Error en logBD()')
 
     return
 
@@ -97,7 +97,7 @@ try:
             db = MySQLdb.connect(host = servidor2, user = usuario, passwd = clave, db = basedatos)
             cursor = db.cursor()
 
-            if kWh_openevse <> -1:
+            if kWh_openevse != -1:
                 try:
                     cursor.execute("""INSERT INTO open_evse_partial (Fecha,kWh_evse) VALUES(%s,%s)""",(tiempo,kWh_openevse))  
                     db.commit()
@@ -116,7 +116,7 @@ try:
 
 
 except:
-    print "exiting"
+    print ("exiting")
     client.loop_stop()
     client.disconnect()
 
