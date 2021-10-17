@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-10-13
+# Versión 2021-10-17
 
 import os, sys, time
 import serial
@@ -274,6 +274,9 @@ def comando(cmd):
                 err=21
                 fd = open(dev_hibrido,'rb+')
                 err=22
+                
+                fd.write(cmd_crc[:8])
+                
                 if len(cmd_crc) > 8:
                     fd.flush()
                     fd.write(cmd_crc[8:16])
