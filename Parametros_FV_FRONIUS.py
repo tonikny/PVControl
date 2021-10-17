@@ -315,7 +315,7 @@ t_muestra_fronius = 5
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
 
-usar_hawei = 0                # 1 para leer datos del huawei..... 0 para no usar
+usar_huawei = 0                # 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"    # IP del huawei
 t_muestra_huawei = 5          # Tiempo entre capturas
 # -----------------------------------------------
