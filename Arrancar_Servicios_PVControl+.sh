@@ -1,7 +1,8 @@
 #!/bin/bash
 
 ## Web
-#sudo ln -s /home/pi/PVControl+/html /var/www/html
+sudo rm -r /var/www/html
+sudo ln -s /home/pi/PVControl+/html /var/www/
 
 
 ## Servicios basicos ######
