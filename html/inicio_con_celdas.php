@@ -68,8 +68,8 @@ mysqli_close($link);
         </div>
         <div class="divTableRow">
             <div class="divTableCell">&nbsp;Vbat máx</div>
-               <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
-            </div>
+            <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
+        </div>
         <div class="divTableRow">
             <div class="divTableCell"></div>
             <div class="divTableCell">&nbsp;</div>
@@ -78,7 +78,22 @@ mysqli_close($link);
             <div class="divTableCell">Mod_bat</div>
             <div id ="Mod_bat" class="divTableCell">&nbsp;</div>
         </div>
+        
+        <div class="divTableRow">
+            <div class="divTableCell"></div>
+            <div class="divTableCell">&nbsp;</div>
         </div>
+        
+        <div class="divTableRow">
+            <div class="divTableCell">Aux1</div>
+            <div id ="Aux1" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">Aux2</div>
+            <div id ="Aux2" class="divTableCell">&nbsp;</div>
+        </div>
+        
+      <!--</div> -->
     </div>
 </div>
 
@@ -1767,7 +1782,12 @@ $(function () {
             
             //Temp,int(PWM)
             Temp = data['FV']['Temp'];
-            PWM  = data['FV']['PWM'];          
+            PWM  = data['FV']['PWM'];
+            
+            //Aux1,Aux2
+            Aux1 = data['FV']['Aux1'];
+            Aux2 = data['FV']['Aux2'];
+                      
             
             // Actualizacion reloj Vbat 
             chart_vbat.series[0].setData([Vbat]);
@@ -1844,6 +1864,9 @@ $(function () {
             $("#Vbat_max").text(Vbat_max + "V");
             
             $("#Mod_bat").text(Mod_bat);
+            $("#Aux1").text(Aux1);
+            $("#Aux2").text(Aux2);
+            
             
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
             if (Mod_bat == "ABS")  {
@@ -1911,15 +1934,14 @@ $(function () {
             
             // Actualizacion Vceldas     
             // Nombres, Min, Valor, Max
-            chart_celdas.xAxis[0].setCategories(data['MUX']['Nombre']);
-            chart_celdas.series[0].setData(data['MUX']['Max']);
-            chart_celdas.series[1].setData(data['MUX']['Valor']);
-            chart_celdas.series[2].setData(data['MUX']['Min']);
+            chart_celdas.xAxis[0].setCategories(data['CELDAS']['Nombre']);
+            chart_celdas.series[0].setData(data['CELDAS']['Max']);
+            chart_celdas.series[1].setData(data['CELDAS']['Valor']);
+            chart_celdas.series[2].setData(data['CELDAS']['Min']);
             
             //console.log(data)
            
           }
-           
           catch (e) {
             var d = new Date();
             s = d.getSeconds()
