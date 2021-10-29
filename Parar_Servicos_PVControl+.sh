@@ -9,7 +9,7 @@ sudo systemctl stop victron
 sudo systemctl stop bmv
 sudo systemctl stop srne
 sudo systemctl stop fv_mux
-
+sudo systemctl stop fv_daly
 
 echo press Enter
 read reply
