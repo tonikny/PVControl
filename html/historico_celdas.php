@@ -27,10 +27,13 @@ if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
 //        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
 //        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
+//$sql = "SELECT  *
+//        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+//        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+
 $sql = "SELECT  *
         FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
-
+        ORDER BY id_celda";
 
 if($result = mysqli_query($link, $sql)){
 
@@ -197,17 +200,17 @@ $(function ()
         text: '1h'
        }, {
         type: 'hour',
-        count: 7,
-        text: '7h'
+        count: 8,
+        text: '8h'
        }, {
         type: 'hour',
-        count: 12,
-        text: '12h'
+        count: 24,
+        text: '24h'
        }, {
         type: 'all',
         text: 'Todo'
        }],
-      selected: 1
+      selected: 2
       },
     tooltip: {
       crosshairs: true,
@@ -232,7 +235,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C0"];?>]);
+                       <?php echo $rawdata[$i]["C1"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -251,7 +254,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C1"];?>]);
+                       <?php echo $rawdata[$i]["C2"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -270,7 +273,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C2"];?>]);
+                       <?php echo $rawdata[$i]["C3"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -289,7 +292,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C3"];?>]);
+                       <?php echo $rawdata[$i]["C4"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -308,7 +311,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C4"];?>]);
+                       <?php echo $rawdata[$i]["C5"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -327,7 +330,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C5"];?>]);
+                       <?php echo $rawdata[$i]["C6"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -346,7 +349,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C6"];?>]);
+                       <?php echo $rawdata[$i]["C7"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -365,7 +368,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C7"];?>]);
+                       <?php echo $rawdata[$i]["C8"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -384,7 +387,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C8"];?>]);
+                       <?php echo $rawdata[$i]["C9"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -403,7 +406,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C9"];?>]);
+                       <?php echo $rawdata[$i]["C10"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -422,7 +425,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C10"];?>]);
+                       <?php echo $rawdata[$i]["C11"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -441,7 +444,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C11"];?>]);
+                       <?php echo $rawdata[$i]["C12"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -460,7 +463,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C12"];?>]);
+                       <?php echo $rawdata[$i]["C13"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -479,7 +482,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C13"];?>]);
+                       <?php echo $rawdata[$i]["C14"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -498,7 +501,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C14"];?>]);
+                       <?php echo $rawdata[$i]["C15"];?>]);
             <?php } ?>
           return data;
         })()      
@@ -517,7 +520,7 @@ $(function ()
           for($i = 0 ;$i<count($rawdata);$i++){
             ?>
             data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C15"];?>]);
+                       <?php echo $rawdata[$i]["C16"];?>]);
             <?php } ?>
           return data;
         })()      
