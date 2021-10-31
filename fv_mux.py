@@ -22,7 +22,7 @@ print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_mux') #+Style
 Nlog = Nlog_max = 2 # Contador Numero de log maximos cada minuto
 minuto = time.strftime("%H:%M")
 
-n_muestras_mux_contador = 0 # contador grabacion BD
+n_muestras_mux_contador = 1 # contador grabacion BD
 
 def logBD(texto) : # Incluir en tabla de Log
     global Nlog, minuto
@@ -320,7 +320,7 @@ try:
                 logBD ('Celdas descomp. ' + log)
             
             # Insertar Registro en BD
-            if n_muestras_mux_contador == 0 : #n_muestras_mux: 
+            if n_muestras_mux_contador == 1 : #n_muestras_mux: 
                 campos = ",".join(DatosMux.keys())
                 valores = "','".join(str(v) for v in DatosMux.values())
                 Sql = "INSERT INTO datos_celdas ("+campos+") VALUES ('"+valores+"')"
@@ -328,7 +328,7 @@ try:
                 print (Fore.RED+'G',end='/',flush=True)
             
             if n_muestras_mux_contador >= n_muestras_mux:
-                n_muestras_mux_contador = 0
+                n_muestras_mux_contador = 1
             else:
                 n_muestras_mux_contador +=1
                 
@@ -341,9 +341,9 @@ try:
         ####  ARCHIVOS RAM en BD ############ 
         
         try:
-            datos = {'Nombre' : list(DatosMux.keys())[1:], 'Max': Vcelda_max,'Valor' : list(DatosMux.values())[1:],'Min' : Vcelda_min}
+            datos = {'Nombre' : list(DatosMux.keys()), 'Max': Vcelda_max,'Valor' : list(DatosMux.values()),'Min' : Vcelda_min}
                     
-            if DEBUG >= 1: print (datos)
+            if DEBUG >= 1: print (list(DatosMux.values()))
              
             salida = json.dumps(datos)
             sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'CELDAS'") # grabacion en BD RAM
