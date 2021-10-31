@@ -4,7 +4,7 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
-$sql = "SELECT * FROM datos_mux LIMIT 1";
+$sql = "SELECT * FROM datos_celdas LIMIT 1";
 $resultado = mysqli_query($link,$sql);
 
 if (!$resultado) {
@@ -15,11 +15,11 @@ if (!$resultado) {
 $ncampos =mysqli_num_fields($resultado)-2;
 
 $sql="SELECT UNIX_TIMESTAMP(CONCAT(YEAR(Tiempo),'-',MONTH(Tiempo),'-',DAY(Tiempo)))*1000 as Fecha,\n";
-for ($i = 0; $i < $ncampos-1; $i++) {
+for ($i = 1; $i < $ncampos; $i++) {
     $sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."',avg(C".$i.") as 'Med_C".$i."',\n";
 }
 $sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."',avg(C".$i.") as 'Med_C".$i."'\n";
-$sql = $sql."FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY) GROUP BY DAY(Tiempo)";
+$sql = $sql."FROM datos_celdas WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY) GROUP BY DAY(Tiempo)";
 
 if($result = mysqli_query($link, $sql)){
     $i=0;
@@ -33,11 +33,11 @@ if($result = mysqli_query($link, $sql)){
 
 //Creacion SQL Max-Min de cada Celda..salida en una unica fila
 $sql="SELECT ";
-for ($i = 0; $i < $ncampos-1; $i++) {
+for ($i = 1; $i < $ncampos; $i++) {
     $sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."',\n";
 }
 $sql = $sql."max(C".$i.") as 'Max_C".$i."',min(C".$i.") as 'Min_C".$i."'\n";
-$sql = $sql."FROM datos_mux WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY)";
+$sql = $sql."FROM datos_celdas WHERE Tiempo >= SUBDATE(NOW(), INTERVAL 15 DAY)";
 
 // Creo la variable $r con una lista de pareados [max,min] de cada celda
 if($result = mysqli_query($link, $sql)){
@@ -72,7 +72,7 @@ mysqli_close($link);
 
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 
-<script src="https://code.highcharts.com/highcharts.js"></script>
+<!--//<script src="https://code.highcharts.com/highcharts.js"></script>-->
 <script src="https://code.highcharts.com/highcharts-more.js"></script>
 <script src="https://code.highcharts.com/modules/exporting.js"></script>
 <script src="https://code.highcharts.com/modules/export-data.js"></script>
@@ -80,8 +80,6 @@ mysqli_close($link);
 
 
 <div id="container_C" style="width: 100%; height: 480px; margin-left: 0px; float: left"></div>
-
-<div id="container_C0" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
 <div id="container_C1" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
 <div id="container_C2" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
 <div id="container_C3" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
@@ -97,6 +95,7 @@ mysqli_close($link);
 <div id="container_C13" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
 <div id="container_C14" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
 <div id="container_C15" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
+<div id="container_C16" style="width: 25%; height: 240px; margin-left: 0px; float: left"></div>
 
 
 <br>
@@ -187,93 +186,6 @@ $(function ()
 
 });
   
-  
-  var Vcelda0 = new Highcharts.Chart ({
-    chart: {
-        renderTo: 'container_C0',
-        backgroundColor: null,
-        borderColor: null,
-        shadow: false,
-        zoomType: 'xy'
-    },
-
-    title: {
-        text: 'C1 - Med, Máx y Mín'
-    },
-    subtitle: {
-        //text: 'Permite Zoom XY'
-    },
-    credits: {
-        enabled: false
-    },
-    xAxis: {
-        dateTimeLabelFormats: { day: '%e %b' },
-        type: 'datetime'
-    },
-    yAxis: {
-        min: Vcelda_min,
-        max: Vcelda_max,
-        title: {
-            text: null
-        }
-    },
-    tooltip: {
-        crosshairs: true,
-        shared: true,
-        valueSuffix: 'V'
-    },
-    legend: {
-        enabled: false
-    },
-    series: [
-      {name: 'AVG',
-      zIndex: 1,
-      color: Highcharts.getOptions().colors[0],
-      marker: {
-          fillColor: 'white',
-          lineWidth: 2,
-          lineColor: Highcharts.getOptions().colors[0]
-      },
-      tooltip: {
-          valueSuffix: ' V',
-          valueDecimals: 2,
-      },
-      data: (function() {
-         var data = [];
-         <?php
-             for($i = 0 ;$i<count($rawdata2);$i++){
-         ?>
-         data.push([<?php echo $rawdata2[$i]["Fecha"];?>,<?php echo $rawdata2[$i]["Med_C0"];?>]);
-         <?php } ?>
-      return data;
-           })()
-      },
-      {name: 'Máx-Mín',
-      type: 'arearange',
-      lineWidth: 0,
-      linkedTo: ':previous',
-      color: Highcharts.getOptions().colors[0],
-      fillOpacity: 0.3,
-      zIndex: 0,
-      tooltip: {
-          valueSuffix: ' V',
-          valueDecimals: 2,
-      },
-      data: (function() {
-         var data = [];
-         <?php
-             for($i = 0 ;$i<count($rawdata2);$i++){
-         ?>
-         data.push([<?php echo $rawdata2[$i]["Fecha"];?>,<?php echo $rawdata2[$i]["Max_C0"];?>,<?php echo $rawdata2[$i]["Min_C0"];?>]);
-         <?php } ?>
-      return data;
-           })()
-      }
-    ]
-
-
-  });
-
   var Vcelda1 = new Highcharts.Chart ({
     chart: {
         renderTo: 'container_C1',
@@ -284,7 +196,7 @@ $(function ()
     },
 
     title: {
-        text: 'C2 - Med, Máx y Mín'
+        text: 'C1 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -370,7 +282,7 @@ $(function ()
     },
 
     title: {
-        text: 'C3 - Med, Máx y Mín'
+        text: 'C2 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -456,7 +368,7 @@ $(function ()
     },
 
     title: {
-        text: 'C4 - Med, Máx y Mín'
+        text: 'C3 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -539,7 +451,7 @@ $(function ()
     },
 
     title: {
-        text: 'C5 - Med, Máx y Mín'
+        text: 'C4 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -622,7 +534,7 @@ $(function ()
     },
 
     title: {
-        text: 'C6 - Med, Máx y Mín'
+        text: 'C5 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -705,7 +617,7 @@ $(function ()
     },
 
     title: {
-        text: 'C7 - Med, Máx y Mín'
+        text: 'C6 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -788,7 +700,7 @@ $(function ()
     },
 
     title: {
-        text: 'C8 - Med, Máx y Mín'
+        text: 'C7 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -871,7 +783,7 @@ $(function ()
     },
 
     title: {
-        text: 'C9 - Med, Máx y Mín'
+        text: 'C8 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -954,7 +866,7 @@ $(function ()
     },
 
     title: {
-        text: 'C10 - Med, Máx y Mín'
+        text: 'C9 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -1037,7 +949,7 @@ $(function ()
     },
 
     title: {
-        text: 'C11 - Med, Máx y Mín'
+        text: 'C10 - Med, Máx y Mín'
     },
     subtitle: {
         //text: 'Permite Zoom XY'
@@ -1116,6 +1028,89 @@ $(function ()
   var Vcelda11 = new Highcharts.Chart ({
     chart: {
         renderTo: 'container_C11',
+        zoomType: 'xy'
+    },
+
+    title: {
+        text: 'C11 - Med, Máx y Mín'
+    },
+    subtitle: {
+        //text: 'Permite Zoom XY'
+    },
+    credits: {
+        enabled: false
+    },
+    xAxis: {
+        dateTimeLabelFormats: { day: '%e %b' },
+        type: 'datetime'
+    },
+    yAxis: {
+        min: Vcelda_min,
+        max: Vcelda_max,
+        title: {
+            text: null
+        }
+    },
+    tooltip: {
+        crosshairs: true,
+        shared: true,
+        valueSuffix: 'V'
+    },
+    legend: {
+        enabled: false
+    },
+    series: [
+      {name: 'AVG',
+      zIndex: 1,
+      color: Highcharts.getOptions().colors[0],
+      marker: {
+          fillColor: 'white',
+          lineWidth: 2,
+          lineColor: Highcharts.getOptions().colors[0]
+      },
+      tooltip: {
+          valueSuffix: ' V',
+          valueDecimals: 2,
+      },
+      data: (function() {
+         var data = [];
+         <?php
+             for($i = 0 ;$i<count($rawdata2);$i++){
+         ?>
+         data.push([<?php echo $rawdata2[$i]["Fecha"];?>,<?php echo $rawdata2[$i]["Med_C11"];?>]);
+         <?php } ?>
+      return data;
+           })()
+      },
+      {name: 'Máx-Mín',
+      type: 'arearange',
+      lineWidth: 0,
+      linkedTo: ':previous',
+      color: Highcharts.getOptions().colors[0],
+      fillOpacity: 0.3,
+      zIndex: 0,
+      tooltip: {
+          valueSuffix: ' V',
+          valueDecimals: 2,
+      },
+      data: (function() {
+         var data = [];
+         <?php
+             for($i = 0 ;$i<count($rawdata2);$i++){
+         ?>
+         data.push([<?php echo $rawdata2[$i]["Fecha"];?>,<?php echo $rawdata2[$i]["Max_C11"];?>,<?php echo $rawdata2[$i]["Min_C11"];?>]);
+         <?php } ?>
+      return data;
+           })()
+      }
+    ]
+
+
+  });
+
+  var Vcelda12 = new Highcharts.Chart ({
+    chart: {
+        renderTo: 'container_C12',
         zoomType: 'xy'
     },
 

@@ -10,23 +10,25 @@ if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
    if ( $_POST["nseg_punto"] ) {
 	   $nseg_punto=$_POST["nseg_punto"];   
    } else {
-	   $nseg_punto=30;
+	   $nseg_punto=10;
    }
    
  }else{			
    	 $fecha1= date("Y") . "-" . date("m") . "-" . date("d");
      $fecha2= date("Y") . "-" . date("m") . "-" . date("d");
-	 $nseg_punto=30;
+	 $nseg_punto=10;
     
  }
 
+
+
 //Coger datos grafica 
 //$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15
-//        FROM datos_mux WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+//        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
 //        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 $sql = "SELECT  *
-        FROM datos_mux WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 
