@@ -4,51 +4,41 @@ include ("cabecera.inc");
 
 require('conexion.php');
 
+// Calculo numero de celdas en tabla
+$sql = "SELECT * FROM datos_celdas LIMIT 1";
+$resultado = mysqli_query($link,$sql);
+$nceldas = mysqli_num_fields($resultado)-2;
+
 if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
    $fecha1 = $_POST["fecha1"];
    $fecha2 = $_POST["fecha2"];
    if ( $_POST["nseg_punto"] ) {
 	   $nseg_punto=$_POST["nseg_punto"];   
    } else {
-	   $nseg_punto=10;
-   }
-   
+	   $nseg_punto=5;
+   }   
  }else{			
    	 $fecha1= date("Y") . "-" . date("m") . "-" . date("d");
      $fecha2= date("Y") . "-" . date("m") . "-" . date("d");
-	 $nseg_punto=10;
-    
+	 $nseg_punto=5;
  }
 
-
-
 //Coger datos grafica 
-//$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, C0,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15
-//        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-//        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
-//$sql = "SELECT  *
-//        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-//        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
-
-$sql = "SELECT  *
-        FROM datos_celdas WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        ORDER BY id_celda";
+$sql = "SELECT  * FROM datos_celdas 
+        WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
-
   $i=0;
   while($row = mysqli_fetch_assoc($result)) {
-        //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
-        $rawdata[$i] = $row;
-        $i++;
+    //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
+    $rawdata[$i] = $row;
+    $i++;
   }
-
 } else{
-
-        echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+     echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
 }
-
 
 //Adaptar el tiempo grafica 
 for($i=0;$i<count($rawdata);$i++){
@@ -62,7 +52,6 @@ mysqli_close($link);
 ?>
 
 <script src="Parametros_Web.js"></script>
-
 
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
 <script src="js/jquery.js"></script>
@@ -221,316 +210,29 @@ $(function ()
       enabled: true // false
       },
     series: [
-     {name: 'C1',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[0],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C1"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C2',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[1],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C2"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C3',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[2],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C3"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C4',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[3],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C4"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C5',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[4],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C5"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C6',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[5],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C6"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C7',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[6],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C7"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C8',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[7],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C8"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C9',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[8],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C9"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C10',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[9],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C10"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C11',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[10],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C11"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C12',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[11],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C12"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C13',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[12],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C13"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C14',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[13],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C14"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C15',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[14],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C15"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     {name: 'C16',
-      type: 'spline',
-      color: Highcharts.getOptions().colors[15],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,
-                       <?php echo $rawdata[$i]["C16"];?>]);
-            <?php } ?>
-          return data;
-        })()      
-     },
-     
+      <?php 
+       for($j = 1 ;$j<$nceldas+1 ;$j++)
+       {
+        $Cx = "C".$j;
+        echo "{name: '".$Cx."'";
+        echo ",type: 'spline', color: Highcharts.getOptions().colors[".$j."],";
+        echo "tooltip: {valueSuffix: ' V',valueDecimals: 2,},";
+        echo "data: (function() {var data = [];";
+        for($i = 0 ;$i<count($rawdata);$i++)
+         {
+          echo "data.push([";
+          echo $rawdata[$i]["Tiempo"];
+          echo ",";
+          echo $rawdata[$i][$Cx];
+          echo"]);";
+         }
+        echo "return data;";
+        echo "})()";
+        echo "},";
+       }
+     ?> 
      ]
-
     });
-
-
   });
 </script>
 
