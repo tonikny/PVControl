@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-10-23
+# Versión 2021-11-07
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fv_mux'
@@ -84,6 +84,8 @@ DatosMux_n = {}  #Creamos diccionario para los datos Mux en numero capturado en 
 DatosMux_err = {}  #Creamos diccionario para ver margen de error en captura
 Vcelda_max = [0.0] * usar_mux # Maximo de cada celda diaria
 Vcelda_min = [1000.0] * usar_mux # Minino de cada celda diaria
+CeldaMax = ('C1',0)
+CeldaMin = ('C1',1000)
 
 dia = time.strftime("%Y-%m-%d")
 
@@ -96,7 +98,7 @@ try:
     sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
                   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
                   `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
-                  `sensores` varchar(1000) COLLATE latin1_spanish_ci NOT NULL,
+                  `sensores` varchar(3000) COLLATE latin1_spanish_ci NOT NULL,
                    PRIMARY KEY (`id_equipo`)
                  ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
 
@@ -111,31 +113,17 @@ try:
         db.commit()
     except:
         pass
-    """
-    try: # se actualiza el nombre de la tabla desde imagen 2020
-      cursor.execute("RENAME TABLE `datos_mux_1` TO `datos_celdas`")
-      db.commit()
-    except:
-        pass
-    
-    try: # se actualiza el nombre del indice desde imagen 2020
-      cursor.execute("ALTER TABLE `datos_mux` CHANGE `id_mux_1` `id_celda` INT(11) NOT NULL AUTO_INCREMENT")
-      db.commit()
-    except:
-        pass
-   
-    try: # se actualiza el nombre de la tabla desde imagen 2021
-      cursor.execute("RENAME TABLE `datos_mux` TO `datos_celdas`")
-      db.commit()
-    except:
-        pass
-    try: # se actualiza el nombre del indice desde imagen 2020
-      cursor.execute("ALTER TABLE `datos_celdas` CHANGE `id_mux` `id_celda` INT(11) NOT NULL AUTO_INCREMENT")
-      db.commit()
-    except:
-        pass
-
-    """
+    Sql = """    
+    CREATE TABLE IF NOT EXISTS `datos_celdas` (
+    `id_celda` int(11) NOT NULL AUTO_INCREMENT,
+    `Tiempo` datetime NOT NULL DEFAULT current_timestamp(),
+    `C1` float NOT NULL DEFAULT 0,
+     PRIMARY KEY (`id_celda`),
+     KEY `Tiempo` (`Tiempo`)
+     ) 
+     ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+     """
+    if DEBUG >= 100: cursor.execute (Sql)
     
     Sql='SELECT * FROM datos_celdas' 
     nreg=cursor.execute(Sql)
@@ -176,11 +164,12 @@ except:
 
 db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
 cursor = db.cursor()
-
+ee='00'
 flag_primer_bucle = True
 try:
     while True:
         crono = [] # cronografo tiempo ejecucion
+        crono.append(time.time())
         t0=time.time()
         
         ### B2---------------------- LECTURA FECHA / HORA ----------------------
@@ -193,10 +182,12 @@ try:
         dia = time.strftime("%Y-%m-%d")
         
         DatosMux['Tiempo'] = tiempo # asignamos fecha/hora
-
+        ee='10'
         if dia_anterior != dia: #cambio de dia
             Vcelda_max = [0.0] * usar_mux 
             Vcelda_min = [1000.0] * usar_mux
+            CeldaMax = ('C1',0)
+            CeldaMin = ('C1',1000)
 
         #### CAPTURA VALORES ratios MUX ############
         sql = 'SELECT * FROM parametros1 WHERE nombre = "mux_calibracion"'
@@ -212,20 +203,21 @@ try:
         if DEBUG >= 100: print(f'Calibracion Mux actual en {i}=',d_['r_mux'])    
 
         #### CAPTURA VALORES MUX ############
-        crono.append(time.time())
-        
+        crono.append(['r_mux',round(time.time() - t0,2)])
+       
+        ee='20'
         for K in range(1,usar_mux+1):  # For para ir recorriendo cada entrada del Mux  
             bus.write_byte(32,K-1 % 16) # escribo en PCF 32
             if DEBUG >= 100:
                 estado = bus.read_byte(32) # compruebo dato PCF
                 if estado != (K-1) % 16:
                     print ('Error en escritura/lectura PCF 32 con datos', (K-1) % 16,'/',estado)  
-            time.sleep(0.1)
+            time.sleep(0.005)
             try:
                 ###### Lectura Mux        
-                N = 25 # Nº de lecturas de cada celda 
+                N = 10 # Nº de lecturas de cada celda 
                 if captura_mux == 'D': #lectura modo diferencial
-                    lecturas = [adc1.read_adc_difference(3, gain= gain_mux, data_rate = 128) for i in range(N) ]    
+                    lecturas = [adc1.read_adc_difference(3, gain= gain_mux, data_rate = 860) for i in range(N) ]    
                 else:
                     if K > 16:
                         lecturas = [adc2.read_adc(int(pin_ADS_mux2[1]), gain= gain_mux, data_rate = 128) for i in range(N)]
@@ -241,7 +233,8 @@ try:
                     print (Fore.GREEN+'Lecturas Celda',K,'=', lecturas, lectura_ADS,Max, Min)        
             except:
                 logBD('-ERROR MEDIDA MUX-'+ str(K))
-                    
+            
+            ee='30'       
             # CALCULO VALORES CELDAS
             DatosMux_n['C'+str(K)] = lectura_ADS  # Valor numerico capturado
             DatosMux_err['C'+str(K)] = Max-Min    # Rango error valor numerico capturado
@@ -271,17 +264,17 @@ try:
                 if (DatosMux[x] - DatosMux_ant[x]) > salto_max:  DatosMux[x] = DatosMux_ant[x] + salto_max
                 elif (DatosMux[x] - DatosMux_ant[x]) < -salto_max:  DatosMux[x] = DatosMux_ant[x] - salto_max  
         """
-        
+        ee='40'
         ## Calculo valor minimo y maximo diario de cada celda y valor min/max de todas las celdas
-        CeldaMax = CeldaMin = ('C1',DatosMux['C1'])
+        ##CeldaMax = CeldaMin = ('C1',round(DatosMux['C1'],2))
         for K in range(usar_mux):
             K1 = 'C'+str(K+1)
-            Vcelda_max[K] = max(Vcelda_max[K],DatosMux[K1])
-            Vcelda_min[K] = min(Vcelda_min[K],DatosMux[K1])
+            Vcelda_max[K] = round(max(Vcelda_max[K],DatosMux[K1]),3)
+            Vcelda_min[K] = round(min(Vcelda_min[K],DatosMux[K1]),3)
             
-            if DatosMux[K1] > CeldaMax[1]: CeldaMax = (K1,DatosMux[K1])
-            if DatosMux[K1] < CeldaMin[1]: CeldaMin = (K1,DatosMux[K1])
-        DifCeldas = round(CeldaMax[1]-CeldaMin[1],2)
+            if DatosMux[K1] > CeldaMax[1]: CeldaMax = (K1,round(DatosMux[K1],2))
+            if DatosMux[K1] < CeldaMin[1]: CeldaMin = (K1,round(DatosMux[K1],2))
+        DifCeldas = round(max(DatosMux.values())- min(DatosMux.values()),2) #round(CeldaMax[1]-CeldaMin[1],2)
 
         crono.append(['Listas',round(time.time() - t0,2)])
         # PRINT dependiendo argumentos
@@ -309,7 +302,7 @@ try:
                    
         crono.append(['print',round(time.time() - t0,2)])
         
-        
+        ee='50'
         #### REGISTRO EN BD ############
         try:           
             # Log si hay celdas descompensadas
@@ -325,7 +318,7 @@ try:
                 valores = "','".join(str(v) for v in DatosMux.values())
                 Sql = "INSERT INTO datos_celdas ("+campos+") VALUES ('"+valores+"')"
                 cursor.execute(Sql)
-                print (Fore.RED+'G',end='/',flush=True)
+                print (Fore.RED+'G',end='',flush=True)
             
             if n_muestras_mux_contador >= n_muestras_mux:
                 n_muestras_mux_contador = 1
@@ -338,19 +331,31 @@ try:
             pass
         crono.append(['BD',round(time.time() - t0,2)])
         
+        ee='60'
         ####  ARCHIVOS RAM en BD ############ 
         
         try:
-            datos = {'Nombre' : list(DatosMux.keys()), 'Max': Vcelda_max,'Valor' : list(DatosMux.values()),'Min' : Vcelda_min}
+            Vcelda = list(DatosMux.values())
+            datos = {'Nombre' : list(DatosMux.keys()), 'Max': Vcelda_max,'Valor' : Vcelda,'Min' : Vcelda_min}
                     
-            if DEBUG >= 1: print (list(DatosMux.values()))
-             
+            if DEBUG >= 1:
+                for i in DatosMux.keys():
+                    if i == CeldaMax[0]: print(Fore.RED+f'{DatosMux[i]:4.2f}',end='-')
+                    elif i == CeldaMin[0]: print(Fore.BLUE+f'{DatosMux[i]:4.2f}',end='-')
+                    else: print(Fore.GREEN+f'{DatosMux[i]:4.2f}', end='-')
+                print (Fore.CYAN+f'-Vbat= {sum(Vcelda):4.2f}', end='-')
+                print (Fore.YELLOW+f'Dia Max/Min={CeldaMax}/{CeldaMin}')
+                
+                #print(Fore.GREEN,*[ f'{i:4.2f}' for i in Vcelda], Fore.CYAN+f'-Vbat= {sum(Vcelda):4.2f}',  sep='-',end='')
+                #print(Fore.RED+f' Max:{CeldaMax[0]}:{CeldaMax[1]:4.2f}', sep='-',end='')
+                #print(Fore.BLUE+f' Min:{CeldaMin[0]}:{CeldaMin[1]:4.2f}', sep='-')
+                
             salida = json.dumps(datos)
             sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'CELDAS'") # grabacion en BD RAM
             cursor.execute(sql)
                 
         except:
-            print('error, Grabacion tabla RAM equipos')
+            print(f'ERROR {ee}, Grabacion tabla RAM equipos')
         
         db.commit()
         #cursor.close()

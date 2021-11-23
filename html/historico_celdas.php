@@ -12,23 +12,26 @@ $nceldas = mysqli_num_fields($resultado)-2;
 if(( $_POST["fecha1"] ) && ($_POST["fecha2"] )) {
    $fecha1 = $_POST["fecha1"];
    $fecha2 = $_POST["fecha2"];
-   if ( $_POST["nseg_punto"] ) {
-	   $nseg_punto=$_POST["nseg_punto"];   
-   } else {
-	   $nseg_punto=5;
-   }   
+   //if ( $_POST["nseg_punto"] ) {
+   //   $nseg_punto=$_POST["nseg_punto"];   
+   //} else {
+   //	   $nseg_punto=5;
+   //}   
  }else{			
    	 $fecha1= date("Y") . "-" . date("m") . "-" . date("d");
      $fecha2= date("Y") . "-" . date("m") . "-" . date("d");
-	 $nseg_punto=5;
+	 //$nseg_punto=5;
  }
 
 //Coger datos grafica 
 
-$sql = "SELECT  * FROM datos_celdas 
-        WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+//$sql = "SELECT  * FROM datos_celdas 
+//        WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+//        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
+$sql = "SELECT  *, UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1 FROM datos_celdas 
+        WHERE Tiempo BETWEEN '" . $fecha1 ." 00:00:00' and '".$fecha2 . " 23:59:59'";
+        
 if($result = mysqli_query($link, $sql)){
   $i=0;
   while($row = mysqli_fetch_assoc($result)) {
@@ -41,11 +44,33 @@ if($result = mysqli_query($link, $sql)){
 }
 
 //Adaptar el tiempo grafica 
-for($i=0;$i<count($rawdata);$i++){
-   $time = $rawdata[$i]["Tiempo"];
-   $date = new DateTime($time);
-   $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
- }
+//for($i=0;$i<count($rawdata);$i++){
+//   $time = $rawdata[$i]["Tiempo"];
+//   $date = new DateTime($time);
+//   $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
+// }
+
+
+//Coger datos grafica Ibat
+
+//$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Ibat FROM datos 
+//        WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+//        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+
+$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Ibat FROM datos 
+        WHERE Tiempo BETWEEN  '" . $fecha1 ." 00:00:00' and '".$fecha2 . " 23:59:59'";
+       
+if($result = mysqli_query($link, $sql)){
+  $i=0;
+  while($row = mysqli_fetch_assoc($result)) {
+    //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
+    $rawdata1[$i] = $row;
+    $i++;
+  }
+} else{
+     echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+}
+
 
 mysqli_close($link);
 
@@ -74,7 +99,9 @@ mysqli_close($link);
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
     Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
     A: <input type="date" name="fecha2" value=<?php echo $fecha2 ?> />
-	Muestra cada:<input type="number" size="5" name="nseg_punto" min="5" max="3600" step="5" value= <?php echo $nseg_punto ?> > seg__
+    <!--
+    Muestra cada:<input type="number" size="5" name="nseg_punto" min="5" max="3600" step="5" value= <?php echo $nseg_punto ?> > seg__
+    -->
     <input type = "submit" value = "Ver" />
 		
 </form>
@@ -115,7 +142,7 @@ $(function ()
       panKey: 'shift'
       },
     title: {
-      text: 'Voltaje Celdas'
+      text: 'Voltaje Celdas / Ibat'
       },
     subtitle: {
       //text: 'Permite Zoom XY'
@@ -124,7 +151,7 @@ $(function ()
       enabled: false
       },
     yAxis: [
-     {// ########## Valores eje Vbat ######################
+     {// ########## Valores eje Vceldas ######################
       opposite: false,
       min: Vcelda_min,
       max: Vcelda_max,
@@ -138,7 +165,7 @@ $(function ()
       title: {
         align: 'high',
         offset: 0,
-        text: 'Vbat',//null
+        text: 'Vcelda',//null
         rotation: 0,
         y: -10
         },
@@ -150,30 +177,33 @@ $(function ()
             text: ''
           }
         }],
-      /*
-      plotLines: [{
-        // ########## Valores Linea 2V #####################
-        value: 2,
-        width: 2,
-        color: 'green',
-        dashStyle: 'shortdash',
-        label: {
-          text: 'Vabs'
-          }
-       },{
-        
-        // ########## Valores Linea 2.5 ######################
-        value: 2.5,
-        width: 2,
-        color: 'red',
-        dashStyle: 'shortdash',
-        label: {
-          text: 'Vflot'
-          }
-       }]
-       */
+      
      },
-  
+     {// ########## Valores eje Intensidad ######################
+      opposite: true,
+      min: Escala_intensidad_min,
+      max: Escala_intensidad_max,
+      tickInterval: 20,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      labels: {
+        //align: 'left',
+        y: 5
+        },
+      title: {
+        align: 'high',
+        offset: 0,
+        text: 'Ibat',//null
+        rotation: 0,
+        y: -5
+        },
+      plotLines: [{
+        value: 0,
+        width: 2,
+        color: 'black',
+        dashStyle: 'shortdash'
+        }]
+     },
      ],
     xAxis: {
       dateTimeLabelFormats: { day: '%e %b' },
@@ -202,14 +232,38 @@ $(function ()
       selected: 2
       },
     tooltip: {
+      valueSuffix: 'C1',
+      split: true,
+      distance: 30,
+      padding: 2,
+      outside: true,
       crosshairs: true,
-      shared: true,
+      //shared: true,
       valueDecimals: 2
       },
     navigator: {
       enabled: true // false
       },
     series: [
+      {name: 'Ibat',
+      type: 'spline',
+      yAxis: 1,
+      color: Highcharts.getOptions().colors[2],
+      tooltip: {
+        valueSuffix: ' A',
+        valueDecimals: 2,
+        },
+      data: (function() {
+        var data = [];
+        <?php
+          for($i = 0 ;$i<count($rawdata1);$i++){
+            ?>
+            data.push([<?php echo $rawdata1[$i]["Tiempo"];?>,<?php echo $rawdata1[$i]["Ibat"];?>]);
+            <?php } ?>
+          return data;
+        })()
+      },
+     
       <?php 
        for($j = 1 ;$j<$nceldas+1 ;$j++)
        {
@@ -221,7 +275,7 @@ $(function ()
         for($i = 0 ;$i<count($rawdata);$i++)
          {
           echo "data.push([";
-          echo $rawdata[$i]["Tiempo"];
+          echo $rawdata[$i]["Tiempo1"];
           echo ",";
           echo $rawdata[$i][$Cx];
           echo"]);";

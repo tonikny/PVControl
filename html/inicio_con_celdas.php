@@ -7,7 +7,7 @@ include("cabecera.inc");
 require('conexion.php');
 //Coger datos grafica tiempo real
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Ibat, Iplaca, Vbat, PWM, Vplaca
-        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 3 MINUTE)
+        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 23 MINUTE)
         ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
@@ -1291,7 +1291,12 @@ $(function () {
               text: null
              },
         xAxis: {
-             categories: [] //Nombre_Reles()
+            labels: {
+              y: 10, 
+              align: 'right',
+              reserveSpace: true,
+            },
+            categories: [] //Nombre_Reles()
                },
         yAxis: {
               gridLineWidth: 0,
@@ -1347,14 +1352,14 @@ $(function () {
         tooltip: {
               formatter: function () {
                 return '<b>' + this.series.name + '</b><br/>' +
-                    this.point.y + ' ' + this.point.name.toLowerCase();
+                    this.point.y + ' ' + this.point.name;
                }
              }
 
       });
 
 
-      chart_celdas =new Highcharts.Chart({
+    chart_celdas =new Highcharts.Chart({
         chart: {
             renderTo: 'container_celdas',
             backgroundColor: null,//'#ffffff',//'#f2f2f2',
@@ -1375,10 +1380,8 @@ $(function () {
                     enabled: true,
                     //inside: false, //valor de la columna en el interior
                     crop: false,
-                    allowOverlap: false,
+                    allowOverlap: true,//false,
                     overflow: 'allow',//'none',
-                    //borderWidth: null,
-                    //borderColor: 'red',
                    },
                 enableMouseTracking: true,
                 grouping: false,
@@ -1398,7 +1401,12 @@ $(function () {
               text: null
              },
         xAxis: {
-             categories: []
+            labels: {
+              y: 15, 
+              align: 'center',
+              reserveSpace: false,
+              },
+            categories: []
                },
         yAxis: {
             gridLineWidth: 0,
@@ -1443,9 +1451,7 @@ $(function () {
                 inside: false,
                 rotation: 270,
                 y: -20,
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,2)
-                  }
+                format: "{point.y:.2f}"
               }
             },
             {name: 'Vcelda',
@@ -1457,12 +1463,23 @@ $(function () {
             borderColor: '#303030',
             data: [],
             dataLabels: {
+                borderRadius: 5,
+                backgroundColor: 'rgba(252, 255, 197, 0.7)',
+                borderWidth: 1,
+                borderColor: '#AAA',
+                padding: 1,
+                
                 enabled: true,
                 inside: true, 
                 align: 'center',
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,2)
-                  }
+                style: {
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  color: '#030a0a'
+                },
+                y: 0,
+                format: "{point.y:.2f}"
+                
               }
             },
             
@@ -1480,9 +1497,7 @@ $(function () {
                 rotation: 270,
                 y: -20,
                 align: 'center',
-                formatter: function() {
-                    return Highcharts.numberFormat(this.y,2)
-                  }
+                format: "{point.y:.2f}"
               }
             },
           ],
@@ -1505,7 +1520,7 @@ $(function () {
         tooltip: {
               formatter: function () {
                 return '<b>' + this.series.name + '</b><br/>' +
-                    this.point.y + ' ' + this.point.name.toLowerCase();
+                    this.point.y + ' ' + this.point.name;
                }
              }
 
