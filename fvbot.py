@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2019-10-19
+# Versión 2021-11-16
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fvbot'
@@ -502,10 +502,13 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
 
                     #------------------ COMANDO HIBRIDO -----------------------
                     elif tipo_orden=='H':
-                        comando= tg_orden[1:]#.upper()
-                        #print ('recibida orden Hibrido =',comando)
-                        client.publish('PVControl/Hibrido',comando)
-                     
+                        if tg_orden[1].isnumeric():
+                            print('PVControl/Hibrido'+tg_orden[1],tg_orden[2:])
+                            client.publish('PVControl/Hibrido'+tg_orden[1],tg_orden[2:])
+                        else:
+                            print('PVControl/Hibrido',tg_orden[1:])
+                            client.publish('PVControl/Hibrido',tg_orden[1:])
+                        
                     #------------------ ORDEN VIGILANCIA -----------------------
                     elif tipo_orden=='V':
                         try:
