@@ -232,7 +232,7 @@ t_muestra_hibrido = [5]         # Tiempo en segundos entre muestras del Hibrido
 publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del Hibrido
 
 grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
-n_muestras_hibrido = [5]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
+n_muestras_hibrido = [1]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
 
 # -----------------------------------------------

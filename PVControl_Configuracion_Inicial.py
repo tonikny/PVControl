@@ -13,9 +13,9 @@ import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
-# Asegurar que los permisos estan OK
-subprocess.run(['sudo','chown', '-R','pi:pi', '/home/pi/PVControl+'], check=True)
-subprocess.run(['sudo','chown', '-R','root:root', '/home/pi/PVControl+/etc/cron.d'], check=True)
+# Asegurar que los permisos estan OK... se hara por HOOKS
+#subprocess.run(['sudo','chown', '-R','pi:pi', '/home/pi/PVControl+'], check=True)
+#subprocess.run(['sudo','chown', '-R','root:root', '/home/pi/PVControl+/etc/cron.d/pvcontrol'], check=True)
 #################################
 
 print()
@@ -280,7 +280,7 @@ if confirmacion == '1':
     print(r_servicios)
     
     if r_servicios == '1':
-        subprocess.run(['python3','Arrancar_Servicios_PVControl+.py'], check=True)
+        subprocess.run(['python3','Arrancar_servicios_PVControl+.py'], check=True)
         print()
         print (Fore.RED + '  --- SERVICIOS PVControl+ REINICIADOS --- ')
     else:
