@@ -31,6 +31,8 @@ from Srne import Srne # Libreria reguladores SRNE
 import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
 
+import subprocess
+
 basepath = '/home/pi/PVControl+/'
 
 """
@@ -145,6 +147,7 @@ EFF_min = 100                      #Variables para guardar Eficiencia DC/AC maxi
 #---Variables temperatura --------------------------------
 Temp = 0.0         # temperatura baterias
 Coef_Temp = 0.0    # Coeficiente de compensacion de temperatura para Vflot/Vabs 
+Vbat_temp = 0.0    # Compensacion de temperatura en valor Vbat
 
 #---Variables reles --------------------------------
 t_refresco_rele = time.time() #utilizado en secuenciacion escritura de refresco en reles
@@ -164,7 +167,6 @@ N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
 
-
 # Creacion tabla RAM equipos en BD si no existe
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
@@ -174,7 +176,7 @@ try:
     sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
                   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
                   `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
-                  `sensores` varchar(1000) COLLATE latin1_spanish_ci NOT NULL,
+                  `sensores` varchar(3000) COLLATE latin1_spanish_ci NOT NULL,
                    PRIMARY KEY (`id_equipo`)
                  ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
 
@@ -406,29 +408,11 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
             elif n_sensor == 'Aux2':
                 y = round(adc1.read_adc(3, gain=RES3_gain,data_rate=128) * 0.000125/RES3_gain * RES3, 2)  # A3   4,096V/32767=0.000125 
         
-        
         elif sensor =='':
             return anterior, y_err
         else:
             y = float(eval(sensor))
-            """
-            pp1=[idx for idx, x in enumerate(sensor) if x=='_']    # indices de todos los '_'
-            pp2=[idx for idx, x in enumerate(sensor) if x=='[']    # indices de todos los '['
-
-            k=len(pp1)
-            dif=0
-            if k>0:
-                for i in range(k):
-                    #print('Caso pp1=',i,'--',sensor[pp1[i]-1:pp2[i]])
-                    dif += (time.time() - eval("float("+sensor[pp1[i]-1:pp2[i]]+"['Tiempo_sg'])"))/k
-            else:
-                dif += time.time() - eval("float("+sensor[:pp2[0]]+"['Tiempo_sg'])")
-                #print('Caso pp2=',sensor[pp2[0]])
-               
-            if dif < 10: y = float(eval(sensor))
-            elif dif <20: y = float(anterior)
-            else: y = 0.0
-            """ 
+             
     except:
         traceback.print_exc()
         print ('Error en sensor ', n_sensor, sensor)
@@ -480,7 +464,9 @@ def Calcular_PID (sensor,objetivo,P,I,D):
 def Calcular_PWM(PWM):
     global Diver #,PWM
     
-    Objetivo_PID= TP['objetivo_PID']   # Variable sensora de PID
+    Objetivo_PID= TP['objetivo_PID']
+    if TP['sensor_PID']== 'Vbat':  Objetivo_PID += Vbat_temp # añade compensacion temperatura
+    
     Diver = Calcular_PID (TP['sensor_PID'],Objetivo_PID,TP['Kp'],TP['Ki'],TP['Kd']) # 'sensor', objetivo, P,I,D 
     
     Diver_Max = 200 # Ya veremos si lo pongo en Parametros_FV.py
@@ -650,6 +636,7 @@ try:
             Tabs_max = float(TP['Tabs'])
             Vequ = float(TP['Vequ'])
             Tequ_max = float(TP['Tequ'])
+            Coef_Temp = float(TP['coef_temp'])
 
             sql='SELECT * FROM reles'
             nreles=cursor.execute(sql)
@@ -852,7 +839,16 @@ try:
             Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,Aux2_min_log,Aux2_max_log)
         
             Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min_log,Temp_max_log)
-                
+            
+            if Temperatura_sensor != '': # calculo compensacion temperatura solo cuando existe Temperature_sensor
+                Vbat_temp = Coef_Temp * (min(max(Temp,0),45) - 25)# Nominal 25ºC - rango maximo admisible (0-45ºC)
+                if Vbat_temp >0:# permito un maximo de variacion de 1V por cada 12V de bateria
+                    Vbat_temp = min( Vbat_temp, vsis * 1) 
+                else:
+                    Vbat_temp = max( Vbat_temp, -vsis * 1)
+            else:
+                Vbat_temp = 0
+                    
             # evalua las expresiones definidas en Parametros_FV.py
             try:    Wconsumo = float(eval (Consumo_sensor)) 
             except: Wconsumo = 0
@@ -879,8 +875,8 @@ try:
             Vbat_max = Vbat_min = Vbat
             Vred_max = Vred_min = Vred
             EFF_max = EFF_min = EFF
-                  
             Rele_Tiempo = {} # inicializo diccionaro tiempo de reles 
+            
         else: # calculo Wh
             if Ibat < 0: Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
             else:        Whp_bat = round(Whp_bat + (Wbat * t_muestra/3600),2)
@@ -1373,12 +1369,12 @@ try:
         ee=320
         if DEBUG >= 1:
             #print (tiempo,'-',end='')
-            print(' {0:4}ms - Sensor={1}={2:.2f}'.format(int(T_ejecucion*1000),TP['sensor_PID'],TP['objetivo_PID']),end='')
-            print (Fore.CYAN+'/{0:.2f}'.format(eval(TP['sensor_PID'])),end='')
+            print(f"{int(T_ejecucion*1000):4}ms - Sensor={TP['sensor_PID']}={TP['objetivo_PID']:.2f}",end='')
+            print (Fore.CYAN+f"/{eval(TP['sensor_PID']):.2f}-Ct={Vbat_temp:.2f}",end='')
             if AH > 0:
-                print (Fore.MAGENTA+' / Vbat={0:.2f}- Iplaca={1:.2f}- Ibat={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vbat,Iplaca,Ibat,Wconsumo,PWM),Fore.RESET)
+                print (Fore.MAGENTA+f' / Vbat={Vbat:.2f}-Iplaca={Iplaca:.2f}-Ibat={Ibat:.2f}-Wcon={Wconsumo:.2f}-PWM={PWM:.0f}-Temp={Temp:.2f}'+Fore.RESET)
             else:
-                print (Fore.MAGENTA+' / Vred={0:.2f}- Iplaca={1:.2f}- Ired={2:.2f}- Wcon={3:.2f}- PWM={4:.0f}'.format(Vred,Iplaca,Ired,Wconsumo,PWM),Fore.RESET)
+                print (Fore.MAGENTA+f' / Vred={Vred:.2f}-Iplaca={Iplaca:.2f}-Ired={Ibat:.2f}-Wcon={Wconsumo:.2f}-PWM={PWM:.0f}'+Fore.RESET)
                 
         # Repetir bucle cada X segundos
         espera = TP['t_muestra'] - T_ejecucion #-0.1

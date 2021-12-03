@@ -13,8 +13,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 ###############################################################
 # Procesos BD - Actualizacion tablas diario, soh, datos_c ....
 # ###############            
-32 6    * * *   root    /home/pi/PVControl+/gestionbd.sh
-35 6    * * *   root    python3 /home/pi/PVControl+/vaciartablas.py
+32 5    * * *   pi    python3 /home/pi/PVControl+/fv_gestionbd.py -v -c
 
 28 *    * * *   root    python3 /home/pi/PVControl+/diario.py
 58 *    * * *   root    python3 /home/pi/PVControl+/diario.py
@@ -51,6 +50,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 #00 10    * * *   root    python3 /home/pi/PVControl+/python3 fv_cambiar_modo_rele.py 251 PRG
 
 # ############################################
-# Uso para copiar BD a una Rpi "espejo"
+# Uso para copiar BD a una Rpi "espejo" por vpn
 # #################
 #*/10 *    * * *   root    python3 /home/pi/PVControl+/fv_copiaBD.py

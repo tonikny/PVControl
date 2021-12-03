@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time 
+# 2021-12-3  Manda un mensaje de informacion FV al Telegram
+#... uso habitual con crontab configurando archivo pvcontrol
+#....ese archivo debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
+
+import time, datetime
 import MySQLdb 
 
 import telebot # Librería de la API del bot.
@@ -80,6 +84,15 @@ try:
     nreles=cursor.execute(sql_reles)
     nreles=int(nreles)  # = numero de reles
     TR=cursor.fetchall()
+
+    ### CELDAS
+    sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
+    nparametros=cursor.execute(sql)
+    
+    columns = [column[0] for column in cursor.description]
+    TC1 = []
+    for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+    
     
 except Exception as e:
     
@@ -118,21 +131,12 @@ while salir!=True and N<Nmax:
     
     # ----------- MSG TELEGRAM ------------------------
     
-    if SOC==100: 
-        SOC_T = '100'
-    else:
-        SOC_T = str(round(SOC,1)) 
+    if SOC==100: SOC = '100'
+    else: SOC = f'{SOC:.1f}' 
     
-    L1='SOC=' + SOC_T +'% - Vbat='
-    L1=L1+str(round(Vbat,1))+'v -PWM='
-    L1=L1+str(int(round(PWM,0)))
-
-    L2='Iplaca='+str(round(Iplaca,1))+'A -- Ibat='
-    L2=L2+str(round(Ibat,1))+'A - Vpl='
-    L2=L2+str(int(Vplaca))
-
-    L3='Kwh: Placa='+str(round(Wh_placa/1000,1))+' - Bat='
-    L3=L3+str(round(Whp_bat/1000,1))+'-'+str(round(Whn_bat/1000,2))+'='+str(round((Whp_bat-Whn_bat)/1000,1))
+    L1=f'SOC={SOC}% - Vbat={Vbat:.1f}v -PWM={PWM:.0f}'
+    L2=f'Iplaca={Iplaca:.1f}A - Ibat={Ibat:.1f}A - Vpl={Vplaca:.0f}'
+    L3=f'Kwh: Placa={Wh_placa/1000:.1f} - Bat={Whp_bat/1000:.1f}-{Whn_bat/1000:.1f}={(Whp_bat-Whn_bat)/1000:.1f}'
             
     L4='RELES('
    
@@ -163,7 +167,7 @@ while salir!=True and N<Nmax:
 
     #L5 =  Hora_BD + ' - T=' + str(round(Temp,1))+'ºC'
     
-    Temperaturas = str(round(Temp,1))+'/'
+    Temperaturas = str(round(Temp,1))+'//'
     for sensor in sensores:
       tfile = open(sensor)
       texto = tfile.read()
@@ -180,9 +184,24 @@ while salir!=True and N<Nmax:
     L5 = 'T='+Temperaturas+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
 
     #L6 =  'IP = '+ str(detect_public_ip())
-
+    
+    #### CELDAS
+    
+    L_celdas = ''
+    if len(TC1) > 0: # Hay datos de celdas
+        TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
+        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = 'ERROR -' # añade ERROR si los datos son mas antiguos de 60sg
+    
+        del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
+        del TC['id_celda']
+        
+        Cmax = max(TC, key = TC.get) # clave del valor maximo
+        Cmin = min(TC, key = TC.get) # clave del valor minimo
+        
+    L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V / {Cmin}={TC[Cmin]:.3f}V / {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+    
    ###Usando BOT
-    tg_msg = L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5 #+'\n'+L6
+    tg_msg = L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5 +L_celdas #+'\n'+L6
 
     try:               
         bot.send_message( cid, tg_msg)

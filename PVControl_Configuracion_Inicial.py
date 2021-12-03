@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-23
+# Versión 2021-10-28
 
 import time,sys,os
 import MySQLdb 
@@ -280,7 +280,7 @@ if confirmacion == '1':
     print(r_servicios)
     
     if r_servicios == '1':
-        subprocess.run(['bash','./Arrancar_Servicios_PVControl+.sh'], check=True)
+        subprocess.run(['python3','Arrancar_Servicios_PVControl+.py'], check=True)
         print()
         print (Fore.RED + '  --- SERVICIOS PVControl+ REINICIADOS --- ')
     else:

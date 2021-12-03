@@ -207,19 +207,16 @@ celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = 1 #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [1] #1 para leer datos Hibrido ..... 0 para no usar
 
-dev_hibrido = "/dev/hidraw0"  # puerto donde reconoce la RPi al Hibrido
-usar_crc = 1                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
+dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
+usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
 
-t_muestra_hibrido = 5         # Tiempo en segundos entre muestras del Hibrido
-publicar_hibrido_mqtt = 1     # Publica o no por MQTT los datos capturados del Hibrido
+t_muestra_hibrido = [5]         # Tiempo en segundos entre muestras del Hibrido
+publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del Hibrido
 
-grabar_datos_hibrido = 1      # 1 = Graba la tabla Hibrido... 0 = No graba
-n_muestras_hibrido = 5        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
-
-iplaca_hibrido_max = 80
-iplaca_hibrido_min = 0
+grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
+n_muestras_hibrido = [5]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
 
 # -----------------------------------------------

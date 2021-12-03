@@ -3,7 +3,7 @@
 require('conexion.php');
 
 $data = [];
-$sql = "SELECT * FROM equipos WHERE id_equipo IN ('FV','MUX','RELES','TEMP')";
+$sql = "SELECT * FROM equipos WHERE id_equipo IN ('FV','CELDAS','RELES','TEMP')";
 
 if($result = mysqli_query($link, $sql)){
     while ($row = mysqli_fetch_array($result)){  

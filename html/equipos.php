@@ -85,12 +85,12 @@ $filas = count($rawdata);
 <script>
 $(document).ready(function() {
     $('#example').DataTable({
-        "order": [[ 1, "desc" ]],
-        "scrollY":        "400px",
+        "order": [[ 0, "asc" ]],
+        "scrollY": "800px",
         "scrollCollapse": true,
         "scrollX": true,
-        "info":     false,
-        "paging":         false
+        "info":    false,
+        "paging":  false
         
     } );
 } );
