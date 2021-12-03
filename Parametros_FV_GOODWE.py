@@ -172,6 +172,23 @@ simular = 0         # Simulacion datos FV --- 1 para simular....0 para no simula
 simular_reles = 0   # Simular reles fisicos
 # -----------------------------------------------
 
+# -----------------------------------------------
+######################## 
+###### Daly ######
+########################
+usar_daly = 0 # Poner cantidad de series a leer pon 0 si no lo quieres usar
+
+dev_daly = "/dev/ttyUSB0"  # donde esta el cable
+
+grabar_datos_daly = 1   #grabar datos en bbdd
+
+t_muestra_daly = 5      # Tiempo en segundos entre muestras
+
+n_muestras_daly = 5     #  grabar en BD en tabla 'datos_celdas' cada X capturas del fv_daly 
+
+
+#----------------------------------------------
+
 
 # -----------------------------------------------
 #########################

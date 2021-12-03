@@ -223,8 +223,8 @@ def on_message(client, userdata, msg):
                 ee = '30'
                 ##########################################################################
                 if publicar_hibrido_mqtt[I_Hibrido] == 1:  
-                    for i in datos:
-                        client.publish("PVControl/Hibrido"+ N_Hibrido+"/"+i,datos[i])
+                    for i in Datos:
+                        client.publish("PVControl/Hibrido"+ N_Hibrido+"/"+i,Datos[i])
                 
                 try:####  ARCHIVOS RAM en BD ############ 
                     ee = '40'
