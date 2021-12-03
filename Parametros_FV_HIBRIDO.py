@@ -225,7 +225,7 @@ celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para man
 
 usar_hibrido = [1] #1 para leer datos Hibrido ..... 0 para no usar
 
-dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
+dev_hibrido = ['/dev/hidraw0']  # puerto donde reconoce la RPi al Hibrido
 usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
 
 t_muestra_hibrido = [5]         # Tiempo en segundos entre muestras del Hibrido
