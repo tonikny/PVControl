@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-11-16
+# Versión 2021-12-02
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fvbot'
@@ -250,8 +250,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
 
                             ndatos=cursor.execute(sql_datos)
                             TD=cursor.fetchone()
-                            cursor.close()
-                            db.close()
+                            
                             ee ='i40'
 
                             fecha=TD[0]
@@ -267,19 +266,13 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             PWM=TD[10]
                             ee ='i50'
 
-                            L1='SOC='+str(round(soc,1))+'% -- Vbat='
-                            L1=L1+str(round(vbat,1))+'v -PWM='
-                            L1=L1+str(int(round(PWM,0)))
-
-                            L2='Iplaca='+str(round(iplaca,1))+'A -- Ibat='
-                            L2=L2+str(round(ibat,1))+'A '#-- T='
-                            #L2=L2+str(round(temp,1))+'ºC'
+                            L1 = f'SOC={soc:.1f}% --Vbat={vbat:.1f}v -PWM={PWM:.0f}'
+                            print(L1)
+                            L2 = f'Iplaca={iplaca:.0f}A -- Ibat={ibat:.0f}A '
+                            print(L2)
+                            L3 = f'Kwh_placa={Wh_placa/1000:.1f} -- kWh_bat={(Whp_bat-Whn_bat)/1000:.1f}'
+                            print(L3)
                             ee ='i60'
-
-                            L3='Kwh_placa='+str(round(Wh_placa/1000,1))+' -- kWh_bat='
-                            L3=L3+str(round((Whp_bat-Whn_bat)/1000,1))
-
-
                             L4='RELES('
                        
                             for I in range(nreles): # Reles wifi
@@ -315,7 +308,33 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             L6=str(fecha)
                             
                             ee ='i90'
-                            msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+'\n'+L6
+                            #### CELDAS
+                            sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
+                            nparametros=cursor.execute(sql)
+                            
+                            columns = [column[0] for column in cursor.description]
+                            TC1 = []
+                            for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+                            
+                            L_celdas = ''
+                            if len(TC1) > 0: # Hay datos de celdas
+                                TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
+                                if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = 'ERROR -' # añade ERROR si los datos son mas antiguos de 60sg
+                            
+                                del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
+                                del TC['id_celda']
+                                
+                                Cmax = max(TC, key = TC.get) # clave del valor maximo
+                                Cmin = min(TC, key = TC.get) # clave del valor minimo
+                                
+                            L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V / {Cmin}={TC[Cmin]:.3f}V / {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+                            
+                            ##### MENSAJE    
+                            ee ='i99'
+                            cursor.close()
+                            db.close()
+                            
+                            msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+L_celdas+'\n'+L6
                             bot.send_message(cid, msg)
 
                         except:
@@ -593,7 +612,7 @@ def command_ayuda(m):
     markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
     #itembtn1 = types.KeyboardButton('Reiniciar RPi')
     itembtn1 = types.KeyboardButton('/i Informacion FV\n')
-    itembtn2 = types.KeyboardButton('')
+    itembtn2 = types.KeyboardButton('/c Vceldas')
     
     #itembtn3 = types.KeyboardButton('/teamviewer_restart')
     #itembtn4 = types.KeyboardButton('/teamviewer_stop')
@@ -657,8 +676,6 @@ def command_i(m):
 
     ndatos=cursor.execute(sql_datos)
     TD=cursor.fetchone()
-    cursor.close()
-    db.close()
 
     fecha=TD[0]
     ibat=TD[1]
@@ -717,9 +734,36 @@ def command_i(m):
     L5='Temp='+str(round(temp,1))+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
     L6=str(fecha)+"/"+str(cid)
     
-    tg_msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+'\n'+L6
+    #### CELDAS
+    #sql para sacar datos de vceldas  
+    sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
+    nparametros=cursor.execute(sql)
+    
+    columns = [column[0] for column in cursor.description]
+    TC1 = []
+    for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+    
+    L_celdas = ''
+    if len(TC1) > 0: # Hay datos de celdas
+        TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
+        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = 'ERROR -' # añade ERROR si los datos son mas antiguos de 60sg
+    
+        del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
+        del TC['id_celda']
+        
+        Cmax = max(TC, key = TC.get) # clave del valor maximo
+        Cmin = min(TC, key = TC.get) # clave del valor minimo
+        
+    L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V / {Cmin}={TC[Cmin]:.3f}V / {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+    
+    ##### MENSAJE    
+    tg_msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+L_celdas+'\n'+L6
+    
     #print (tg_msg)
     bot.send_message(cid, tg_msg)
+    
+    cursor.close()
+    db.close()
     
 # -------- Funcion Tabla Parametros BD ------------
 @bot.message_handler(commands=['p'])
