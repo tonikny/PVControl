@@ -87,12 +87,13 @@ try:
 
     ### CELDAS
     sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
-    nparametros=cursor.execute(sql)
-    
-    columns = [column[0] for column in cursor.description]
     TC1 = []
-    for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
-    
+    try:
+        nparametros=cursor.execute(sql)
+        columns = [column[0] for column in cursor.description]      
+        for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+    except:
+        pass      
     
 except Exception as e:
     
@@ -190,7 +191,7 @@ while salir!=True and N<Nmax:
     L_celdas = ''
     if len(TC1) > 0: # Hay datos de celdas
         TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
-        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = 'ERROR -' # añade ERROR si los datos son mas antiguos de 60sg
+        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = '\n Error celdas desactualizadas' # añade ERROR si los datos son mas antiguos de 60sg
     
         del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
         del TC['id_celda']
@@ -198,7 +199,8 @@ while salir!=True and N<Nmax:
         Cmax = max(TC, key = TC.get) # clave del valor maximo
         Cmin = min(TC, key = TC.get) # clave del valor minimo
         
-    L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V / {Cmin}={TC[Cmin]:.3f}V / {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+        L_celdas += f'\nCmax={Cmax}:{TC[Cmax]:.3f}V -- Cmin={Cmin}:{TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+  
     
    ###Usando BOT
     tg_msg = L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5 +L_celdas #+'\n'+L6

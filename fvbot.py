@@ -327,7 +327,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                                 Cmax = max(TC, key = TC.get) # clave del valor maximo
                                 Cmin = min(TC, key = TC.get) # clave del valor minimo
                                 
-                            L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V / {Cmin}={TC[Cmin]:.3f}V / {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+                            L_celdas += f'\nCmax={Cmax}={TC[Cmax]:.3f}V -- Cmin={Cmin}={TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
                             
                             ##### MENSAJE    
                             ee ='i99'
@@ -607,29 +607,39 @@ def command_ayuda(m):
     global markup
 
     cid = m.chat.id
-   
-##Botones para seleccion ordenes 
+    #conexion a la bbdd
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    
+    #sql para sacar datos de vceldas y verificamos si la instalacion tiene o no el moniteado de celdas
+    sql_Vceldas="""SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1 """
+    celdas=0
+    try:
+        cursor.execute(sql_Vceldas)
+        var=cursor.fetchone() 
+        print(var)
+        if len(var) >0: celdas=1  
+        
+    except:
+        pass
+    cursor.close()
+    db.close()
+    
     markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
-    #itembtn1 = types.KeyboardButton('Reiniciar RPi')
-    itembtn1 = types.KeyboardButton('/i Informacion FV\n')
-    itembtn2 = types.KeyboardButton('/c Vceldas')
-    
-    #itembtn3 = types.KeyboardButton('/teamviewer_restart')
-    #itembtn4 = types.KeyboardButton('/teamviewer_stop')
-    
+    itembtn1 = types.KeyboardButton('/i Informacion FV\n')    
     itembtn3 = types.KeyboardButton('/p Actualizar parametros BD')
     itembtn4 = types.KeyboardButton('/r Actualizar Reles')
-    
     itembtn5 = types.KeyboardButton('/V Configurar Alarma Camara')
     itembtn6 = types.KeyboardButton('')
 
-    #itembtn6 = types.KeyboardButton('/s Salir')
-
-    markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6)
-     
+    if celdas == 0:   ##Botones para seleccion ordenes sin Vceldas
+        markup.add(itembtn1, itembtn3, itembtn4, itembtn5, itembtn6)
+        
+    else:        ##Botones para seleccion ordenes con Vceldas
+        itembtn2 = types.KeyboardButton('/vc Vceldas')
+        markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6)
+         
     msg=bot.send_message(cid, "Elige COMANDO:", reply_markup=markup)
-    
-#    hideBoard=types.ReplyKeyboardHide()
     
     
 #------------- TEAMVIEWER ---------------------------
@@ -654,6 +664,63 @@ def command_raspberry_r(m):
     cid = m.chat.id
     if cid in Aut:
         os.system('sudo shutdown -r now')
+        
+        
+        
+        
+        
+#------------- Vceldas ---------------------------
+@bot.message_handler(commands=['vc'])
+def command_teamviewer_r(m):
+      
+    cid = m.chat.id
+
+    bot.send_chat_action(cid,'typing')
+
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+   
+    #### CELDAS
+    #sql para sacar datos de vceldas  
+    sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
+    nparametros=cursor.execute(sql)
+    
+    columns = [column[0] for column in cursor.description]
+    #print(columns)
+    TC1 = []
+    for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+    
+    
+    L_celdas = ''
+    
+    Valor_celdas = ''
+    if len(TC1) > 0: # Hay datos de celdas
+        TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
+       
+        del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
+        del TC['id_celda']
+        
+        Cmax = max(TC, key = TC.get) # clave del valor maximo
+        Cmin = min(TC, key = TC.get) # clave del valor minimo
+        
+        
+    for x in TC: Valor_celdas += f'{x}:{TC[x]}--'   
+        
+   
+    #print(Nceldas)    
+    L_celdas += f'\n {Valor_celdas} \nCmax={Cmax}:{TC[Cmax]:.3f}V -- Cmin={Cmin}:{TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+    
+    
+    ##### MENSAJE    
+    tg_msg=L_celdas
+    
+    #print (tg_msg)
+    bot.send_message(cid, tg_msg)
+    
+    cursor.close()
+    db.close()
+               
+        
 
 #------------- INFORMACION ---------------------------
 @bot.message_handler(commands=['i'])
@@ -735,26 +802,26 @@ def command_i(m):
     L6=str(fecha)+"/"+str(cid)
     
     #### CELDAS
-    #sql para sacar datos de vceldas  
+    #sql para sacar datos de vceldas 
     sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
-    nparametros=cursor.execute(sql)
-    
-    columns = [column[0] for column in cursor.description]
     TC1 = []
-    for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
-    
+    try:
+        nparametros=cursor.execute(sql)
+        columns = [column[0] for column in cursor.description]      
+        for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+    except:
+        pass      
     L_celdas = ''
     if len(TC1) > 0: # Hay datos de celdas
         TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
-        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = 'ERROR -' # añade ERROR si los datos son mas antiguos de 60sg
+        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = '\n Error celdas desactualizadas' # añade ERROR si los datos son mas antiguos de 60sg
     
         del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
         del TC['id_celda']
-        
         Cmax = max(TC, key = TC.get) # clave del valor maximo
         Cmin = min(TC, key = TC.get) # clave del valor minimo
         
-    L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V / {Cmin}={TC[Cmin]:.3f}V / {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+        L_celdas += f'\nCmax={Cmax}:{TC[Cmax]:.3f}V -- Cmin={Cmin}:{TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
     
     ##### MENSAJE    
     tg_msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+L_celdas+'\n'+L6
