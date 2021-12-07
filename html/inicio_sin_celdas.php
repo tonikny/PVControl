@@ -7,7 +7,7 @@ include("cabecera.inc");
 require('conexion.php');
 //Coger datos grafica tiempo real
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Ibat, Iplaca, Vbat, PWM, Vplaca
-        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 3 MINUTE)
+        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 23 MINUTE)
         ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
@@ -67,8 +67,8 @@ mysqli_close($link);
         </div>
         <div class="divTableRow">
             <div class="divTableCell">&nbsp;Vbat máx</div>
-               <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
-            </div>
+            <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
+        </div>
         <div class="divTableRow">
             <div class="divTableCell"></div>
             <div class="divTableCell">&nbsp;</div>
@@ -77,6 +77,18 @@ mysqli_close($link);
             <div class="divTableCell">Mod_bat</div>
             <div id ="Mod_bat" class="divTableCell">&nbsp;</div>
         </div>
+        <div class="divTableRow">
+            <div class="divTableCell"></div>
+            <div class="divTableCell">&nbsp;</div>
+        </div>
+        
+        <div class="divTableRow">
+            <div class="divTableCell">Aux1</div>
+            <div id ="Aux1" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div class="divTableCell">Aux2</div>
+            <div id ="Aux2" class="divTableCell">&nbsp;</div>
         </div>
     </div>
 </div>
@@ -1272,7 +1284,12 @@ $(function () {
               text: null
              },
         xAxis: {
-             categories: [] //Nombre_Reles()
+            labels: {
+              y: 10, 
+              align: 'right',
+              reserveSpace: true,
+            },        
+            categories: [] //Nombre_Reles()
                },
         yAxis: {
               gridLineWidth: 0,
@@ -1606,8 +1623,11 @@ $(function () {
             
             //Temp,int(PWM)
             Temp = data['FV']['Temp'];
-            PWM  = data['FV']['PWM'];          
+            PWM  = data['FV']['PWM'];
             
+            //Aux1,Aux2
+            Aux1 = data['FV']['Aux1'];
+            Aux2 = data['FV']['Aux2'];        
             // Actualizacion reloj Vbat 
             chart_vbat.series[0].setData([Vbat]);
             chart_vbat.yAxis[0].setTitle({
@@ -1683,6 +1703,8 @@ $(function () {
             $("#Vbat_max").text(Vbat_max + "V");
             
             $("#Mod_bat").text(Mod_bat);
+            $("#Aux1").text(Aux1);
+            $("#Aux2").text(Aux2);            
             
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
             if (Mod_bat == "ABS")  {
