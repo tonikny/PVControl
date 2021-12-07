@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------
-######    PARAMETROS INSTALACION PVControl+  -- version: 2021-09-22
+######    PARAMETROS INSTALACION PVControl+  -- version: 2022-12-07
 # ------------------------------------------------------------------
 
 ################################
@@ -234,6 +234,7 @@ publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del
 grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
 n_muestras_hibrido = [1]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
+protocolo_hibrido= [30]          # Nº de protocolo del Hibrido ...30 o 18
 
 # -----------------------------------------------
 #####################
