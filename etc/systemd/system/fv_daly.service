@@ -1,0 +1,12 @@
+[Unit]
+Description=FV lectura DALY
+After= fv.service
+
+[Service]
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_daly.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

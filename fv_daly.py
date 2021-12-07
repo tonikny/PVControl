@@ -24,12 +24,15 @@ print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_daly.py') #+S
 ser = serial.Serial()
 ser.baudrate = 9600
 ser.parity = 'N'
-if dev_daly = "": 
-    ser.port = "/dev/ttyUSB0"
+if dev_daly == "": 
+    dev_daly = "/dev/ttyUSB0"
     print ('No esta especificado el puerto de comuniaciones del daly en Parametros_FV.py...se activa por defecto en /dev/ttyUSB0')
+
+ser.port = dev_daly 
 ser.timeout = 1
 ser.open()
 time.sleep(1)
+
 
 #variables
 Daly_indice_datos = [5,6,7,14,15,16,23,0,0,0,0,0,0,0,0] # posicion de los datos de Vceldas en la respuesta

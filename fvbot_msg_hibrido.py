@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# 19/Nov/2021
+
 import sys,time
 import paho.mqtt.client as mqtt
 
@@ -19,7 +21,7 @@ def on_connect(client, userdata, flags, rc):
  
 def on_disconnect(client, userdata, rc):
         if rc != 0:
-            print "Unexpected MQTT disconnection. Will auto-reconnect"
+            print ("Unexpected MQTT disconnection. Will auto-reconnect")
         else:
             #print "Desconexion MQTT"
             client.loop_stop()
@@ -27,7 +29,7 @@ def on_disconnect(client, userdata, rc):
 
 
 tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-print tiempo,
+print (tiempo,end='-')
 
 
 ###### MQTT
@@ -55,29 +57,36 @@ salir=False
 N=1
 Nmax=3
 narg = len(sys.argv)
-time.sleep(5)
+print ('Nº de Argumentos = ',sys.argv)
+time.sleep(1)
                
 while salir!=True and N<Nmax:
     try:
         for i in range (1,narg):
             msg =  str(sys.argv[i])
-            print msg,
-
+            print (f' Comando enviado {msg}', end='-- ')
+            if msg[0].isnumeric():
+                print('publico PVControl/Hibrido'+msg[0],msg[1:])
+                client.publish('PVControl/Hibrido'+msg[0],msg[1:])
+            else:
+                print('publico PVControl/Hibrido',msg)
+                client.publish('PVControl/Hibrido',msg)
+           
             #print "20"
-            client.publish('PVControl/Hibrido',msg)
+            #client.publish('PVControl/Hibrido',msg)
             #print "21"
             time.sleep(5)
 
         salir=True
     except:
-        print 'error'
+        print ('error')
         salir=False
         time.sleep(60)
         N=N+1
-        print 'N=',N
+        print ('N=',N)
 
 #print "30"
 client.disconnect()
 #print "31"
-print
+print()
 time.sleep(3)

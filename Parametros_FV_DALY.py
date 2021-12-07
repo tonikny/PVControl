@@ -5,7 +5,7 @@
 ################################
 ###### Parametros Bateria ######
 ################################
-AH = 0.0            # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
+AH = 500.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
 CP = 1              # Indice Peukert
 EC = 0.95           # Eficiencia Carga
 vsis = 4            # Voltaje sistema - 1=12V  2=24V   4=48V
@@ -16,23 +16,23 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 ##### Parametros sensores ######
 ################################
 
-Vbat_sensor   = ""                        # Sensor de Voltaje bateria ( ADS, d_fronius['Vbat'], d_victron['Vbat'].....)
-Vplaca_sensor = "d_huawei['Vplaca']"      # Sensor de Voltaje placas ( ADS, d_fronius['Vplaca'],d_victron['Vbat'].....)
+Vbat_sensor   = "d_['HIBRIDO']['Vbat']"       # Sensor de Voltaje bateria ( ADS, d_['HIBRIDO']['Vbat'], d_victron['Vbat'].....)
+Vplaca_sensor = "d_['HIBRIDO']['Vplaca']"     # Sensor de Voltaje placas ( ADS, d_['HIBRIDO']['Vplaca'],d_victron['Vbat'].....)
 
-Ibat_sensor   = ""                        # Sensor de Intensidad Bateria ( ADS, d_fronius['Ibat'], d_victron['Vbat'].....)
-Iplaca_sensor = "d_huawei['Iplaca']"      # Sensor de Intensidad Placas ( ADS, d_fronius['Iplaca'], .....)
+Ibat_sensor   = "d_['HIBRIDO']['Ibat']"       # Sensor de Intensidad Bateria ( ADS, d_['HIBRIDO']['Ibat'], d_victron['Vbat'].....)
+Iplaca_sensor = "d_['HIBRIDO']['Iplaca']"     # Sensor de Intensidad Placas ( ADS, d_['HIBRIDO']['Iplaca'], .....)
 
-Aux1_sensor   = "d_huawei['Aux1']"        # ADS, etc...
-Aux2_sensor   = ""                        # ADS, etc...
+Aux1_sensor   = ""     # ADS, etc...
+Aux2_sensor   = ""     # ADS, etc...
 
-Vred_sensor   = "d_huawei['Vred']"        # Sensor Voltaje de red (d_huawei['Vred'],...)
-Ired_sensor   = "d_huawei['Ired']"        # Sensor Intensidad de red (d_huawei['Ired'],...)
-EFF_sensor    = "d_huawei['EFF']"         # Eficienca Conversion (d_huawei['EFF'],...)
+Vred_sensor   = ""                        # Sensor Voltaje de red (d_huawei['Vred'],...)
+Ired_sensor   = ""                        # Sensor Intensidad de red (d_huawei['Ired'],...)
+EFF_sensor    = ""                        # Eficienca Conversion (d_huawei['EFF'],...)
 
-Wplaca_sensor  = "d_huawei['Wplaca']"     # Iplaca * Vbat, d_fronius['Wplaca'].....
-Consumo_sensor = "d_huawei['Consumo']"    # Vbat * (Iplaca-Ibat), d_['HIBRIDO']['PACW'].
+Wplaca_sensor  = "d_['HIBRIDO']['Wplaca']"    # Iplaca * Vbat, d_['HIBRIDO']['Wplaca'].....
+Consumo_sensor = "d_['HIBRIDO']['PACW']"      # Vbat * (Iplaca-Ibat), d_['HIBRIDO']['PACW'].
 
-Temperatura_sensor = "d_huawei['Temp']"   #  d_['TEMP']['Temp0'],d_['TEMP']['Temp1'],..... d_snre['Temp0'].....
+Temperatura_sensor = ""                   #  d_['TEMP']['Temp0'],d_['TEMP']['Temp1'],..... d_snre['Temp0'].....
 
 ################################
 ###### Parametros ADS1115 ######
@@ -176,7 +176,7 @@ simular_reles = 0   # Simular reles fisicos
 ######################## 
 ###### Daly ######
 ########################
-usar_daly = 0  # Poner cantidad de series a leer pon 0 si no lo quieres usar
+usar_daly = 7  # Poner cantidad de series a leer pon 0 si no lo quieres usar
 
 dev_daly = "/dev/ttyUSB0"  # donde esta el cable
 
@@ -223,19 +223,17 @@ celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = 0 #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [1] #1 para leer datos Hibrido ..... 0 para no usar
 
-dev_hibrido = "/dev/hidraw0"  # puerto donde reconoce la RPi al Hibrido
-usar_crc = 1                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
+dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
+usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
 
-t_muestra_hibrido = 5         # Tiempo en segundos entre muestras del Hibrido
-publicar_hibrido_mqtt = 1     # Publica o no por MQTT los datos capturados del Hibrido
+t_muestra_hibrido = [5]         # Tiempo en segundos entre muestras del Hibrido
+publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del Hibrido
 
-grabar_datos_hibrido = 1      # 1 = Graba la tabla Hibrido... 0 = No graba
-n_muestras_hibrido = 5        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
+grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
+n_muestras_hibrido = [5]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
-iplaca_hibrido_max = 80
-iplaca_hibrido_min = 0
 
 # -----------------------------------------------
 #####################
@@ -331,7 +329,7 @@ t_muestra_fronius = 5
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar huawei = 1
 
-usar_huawei = 1               # 1 para leer datos del huawei..... 0 para no usar
+usar_huawei = 0                # 1 para leer datos del huawei..... 0 para no usar
 IP_HUAWEI = "192.168.0.24"    # IP del huawei
 t_muestra_huawei = 5          # Tiempo entre capturas
 # -----------------------------------------------

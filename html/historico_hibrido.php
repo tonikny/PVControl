@@ -19,34 +19,41 @@ if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
 	 $nseg_punto=60;
     
  }
- 
-$sql = "SELECT Tiempo, AVG(Vbus) as Vbus,(AVG(Vbus)/Avg(Vbat))*30 as Vbus_Vbat, (AVG(Ibatp)-AVG(Ibatn)) as Ibat,
-                       AVG(Iplaca) as Iplaca, AVG(Vbat) as Vbat, AVG(Temp) as Temp, AVG(PACW) as PACW, AVG(Flot)*50 as Flot
-        FROM hibrido WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        GROUP BY DAY(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
-//echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
+//Ver numero de Hibridos activos...maximo 10
 $rawdata=[];
-if($result = mysqli_query($link, $sql)){
-   $i=0;
-   while($row = mysqli_fetch_assoc($result)) {
-      $rawdata[$i] = $row;
-      $i++;
-   }
-   //echo "  N_puntos=",$i;
- }else{
-   echo "ERROR $sql. " . mysqli_error($link);
- }
+$ngraficos=0;
 
+for ($n = 0; $n <= 10; $n++) {
+    $i = (0 == $n) ? '' : $n; 
+    $sql= "SELECT * FROM hibrido".$i." LIMIT 1";
+    $val = mysqli_query($link,$sql);
+    if ($val !== FALSE)
+      {
+        //$sql = "SELECT Tiempo, AVG(Vbus) as Vbus,(AVG(Vbus)/Avg(Vbat))*30 as Vbus_Vbat, (AVG(Ibatp)-AVG(Ibatn)) as Ibat,
+        //               AVG(Iplaca) as Iplaca, AVG(Vbat) as Vbat, AVG(Temp) as Temp, AVG(PACW) as PACW, AVG(Flot)*50 as Flot
+        //      FROM hibrido".i." WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+        //      GROUP BY DAY(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+        
+        $sql = "SELECT  *, UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1,(Ibatp-Ibatn) as Ibat, Flot * 50 as Flot1
+               FROM hibrido".$i." WHERE Tiempo BETWEEN '" . $fecha1 ." 00:00:00' and '".$fecha2 . " 23:59:59'";
+        
+        if($result = mysqli_query($link, $sql)){
+           $ngraficos++;
+           $j=0;
+           
+           while($row = mysqli_fetch_assoc($result)) {
+              $rawdata[$n][$j] = $row;
+              $j++;
+           }
+           //echo "  N_puntos=",$i;
+         }else{
+           echo "ERROR $sql. " . mysqli_error($link);
+         }
+      }    
+    
+    }
 mysqli_close($link);
-
-//Adaptar el tiempo grafica historico general
-for($i=0;$i<count($rawdata);$i++){
-   $time = $rawdata[$i]["Tiempo"];
-   $date = new DateTime($time);
-   $rawdata[$i]["Tiempo"]=$date->getTimestamp()*1000;
- }
-
 ?>
 
 <!-- Importo el archivo Javascript de Highcharts directamente desde la RPi
@@ -66,14 +73,23 @@ for($i=0;$i<count($rawdata);$i++){
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
     Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
     A: <input type="date" name="fecha2" value=<?php echo $fecha2 ?> />
-	Muestra cada:<input type="number" size="5" name="nseg_punto" min="4" max="3600" step="4" value= <?php echo $nseg_punto ?> > seg__
+	<!--
+    Muestra cada:<input type="number" size="5" name="nseg_punto" min="4" max="3600" step="4" value= <?php echo $nseg_punto ?> > seg__
+    -->
     <input type = "submit" value = "Ver" />
 		
 </form>
 
 <p></p>
 
-<div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
+<?php 
+  
+  for($n = 0 ;$n<$ngraficos ;$n++)
+    {
+     echo "<div id='container_".$n."' style='width: 100%; height: 80vh; margin-left: 5; float: left'></div>"."\n";
+    }
+    
+?>
 
 <br>
 
@@ -86,26 +102,31 @@ $(function () {
                 useUTC: false
             },
 	    lang: {
-		months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
-		weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
-		shortMonths: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+		  months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+		  weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
+		  shortMonths: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
 	        rangeSelectorFrom: "Desde",
 	        rangeSelectorTo: "A",
  	        printChart: "Imprimir gráfico",
-		loading: "Cargando..."
+		  loading: "Cargando..."
 	    }
         });
-
-        var char = new Highcharts.StockChart ({
+  <?php
+  
+  for($n = 0 ;$n<$ngraficos ;$n++)
+    {   $T = (0 == $n) ? '' : $n;
+        echo
+          "
+          var char = new Highcharts.StockChart ({
             chart: {
-                renderTo: 'container12',
+                renderTo: 'container_".$n."',
                 zoomType: 'xy',
 				panning: true,
                 panKey: 'shift'
             },
 
             title: {
-                text: 'HIBRIDO -  Vbus, Iplaca/Ibat/Vbat/PACW/Flot y Temp Disipador'
+                text: 'HIBRIDO".$T." -  Vbus, Iplaca/Ibat/Vbat/PACW/Flot y Temp Disipador'
             },
             subtitle: {
                 //text: 'Permite Zoom XY'
@@ -249,8 +270,12 @@ $(function () {
                 valueDecimals: 2
              },
 
-            series: [{
-                name: 'Vbus',
+            series:
+             [";
+            
+            //  #### Vbus ####
+            echo "
+              { name: 'Vbus',
                 type: 'spline',
 				yAxis: 2,
                 color: Highcharts.getOptions().colors[1],
@@ -258,17 +283,23 @@ $(function () {
                     valueSuffix: ' V',
                     valueDecimals: 0,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vbus"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["Vbus"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-              }, {
-                name: 'Vbat',
+                                })()
+                              
+                 },";
+                 
+            //  #### Vbat ####
+            echo "
+              { name: 'Vbat',
                 type: 'spline',
 				yAxis: 1,
                 color: Highcharts.getOptions().colors[0],
@@ -276,135 +307,152 @@ $(function () {
                     valueSuffix: ' V',
                     valueDecimals: 2,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vbat"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["Vbat"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-              }, {
-                name: 'Ibat',
+                                })()
+                              
+                 },";
+                 
+             //  #### Ibat ####
+            echo "
+              { name: 'Ibat',
                 type: 'spline',
+				yAxis: 0,
                 color: Highcharts.getOptions().colors[2],
                 tooltip: {
                     valueSuffix: ' A',
                     valueDecimals: 0,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Ibat"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["Ibat"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-              }, {
-                name: 'Iplaca',
+                                })()
+                              
+                 },";
+                 
+             //  #### Iplaca ####
+            echo "
+              { name: 'Iplaca',
                 type: 'spline',
+				yAxis: 0,
                 color: Highcharts.getOptions().colors[3],
                 tooltip: {
                     valueSuffix: ' A',
                     valueDecimals: 0,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Iplaca"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["Iplaca"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-              }, {
-                name: 'Temp Disipador',
+                                })()
+                              
+                 },";     
+                 
+            //  #### Temp Disipador ####
+            echo "
+              { name: 'Temp Disipador',
                 type: 'spline',
-				yAxis: 2,
-                color: 'black', //color: Highcharts.getOptions().colors[4],
+				yAxis: 0,
+                color: 'black', //Highcharts.getOptions().colors[3],
                 tooltip: {
                     valueSuffix: ' ºC',
                     valueDecimals: 0,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Temp"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["temp"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-					 
-			   }, {
-                name: 'Ratio Vbus/Vbat*30',
-                type: 'spline',
-				yAxis: 2,
-                color: 'black', //color: Highcharts.getOptions().colors[4],
-                tooltip: {
-                    valueSuffix: '',
-                    valueDecimals: 0,
-                },
-                data: (function() {
-                   var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vbus_Vbat"];?>]);
-                   <?php } ?>
-                return data;
-                     })()
-					 		 
-			   }, {
-                name: 'Consumo AC ',
+                                })()
+                              
+                 },";     
+                 
+            //  #### Consumo AC ####
+            echo "
+              { name: 'Consumo AC',
                 type: 'spline',
 				yAxis: 3,
-				//color: '#F000FF', //Highcharts.getOptions().colors[7],
                 color: 'brown',
                 tooltip: {
-                    valueSuffix: 'W',
+                    valueSuffix: ' W',
                     valueDecimals: 0,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["PACW"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["PACW"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-					
-               }, {
-                name: 'Flot',
+                                })()
+                              
+                 },";     
+                 
+            //  #### FLOT ####
+            echo "
+              { name: 'Flot',
                 type: 'spline',
 				yAxis: 2,
-				//color: '#F000FF', 
                 color: 'green',
                 tooltip: {
                     valueSuffix: ' ',
                     valueDecimals: 0,
                 },
-                data: (function() {
+                data: (function()
+                {
                    var data = [];
-                   <?php
-                       for($i = 0 ;$i<count($rawdata);$i++){
-                   ?>
-                   data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Flot"];?>]);
-                   <?php } ?>
+              ";
+                   
+              for($i = 0 ;$i<count($rawdata[$n]);$i++){
+                echo "data.push([".$rawdata[$n][$i]["Tiempo1"].",".$rawdata[$n][$i]["Flot1"]."]);";
+               }
+              echo "
                 return data;
-                     })()
-
-					
-            }]
+                                })()
+                              
+                 },";     
+                 
+                 
+          echo"]
 
         });
+  
+        ";
+   }
 
-});
-</script>
+echo "  
+ });
+ </script>
+    ";
 
-<?php
 include ("pie.inc");
 ?>
