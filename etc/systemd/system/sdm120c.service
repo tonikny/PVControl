@@ -1,0 +1,11 @@
+[Unit]
+Description= PVControl+ - Lectura SDM120CHUAWEI
+After=fv.service
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_sdm120c.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

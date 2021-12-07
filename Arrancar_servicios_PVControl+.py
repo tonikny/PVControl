@@ -14,7 +14,7 @@ print(Fore.YELLOW+'######## Activando Sevicios #########')
 for f in glob.glob(carpeta):
     if os.path.isfile(f):
         print (Fore.RESET+'Procesando archivo.... '+ Fore.GREEN+f'{f}'+ Fore.RESET)
-        res = subprocess.run(['sudo','ln', '-s',f'{f}','/etc/systemd/system/{f[39:]}'], capture_output=True)
+        res = subprocess.run(['sudo','ln', '-s',f'{f}',f'/etc/systemd/system/{f[39:]}'], capture_output=True)
         res = subprocess.run(['sudo','systemctl', 'enable', f'{f[39:]}'], capture_output=True)
         res = subprocess.run(['sudo','systemctl', 'restart', f'{f[39:]}'], capture_output=True)
         res = subprocess.run(['sudo','systemctl', 'status', f'{f[39:]}'], capture_output=True)
