@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-26
+# Versión 2021-12-09
 
 import time,sys
 import traceback
@@ -10,7 +10,7 @@ import MySQLdb
 import random # para simulacion usando random.choice
 
 from smbus import SMBus
-import Adafruit_ADS1x15 # Import the ADS1x15 module.
+
 import telebot # Librería de la API del bot.
 from telebot import types # Tipos para la API del bot.
 import token
@@ -50,24 +50,14 @@ AH = float(AH)
 CP = float(CP)
 EC = float(EC)  
 vflotacion = float(vflotacion)
-SHUNT1 = float(SHUNT1)
-SHUNT2 = float(SHUNT2)
-RES0 = float(RES0)
-RES1 = float(RES1)
-RES2 = float(RES2)
-RES3 = float(RES3)
-RES0_gain = float(RES0_gain)
-RES1_gain = float(RES1_gain)
-RES2_gain = float(RES2_gain)
-RES3_gain = float(RES3_gain)
 
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
-if str(sys.argv[narg-1]) == '-p1':    DEBUG = 1
-elif str(sys.argv[narg-1]) == '-p2':  DEBUG = 2
-elif str(sys.argv[narg-1]) == '-p3':  DEBUG = 3
-elif str(sys.argv[narg-1]) == '-p':   DEBUG = 100
-else:    DEBUG = 0
+DEBUG= 0
+if '-p1' in sys.argv: DEBUG= 1 
+elif '-p2' in sys.argv: DEBUG= 2 
+elif '-p3' in sys.argv: DEBUG= 3 
+elif '-p' in sys.argv: DEBUG= 100 
 
 print (Fore.RED + 'DEBUG=',DEBUG)
 
@@ -76,20 +66,9 @@ if usar_telegram == 1:
     bot.skip_pending = True # Skip the pending messages
     cid = Aut[0]
 try:
-    bus = SMBus(1) # Activo Bus I2C para ADS o PCF
+    bus = SMBus(1) # Activo Bus I2C para PCF
 except:
     pass
-
-if (Vbat_sensor + Vplaca_sensor + Aux1_sensor+ Aux2_sensor).find ('ADS') >=0 : 
-    # Alta ADS1115_1 - pin addr a 3V3
-    # A0=Vbat // A1=Aux1 // A2= Vplaca// A3= Aux2
-    adc1 = Adafruit_ADS1x15.ADS1115(address=0x48, busnum=1) 
-
-if (Ibat_sensor + Iplaca_sensor).find ('ADS') >=0:
-    # Alta ADS1115_4 - pin addr a GND
-    # A0=Ibat // A1=Ibat // // A2=Iplaca // A3=Iplaca
-    adc = Adafruit_ADS1x15.ADS1115(address=0x4b, busnum=1)
-
 
 #Inicializando las variables del programa
 #---------------------------------------------------------------
@@ -330,18 +309,33 @@ def act_rele(adr,out) : # Activar Reles
                 print ('Error rele GPIO')
                 print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out)         
 
-        elif int(adr/100) == 5: #Rele Sonoff (tasmota)
+        elif int(adr/100) == 5: #Rele TASMOTA Angulo de fase.
             try:
-                if int(adr/10) >= 58: # Dejo 58X y 59X para reles ON/OFF, resto PWM
-                    if out == 100: out = "ON"
-                    else:          out = "OFF"
-                    client.publish("cmnd/PVControl/Reles/"+str(adr)+"/POWER",str(out))  # via MQTT
-                else:
-                    out = calibracion_rele(adr,out)
-                    client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # PWM via MQTT  
+                out = calibracion_rele(adr,out)
+                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # PWM via MQTT  
                       
             except:
-                logBD('Error rele TASMOTA '+str(adr)+'='+ str(out)) 
+                logBD('Error rele TASMOTA - AF '+str(adr)+'='+ str(out)) 
+        
+        elif int(adr/100) == 6: #Rele TASMOTA - Semiciclos
+            try:
+                if out < 50: Freq = out 
+                else: Freq= 100 - out
+                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # Logica Negativa PWM via MQTT 
+                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PwmFrequency",str(Freq))  # Freq via MQTT 
+                
+                
+            except:
+                logBD('Error rele TASMOTA -SC '+str(adr)+'='+ str(out)) 
+                
+        elif int(adr/100) == 7: #Rele Sonoff (tasmota)
+            try:
+                if out == 100: out = "ON"
+                else:          out = "OFF"
+                client.publish("cmnd/PVControl/Reles/"+str(adr)+"/POWER",str(out))  # via MQTT
+            except:
+                logBD('Error rele TASMOTA ON/OFF '+str(adr)+'='+ str(out)) 
+
 
 
     return
@@ -366,67 +360,27 @@ def logBD(texto) : # Incluir en tabla de Log
 
 def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
     try:
-        y_err = 0.0 # error en lectura multiple
-        if sensor=='ADS':
-            Suma = 0; Max=-40000; Min=-Max
-            if n_sensor == 'Ibat':
-                N = 5
-                for i in range(N):
-                    l = adc.read_adc_difference(0, gain=16, data_rate=250)
-                    Suma += l
-                    Max = max(Max,l)
-                    Min = min(Min,l)
-                ADS = Suma/N
-                y = round(0.0078127 * ADS * SHUNT1,2)
-                y_err = round((Max-Min) * 0.0078127 * SHUNT1 ,2)
-            
-            elif n_sensor == 'Iplaca':
-                N = 2
-                for i in range(N):
-                    l = adc.read_adc_difference(3, gain=16, data_rate=250)
-                    Suma += l
-                    Max = max(Max,l)
-                    Min = min(Min,l)
-                ADS = Suma/N
-                y = round(0.0078127 * ADS * SHUNT2,2)
-                y_err = round((Max-Min) * 0.0078127 * SHUNT2 ,2)
-            elif n_sensor == 'Vbat':
-                N = 5
-                for i in range(N):
-                    l = adc1.read_adc(0, gain=RES0_gain,data_rate=250)
-                    Suma += l
-                    Max = max(Max,l)
-                    Min = min(Min,l)
-                ADS = Suma/N
-                y = round(ADS * 0.000125/RES0_gain * RES0,2) # A0   4,096V/32767=0.000125
-                y_err = round((Max-Min) * 0.000125/RES0_gain * RES0,2)
-            elif n_sensor == 'Aux1':
-                y = round(adc1.read_adc(1, gain=RES1_gain,data_rate=128) * 0.000125/RES1_gain * RES1, 2)  # A1   4,096V/32767=0.000125 
-                y_err = 0.0
-            elif n_sensor == 'Vplaca':
-                y = round(adc1.read_adc(2, gain=RES2_gain,data_rate=128) * 0.000125/RES2_gain * RES2, 2)  # A2   4,096V/32767=0.000125 
-            elif n_sensor == 'Aux2':
-                y = round(adc1.read_adc(3, gain=RES3_gain,data_rate=128) * 0.000125/RES3_gain * RES3, 2)  # A3   4,096V/32767=0.000125 
-        
-        elif sensor =='':
-            return anterior, y_err
+        y_err = 0 # error en lectura 0= No error....1= Error lectura.....2= Error limites max/min
+        if sensor =='':
+            return anterior , y_err
         else:
             y = float(eval(sensor))
-             
     except:
         traceback.print_exc()
         print ('Error en sensor ', n_sensor, sensor)
+        
         y = anterior
-        logBD('-ERROR MEDIDA -'+n_sensor+ '='+sensor)
-        time.sleep(5)
+        y_err = 1
+        time.sleep(5) # espero 5sg
 
     if y < minimo or y > maximo:
         logBD('lectura incoherente '+n_sensor+'='+str(y))
         print ('Error min/max sensor ', n_sensor)
         
         y = anterior
+        y_err = 2 
 
-    return y,y_err
+    return y ,y_err
 
 def Calcular_PID (sensor,objetivo,P,I,D):
     global Lista_errores_PID, IPWM_P, IPWM_I, IPWM_D
@@ -548,7 +502,7 @@ for r in TR:
         NGPIO +=1
 
 if nreles > 0 : # apagado reles en BD
-    sql = "UPDATE reles SET estado = 0"
+    sql = "UPDATE reles SET estado = 0 WHERE modo = 'PRG'"
     cursor.execute(sql)
 
 ## ------------------------------------------------------------
@@ -556,7 +510,7 @@ if nreles > 0 : # apagado reles en BD
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
 if AH > 1:
     try:
-        if simular != 1 and Vbat_sensor == 'ADS':
+        if simular != 1 and Vbat_sensor == "d_['ADS1']['Vbat']":
             Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
         else:
             Vbat = vsis * 12.0
@@ -620,7 +574,6 @@ try:
         
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
-            #print ('Grabar = 1')
             sql='SELECT * FROM parametros'
             nparametros=cursor.execute(sql)
             nparametros=int(nparametros)  # = numero de filas de parametros.---- debe ser 1
@@ -1147,7 +1100,6 @@ try:
                 
             ### encender rele
             #print (id_rele,Rele[id_rele],Rele_Ant[id_rele])
-            #if Rele[id_rele] != Rele_Ant[id_rele] and Flag_Rele_Encendido == 0 :
             if Rele[id_rele] == 100 and Flag_Rele_Encendido == 0 and Rele_Ant[id_rele] < 100 :
                 print (tiempo,' - Enciendo rele ',id_rele)
                 act_rele(id_rele,100)
@@ -1158,7 +1110,7 @@ try:
                 print (tiempo,' - Apago rele ',id_rele)
                 act_rele(id_rele,0) #apagar rele
         
-      ## --------- BUCLE DIVER + ACTIVACION RELES CONTROL DE EXCEDENTES -------------
+      ## --------- ACTIVACION RELES CONTROL DE EXCEDENTES -------------
         t_muestra_3=(time.time()-hora_m) * 1000
         ee=90
         reles_exc_prio = {}  # inicializacion dict reles excedentes por prioridad
@@ -1369,12 +1321,12 @@ try:
         ee=320
         if DEBUG >= 1:
             #print (tiempo,'-',end='')
-            print(f"{int(T_ejecucion*1000):4}ms - Sensor={TP['sensor_PID']}={TP['objetivo_PID']:.2f}",end='')
+            print(f"{int(T_ejecucion*1000):4}ms-Sensor={TP['sensor_PID']}={TP['objetivo_PID']:.2f}",end='')
             print (Fore.CYAN+f"/{eval(TP['sensor_PID']):.2f}-Ct={Vbat_temp:.2f}",end='')
             if AH > 0:
-                print (Fore.MAGENTA+f' / Vbat={Vbat:.2f}-Iplaca={Iplaca:.2f}-Ibat={Ibat:.2f}-Wcon={Wconsumo:.2f}-PWM={PWM:.0f}-Temp={Temp:.2f}'+Fore.RESET)
+                print (Fore.MAGENTA+f'/Vbat={Vbat:.2f}-Iplaca={Iplaca:.1f}-Ibat={Ibat:.1f}-Wcon={Wconsumo:.0f}-PWM={PWM:.0f}-Temp={Temp:.2f}'+Fore.RESET)
             else:
-                print (Fore.MAGENTA+f' / Vred={Vred:.2f}-Iplaca={Iplaca:.2f}-Ired={Ibat:.2f}-Wcon={Wconsumo:.2f}-PWM={PWM:.0f}'+Fore.RESET)
+                print (Fore.MAGENTA+f'/Vred={Vred:.2f}-Iplaca={Iplaca:.1f}-Ired={Ibat:.1f}-Wcon={Wconsumo:.0f}-PWM={PWM:.0f}'+Fore.RESET)
                 
         # Repetir bucle cada X segundos
         espera = TP['t_muestra'] - T_ejecucion #-0.1

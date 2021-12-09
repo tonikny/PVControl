@@ -16,14 +16,14 @@ vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa po
 ##### Parametros sensores ######
 ################################
 
-Vbat_sensor   = "ADS"     # Sensor de Voltaje bateria ( ADS, d_hibrido['Vbat'], d_victron['Vbat'].....)
-Vplaca_sensor = "ADS"     # Sensor de Voltaje placas ( ADS, d_hibrido['Vplaca'],d_victron['Vbat'].....)
+Vbat_sensor   = "d_['ADS1']['Vbat']"     # Sensor de Voltaje bateria ( d_['ADS1']['Vbat'], d_hibrido['Vbat'], d_victron['Vbat'].....)
+Vplaca_sensor = "d_['ADS1']['Vplaca']"   # Sensor de Voltaje placas ( d_['ADS1']['Vplaca'], d_hibrido['Vplaca'],d_victron['Vbat'].....)
 
-Ibat_sensor   = "ADS"     # Sensor de Intensidad Bateria ( ADS, d_hibrido['Ibat'], d_victron['Vbat'].....)
-Iplaca_sensor = "ADS"     # Sensor de Intensidad Placas ( ADS, d_hibrido['Iplaca'], .....)
+Ibat_sensor   = "d_['ADS4']['Ibat']"     # Sensor de Intensidad Bateria ( d_['ADS4']['Ibat'], d_hibrido['Ibat'], d_victron['Vbat'].....)
+Iplaca_sensor = "d_['ADS4']['Iplaca']"   # Sensor de Intensidad Placas ( d_['ADS4']['Iplaca'], d_hibrido['Iplaca'], .....)
 
-Aux1_sensor   = ""        # ADS, etc...
-Aux2_sensor   = ""        # ADS, etc...
+Aux1_sensor   = "d_['ADS1']['Aux1']"     # ...
+Aux2_sensor   = ""        # ...
 
 Vred_sensor   = ""        # Sensor Voltaje de red (d_huawei['Vred'],...)
 Ired_sensor   = ""        # Sensor Intensidad de red (d_huawei['Ired'],...)
@@ -37,22 +37,19 @@ Temperatura_sensor = "d_['TEMP']['Temp0']"   #  d_['TEMP']['Temp0'],d_['TEMP']['
 ################################
 ###### Parametros ADS1115 ######
 ################################
-SHUNT1 = 100.0/75        # Shunt Ibat (Amperios/mV)
-SHUNT2 = 100.0/75        # Shunt Iplaca (Amperios/mV)
+usar_ADS = [1,1] # activar o no el ADS
+nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
+direccion_ADS = [72,75]                                              # direccion I2C del ADS
 
-# Valor Voltaje divisor = Ventrada*R1/(R1+R2)
-#Vbat
-RES0 = (68+1.5)/1.5   # Divisor tension Vbat...(R2=68K..R1=1,5K) * ajuste por tolerancias en resistencias
-RES0_gain = 2         # Voltios Fondo escala 1=4,096 - 2=2.048
-#Vaux
-RES1 = (68+1.5)/1.5   # Divisor tension Aux1    
-RES1_gain = 2         # VoltiosFondo escala 1=4,096 - 2=2.048
-#Vplaca
-RES2 = (68+1.5)/1.5   # Divisor tension Vplaca
-RES2_gain = 2         # VoltiosFondo escala 1=4,096 - 2=2.048
-#V...
-RES3 = (68+1.5)/1.5   # Divisor tension Aux2
-RES3_gain = 2         # VoltiosFondo escala 1=4,096 - 2=2.048
+var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
+
+tmuestra_ADS = [1,1]                                             # tiempo en sg entre capturas
+rate_ADS = [[250,250,250,250],[250,250,250,250]]                     # datarate de lectura
+bucles_ADS = [[10,5,5,5], [4,2,4,2]]                                 # Numero de bucles de lectura
+
+gain_ADS = [[2,2,2,2], [2,2,2,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
+res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lectura ADS - Lectura real
 
 # -----------------------------------------------
 
