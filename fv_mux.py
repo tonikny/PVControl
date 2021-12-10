@@ -125,7 +125,7 @@ try:
      """
     if DEBUG >= 100: cursor.execute (Sql)
     
-    Sql='SELECT * FROM datos_celdas' 
+    Sql='SELECT * FROM datos_celdas LIMIT 1' 
     nreg=cursor.execute(Sql)
     ncel = len(cursor.description) - 2 # Nº de celdas declaradas en BD
     

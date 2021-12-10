@@ -102,7 +102,10 @@ def ADS_captura (ADS):  # como entrada solo el indice del ADS de las listas defi
                         break
                     elif modo == 4:
                         ee = '20d'
-                        adc.start_adc_difference(indice, gain=gain_ADS[ADS][indice], data_rate=rate_ADS[ADS][indice])
+                        if indice == 0: indice1= 0
+                        elif indice == 2: indice1 = 3
+                        
+                        adc.start_adc_difference(indice1, gain=gain_ADS[ADS][indice], data_rate=rate_ADS[ADS][indice])
                         ADS_modo = 'Continuo_Diferencial'
                         if DEBUG >= 1: print (f'entrada A{indice} : ', end='')
                         break
@@ -115,9 +118,14 @@ def ADS_captura (ADS):  # como entrada solo el indice del ADS de las listas defi
                         L_ADS = [adc.read_adc(indice, gain=gain_ADS[ADS][indice], data_rate=rate_ADS[ADS][indice]) for j in range(bucles_ADS[ADS][indice]) ]
                     elif modo == 3:
                         ee = '30b' 
-                        L_ADS = [adc.read_adc_difference(indice, gain=gain_ADS[ADS][indice], data_rate=rate_ADS[ADS][indice]) for j in range(bucles_ADS[ADS][indice]) ]
+                        if indice == 0: indice1= 0
+                        elif indice == 2: indice1 = 3
+                        
+                        L_ADS = [adc.read_adc_difference(indice1, gain=gain_ADS[ADS][indice], data_rate=rate_ADS[ADS][indice]) for j in range(bucles_ADS[ADS][indice]) ]
                     ee = '30c'
-                    if modo != 0:                    
+                    if modo != 0:
+                        #print(nombre_ADS[ADS],f'-- indice:{indice} - modo={modo}-gain={gain_ADS[ADS][indice]}-rate={rate_ADS[ADS][indice]} - bucles={bucles_ADS[ADS][indice]}')
+                    
                         MED_ADS = sum(L_ADS)/bucles_ADS[ADS][indice]
                         d_ads[var_ADS[ADS][indice]] = round(MED_ADS * 0.000125 * res_ADS[ADS][indice] / gain_ADS[ADS][indice] ,3)            
                     
