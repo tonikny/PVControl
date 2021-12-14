@@ -21,6 +21,14 @@ exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_daly.py') #+Style.RESET_ALL)
 
+DEBUG = 0
+if '-p1' in sys.argv: DEBUG= 1 
+elif '-p2' in sys.argv: DEBUG= 2 
+elif '-p3' in sys.argv: DEBUG= 3 
+elif '-p' in sys.argv: DEBUG= 100 
+
+print (Fore.RED + 'DEBUG=',DEBUG)
+
 ser = serial.Serial()
 ser.baudrate = 9600
 ser.parity = 'N'
@@ -35,7 +43,7 @@ time.sleep(1)
 
 
 #variables
-Daly_indice_datos = [5,6,7,14,15,16,23,0,0,0,0,0,0,0,0] # posicion de los datos de Vceldas en la respuesta
+Daly_indice_datos = [5,6,7,14,15,16,23,24,0,0,0,0,0,0,0] # posicion de los datos de Vceldas en la respuesta
 
 #read_meter = [0xA5,0x40,0x59,0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x46]
 leer_tensiones = [0xA5,0x40,0x95,0x08,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x82]
@@ -102,7 +110,7 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
             time.sleep(espera)
             rcv = ser.read(39)  
             datos = struct.unpack(">5B 4H 5B 4H 5B 3H 2B",rcv)  
-            #print(datos)  
+            if DEBUG != 0 : print('datos=',datos)  
             ee = '40'
             
             for i in range(usar_daly):
