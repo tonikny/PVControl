@@ -109,7 +109,7 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
             time.sleep(espera)
             rcv = ser.read(39)  
             datos = struct.unpack(">5B 4H 5B 4H 5B 3H 2B",rcv)  
-            if DEBUG != 0: print(datos)  
+            if DEBUG != 0: print('datos_celdas=',datos)  
             ee = '40'
             
             Vcelda_max['Valor'] = 0
@@ -149,7 +149,7 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
             time.sleep(espera)
             rcv = ser.read(13)  
             datos = struct.unpack(">4B 4H B",rcv)  
-            #print(datos) 
+            print(Fore.GREEN+'datos_celdas=',datos) 
 
             Valores['Vbat'] = datos[4]/10
             Valores['Ibat'] = (30000-datos[6])/10
@@ -160,7 +160,10 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
             time.sleep(espera)
             rcv = ser.read(13)  
             datos = struct.unpack(">13B",rcv)  
-            #print(datos) 
+            if DEBUG != 0: 
+                print(Fore.CYAN+'datos_estado=',datos) 
+                print (Fore.RESET+'='*80) 
+            
             ee='58'
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
             ee='59'
@@ -206,11 +209,11 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
                     valores = "','".join(str(v) for v in Valor_real)
                     Sql = "INSERT INTO datos_celdas ("+campos+") VALUES ('"+valores+"')"
                     cursor.execute(Sql)
-                    print (Fore.RED+'G', end = '',flush=True)
+                    if DEBUG == 0:print (Fore.RED+'G', end = '',flush=True)
                     
                 else:
                     n_muestras_daly_contador+=1
-                    print (Fore.BLUE+'D', end = '',flush=True)
+                    if DEBUG == 0: print (Fore.BLUE+'D', end = '',flush=True)
                 
                 ee='75'    
                 db.commit()
@@ -218,8 +221,9 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
                 contador -= 1
                 if contador== 0:
                     contador = nveces
-                    print ()
-                    print(Fore.GREEN+time.strftime("%Y-%m-%d %H:%M:%S") ,'- ', end='')
+                    if DEBUG == 0:
+                        print ()
+                        print(Fore.GREEN+time.strftime("%Y-%m-%d %H:%M:%S") ,'- ', end='')
                 
             except:
                 print('error, BD', Sql)
