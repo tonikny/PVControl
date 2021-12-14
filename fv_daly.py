@@ -21,13 +21,12 @@ exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_daly.py') #+Style.RESET_ALL)
 
-DEBUG = 0
+DEBUG= 0
 if '-p1' in sys.argv: DEBUG= 1 
-elif '-p2' in sys.argv: DEBUG= 2 
-elif '-p3' in sys.argv: DEBUG= 3 
 elif '-p' in sys.argv: DEBUG= 100 
 
 print (Fore.RED + 'DEBUG=',DEBUG)
+
 
 ser = serial.Serial()
 ser.baudrate = 9600
@@ -110,9 +109,12 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
             time.sleep(espera)
             rcv = ser.read(39)  
             datos = struct.unpack(">5B 4H 5B 4H 5B 3H 2B",rcv)  
-            if DEBUG != 0 : print('datos=',datos)  
+            if DEBUG != 0: print(datos)  
             ee = '40'
             
+            Vcelda_max['Valor'] = 0
+            Vcelda_min['Valor'] = 100
+          
             for i in range(usar_daly):
                 ee = '41'
                 
@@ -120,22 +122,24 @@ if usar_daly in range(1,17): # poner el Nº de celdas maxima que admita
                 ee='42'
                 Valor_Max[i] = max(Valor_real[i], Valor_Max[i])
                 Valor_Min[i] = min(Valor_real[i], Valor_Min[i])
+    
             
-                Valores[f'C{i+1}'] = Valor_real[i]
-                Valores[f'C{i+1}max'] = Valor_Max[i]
-                Valores[f'C{i+1}min'] = Valor_Min[i]
-                
-                if Valor_Max[i] > Vcelda_max['Valor']:
-                    Vcelda_max['Celda'] =  f'C{i}'
-                    Vcelda_max['Valor'] =  Valor_Max[i]
+                #verificamos el valor max y min 
+                if Valor_real[i] > Vcelda_max['Valor']:
+                    Vcelda_max['Celda'] = f'C{i+1}'
+                    Valor_Max_real = round(Valor_real[i],2)
+                    Vcelda_max['Valor'] = Valor_Max_real
                     
-                if Valor_Min[i] < Vcelda_min['Valor']:
-                    Vcelda_min['Celda'] =  f'C{i}'
-                    Vcelda_min['Valor'] =  Valor_Min[i]
-                
-                Valores['Vceldamax'] = Vcelda_max # pon la clave que mas te guste
-                Valores['Vceldamin'] = Vcelda_min # pon la clave que mas te guste
-                
+                if Valor_real[i] < Vcelda_min['Valor']:
+                    Vcelda_min['Celda'] = f'C{i+1}'
+                    Valor_Min_real = round(Valor_real[i],2)
+                    Vcelda_min['Valor'] = Valor_Min_real
+                   
+
+
+            Valores['Vceldamax'] = Vcelda_max # pon la clave que mas te guste
+            Valores['Vceldamin'] = Vcelda_min # pon la clave que mas te guste
+            
             #print ('Celda Maxima=',Valores['Vceldamax'])
             #print ('Celda Minima=',Valores['Vceldamin'])
                 
