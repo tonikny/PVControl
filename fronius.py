@@ -14,6 +14,8 @@ import json
 import time
 import pickle
 import subprocess, sys
+import MySQLdb 
+
 from Parametros_FV import *
 #from csvFv import CsvFv
 
@@ -24,6 +26,13 @@ if '-p' in sys.argv: DEBUG = True # para test .... realiza print en distintos si
 if usar_fronius == 0:
     print (subprocess.getoutput('sudo systemctl stop fronius'))
     sys.exit()
+
+import colorama # colores en ventana Terminal
+from colorama import Fore, Back, Style
+colorama.init()
+
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fronius.py') #+Style.RESET_ALL)
+print()
 
     
 class fronius:
@@ -40,14 +49,14 @@ class fronius:
         
             response = requests.get(self.cmd_meter)
             meter = json.loads(response.content)
-            Wred = (-1)*float((meter['Body']['Data']['Site']['P_Grid']))
+            Wred = round((-1)*float((meter['Body']['Data']['Site']['P_Grid'])),2)
             Consumo = round((-1)*float((meter['Body']['Data']['Site']['P_Load'])),2)
             #print(Wred,Consumo)
             try:
-                Wplaca = float((meter['Body']['Data']['Site']['P_PV']))
+                Wplaca = round(float((meter['Body']['Data']['Site']['P_PV'])),2)
             except:
                 Wplaca = 0
-            if DEBUG: print('Wred',Wred,'Consumo',Consumo,'Wplaca',Wplaca)
+            if DEBUG: print(Fore.GREEN+f' // METER: Wred={Wred:>6.1f} - Consumo={Consumo:>6.1f} - Wplaca= {Wplaca:>6.1f}')
             
             self.dct['Wred'] = Wred
             self.dct['Consumo'] = Consumo
@@ -56,7 +65,7 @@ class fronius:
             
         except:
             
-            if DEBUG: print('Error lectura meter')
+            if DEBUG: print(Fore.RED+'Error lectura meter')
             return None
             
             
@@ -67,9 +76,9 @@ class fronius:
             response = requests.get(self.cmd_inverter)
             inverter = json.loads(response.content)
             #print('Vred',inverter)
-            Vred = float((inverter['Body']['Data']['UAC']['Value']))
-            Ired = float((inverter['Body']['Data']['IAC']['Value']))
-            Vplaca = float((inverter['Body']['Data']['UDC']['Value']))
+            Vred = round(float((inverter['Body']['Data']['UAC']['Value'])),2)
+            Ired = round(float((inverter['Body']['Data']['IAC']['Value'])),2)
+            Vplaca = round(float((inverter['Body']['Data']['UDC']['Value'])),2)
             #EFF = Pout(AC)/Pin(DC) * 100
             #Pin = Vi * Ii
             if Vplaca == None: Vplaca=0
@@ -80,7 +89,7 @@ class fronius:
                 EFF=100
                 pass
             
-            if DEBUG: print('Vred',Vred,'Vplaca',Vplaca)
+            if DEBUG: print(Fore.CYAN+f'INVERTER: Vred={Vred:>5.1f} - Vplaca={Vplaca:>5.1f}', end='')
             
             self.dct['Vred'] = Vred
             self.dct['Ired'] = Ired
@@ -101,6 +110,9 @@ if __name__ == '__main__':
     if usar_fronius == 1:
         try: #inicializamos BD
             # No se crea tabla especifica de fronius              
+            db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+            cursor = db.cursor()
+
             Sql = f""" CREATE TABLE IF NOT EXISTS `fronius` (
               `id` int(11) NOT NULL AUTO_INCREMENT,
               `Tiempo` datetime NOT NULL,
@@ -117,12 +129,14 @@ if __name__ == '__main__':
                 cursor.execute(Sql)   
             db.commit()
             """
-            cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+            try:
+                cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
                           ('FRONIUS','{}'))   
-            db.commit()
-                    
+                db.commit()
+            except:
+                pass     
         except:
-            print (Fore.RED,'ERROR inicializando BD RAM')
+            print (Fore.RED+ 'ERROR inicializando BD RAM')
             sys.exit()
     
     while True:
@@ -134,10 +148,10 @@ if __name__ == '__main__':
             if usar_meter_fronius == 1:
                 datos_meter = ve.read_data_meter()
                 datos_inverter.update(datos_meter)                
-                datos_inverter['Ired'] = datos_meter['Wred']/datos_inverter['Vred']
-                datos_inverter['Vred'] = datos_inverter['Vred']
-                datos_inverter['Iplaca'] = datos_meter['Wplaca']/datos_inverter['Vred']
-                datos_inverter['Aux1'] = datos_meter['Wred']
+                datos_inverter['Ired'] = round(datos_meter['Wred']/datos_inverter['Vred'],2)
+                datos_inverter['Vred'] = round(datos_inverter['Vred'],2)
+                datos_inverter['Iplaca'] = round(datos_meter['Wplaca']/datos_inverter['Vred'],2)
+                datos_inverter['Aux1'] = round(datos_meter['Wred'],2)
                 Temp = 0
                 
             datos= datos_inverter
