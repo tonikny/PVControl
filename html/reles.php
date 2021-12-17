@@ -265,9 +265,9 @@ echo '<strong>RELES</strong>';
 
 require('conexion.php');
 
-$sql = "SELECT reles.id_rele,reles.nombre,reles.modo,reles.grabacion,reles.salto,reles.prioridad
+$sql = "SELECT id_rele,nombre,modo,grabacion,salto,potencia,retardo,prioridad
 		FROM reles
-		ORDER BY reles.id_rele ASC";
+		ORDER BY id_rele ASC";
 
 if($result = mysqli_query($link, $sql)){
 

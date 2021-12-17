@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-09
+# Versión 2021-12-13
 
 import time,sys
 import traceback
@@ -32,6 +32,7 @@ import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
 
 import subprocess
+import click # para DEBUG parando ejecucion donde se quiera
 
 basepath = '/home/pi/PVControl+/'
 
@@ -56,7 +57,8 @@ narg = len(sys.argv)
 DEBUG= 0
 if '-p1' in sys.argv: DEBUG= 1 
 elif '-p2' in sys.argv: DEBUG= 2 
-elif '-p3' in sys.argv: DEBUG= 3 
+elif '-p3' in sys.argv: DEBUG= 3
+elif '-p4' in sys.argv: DEBUG= 50
 elif '-p' in sys.argv: DEBUG= 100 
 
 print (Fore.RED + 'DEBUG=',DEBUG)
@@ -166,13 +168,13 @@ try:
         
     try: #inicializamos registros en BD RAM
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('FV','"en espera"'))
+                      ('FV','{}'))
         db.commit()              
     except:
         pass
     try: 
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('RELES','"en espera"'))
+                      ('RELES','{}'))
         db.commit()
     except:
         pass    
@@ -255,67 +257,94 @@ def calibracion_rele(adr,out): # linealiza la respuesta del SSR por cada rele se
     #print (adr,' Potencia=',out1, 'PWM=',out)
     return out
 
-def act_rele(adr,out) : # Activar Reles
-   
+def act_rele(adr,out,tipo) :
+    # Activar Reles
+    #tipo = 0 funcionamiento normal ...se actualiza marca temporal
+    #tipo = 1 Fuerzo actualizacion ... marca temporal a 0
+    #tipo = 2 Refresco ... no actualiza marca temporal
+    
+    cambio = Rele_Dict[adr]['cambio']
+    
+    if tipo == 0: # modo normal de actuacion
+        if out == Rele_Ant[adr]:
+            return Rele[adr], cambio # no se actua sobre los reles ni marca temporal por tener misma salida
+        else:
+            if time.time() < Rele_Dict[adr]['retardo'] + Rele_Dict[adr]['cambio']:
+                if DEBUG == 50:
+                    print (Fore.GREEN + time.strftime("%H:%M:%S"),
+                           f"Cambio...T{time.time():.1f} - R{Rele_Dict[adr]['retardo']} - C{Rele_Dict[adr]['cambio']:.1f} sg "+
+                           f'- Orden {out} - Dejando Rele {adr} con valor {Rele_Ant[adr]} ')     
+                return Rele_Ant[adr], cambio
+                        
+        if DEBUG == 50:
+            print (Fore.RED + time.strftime("%H:%M:%S"),f'- Activando rele {adr} con valor {out}',
+                   f"Cambio...T{time.time():.1f} - R{Rele_Dict[adr]['retardo']} - C{Rele_Dict[adr]['cambio']:.1f} sg",
+                   f"= T{time.time()- Rele_Dict[adr]['retardo'] - Rele_Dict[adr]['cambio']:.1f} sg")
+        cambio = round(time.time(),1)
+    
+    elif tipo == 1: # ON/OFF forzado
+        if DEBUG == 50: print (Fore.RED + time.strftime("%H:%M:%S"),f'- Forzado rele {adr} con valor {out}')
+        cambio = 0
+        
+    elif tipo == 2: # Refresco
+        if DEBUG == 100: print(Fore.BLUE+f'Refresco rele {adr}')   
+        
     if simular_reles == 0:
         if int(adr/100) == 2: #Rele WIFI por MQTT
             try:
-                out = calibracion_rele(adr,out)
-                client.publish("PVControl/Reles/"+str(adr),int(out))  # via MQTT
-                #print("PVControl/Reles/"+str(adr),int(out))
+                out1 = calibracion_rele(adr,out)
+                client.publish(f'PVControl/Reles/{adr}',int(out1))  # via MQTT
+                
             except:
                 if simular != 1:
-                    logBD('Error rele wifi'+str(adr)+'='+ str(out))   
+                    logBD(f'Error rele wifi {adr}= {out1}')   
 
         elif int(adr/100) == 3: # Rele I2C
-            #print ('act_rele=',adr,out)
             adr_pcf=int(adr/10)
             puerto= adr%adr_pcf
             try:
                 estado = bus.read_byte(adr_pcf)  #devuelve el valor en decimal
-                #print('Out=',out, ' estado PCF=',bin(estado)[2:10].zfill(8), end='')
                 if out == 100 :
                     i2c_out = estado & (2**(puerto-1) ^ (255))
                 else :
                     i2c_out = estado | 2**(puerto-1)
                 bus.write_byte(adr_pcf,i2c_out)
-                #print(' adr_pcf=',adr_pcf, ' i2c_out=',bin(i2c_out)[2:10].zfill(8))
                 
             except:
                 if simular != 1:
-                    logBD('Error bus I2C '+str(adr)+ '='+ str(out))
+                    logBD(f'Error bus I2C {adr}= {out}')
 
         elif int(adr/100) == 4: # Rele GPIO .. esta por regulacion SC
             try:
                 #if DEBUG >= 2: print('rele GPIO=',adr, int(out))
                 for I in range (NGPIO):
                     if Rele_SSR[I][1] == adr % 100:
-                        out=int(out) #por ahora resolucion maxima de 1 
+                        out1=int(out) #por ahora resolucion maxima de 1 
                         
-                        #print('rele GPIO=',adr, 'duty=',int(out))
+                        #print('rele GPIO=',adr, 'duty=',int(out1))
                         
-                        Rele_SSR[I][0].ChangeDutyCycle(out)
-                        if out == 0 or out == 100:
+                        Rele_SSR[I][0].ChangeDutyCycle(out1)
+                        if out1 == 0 or out1 == 100:
                             pass
                             #Rele_SSR[I][0].ChangeFrequency(5)
-                        elif out <= 50:
+                        elif out1 <= 50:
                             #print (' frec=',out)
-                            Rele_SSR[I][0].ChangeFrequency(out)
+                            Rele_SSR[I][0].ChangeFrequency(out1)
                         else:
-                            Rele_SSR[I][0].ChangeFrequency(100-out)
-                            #print (' frec=',100-out)
+                            Rele_SSR[I][0].ChangeFrequency(100-out1)
+                            #print (' frec=',100-out1)
                         break
             except:
                 print ('Error rele GPIO')
-                print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out)         
+                print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out1)         
 
-        elif int(adr/100) == 5: #Rele TASMOTA Angulo de fase.
+        elif int(adr/100) == 5: #Rele Sonoff (tasmota)
             try:
-                out = calibracion_rele(adr,out)
-                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # PWM via MQTT  
-                      
+                if out == 100: out1 = "ON"
+                else:          out1 = "OFF"
+                client.publish("cmnd/PVControl/Reles/{adr}/POWER",str(out1))  # via MQTT
             except:
-                logBD('Error rele TASMOTA - AF '+str(adr)+'='+ str(out)) 
+                logBD(f'Error TASMOTA ON/OFF {adr}={out} - ´{out1}')
         
         elif int(adr/100) == 6: #Rele TASMOTA - Semiciclos
             try:
@@ -323,22 +352,16 @@ def act_rele(adr,out) : # Activar Reles
                 else: Freq= 100 - out
                 client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # Logica Negativa PWM via MQTT 
                 client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PwmFrequency",str(Freq))  # Freq via MQTT 
-                
-                
             except:
-                logBD('Error rele TASMOTA -SC '+str(adr)+'='+ str(out)) 
-                
-        elif int(adr/100) == 7: #Rele Sonoff (tasmota)
+                logBD(f'Error TASMOTA -SC {adr}={out}') 
+        elif int(adr/100) == 7: #Rele TASMOTA Angulo de fase.
             try:
-                if out == 100: out = "ON"
-                else:          out = "OFF"
-                client.publish("cmnd/PVControl/Reles/"+str(adr)+"/POWER",str(out))  # via MQTT
+                out1 = calibracion_rele(adr,out)
+                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out1))  # PWM via MQTT  
             except:
-                logBD('Error rele TASMOTA ON/OFF '+str(adr)+'='+ str(out)) 
-
-
-
-    return
+                logBD(f'Error TASMOTA - AF {adr}={out}- Calibr.={out1}')         
+         
+    return out, cambio
 
 def logBD(texto) : # Incluir en tabla de Log
     global Nlog, minuto
@@ -374,13 +397,13 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
         time.sleep(5) # espero 5sg
 
     if y < minimo or y > maximo:
-        logBD('lectura incoherente '+n_sensor+'='+str(y))
-        print ('Error min/max sensor ', n_sensor)
+        logBD(f'lectura incoherente {n_sensor}={y}')
+        print (f'Error min/max sensor {n_sensor}={y}')
         
         y = anterior
         y_err = 2 
 
-    return y ,y_err
+    return y,y_err
 
 def Calcular_PID (sensor,objetivo,P,I,D):
     global Lista_errores_PID, IPWM_P, IPWM_I, IPWM_D
@@ -392,12 +415,7 @@ def Calcular_PID (sensor,objetivo,P,I,D):
     
     # Calculo Termino Proporcional PID
     error_actual = Lista_errores_PID[0] = valor - objetivo
-    """
-    if objetivo >= 0:
-        error_actual = Lista_errores_PID[0] = valor - objetivo
-    else:
-        error_actual = Lista_errores_PID[0] = objetivo - valor
-    """
+    
     # Calculo Termino Integral PID
     error_integral = 0
     for i in range(N-1):
@@ -432,8 +450,6 @@ def Calcular_PWM(PWM):
     if PWM >= PWM_Max: PWM = PWM_Max
     if PWM <= 0: PWM = 0
 
-    #print ('Vbat={0:>5}'.format(Vbat) ,TP['sensor_PID']+'={0:>5}'.format(round(eval(TP['sensor_PID']),1)),
-    #       ' -- PWM={0:>3} -- Incr={1:>4} -- Ibat={2:>6}'.format(round(PWM,0),round(Diver,1), round(Ibat,1)))
     return PWM
 
 ## RECUPERAR DE LA BD ALGUNOS DATOS ##
@@ -457,8 +473,7 @@ try:
         Wh_placa = float(var[4])
         Whp_red = float(var[7])
         Whn_red = float(var[8])
-        
-        
+            
         sql='SELECT min(SOC), max(SOC), min(Vbat), max(Vbat) FROM datos WHERE Tiempo >= CURDATE()'
         cursor.execute(sql)
         var=cursor.fetchone()
@@ -472,7 +487,7 @@ try:
 except Exception as e:
     print ("Sin registros en la tabla datos")
 
-##  ------ inicializamos reles apagandolos  ------------------------
+##  ------ inicializamos reles ------------------------
 sql = 'SELECT * FROM reles'
 nreles = cursor.execute(sql)
 nreles = int(nreles)  # = numero de reles
@@ -484,38 +499,67 @@ TR_refresco = TR[:] # lista copia de tabla reles para ir refrescando 1 valor por
 Rele_SSR = [ ]
 NGPIO =0 # Num Reles GPIO
 
-for r in TR:
-    Rele[r['id_rele']] = Rele_Ant[r['id_rele']] = Rele_H[r['id_rele']] = 0
-    tipo_rele = int(r['id_rele']/100)
+for r in TR: # inicializando reles
+    id_rele = r['id_rele']
+    Rele[id_rele] = Rele_Ant[id_rele] = Rele_H[id_rele] =  0
+    tipo_rele = int(id_rele/100)
+    Rele_Dict[id_rele] = r.copy() # guardo todo los campos de la tabla Reles en BD            
+    Rele_Dict[id_rele]['cambio'] = 0 # inicializo a 0 la marca temporal para permitir cambio al iniciar programa
+    Rele_Dict[id_rele]['nconmutaciones']= 0  # inicializo a 0 el numero de conmutaciones del dia
+    Rele_Dict[id_rele]['segundos_on']= Rele_Tiempo[id_rele] = 0  # inicializo a 0 el tiempo en funcionamiento del dia
     
-    act_rele(r['id_rele'],0)
+    try: # aseguro que existe el registro diario de actividad del rele
+        cursor.execute("INSERT INTO reles_segundos_on (id_rele,fecha,segundos_on,nconmutaciones) VALUES (%s,%s,%s,%s)",
+                       (id_rele,time.strftime("%Y-%m-%d"),0,0))
+    except:
+        pass    
+    
+    if r['modo'] == 'PRG': # apago todos los reles en modo PRG por defecto
+        Rele[id_rele], i = act_rele(id_rele,0,2) # No actualizo la marca temporal de cambio
 
     if tipo_rele == 4: # Inicializo Rele SSR en GPIO
-        NGPIO_PIN = r['id_rele'] % 100
-        #print (NGPIO_PIN , TR[I]['id_rele'] % 100)
+        NGPIO_PIN = id_rele % 100
   
         GPIO.setup(NGPIO_PIN, GPIO.OUT)
         Rele_SSR.append ([GPIO.PWM(NGPIO_PIN, 5),NGPIO_PIN])# 5hz
         
-        #print  ('NGPIO=',NGPIO, '- NGPIO_PIN=',NGPIO_PIN)
         Rele_SSR[NGPIO][0].start(0)
         NGPIO +=1
+        
+# Actualizar valores de  numero conmutaciones y tiempo activo del dia actual
+sql = 'SELECT id_rele,segundos_on,nconmutaciones FROM reles_segundos_on WHERE fecha="'+time.strftime("%Y-%m-%d")+'"'                
+try:
+    nreles_on = cursor.execute(sql)
+    nreles_on = int(nreles)  # = numero de reles con conmutaciones o tiempo activo en el dia actual
+    columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
+    TS=[] 
+    for row in cursor.fetchall(): TS.append(dict(zip(columns, row)))
+    
+    for r in TS:
+        id_rele = r['id_rele']
+        Rele_Dict[id_rele]['nconmutaciones']= r['nconmutaciones']
+        Rele_Dict[id_rele]['segundos_on']= r['segundos_on']
+except:
+    db.rollback()
+    print ('Error lectura tabla reles_segundos_on',ee)
+    logBD('Error lectura tabla reles_segundos_on')
 
 if nreles > 0 : # apagado reles en BD
     sql = "UPDATE reles SET estado = 0 WHERE modo = 'PRG'"
     cursor.execute(sql)
-
+    db.commit()
+    
 ## ------------------------------------------------------------
 ### Calcular voltaje sistema (12,24 o 48)
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
 if AH > 1:
     try:
-        if simular != 1 and Vbat_sensor == "d_['ADS1']['Vbat']":
+        if simular != 1 and Vbat_sensor != "":
             Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
         else:
             Vbat = vsis * 12.0
     except:
-        # TODO: reformular esto, hay cambio de parametros
+        time.sleep(5) # espero 5sg por si los programas se estan iniciando 
         pass
 
     if Vbat > 11 and Vbat < 15.5 : vsis = 1
@@ -548,14 +592,12 @@ Nreles_Diver = len(Reles_D_Ord) # Nº de reles Diver a considerar para reparto e
 PWM_Max = Nreles_Diver * 100
 print ('Reles para excedentes = Reles_D_Ord[Id_rele, salto, prioridad] =',Reles_D_Ord)
 
-
 if DEBUG >= 100: print ('PWM_Max=',PWM_Max)
 
 #########################################################################################
 # -------------------------------- BUCLE PRINCIPAL --------------------------------------
 #########################################################################################
 
-#nbucle = Wconsumo = 0
 try:
     while True:
         #print (time.strftime("%Y-%m-%d %H:%M:%S"),' Bucle',)
@@ -573,6 +615,7 @@ try:
         hora1=time.time()
         
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
+            
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
             nparametros=cursor.execute(sql)
@@ -599,12 +642,28 @@ try:
             TR=[] 
             for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
                         
-            for r in TR: # actualizar diccionarios por si se han creado nuevos reles
-                Rele[r['id_rele']] = r['estado'] # actualizamos diccionario Reles con valor en BD
-                Rele_H[r['id_rele']] = 0 # inicializamos a cero el diccionario para control horario
-                Rele_Dict[r['id_rele']] = r # guado todo los campos de la tabla Reles en BD
-                
-                
+            for r in TR: # actualizar diccionarios por si se han creado/borrado nuevos reles o modificado campos (salvo estado)
+                id_rele = r['id_rele']
+                if id_rele in Rele: # mantengo valores que gestiona fv.py
+                    r['estado'] = Rele[id_rele]
+                    r['cambio'] = Rele_Dict[id_rele]['cambio']
+                    r['nconmutaciones'] = Rele_Dict[id_rele]['nconmutaciones']  
+                    r['segundos_on'] = Rele_Dict[id_rele]['segundos_on']  
+                else:
+                    r['cambio'] = 0 # marca temporal de cambio a 0 
+                    r['nconmutaciones'] = 0 # numero de conmutaciones a 0 
+                    r['segundos_on'] = 0 
+                    Rele[id_rele] = Rele_Ant[id_rele] = r['estado'] # actualizamos diccionario Reles con valor en BD
+                    Rele_H[id_rele] = Rele_Tiempo[id_rele] = 0 # inicializamos a cero los diccionarios para control horario y tiempo rele
+                    
+                    try: # aseguro que existe el registro diario de actividad del rele
+                        cursor.execute("INSERT INTO reles_segundos_on (id_rele,fecha,segundos_on,nconmutaciones) VALUES (%s,%s,%s,%s)",
+                                      (id_rele,time.strftime("%Y-%m-%d"),0,0))
+                    except:
+                        pass    
+                       
+                Rele_Dict[r['id_rele']] = r.copy() # genero diccionario tabla Reles
+            
             sql='SELECT * FROM reles INNER JOIN reles_c ON reles.id_rele = reles_c.id_rele'
             fvcon=cursor.execute(sql)
             fvcon=int(fvcon)  # = numero de condiciones
@@ -642,19 +701,10 @@ try:
         t_muestra=time.time()-hora_m
         hora_m=time.time()
         
-        if t_muestra > t_muestra_max:
-            logBD('TmuestraX='+str(int(t_muestra_1))+'/'+str(int(t_muestra_2))+'/'+str(int(t_muestra_3))+'/'+str(int(t_muestra_4))+'/'+str(int(t_muestra_5))+'/'+str(int(t_muestra_6))+'/'+str(int(t_muestra_7))+'/'+str(int(t_muestra_8)))
-       
-        if DEBUG >= 2:
-            print(Style.BRIGHT + Fore.YELLOW,end='')
-            print('{:<28}'.format('T='+str(int(t_muestra_1))+'/'+str(int(t_muestra_2))+
-              '/'+str(int(t_muestra_3))+'/'+str(int(t_muestra_4))+'/'+
-              str(int(t_muestra_5))+'/'+str(int(t_muestra_6))+'/'+
-              str(int(t_muestra_7))+'/'+str(int(t_muestra_8))),end='')  
-            print(Fore.RESET,end='')
-            
-        if pub_time == 1:
-            client.publish("PVControl/Opcion/Time",str(int(t_muestra_1))+'/'+str(int(t_muestra_2))+'/'+str(int(t_muestra_3))+'/'+str(int(t_muestra_4))+'/'+str(int(t_muestra_5))+'/'+str(int(t_muestra_6))+'/'+str(int(t_muestra_7))+'/'+str(int(t_muestra_8)))
+        log = f'{t_muestra_1:.0f}/{t_muestra_2:.0f}/{t_muestra_3:.0f}/{t_muestra_4:.0f}/{t_muestra_5:.0f}/{t_muestra_6:.0f}/{t_muestra_7:.0f}/{t_muestra_8:.0f}'
+        if t_muestra > t_muestra_max: logBD('TmuestraX='+ log)
+        if DEBUG >= 2: print(Style.BRIGHT + Fore.YELLOW+ f'T={log:<26}',Fore.RESET,end='')
+        if pub_time == 1: client.publish("PVControl/Opcion/Time", log)
             
         if simular == 1:
             Ibat = random.choice([0,12,22,33,46,56,65,78,101,-10,-20,-30,-40,-50,-60,-70,-80,-90])
@@ -681,7 +731,13 @@ try:
             nequipos = int(cursor.execute(sql))
 
             d_={}
-            for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
+            try:
+                for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
+            except:
+                print ('Error Lectura Tabla equipos')
+                logBD('Error lectura Tabla Equipos')    
+                time.sleep(5)
+                
             if DEBUG == 100:
                 print ('#'*40)
                 print (Fore.BLUE+'Equipos =',d_)
@@ -726,26 +782,6 @@ try:
                 except:
                     logBD('error lectura '+archivo_ram)
                     continue
-            
-            ee=30.41              
-            if usar_fronius == 1:
-                archivo_ram='/run/shm/datos_fronius.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_fronius = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue   
-
-            ee=30.42        
-            if usar_huawei == 1:
-                archivo_ram='/run/shm/datos_huawei.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_huawei = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue 
             
             if usar_goodwe == 1:
                 archivo_ram='/run/shm/datos_goodwe.pkl'
@@ -828,7 +864,11 @@ try:
             Vbat_max = Vbat_min = Vbat
             Vred_max = Vred_min = Vred
             EFF_max = EFF_min = EFF
-            Rele_Tiempo = {} # inicializo diccionaro tiempo de reles 
+            for r in Rele_Dict:
+                id_rele = r['id_rele']
+                Rele_Tiempo[id_rele] = Rele_Dict[id_rele]['segundos_on'] = 0 # inicializo tiempo de reles 
+                Rele_Dict[id_rele]['nconmutaciones'] = 0 # inicializo numero conmutaciones
+                
             
         else: # calculo Wh
             if Ibat < 0: Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
@@ -1000,18 +1040,18 @@ try:
         ee=52
         for r in TCFV: # enciendo reles con condiciones FV
             if r['prioridad'] == 0: # no actuo en reles de excedentes (prioridad > 0) 
-                Rele[r['id_rele']] = r['salto'] # pongo valor del salto
+                Rele[r['id_rele']] =  r['salto']
                 # no me gusta... deberia ser al valor ant + salto y ver si no me paso de 100
 
         ee=54
         for r in TCH: # enciendo reles con condiciones horario
             if r['prioridad'] == 0: # no actuo en reles de excedentes
                 Rele[r['id_rele']] = r['salto'] # pongo valor del salto
+                
                 # no me gusta... deberia ser al valor ant + salto y ver si no me paso de 100
 
         # -------------------- Bucle de condiciones de horario --------------------------
         ee=56
-
         for r in TCH:
             id_rele = r['id_rele']
             
@@ -1040,7 +1080,8 @@ try:
             id_rele = r['id_rele']
             
             if Rele_H[id_rele] == 0:
-                Rele[id_rele] = 0 #apago rele
+                Rele[id_rele]  = 0 #apago rele
+                
                 # deberia ser quitar salto y ver que no me paso de 0
                 
                 Rele_H[id_rele] = -1 # para quitar posibilidad de ser rele Diver en el ciclo
@@ -1083,44 +1124,47 @@ try:
         Flag_Rele_Encendido = 0
         for r in TR:
             id_rele = r['id_rele']
+            tipo_act_rele = 0
             
             ### forzado ON/OFF
             if r['modo'] == 'ON' :
                 Rele[id_rele] = 100
+                tipo_act_rele = 1
                 
-            if r['modo'] == 'OFF' :
+            elif r['modo'] == 'OFF' :
                 Rele[id_rele] = 0
-
-            #print ('Despues Condiciones FV - Rele',id_rele,'=',Rele[id_rele], 'Ant=',Rele_Ant[id_rele], ' Flag=',Flag_Rele_Encendido)
-
+                tipo_act_rele = 1
+                   
             ### dejar rele como esta     
             if Rele[id_rele] == 100 and Rele_Ant[id_rele] < 100 and Flag_Rele_Encendido == 1 : 
                 #print ('Dejo el rele ', id_rele, ' para encender en otro ciclo por flag ', Rele[id_rele] ,'/', Rele_Ant[id_rele] )
                 Rele[id_rele] = Rele_Ant[id_rele]      #dejar rele en el estado anterior
                 
             ### encender rele
-            #print (id_rele,Rele[id_rele],Rele_Ant[id_rele])
             if Rele[id_rele] == 100 and Flag_Rele_Encendido == 0 and Rele_Ant[id_rele] < 100 :
-                print (tiempo,' - Enciendo rele ',id_rele)
-                act_rele(id_rele,100)
-                if r['prioridad']== 0: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
+                #print (tiempo,' - Enciendo rele ',id_rele)
+                Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,100,tipo_act_rele)
+                if r['prioridad'] == 0 and Rele[id_rele] == 100: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
             
             ### apagar rele
             if Rele[id_rele] == 0 and Rele_Ant[id_rele]>0: # and r['prioridad']== 0:
-                print (tiempo,' - Apago rele ',id_rele)
-                act_rele(id_rele,0) #apagar rele
-        
+                #print (tiempo,' - Apago rele ',id_rele)
+                Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,0, tipo_act_rele) #apagar rele
+            
+            Rele_Dict[id_rele]['estado']= Rele[id_rele]
+            
+            
       ## --------- ACTIVACION RELES CONTROL DE EXCEDENTES -------------
         t_muestra_3=(time.time()-hora_m) * 1000
         ee=90
         reles_exc_prio = {}  # inicializacion dict reles excedentes por prioridad
-        PWM_max = 0
+        PWM_Max = 0
         for r in TR:
             if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[r['id_rele']] != -1 and Flag_Rele_Encendido != 1:
                 if r['prioridad'] not in reles_exc_prio.keys():
                     reles_exc_prio [r['prioridad']] = []
                 reles_exc_prio[r['prioridad']].append({'id_rele': r['id_rele'], 'salto': r['salto']})
-            PWM_max += 100
+                PWM_Max += 100
 
         ee=100
         if PWM >=0 : # situacion normal, se puede anular la entrada aqui poniendo en condiciones PWM = -1
@@ -1142,8 +1186,11 @@ try:
                         Rele[id_rele] = (min(PWM_R, nivel_rele) // salto) * salto
 
                         if Rele[id_rele] != Rele_Ant[id_rele]:
-                            act_rele(id_rele, Rele[id_rele])
-
+                            #print (Rele_Dict)
+                            Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele, Rele[id_rele],0)
+            
+                        Rele_Dict[id_rele]['estado']= Rele[id_rele]
+            
                         PWM_R -= Rele[id_rele]
                         PWM_R = max(0,PWM_R)
                         nreles_prio -= 1
@@ -1154,84 +1201,59 @@ try:
                 for rele_prio in reles_exc_prio[prio]:
                     id_rele = rele_prio['id_rele']
                     if Rele[id_rele] != Rele_Ant[id_rele]:
-                        act_rele(id_rele,Rele[id_rele])
+                        Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,Rele[id_rele],0)
                         Rele_Ant[id_rele]=Rele[id_rele]
-            
-      ## --------- Escribir en la BD Tabla Reles el Estado RELES -------------------------
-        t_muestra_4=(time.time()-hora_m) * 1000
-        ee=200
-        if Grabar == 1: # actualizo BD cada N bucles
-            
-            for I in range(nreles):
-                id_rele = TR[I]['id_rele']
-                if Rele[id_rele] != TR[I]['estado']:
-                    sql = "UPDATE reles SET estado =" +str(Rele[id_rele])+ " WHERE id_rele = " + str(id_rele)
-                    cursor.execute(sql)
+                        Rele_Dict[id_rele]['estado']= Rele[id_rele]
         
+        t_muestra_4=(time.time()-hora_m) * 1000
+        ee=200        
+  
         # Refresco valor de rele 
         if time.time()-t_refresco_rele > 2: # refrescar 1 rele cada max(t_muestra, 2sg)  
             t_refresco_rele = time.time()
             if len(TR_refresco) > 0:
-                act_rele(TR_refresco[0]['id_rele'], Rele[TR_refresco[0]['id_rele']])
-                #print ('refrescando rele',TR_refresco[0])
+                id_rele = TR_refresco[0]['id_rele'] 
+                Rele[id_rele], i = act_rele(id_rele, Rele[id_rele],2)
+                Rele_Dict[id_rele]['estado']= Rele[id_rele]
                 TR_refresco.pop(0)
             else:
                 TR_refresco = TR[:]
-                    
-        if TP['grabar_reles'] == "S" and Grabar == 1 and nreles > 0: # Grabar en BD actividad reles
-            for I in range(nreles):
-                id_rele = TR[I]['id_rele']
-                estado = Rele[id_rele]
-                sql = ('SELECT id_rele,segundos_on,nconmutaciones FROM reles_segundos_on WHERE fecha='+
-                      '"'+time.strftime("%Y-%m-%d")+'" and id_rele =' + str(id_rele))
+        
+        ## --------- Actualizando Tabla Reles y tabla reles_segundos_on -----------------------
+        # ---- Actualizacion Nº conmutaciones y tiempo encendido de cada rele -----------------
+        for I in range(nreles):
+            id_rele = TR[I]['id_rele']
+            if Grabar == 1: # actualizo BD cada N bucles
+                # Actualizacion estado Tabla reles
+                if Rele[id_rele] != TR[I]['estado']:
+                    sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
+                    cursor.execute(sql)
+                    TR[I]['estado'] = Rele[id_rele]
                 
-                segundos_on = 0
-                try:
-                    nreles_on = cursor.execute(sql)
-                    nreles_on = int(nreles_on)
-                    if estado > 0 :
-                        segundos_on = float(TP['t_muestra'] * TP['n_muestras_grab'])
-                        nconmutaciones = 1
-
-                        if nreles_on >= 1:
-                            TS = cursor.fetchall()
-                            
-                            segundos_on = TS[0][1] + round((t_muestra*TP['n_muestras_grab']*estado/100),2)  # calculo funcionamiento real reles PWM
-                            if TR[I]['estado'] == 0:
-                                nconmutaciones = TS[0][2] + 1
-                            else:
-                                nconmutaciones = TS[0][2]
-                            sql = ("UPDATE reles_segundos_on SET segundos_on =" +str(segundos_on)+
-                                   ",nconmutaciones =" + str(nconmutaciones)+ " WHERE id_rele = " +
-                                   str(id_rele) + ' and fecha = "' + time.strftime("%Y-%m-%d") +'"')
-                            cursor.execute(sql)
-                        else :
-                            cursor.execute("""INSERT INTO reles_segundos_on
-                                            (id_rele,fecha,segundos_on,nconmutaciones)
-                                            VALUES (%s,%s,%s,%s)""",
-                                            (id_rele,time.strftime("%Y-%m-%d"),segundos_on,1))
+                # Actualizacion Tabla reles_segundos_on               
+                if TP['grabar_reles'] == "S":
+                    try: # actualizo registro
+                        sql = (f"UPDATE reles_segundos_on SET segundos_on = {Rele_Dict[id_rele]['segundos_on']}, nconmutaciones = {Rele_Dict[id_rele]['nconmutaciones']}"+ 
+                             f" WHERE id_rele = {id_rele} and fecha ='{time.strftime('%Y-%m-%d')}'")
+                        cursor.execute(sql)
+                    except : # inicializo registro
+                        print ('Error actualizacion reles_segundos_on')
                         
-                        Rele_Tiempo[id_rele] = segundos_on
-                    
-                    if not(id_rele in Rele_Tiempo): Rele_Tiempo[id_rele] = 0  #aseguramos que el diccionario contiene todos los reles
-
-                    
-                        
-                except:
-                    db.rollback()
-                    print ('Error grabacion Reles_segundos_on',ee)
-                    logBD('Error grabacion Reles_segundos_on')
-                    
-                if TP['grabar_reles'] == "S" and Grabar == 1 and TR[I]['grabacion'] == "S" and Rele[id_rele] != TR[I]['estado']:
+            # calculo encendido reles 
+            if Rele[id_rele] > 0:
+                Rele_Tiempo[id_rele] += round((t_muestra * Rele[id_rele]/100),2)
+                Rele_Dict[id_rele]['segundos_on'] = round(Rele_Tiempo[id_rele],2)
+                
+            # Calculo nconmutaciones
+            if Rele[id_rele] != Rele_Ant[id_rele]:
+                Rele_Dict[id_rele]['nconmutaciones'] += 1
+                if Rele_Dict[id_rele]['grabacion'] == "S":
                     try:
-                        cursor.execute("""INSERT INTO reles_grab (Tiempo,id_rele,valor_rele)
-                                       VALUES(%s,%s,%s)""",(tiempo,id_rele,estado))
-                        #db.commit()
+                        cursor.execute("INSERT INTO reles_grab (Tiempo,id_rele,valor_rele) VALUES(%s,%s,%s)",(tiempo,id_rele,Rele[id_rele]))
                     except:
                         db.rollback()
                         logBD('tabla reles_grab NO grabados por fallo')
-
-
+                        
         #------------------------Escribir en la tabla valores FV  ---------------------------
         
         if TP['grabar_datos'] == "S" and Grabar == 1:
@@ -1246,23 +1268,21 @@ try:
             except:
                 db.rollback()
                 logBD('Registro DATOS no grabado')
-        
-        if TP['grabar_datos'] == "S" and eval(grabar_datos_s): #grabar datos_s 
-            if DEBUG >=2: print ('S',end='')
-            try:
+        try:
+            if TP['grabar_datos'] == "S" and eval(grabar_datos_s): #grabar datos_s 
+                if DEBUG >=2: print ('S',end='')
+                
                 cursor.execute("""INSERT INTO datos_s (Tiempo,Ibat,Vbat,SOC,DS,Aux1,Aux2,
                    Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,
                    IPWM_P,IPWM_I,IPWM_D,Kp, Ki,Kd,Vred,Wred,Whn_red,Whp_red) 
                    VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                    (tiempo_us,Ibat,Vbat,SOC,DS,Aux1,Aux2,Whp_bat,Whn_bat,Iplaca,Vplaca,Wplaca,Wh_placa,Temp,PWM,
                    IPWM_P,IPWM_I,IPWM_D,TP['Kp'],TP['Ki'],TP['Kd'],Vred,Wred,Whn_red,Whp_red))
-                db.commit()
-            except:
-                db.rollback()
-                logBD('Registro datos_s no grabado')
-        else :
-            db.commit()
-
+                #db.commit()
+            
+        except:
+            db.rollback()
+            logBD('Registro datos_s no grabado')
         ## ------------------------------------------------
         t_muestra_5=(time.time()-hora_m) * 1000
         
@@ -1288,6 +1308,7 @@ try:
         salida_RELES = json.dumps(Rele_Dict)
         sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_RELES}' WHERE id_equipo = 'RELES'") # grabacion en BD RAM
         cursor.execute(sql)
+        db.commit()
         
         ###### PUBLICACION MQTT ##########      
         if Grabar == 1: #publico MQTT cada t_muestra*N_muestras
@@ -1324,7 +1345,7 @@ try:
             print(f"{int(T_ejecucion*1000):4}ms-Sensor={TP['sensor_PID']}={TP['objetivo_PID']:.2f}",end='')
             print (Fore.CYAN+f"/{eval(TP['sensor_PID']):.2f}-Ct={Vbat_temp:.2f}",end='')
             if AH > 0:
-                print (Fore.MAGENTA+f'/Vbat={Vbat:.2f}-Iplaca={Iplaca:.1f}-Ibat={Ibat:.1f}-Wcon={Wconsumo:.0f}-PWM={PWM:.0f}-Temp={Temp:.2f}'+Fore.RESET)
+                print (Fore.MAGENTA+f'/Vbat={Vbat:>5.2f}-Iplaca={Iplaca:>6.1f}-Ibat={Ibat:>6.1f}-Wcon={Wconsumo:>6.0f}-PWM={PWM:>3.0f}-Temp={Temp:>4.1f}'+Fore.RESET)
             else:
                 print (Fore.MAGENTA+f'/Vred={Vred:.2f}-Iplaca={Iplaca:.1f}-Ired={Ibat:.1f}-Wcon={Wconsumo:.0f}-PWM={PWM:.0f}'+Fore.RESET)
                 
