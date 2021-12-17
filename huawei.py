@@ -95,7 +95,7 @@ try: #inicializamos BD
     
     try:
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                  (Equipo','{}'))   
+                  (Equipo,'{}'))   
         db.commit()
     except:
         pass     
@@ -112,9 +112,12 @@ while True:
     
         if datos != None :
             if crear_pkl == 0:
-                try:####  ARCHIVOS RAM en BD ############ 
+                try:####  ARCHIVOS RAM en BD ############
+                    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+            
                     salida = json.dumps(datos)
-                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{Equipo}'") # grabacion en BD RAM
+                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'HUAWEI'") # grabacion en BD RAM
+                        
                     cursor.execute(sql)
                     db.commit()
                 except:
