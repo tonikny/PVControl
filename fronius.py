@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 #"""
-#Created on Fri May  1 20:29:13 2020
+#Version 17/Dic/21
 #
 #@author: Migue
 #"""
 #
+crear_pkl = 0 # poner a 1 para versiones antiguas de PVControl que no usan BD en RAM
+
+
 import requests
 from requests.exceptions import HTTPError
 import json
@@ -12,18 +15,15 @@ import time
 import pickle
 import subprocess, sys
 from Parametros_FV import *
-from csvFv import CsvFv
+#from csvFv import CsvFv
 
 DEBUG = False
+#Comprobacion argumentos en comando
+if '-p' in sys.argv: DEBUG = True # para test .... realiza print en distintos sitios
 
 if usar_fronius == 0:
-        #print (commands.getoutput('sudo systemctl stop srne'))
-        print (subprocess.getoutput('sudo systemctl stop fronius'))
-        sys.exit()
-
-
-
-
+    print (subprocess.getoutput('sudo systemctl stop fronius'))
+    sys.exit()
 
     
 class fronius:
@@ -33,7 +33,6 @@ class fronius:
         self.dct = {}
         self.cmd_meter = 'http://' + IP_FRONIUS + '/solar_api/v1/GetPowerFlowRealtimeData.fcgi'
         self.cmd_inverter = 'http://' + IP_FRONIUS + '/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=CommonInverterData'
-        
         
     def read_data_meter(self):
     
@@ -99,6 +98,32 @@ class fronius:
 
 if __name__ == '__main__':
     #c = CsvFv('/run/shm/datos_fronius.csv') 
+    if usar_fronius == 1:
+        try: #inicializamos BD
+            # No se crea tabla especifica de fronius              
+            Sql = f""" CREATE TABLE IF NOT EXISTS `fronius` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `Tiempo` datetime NOT NULL,
+              `xxxx` float NOT NULL DEFAULT 0,
+              `yyyy` float NOT NULL DEFAULT 0,
+              PRIMARY KEY (`id`),
+              KEY `Tiempo` (`Tiempo`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci
+            """                
+            """
+            import warnings # quitamos el warning que da si existe la tabla equipos
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                cursor.execute(Sql)   
+            db.commit()
+            """
+            cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                          ('FRONIUS','{}'))   
+            db.commit()
+                    
+        except:
+            print (Fore.RED,'ERROR inicializando BD RAM')
+            sys.exit()
     
     while True:
         try:
@@ -125,9 +150,19 @@ if __name__ == '__main__':
             
             #print(datos)
             if datos != None :
-                with open('/run/shm/datos_fronius.pkl', mode='wb') as f:
-                    pickle.dump(datos, f)      
-             
+                if crear_pkl == 0:
+                    try:####  ARCHIVOS RAM en BD ############ 
+                        salida = json.dumps(datos)
+                        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'FRONIUS'") # grabacion en BD RAM
+                        cursor.execute(sql)
+                        db.commit()
+                    except:
+                        print(Fore.RED+f'error, Grabacion tabla RAM equipos en FRONIUS')
+                else:    
+                    # lo logico es dejar de grabar el archivo pkl
+                    with open('/run/shm/datos_fronius.pkl', mode='wb') as f:
+                        pickle.dump(datos, f)      
+                 
             
             time.sleep(2)
             
