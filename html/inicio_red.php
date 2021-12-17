@@ -5,9 +5,18 @@ include("cabecera.inc");
 
 require('conexion.php');
 //Coger datos grafica tiempo real
-$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Wred, Wplaca, Vred, PWM, Vplaca
-        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 3 MINUTE)
-        ORDER BY Tiempo";
+
+//$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo,  Wred, Wplaca, Vred, PWM, Vplaca
+//       FROM datos WHERE Tiempo >= (NOW()- INTERVAL 3 MINUTE)
+//        ORDER BY Tiempo";
+        
+//$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Wred, Wplaca, Vred, PWM, Vplaca, Wplaca-Wred as Wconsumo, LEAST(Wplaca,Wplaca-Wred) as Wautoconsumo
+//FROM datos WHERE Tiempo >= (NOW()- INTERVAL 240 MINUTE)
+//ORDER BY Tiempo";
+
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Wred, Wplaca, Vred, PWM, Vplaca, Wplaca-Wred as Wconsumo, LEAST(Wplaca,Wplaca-Wred) as Wautoconsumo
+FROM datos WHERE DATE(Tiempo) = CURDATE()
+ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
 
@@ -80,10 +89,23 @@ mysqli_close($link);
             <div class="divTableCell">Estado</div>
             <div id ="Estado" class="divTableCell">&nbsp;</div>
         </div>
+         <div class="divTableRow">
+            <div class="divTableCell">termo</div>
+            <div id ="Aux1" class="divTableCell">&nbsp;</div>
         </div>
+        <div class="divTableRow">
+            <div class="divTableCell">Aux2</div>
+            <div id ="Aux2" class="divTableCell">&nbsp;</div>
+          </div>
+        <div class="divTableRow">
+            <div class="divTableCell">hola</div>
+            <div id ="hola" class="divTableCell">&nbsp;</div>
+          </div>
+      <!--</div> -->
     </div>
 </div>
-
+    
+      
 <div id="containervred"  style="width: 20%; height: 180px; margin-left: 2%; margin-right: 0%;margin-top: -1%; float: left">
   <p>&nbsp;</p>
   <p>&nbsp;</p>
@@ -1343,10 +1365,12 @@ $(function () {
     grafica_t_real = new Highcharts.Chart ({
         chart: {
          renderTo: 'grafica_t_real',
+         type: 'area',
          backgroundColor: null,//'#ffffff',//'#f2f2f2',
          borderColor: null,
          plotBorderWidth: 1,
-         zoomType: 'xy',
+         
+         zoomType: 'x',
          alignTicks: false,
          animation: Highcharts.svg, // don't animate in old IE
          //marginRight: 10,
@@ -1373,10 +1397,10 @@ $(function () {
         yAxis: [
             {// ########## Valores eje Wred #################
             gridLineWith: 2,
-            min: Escala_Wred_min,
+            min: 0,
             max: Escala_Wred_max,
             opposite: true,
-            tickInterval:40,
+            tickInterval:50,
             gridLineColor: 'transparent',
             minorGridLineColor: 'transparent',
             //endOnTick: true,
@@ -1393,66 +1417,6 @@ $(function () {
                 },
             //opposite: false,
             },
-            {// ########## Valores eje Vred ######################
-            opposite: false,
-            min: Escala_Vred_min,
-            max: Escala_Vred_max,
-            tickInterval: 1,
-            //gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            labels: {
-                format: '{value} V',
-                style: {
-                    color: Highcharts.getOptions().colors[0]
-                    }
-                },
-            title: {
-                text: '',
-                },
-            plotLines: 
-              [{ // ########## Valores Linea Vred alta ###################
-                value: Vred_alto,
-                width: 2,
-                color: 'green',
-                dashStyle: 'shortdash',
-                label: {
-                    text: 'Vred_alto'
-                    }
-                },
-                {// ########## Valores Linea Vflot ######################
-                value: Vred_bajo,
-                width: 2,
-                color: 'red',
-                dashStyle: 'shortdash',
-                label: {
-                    text: 'Vred_bajo'
-                    }
-              }]
-            },
-            {// ########## Valores eje PWM ######################
-            opposite: true,
-            min: 0,
-            max: Escala_PWM_max,
-            tickInterval: 20,
-            gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            
-            title: {
-                text: '',
-                },
-            },
-            { // ########## Valores eje Vplaca ######################
-            opposite: false,
-            min: 0,
-            max: Escala_Vplaca_max,
-            tickInterval: 20,
-            gridLineColor: 'transparent',
-            minorGridLineColor: 'transparent',
-            
-            title: {
-                text: '',
-                },
-            }
             ],
           
         tooltip: {
@@ -1483,24 +1447,11 @@ $(function () {
             borderWidth: 0
             },
         series: [
-        {name: 'Wred',
-            yAxis: 0,
-            color: Highcharts.getOptions().colors[2],
-            data: (function() {
-                var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Wred"];?>]);
-                <?php } ?>
-              return data;
-              })()
-
-            },
         
         {name: 'WPlaca',
             yAxis: 0,
-            color: Highcharts.getOptions().colors[3],
+            color: '#19ce88',
+            lineWidth: 1,
             data: (function() {
                 var data = [];
                 <?php
@@ -1511,48 +1462,36 @@ $(function () {
               return data;
               })()
 
-            },
-            {name: 'Vred',
-            color: Highcharts.getOptions().colors[0],
-            yAxis: 1,
-            data: (function() {
+        },
+        {name: 'Consumo',
+                yAxis: 0,
+                color: '#F76354',
+                lineWidth: 1,
+                data: (function() {
                 var data = [];
                 <?php
                 for($i = 0 ;$i<count($rawdata3);$i++){
                 ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vred"];?>]);
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Wconsumo"];?>]);
                 <?php } ?>
               return data;
               })()
-            
-            },
-        {      name: 'VPlaca',
-            yAxis: 3,
-                data: (function () {
-                     var data = [];
-                <?php
-                for($i = 0 ;$i<count($rawdata3);$i++){
-                ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Vplaca"];?>]);
-                <?php } ?>
-                    return data;
-                }())
-            },
-            {name: 'PWM',
-            yAxis: 2,
-            color: Highcharts.getOptions().colors[4],
-            data: (function() {
+        },
+        {name: 'Autoconsumo',
+                yAxis: 0,
+                color: '#2793ea',
+                lineWidth: 1,
+                data: (function() {
                 var data = [];
                 <?php
                 for($i = 0 ;$i<count($rawdata3);$i++){
                 ?>
-                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["PWM"];?>]);
+                    data.push([<?php echo $rawdata3[$i]["Tiempo"];?>,<?php echo $rawdata3[$i]["Wautoconsumo"];?>]);
                 <?php } ?>
               return data;
               })()
-            },
-            ]
-                                
+        },          
+        ]
       });
       
 
@@ -1563,8 +1502,9 @@ $(function () {
           try {
             //console.log(data)               
             // tiempo: "%d-%B-%Y -- %H:%M:%S"
-            fecha = data['FV']['tiempo'];
-            
+            fecha = data['FV']['Tiempo'];
+             hola = data['FV']['hola'];
+             
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
             Vbat = data['FV']['Vbat']; 
             Ibat = data['FV']['Ibat']; 
@@ -1609,12 +1549,16 @@ $(function () {
             //Wconsumo, Wh_consumo
             Wconsumo = data['FV']['Wconsumo'];
             Wh_consumo = data['FV']['Wh_consumo'];
-            
+            Wautoconsumo = Math.min(Wplaca,Wconsumo);
             
             //Temp,int(PWM)
             Temp = data['FV']['Temp'];
             PWM  = data['FV']['PWM'];          
 
+            //Aux1,Aux2
+            Aux1 = data['FV']['Aux1'];
+            Aux2 = data['FV']['Aux2'];
+          
             
             // Actualizacion reloj Vred
             chart_vred.series[0].setData([Vred]);
@@ -1649,7 +1593,7 @@ $(function () {
             //  text: data[0][12] // ejem de cambio de titulo
             //   });
             chart_wplaca.yAxis[0].setTitle({
-              text: Wh_placa+" Wh"
+              text: Wh_placa+" Wh "
                 });
             
             // Actualizacion reloj Consumo 
@@ -1659,7 +1603,7 @@ $(function () {
               text: Wh_consumo + ' Wh'
                 });
                 
-            
+                       
             // Actualizacion reloj Vplaca
             chart_vplaca.series[0].setData([Vplaca]); //Vplaca
             
@@ -1668,17 +1612,15 @@ $(function () {
               text: 'Fecha: ' + fecha
                 });
             grafica_t_real.setSubtitle({
-              text: 'PWM=' + PWM
+              text: 'Excedente=' + Wred.toFixed(2)
                 });
             
             x = (new Date()).getTime(); // current time
             
-            grafica_t_real.series[0].addPoint([x, Wred], true, true); //Wred
-            grafica_t_real.series[1].addPoint([x, Wplaca], true, true); //Wplaca
-            grafica_t_real.series[3].addPoint([x, Vplaca], true, true); //Vplaca
-            //grafica_t_real.series[3].addPoint([x, Aux1], true, true); //Aux1
-            grafica_t_real.series[4].addPoint([x, PWM], true, true); //PWM
-            grafica_t_real.series[2].addPoint([x, Vred], true, true); //Vred
+            grafica_t_real.series[0].addPoint([x, Wplaca], true, true); //Wplaca
+            grafica_t_real.series[1].addPoint([x, Wconsumo], true, true); //Wconsumo
+            grafica_t_real.series[2].addPoint([x, Wautoconsumo], true, true); //Wautoconsumo
+
             
             //Valores de la tabla
             $("#Wh_placa").text(Wh_placa + " Wh");
@@ -1690,6 +1632,9 @@ $(function () {
             $("#Vred_min").text(Vred_min + "V");
             $("#Vred_max").text(Vred_max + "V");
             
+            $("#Aux1").text(Aux1 + " ºc");
+            $("#Aux2").text(Aux2);
+            $("#hola").text(hola);
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
             if (Wred > 0)  {
                 Estado ="INYECCION";
