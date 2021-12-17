@@ -1,18 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+#  version 17/Dic/21
 #--------------------------------------------------------------------------
-#from Parametros_FV import *
 from pyModbusTCP.client import ModbusClient
 import time
 import sys
 import subprocess
 import MySQLdb 
+import json
 from Parametros_FV import *
 import pickle
 
-
 if usar_huawei == 0:
-        #print (commands.getoutput('sudo systemctl stop srne'))
         print (subprocess.getoutput('sudo systemctl stop huawei'))
         sys.exit()
         
@@ -22,13 +21,23 @@ hua.port(502)
 hua.unit_id(0)
 hua.open()
 
-narg = len(sys.argv)
-if str(sys.argv[narg-1]) == '-p':    DEBUG = True
-else: DEBUG = False
+Equipo = 'HUAWEI'
+crear_pkl = 0 # poner a 1 para versiones antiguas de PVControl que no usan BD en RAM
+
+DEBUG = False
+#Comprobacion argumentos en comando
+if '-p' in sys.argv: DEBUG = True # para test .... realiza print en distintos sitios
+
+import colorama # colores en ventana Terminal
+from colorama import Fore, Back, Style
+colorama.init()
+
+
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' huawei.py')
+print()
 
 time.sleep(1)
 
-         
 def leer_datos():
         
     INV = hua.read_holding_registers(32016, 4)               # V e I de strings
@@ -79,14 +88,42 @@ def escribir_datos():
         
     else: return (None)   
 
+try: #inicializamos BD
+    # No se crea tabla especifica de fronius              
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    
+    try:
+        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                  (Equipo','{}'))   
+        db.commit()
+    except:
+        pass     
+except:
+    print (Fore.RED+ 'ERROR inicializando BD RAM')
+    sys.exit()
+
+    
+
 while True:
     try:  
         datos = escribir_datos()
         if DEBUG: print('datos=',datos)
     
         if datos != None :
-            with open('/run/shm/datos_huawei.pkl', mode='wb') as f:
-                pickle.dump(datos, f) 
+            if crear_pkl == 0:
+                try:####  ARCHIVOS RAM en BD ############ 
+                    salida = json.dumps(datos)
+                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{Equipo}'") # grabacion en BD RAM
+                    cursor.execute(sql)
+                    db.commit()
+                except:
+                    print(Fore.RED+f'error, Grabacion tabla RAM equipos en {Equipo}')
+            else:    
+                # lo logico es dejar de grabar el archivo pkl
+                with open('/run/shm/datos_huawei.pkl', mode='wb') as f:
+                    pickle.dump(datos, f)      
+                
     except: 
         hua.close()
         time.sleep(6)
