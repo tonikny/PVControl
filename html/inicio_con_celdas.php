@@ -1934,7 +1934,7 @@ $(function () {
             
             for (var i in data['RELES']) {
                 n= data['RELES'][i]['nombre']+'</br>'+data['RELES'][i]['modo']+'-P'+ data['RELES'][i]['prioridad']+'-'+
-                  data['RELES'][i]['potencia']+'w-'+data['RELES'][i]['retardo']+'sg';
+                  data['RELES'][i]['potencia']+'w-'+data['RELES'][i]['retardo']+'sg('+data['RELES'][i]['espera']+')';
                 t_Datos_Reles.push([n,data['RELES'][i]['estado']]);
             }
             t_Datos_Reles.pop(); // quito el ultimo elemento dado que es la fecha
