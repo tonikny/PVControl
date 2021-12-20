@@ -660,7 +660,11 @@ try:
                     PWM_Max = Nreles_Diver * 100  
                 
                 if id_rele in Rele: # mantengo valores que gestiona fv.py
-                    r['estado'] = Rele[id_rele]
+                    if r['estado'] != Rele[id_rele]:
+                       r['estado'] = Rele[id_rele]
+                       sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
+                       cursor.execute(sql)
+                        
                     r['cambio'] = Rele_Dict[id_rele]['cambio']
                     r['nconmutaciones'] = Rele_Dict[id_rele]['nconmutaciones']  
                     r['segundos_on'] = Rele_Dict[id_rele]['segundos_on']  
@@ -912,8 +916,7 @@ try:
             Vbat_max = Vbat_min = Vbat
             Vred_max = Vred_min = Vred
             EFF_max = EFF_min = EFF
-            for r in Rele_Dict:
-                id_rele = r['id_rele']
+            for id_rele in Rele_Dict:
                 Rele_Tiempo[id_rele] = Rele_Dict[id_rele]['segundos_on'] = 0 # inicializo tiempo de reles 
                 Rele_Dict[id_rele]['nconmutaciones'] = 0 # inicializo numero conmutaciones
                 
