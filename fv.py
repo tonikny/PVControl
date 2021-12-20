@@ -77,7 +77,6 @@ except:
 
 #Inicializando las variables del programa
 #---------------------------------------------------------------
-DatosFV = {} #Creamos diccionario para los datos FV
 
 NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'} # Condiciones de dia de la semana
 
@@ -88,26 +87,26 @@ dia = time.strftime("%Y-%m-%d") # para cambio de dia y reinicializar Wh
 tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
 minuto = time.strftime("%H:%M")
 
-t_muestra = 5 # Inicializo Tiempo entre muestra real...idealmente TP['t_muestra']
-t_muestra_1 = t_muestra_2 = t_muestra_3 = t_muestra_4 = t_muestra_5 = t_muestra_6 = 0 # muestras t ejecucion intermedias
+t_muestra = 5.0 # Inicializo Tiempo entre muestra real...idealmente TP['t_muestra']
+t_muestra_1 = t_muestra_2 = t_muestra_3 = t_muestra_4 = t_muestra_5 = t_muestra_6 = 0.0 # muestras t ejecucion intermedias
 T_ejecucion = T_ejecucion_max = 0.0
 
 #---Variables Bateria --------------------------------
 Ibat = 0.0                  # Intensidad Bateria
 Vbat = vsis * 12.0          # Voltaje Bateria inicial
-DS = SOC = 0                # control SOC bateria
+DS = SOC = 0.0              # control SOC bateria
 Mod_bat =''
-Vflot = Vabs = Vecu = 0.0   # Voltaje asociado a estado de flotacion/Absorcion/Ecu
-Tflot = Tabs = Tecu = 0.0   # Tiempo asociado a estado de flotacion/Absorcion/Ecu
+Vflot = Vabs = Vequ = 0.0   # Voltaje asociado a estado de flotacion/Absorcion/Ecu
+Tflot = Tabs = Tequ = 0.0   # Tiempo asociado a estado de flotacion/Absorcion/Ecu
 Tflot_bulk = Tbulk = 0.0    # Tiempo asociado al paso de FLOT a BULK 
-SOC_max = SOC_min = 0       # Variable para guardar SOC maximo y minimo diario
-Vbat_max = Vbat_min = 0     # Variable para guardar Vbat maximo  y minimo diario
+SOC_max = SOC_min = 0.0     # Variable para guardar SOC maximo y minimo diario
+Vbat_max = Vbat_min = 0.0   # Variable para guardar Vbat maximo  y minimo diario
 flag_Abs= flag_Flot = 0     # Flags de Absorcion y Flotacion
-Vabs = Vflot = 0            # Valores de Absorcion y Flotacion
+Vabs = Vflot = 0.0          # Valores de Absorcion y Flotacion
 Wh_bat = Whp_bat = Whn_bat = 0.0
 
 #---Variables calculo SOC --------------------------------
-Ip = Ip1 = Ip2 = DS = 0.0
+Ip = Ip1 = Ip2 = 0.0
 
 #---Variables Placas --------------------------------
 Wplaca = Iplaca = Vplaca = 0.0   # w, V e Intensidad de Placas(valor intensidad tras el regulador)
@@ -122,11 +121,11 @@ log=''               # Valor del log
 
 #---Variables Red Comercial / Generador---------------------------
 Wred = Ired = Vred = EFF = 0.0     # Valores de red AC
-Vred_max = 0  
-Vred_min = 10000                   # Variables para guardar Vred maximo  y minimo diario
+Vred_max = 0.0  
+Vred_min = 10000.0                   # Variables para guardar Vred maximo  y minimo diario
 Wh_red = Whp_red = Whn_red = 0.0   # Variables para guardar Wh inyectados o consumidos de red
-EFF_max = 0
-EFF_min = 100                      #Variables para guardar Eficiencia DC/AC maxima y minima diaria
+EFF_max = 0.0
+EFF_min = 100.0                      #Variables para guardar Eficiencia DC/AC maxima y minima diaria
 
 #---Variables temperatura --------------------------------
 Temp = 0.0         # temperatura baterias
@@ -138,13 +137,15 @@ t_refresco_rele = time.time() #utilizado en secuenciacion escritura de refresco 
 Puerto = estado = 0
 
 ## Definir diccionarios Rele y Rele_Ant
-Rele = {}        # Situacion actual de los reles
-Rele_Dict = {}   # Diccionario completo de la tabla de Reles
+Rele: dict = {}        # Situacion actual de los reles
+Rele_Dict: dict = {}   # Diccionario completo de la tabla de Reles
 
-Rele_Ant = {}    # Situacion anterior de los reles
-Rele_H = {}      # Situacion condiciones horario
-Rele_Tiempo = {} # Tiempo activo en segundos de cada rele en el dia
+Rele_Ant: dict = {}    # Situacion anterior de los reles
+Rele_H: dict = {}      # Situacion condiciones horario
+Rele_Tiempo: dict = {} # Tiempo activo en segundos de cada rele en el dia
 
+datos_FV: dict = {}  # datos que se publican en tabla equipos y se usan en pagina web inicio
+d_: dict ={}         # diccionario de captura de equipos
 
 #---Variables PID --------------------------------
 N = 5  # numero de muestras para control PID
@@ -181,7 +182,15 @@ try:
         db.commit()
     except:
         pass    
-        
+    try:
+        sql = 'SELECT * FROM equipos'
+        nequipos = int(cursor.execute(sql))
+        for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
+
+    except:
+        print (Fore.RED+'Error lectura tabla equipos')
+
+
 except:
     print (Fore.RED,'ERROR inicializando tabla equipos')
     sys.exit()
@@ -190,18 +199,17 @@ except:
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
-def on_connect(client, userdata, flags, rc):
+def on_connect(cli, userdata, flags, rc):
     #print("Connected with result code "+str(rc))
-    client.subscribe("PVControl/Log")
-    client.subscribe("PVControl/Opcion")
-    
+    cli.subscribe("PVControl/Log")
+    cli.subscribe("PVControl/Opcion")
      
-def on_disconnect(client, userdata, rc):
-        if rc != 0:
-            print ("Unexpected MQTT disconnection. Will auto-reconnect")
-        else:
-            client.loop_stop()
-            client.disconnect()
+def on_disconnect(cli, userdata, rc):
+    if rc != 0:
+        print ("Unexpected MQTT disconnection. Will auto-reconnect")
+    else:
+        cli.loop_stop()
+        cli.disconnect()
 
 def on_message(client, userdata, msg):
     global pub_time
@@ -246,7 +254,7 @@ client.loop_start()
 # --------------------- DEFINICION DE FUNCIONES --------------
 def calibracion_rele(adr,out): # linealiza la respuesta del SSR por cada rele segun campo calibracion en tabla reles
     try: 
-        out1 = out #estado original
+        #out1 = out #estado original
         ssr = json.loads(Rele_Dict[adr]['calibracion'])
         if len(ssr) > 0: # solo si existe calibracion
             for i in range(len(ssr)):
@@ -394,7 +402,7 @@ def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
             y = float(eval(sensor))
     except:
         traceback.print_exc()
-        print ('Error en sensor ', n_sensor, sensor)
+        print (f'Error en sensor de {n_sensor}= sensor')
         
         y = anterior
         y_err = 1
@@ -438,7 +446,7 @@ def Calcular_PID (sensor,objetivo,P,I,D):
     return IPWM
        
 def Calcular_PWM(PWM):
-    global Diver #,PWM
+    #global Diver #,PWM
     
     Objetivo_PID= TP['objetivo_PID']
     if TP['sensor_PID']== 'Vbat':  Objetivo_PID += Vbat_temp # añade compensacion temperatura
@@ -486,7 +494,7 @@ try:
         Vbat_min = float(var[2])
         Vbat_max = float (var[3])        
     else:
-         Whp_bat = Whn_bat = Wh_placa = Whp_red = Whn_red = 0.0
+        Whp_bat = Whn_bat = Wh_placa = Whp_red = Whn_red = 0.0
 
 except Exception as e:
     print ("Sin registros en la tabla datos")
@@ -548,7 +556,7 @@ try:
             pass
 except:
     db.rollback()
-    print ('Error lectura tabla reles_segundos_on',ee)
+    print ('Error lectura tabla reles_segundos_on')
     logBD('Error lectura tabla reles_segundos_on')
 
 if nreles > 0 : # apagado reles en BD
@@ -562,7 +570,7 @@ if nreles > 0 : # apagado reles en BD
 if AH > 1:
     try:
         if simular != 1 and Vbat_sensor != "":
-            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,vbat_min,vbat_max)
+            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,Vbat_min_log,Vbat_max_log)
         else:
             Vbat = vsis * 12.0
     except:
@@ -580,7 +588,7 @@ if AH > 1:
 
 print(Fore.RED+'Pulsa Ctrl-C para salir...'+Fore.RESET)
 
-log = ' Arrancando programa fv.py \nBateria\Red = ' + str(Vbat) + 'v' + log
+log = f' Arrancando programa fv.py ....{Vbat}V  {log}'
 logBD(log) # incluyo mensaje en el log
 if usar_telegram == 1:
     try:        
@@ -593,7 +601,7 @@ if usar_telegram == 1:
 Reles_D = [ ] 
 for r in TR:
     if r['modo'] == 'PRG' and r['prioridad']!= 0:
-       Reles_D.append([r['id_rele'],r['prioridad'],r['salto']]) #id_rele, prioridad, salto
+        Reles_D.append([r['id_rele'],r['prioridad'],r['salto']]) #id_rele, prioridad, salto
 Reles_D_Ord = sorted(Reles_D, key=lambda rr: rr[1])
 Nreles_Diver = len(Reles_D_Ord) # Nº de reles Diver a considerar para reparto excedentes
 PWM_Max = Nreles_Diver * 100
@@ -615,7 +623,7 @@ try:
         db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
         cursor = db.cursor()
         """
-        ee=10
+        ee=10.0
 
         t_muestra_7=(time.time()-hora_m) * 1000
 
@@ -661,9 +669,9 @@ try:
                 
                 if id_rele in Rele: # mantengo valores que gestiona fv.py
                     if r['estado'] != Rele[id_rele]:
-                       r['estado'] = Rele[id_rele]
-                       sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
-                       cursor.execute(sql)
+                        r['estado'] = Rele[id_rele]
+                        sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
+                        cursor.execute(sql)
                         
                     r['cambio'] = Rele_Dict[id_rele]['cambio']
                     r['nconmutaciones'] = Rele_Dict[id_rele]['nconmutaciones']  
@@ -704,7 +712,7 @@ try:
             TC = []
             for row in cursor.fetchall(): TC.append(dict(zip(columns, row)))
             
-        ee=20
+        ee=20.0
         t_muestra_8= (time.time()-hora_m)* 1000
       
       ### B2---------------------- LECTURA FECHA / HORA ----------------------
@@ -771,9 +779,7 @@ try:
             sql = 'SELECT * FROM equipos'
             nequipos = int(cursor.execute(sql))
             for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
-            
-            
-            
+                        
         else:
             ## Capturando valores desde BD en tabla equipos
             ee=30.1
@@ -907,11 +913,11 @@ try:
         
         dia_anterior = dia
         dia = time.strftime("%Y-%m-%d")
-
+        
         if dia_anterior != dia: #cambio de dia
             Wh_bat = Whp_bat = Whn_bat = Wh_placa = Whp_red = Whn_red = 0.0
             CD1 = CD2 = CD3 = CD4 = CD5 = 0.0
-            Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tecu ??
+            Tbulk = Tflot = Tabs = Tflot_bulk= 0  #Tequ ??
             SOC_min = SOC_max = SOC
             Vbat_max = Vbat_min = Vbat
             Vred_max = Vred_min = Vred
@@ -919,8 +925,7 @@ try:
             for id_rele in Rele_Dict:
                 Rele_Tiempo[id_rele] = Rele_Dict[id_rele]['segundos_on'] = 0 # inicializo tiempo de reles 
                 Rele_Dict[id_rele]['nconmutaciones'] = 0 # inicializo numero conmutaciones
-                
-            
+        
         else: # calculo Wh
             if Ibat < 0: Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
             else:        Whp_bat = round(Whp_bat + (Wbat * t_muestra/3600),2)
@@ -1038,38 +1043,8 @@ try:
         if Wred > 0:  Mod_red = 'INYECT'
         else:         Mod_red = 'CONS'
             
-        ee=40
-            
+        ee=40.0    
         t_muestra_2=(time.time()-hora_m) * 1000
-        
-        """
-        #------------- Asignamos valores al diccionario para parametros condiciones ...
-        DatosFV['Temp'] = Temp                 # Tempertura (Baterias, ...)
-        DatosFV['Vplaca'] = Vplaca             # Voltaje en placas
-        DatosFV['Iplaca'] = Iplaca             # Intensidad de placas (referenciada a bateria si existe)
-        DatosFV['Wplaca'] = Wplaca             # Watios generaos por placas
-        DatosFV['PWM'] = PWM                   # Señal PWM de salida PID
-        DatosFV['Wconsumo'] = Wconsumo         # Watios consumo
-        
-        DatosFV['Vbat'] = Vbat                 # Voltaje Bateria
-        DatosFV['Ibat'] = Ibat                 # Intensidad a Bateria
-        DatosFV['SOC'] = SOC                   # Estado Carga de Bateria
-        DatosFV['Whn_bat'] = Whn_bat           # Wh descargados de bateria
-        DatosFV['Whp_bat'] = Whp_bat           # Wh cargados a bateria
-        DatosFV['Wh_bat'] = Whp_bat - Whn_bat  # Wh balance (cargados - descargados) bateria
-        DatosFV['Wbat'] = Wbat                 # Wbateria = Vbat * Ibat
-        
-        DatosFV['Vred'] = Vred                 # Voltaje Red AC
-        DatosFV['Ired'] = Ired                 # Intensidad a Red AC
-        DatosFV['EFF'] = EFF                   # Eficiencia conversion DC/AC
-        DatosFV['Whn_red'] = Whn_red           # Wh consumidos de red
-        DatosFV['Whp_red'] = Whp_red           # Wh inyectados a red
-        DatosFV['Wh_red'] = Whp_red - Whn_red  # Wh balance (inyectados - consumidos) red
-        DatosFV['Wred'] = Wred                 # Wred =  Vred * Ired
-        
-        DatosFV['Aux1'] = Aux1                 # Campo auxiliar1
-        DatosFV['Aux2'] = Aux2                 # Campo auxiliar2
-        """
         
         # ------------------ Calculo del SOCmax,min, Vbat_max,min  Vred_max,min EFF_max,min ------------
         SOC_max = max (SOC, SOC_max)
@@ -1083,14 +1058,14 @@ try:
         
                
       ## ------------------ ALGORITMO CONDICIONES RELES -----------------------------
-        ee=50
+        ee=50.0
         #### Cargamos los valores actuales de los reles  en Rele_Ant####
         
         Rele_Ant = Rele.copy() # ponemos estado del rele en el estado anterior
         for r in TR: Rele_H[r['id_rele']] = 0 # inicializamos a cero el diccionario para control horario
         
         # -------------------- Bucle de condiciones de horario --------------------------
-        ee=56
+        ee=56.0
         for r in TCH:
             id_rele = r['id_rele']
             
@@ -1124,7 +1099,7 @@ try:
                 Rele_H[id_rele] = -1 # quitar posibilidad de ON o ser rele Diver en el ciclo
 
         # -------------------- Bucle de condiciones de parametros FV --------------------------
-        ee=58
+        ee=58.0
         
         for r in TCFV:
             id_rele = r['id_rele']
@@ -1151,7 +1126,7 @@ try:
                         pass                
                         #print (Fore.RED+ 'FALSE')
                 except:
-                    print ('Error condicion rele')
+                    print (f'Error condicion rele {id_rele}-{condicion}')
                     logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
                     #db.commit()
             else:
@@ -1161,7 +1136,7 @@ try:
         #print(Fore.CYAN+'tras condiciones=',Rele)
              
         # -------------------- Bucle de condiciones  --------------------------
-        ee=60
+        ee=60.0
         for r in TC:
             try:
                 TC1 = r['condicion1']
@@ -1175,7 +1150,7 @@ try:
                 logBD(f"Error en id_condicion={r['id_condicion']}")
 
         #-------------------- Bucle encendido/apagado reles ------------------------------------
-        ee=62
+        ee=62.0
         Flag_Rele_Encendido = 0
         for r in TR:
             id_rele = r['id_rele']
@@ -1215,8 +1190,8 @@ try:
             
       ## --------- ACTIVACION RELES CONTROL DE EXCEDENTES -------------
         t_muestra_3=(time.time()-hora_m) * 1000
-        ee=90
-        reles_exc_prio = {}  # inicializacion dict reles excedentes por prioridad
+        ee=90.0
+        reles_exc_prio: dict = {}  # inicializacion dict reles excedentes por prioridad
         PWM_Max_1 = 0
         for r in TR:
             if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[r['id_rele']] >= 0 and Flag_Rele_Encendido != 1:
@@ -1230,7 +1205,7 @@ try:
             
         #print('Reles para PWM',reles_exc_prio)
         
-        ee=100
+        ee=100.0
         if PWM >=0 : # situacion normal, se puede anular la entrada aqui poniendo en condiciones PWM = -1
             if reles_exc_prio:
                 # Repartimos PWM entre los reles
@@ -1270,7 +1245,7 @@ try:
                         Rele_Dict[id_rele]['estado']= Rele[id_rele]
         
         t_muestra_4=(time.time()-hora_m) * 1000
-        ee=200        
+        ee=200.0      
   
         # Refresco valor de rele 
         if time.time()-t_refresco_rele > 2: # refrescar 1 rele cada max(t_muestra, 2sg)  
@@ -1352,7 +1327,7 @@ try:
         t_muestra_5=(time.time()-hora_m) * 1000
         
         # ----------------- Guardamos datos_fv.json ------
-        ee=300
+        ee=300.0
         datos_FV =  {'Vbat':Vbat,'Ibat':Ibat,'Wbat':round(Wbat),'Whp_bat':int(Whp_bat),'Whn_bat':int(Whn_bat),
                      'Vbat_min':Vbat_min,'Vbat_max':Vbat_max,
                      'DS':round(DS,2),'SOC':SOC,'SOC_min':SOC_min,'SOC_max':SOC_max,
@@ -1369,7 +1344,7 @@ try:
         sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_FV}' WHERE id_equipo = 'FV'") # grabacion en BD RAM
         cursor.execute(sql)
                     
-        ee=310
+        ee=310.0
         salida_RELES = json.dumps(Rele_Dict)
         sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_RELES}' WHERE id_equipo = 'RELES'") # grabacion en BD RAM
         cursor.execute(sql)
@@ -1409,7 +1384,7 @@ try:
 
         if T_ejecucion_max < T_ejecucion: T_ejecucion_max = T_ejecucion
         
-        ee=320
+        ee=320.0
         if DEBUG >= 1:
             #print (tiempo,'-',end='')
             print(f"{int(T_ejecucion*1000):4}ms-Sensor={TP['sensor_PID']}={TP['objetivo_PID']:.2f}",end='')
@@ -1423,7 +1398,7 @@ try:
         espera = TP['t_muestra'] - T_ejecucion #-0.1
         if espera > 0: time.sleep(espera)
         t_muestra_6=(time.time()-hora_m) * 1000
-
+        
 except:
     print()
     print ('Error en bucle fv',ee)
