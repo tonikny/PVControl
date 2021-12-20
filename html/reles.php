@@ -386,7 +386,7 @@ echo '<br>';
 echo '<strong>CONDICIONES FOTOVOLTAICAS</strong>';
 // --------------------- TABLA CONDICIONES FV -----------------------------------------
 
-$sql = "SELECT reles.id_rele,reles.nombre,reles.modo,reles_c.parametro,reles_c.operacion,reles_c.condicion,reles_c.valor,reles_c.id_reles_c
+$sql = "SELECT reles.id_rele,reles.nombre,reles.modo,reles_c.operacion,reles_c.parametro,reles_c.condicion,reles_c.valor,reles_c.id_reles_c
 		FROM reles INNER JOIN reles_c ON reles.id_rele = reles_c.id_rele
 		ORDER BY reles.id_rele,reles_c.parametro,reles_c.operacion DESC";
 
