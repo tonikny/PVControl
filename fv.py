@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-18
+# Versión 2021-12-21
 
 import time,sys
 import traceback
@@ -128,7 +128,7 @@ EFF_max = 0.0
 EFF_min = 100.0                      #Variables para guardar Eficiencia DC/AC maxima y minima diaria
 
 #---Variables temperatura --------------------------------
-Temp = 0.0         # temperatura baterias
+Temp_Bat = 0.0     # temperatura baterias
 Coef_Temp = 0.0    # Coeficiente de compensacion de temperatura para Vflot/Vabs 
 Vbat_temp = 0.0    # Compensacion de temperatura en valor Vbat
 
@@ -161,7 +161,7 @@ try:
     sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
                   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
                   `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
-                  `sensores` varchar(3000) COLLATE latin1_spanish_ci NOT NULL,
+                  `sensores` varchar(5000) COLLATE latin1_spanish_ci NOT NULL,
                    PRIMARY KEY (`id_equipo`)
                  ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
 
@@ -194,8 +194,6 @@ try:
 except:
     print (Fore.RED,'ERROR inicializando tabla equipos')
     sys.exit()
-
-
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -393,7 +391,41 @@ def logBD(texto) : # Incluir en tabla de Log
 
     return
 
-def leer_sensor(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
+def leer_sensor(variable, sensor) :  # leer sensor
+    try:
+        try:
+            anterior = eval(variable)
+        except:
+            anterior = 0.0
+            
+        y_err = 0 # error en lectura 0= No error....1= Error lectura.....2= Error limites max/min
+        y = round(float(eval(sensor['Equipo'])),3)
+    
+    except:
+        traceback.print_exc()
+        print (Fore.RED+f'Error en sensor de {n_sensor}= sensor',flush=True, end='')
+        
+        y = anterior
+        y_err = 1
+        time.sleep(5) # espero 5sg
+    
+    if 'Min' in sensor.keys() : 
+        if y < sensor['Min']:
+            print (Fore.RED+f"Error:{variable}={y}/Min={sensor['Min']}. Valor anterior={anterior}..", flush=True,end='')     
+            #logBD(f'lectura incoherente {variable}={y}')
+            y = anterior
+            y_err = 2 
+    
+    if 'Max' in sensor.keys() : 
+        if y > sensor['Max']:
+            print (Fore.RED+f"Error:{variable}={y}/Max={sensor['Max']}. Valor anterior={anterior}.. ", flush=True,end='')     
+            #logBD(f'lectura incoherente {variable}={y}')
+            y = anterior
+            y_err = 2 
+
+    return y,y_err
+
+def leer_sensor_a(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
     try:
         y_err = 0 # error en lectura 0= No error....1= Error lectura.....2= Error limites max/min
         if sensor =='':
@@ -498,6 +530,29 @@ try:
 
 except Exception as e:
     print ("Sin registros en la tabla datos")
+
+
+# inicializando variables definidas en Parametros_FV.py
+print()
+print (Fore.GREEN+'#' *80)
+print (Fore.CYAN+'Captura inicial de los sensores')
+try:
+    for sensor in sensores:
+        print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
+        if 'Equipo' in sensores[sensor].keys():
+            exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
+            print (Fore.GREEN,end='')
+        else:
+            print (Fore.RED+'Variable sin sensor definido = ',end='')
+            exec (f'{sensor}= 0.0')
+            
+        print ( f'{eval(sensor)}')
+except:
+    print (Fore.RED,'ERROR en definicion sensores en Parametros_FV.py')
+    sys.exit()
+
+print (Fore.GREEN+'#' *80)
+print()
 
 ##  ------ inicializamos reles ------------------------
 sql = 'SELECT * FROM reles'
@@ -865,40 +920,29 @@ try:
                     logBD('error lectura archivo ram SRNE')
                     continue
             
+            # LECTURA SENSORES EQUIPOS
             ee=34            
-            Ibat, Ibat_err = leer_sensor('Ibat',Ibat_sensor,Ibat,Ibat_min_log,Ibat_max_log)            
-            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,Vbat,Vbat_min_log,Vbat_max_log)
-            Wbat = Vbat * Ibat # W instantaneos a bateria
-            
-            Ired, Ired_err = leer_sensor('Ired',Ired_sensor,Ired,Ired_min_log,Ired_max_log)            
-            Vred, Vred_err = leer_sensor('Vred',Vred_sensor,Vred,Vred_min_log,Vred_max_log)            
-            EFF, EFF_err = leer_sensor('EFF',EFF_sensor,EFF,EFF_min_log,EFF_max_log)
-            Wred = Vred * Ired # W instantaneos a red
-                
-            Iplaca, Iplaca_err = leer_sensor('Iplaca',Iplaca_sensor,Iplaca,Iplaca_min_log,Iplaca_max_log)
-            if abs(Iplaca) < Iplaca_error: Iplaca =0 
-            
-            Vplaca, Vplaca_err = leer_sensor('Vplaca',Vplaca_sensor,Vplaca,Vplaca_min_log,Vplaca_max_log)
-             
-            Aux1, Aux1_err = leer_sensor('Aux1',Aux1_sensor,Aux1,Aux1_min_log,Aux1_max_log)
-            Aux2, Aux2_err = leer_sensor('Aux2',Aux2_sensor,Aux2,Aux2_min_log,Aux2_max_log)
-        
-            Temp, Temp_err = leer_sensor('Temp',Temperatura_sensor,Temp,Temp_min_log,Temp_max_log)
-            
-            if Temperatura_sensor != '': # calculo compensacion temperatura solo cuando existe Temperature_sensor
-                Vbat_temp = Coef_Temp * (min(max(Temp,0),45) - 25)# Nominal 25ºC - rango maximo admisible (0-45ºC)
-                if Vbat_temp >0:# permito un maximo de variacion de 1V por cada 12V de bateria
-                    Vbat_temp = min( Vbat_temp, vsis * 1) 
-                else:
-                    Vbat_temp = max( Vbat_temp, -vsis * 1)
-            else:
-                Vbat_temp = 0
+            for sensor in sensores:
+                #print (f"{sensor} = {sensores[sensor]}")
+                if 'Equipo' in sensores[sensor].keys():    
+                    s= f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' 
+                    #print (s)
+                    exec(s)
+                    #print (f'{sensor}= {eval(sensor)}')
+    
+            if 'Temp_Bat' in sensores.keys():
+                if 'Equipo' in sensores['Temp_Bat']:
+                    if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
+                        Vbat_temp = Coef_Temp * (min(max(Temp_Bat,0),45) - 25)# Nominal 25ºC - rango maximo admisible (0-45ºC)
+                        if Vbat_temp >0:# permito un maximo de variacion de 1V por cada 12V de bateria
+                            Vbat_temp = min( Vbat_temp, vsis * 1) 
+                        else:
+                            Vbat_temp = max( Vbat_temp, -vsis * 1)
+                        Temp = Vbat_temp
+                    else:
+                        Vbat_temp = 0
+                        if 'Temp' not in locals(): Temp = 0
                     
-            # evalua las expresiones definidas en Parametros_FV.py
-            try:    Wconsumo = float(eval (Consumo_sensor)) 
-            except: Wconsumo = 0
-            try:    Wplaca = float(eval(Wplaca_sensor))
-            except: Wplaca = 0
             
       ### ------------------ Control Excedentes...Cálculo salida PWM ----------
         ee=36
@@ -909,7 +953,7 @@ try:
         ##################################################################
         t_muestra_1=(time.time()-hora_m) * 1000
 
-        ### CALCULO Wh_BAT y Wh_PLACA
+        ### CALCULO Wh_BAT,Wh_PLACA Y Wh_RED
         
         dia_anterior = dia
         dia = time.strftime("%Y-%m-%d")
@@ -1337,7 +1381,7 @@ try:
                      'Vred_min':Vred_min,'Vred_max':Vred_max,'EFF':EFF,'EFF_min':EFF_min,'EFF_max':EFF_max,
                      'Wconsumo':round(Wconsumo),'Wh_consumo': round(Wh_consumo),
                      'Temp':Temp,'PWM':int(PWM),
-                     'Aux1':Aux1,'Aux2':Aux2
+                     'Aux1':Aux1,'Aux2':Aux2,'Aux3':Aux3,'Aux4':Aux4,'Aux5':Aux5,'Aux6':Aux6,'Aux7':Aux7
                      }
         
         salida_FV = json.dumps(datos_FV)
