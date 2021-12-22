@@ -1,4 +1,4 @@
-# Version 27/Abr/2021  para ESP32 --  3 Reles SSR AF o SC
+# Version 30/Oct/2021  para ESP32 --  3 Reles SSR AF o SC
 
 ###### INICIO CONFIGURACION #######
 SSID='XXXXXXX'
@@ -51,18 +51,12 @@ gc.collect()
 
 ee = 'p10'
 
-# Tuplas (%potencia, salida PWM necesaria) para uso SSR-AF
-try:
-  with open('ssr.txt', 'r') as f:
-    ssr = ujson.load(f)
-except:
-  print ('Archivo ssr.txt no encontrado o con errores')
-  ssr = [(0,0),(5,38),(10,44),(20,51),(30,56),(40,60),(50,67),(60,68),(70,74),(80,80),(90,85),
-      (95,87),(100,100)] 
-  with open('ssr.txt', 'w') as f: # pongo ssr.txt por defecto
-    ujson.dump(ssr, f)
+#flag_reiniciar = True # habilita reinicio si no se reciben mensajes MQTT en un tiempo
+flag_reset = 0
+print (Nodo,IP)
 
-print('fichero ssr.txt:',ssr)
+if logica =='pos': duty_ini=0
+else: duty_ini=1023
 
 #eleccion por fichero del tipo de SSR
 try:
@@ -71,25 +65,11 @@ try:
 except:
   print ('Archivo tipo_ssr.txt no encontrado o con errores')
   
-  with open('tipo_ssr.txt', 'w') as f: # pongo tipo_ssr.txt por defecto
+  with open('tipo_ssr.txt', 'w') as f:
     ujson.dump(tipo_ssr, f)
 
 print('fichero tipo_ssr.txt:',tipo_ssr)
 
-ssrd = {}
-for i in ssr: ssrd[i[0]] = i[1]
-print ('diccionario ssr= ',end='')
-for i in sorted(ssrd): print(i,':',ssrd[i], end=' , ')
-
-SSR={} # Diccionario para modificar en caliente lista de tuplas del SSR
-flag_reiniciar = True # habilita reinicio si no se reciben mensajes MQTT en un tiempo
-
-ee = 'p20' 
-print (Nodo,IP)
-nf = 0 # flag de print
-
-if logica =='pos': duty_ini=0
-else: duty_ini=1023
 
 if tipo_ssr == 'AF2': # control por Angulo de Fase por DAC (maximo 2 reles)
   from machine import DAC # DAC rango:0-255 salida:0-3.3V
@@ -103,6 +83,7 @@ elif tipo_ssr == 'AF1': # control por Angulo de Fase por PWM + RC
   Rele2 = PWM(Pin(pines[1]), freq=1000, duty=duty_ini)
   Rele3 = PWM(Pin(pines[2]), freq=1000, duty=duty_ini)
 
+ee = 'p20'
 elif tipo_ssr == 'SC':
   
   Rele1 = PWM(Pin(pines[0]), freq=5, duty=duty_ini)
@@ -110,8 +91,10 @@ elif tipo_ssr == 'SC':
   Rele3 = PWM(Pin(pines[2]), freq=5, duty=duty_ini)
     
 ee = 'p30'
+# Por interrupccion temporal se pone flag_reset=1 cada X seg .. si se mantiene a 1 se reinicia
+# el bucle debe poner flag_reset=0 si todo va OK
 def reiniciar():
-  global flag_reset, nf
+  global flag_reset
   if flag_reset == 1:
     print ('###########')
     print (hora(),'reset')
@@ -120,21 +103,17 @@ def reiniciar():
     reset()
   else:
     flag_reset = 1
-    if RTC().datetime()[5]%5 <=0: # cada 5 minutos
-      nf += 1
-      if nf == 1: 
-        print (hora(),'puesto flag_reset a 1')
-    else:  
-      nf = 0  
+  
+  if RTC().datetime()[5]%5 <=0: # cada 5 minutos
+    print (hora(),'Ejecutando Sub Timer')
 
 def sub_cb_af(topic, msg): # SSR con Angulo de Fase o Paso por Cero
-  global t_ultimo_msg, DEBUG,ssr,SSR
+  global t_ultimo_msg, DEBUG
   
   if DEBUG: 
     print (topic, msg)
   try:
     ee='10' 
-    p1= topic.find(b'/Conf/SSR')
     
     if topic == Nodo + b'/Conf':
       msg = msg.decode()
@@ -144,30 +123,10 @@ def sub_cb_af(topic, msg): # SSR con Angulo de Fase o Paso por Cero
       elif msg in  ('AF1','AF2','SC'):
         ee ='10b'
         print (msg)
-        with open('tipo_ssr.txt', 'w') as f: # pongo tipo_ssr.txt por defecto
+        with open('tipo_ssr.txt', 'w') as f: # actualizo tipo_ssr.txt
           ujson.dump(msg, f)
         utime.sleep(5)
         reset()
-        
-    elif p1 >= 0:
-      try:
-        SSR={}
-        for i in range(len(ssr)):
-          SSR[ssr[i][0]] = ssr[i][1]
-        ee ='10c'
-        exec(msg)
-          
-        ssr=[]
-        ssr = list(SSR.items())
-        ssr.sort()
-        print('ssr=',ssr)
-         
-        with open('ssr.txt', 'w') as f: # pongo ssr.txt por defecto
-          ujson.dump(ssr, f)
-      except:
-        print (ee,' Error ejecutando ',msg)
-    
-      c.publish(topic+b'/R',str(ssr))
         
     ee='20'
     if topic[:-1] == Nodo:
@@ -176,28 +135,19 @@ def sub_cb_af(topic, msg): # SSR con Angulo de Fase o Paso por Cero
       if DEBUG: print('Valor recibido=', x)
           
       if tipo_ssr[0:2] == 'AF':    
-        for i in range(len(ssr)):
-          if ssr[i][0] > x : break
-        x1, y1 =  ssr[i-1][0], ssr[i-1][1] # puntos de la recta
-        x2, y2 =  ssr[i][0], ssr[i][1]
-        y = int(y1 + (y2-y1)/(x2-x1)*(x-x1)) # ecuacion recta
-        
-        if DEBUG:
-            print('recta (',x1,',',y1,') - (',x2,',',y2,')')
-            c.publish(Nodo+b'/R','recta ('+str(x1)+','+str(y1)+') - ('+str(x2)+','+str(y2)+')')
         
         if tipo_ssr == 'AF2': # uso salidas DAC
-          v_dac = int(y * 2.55)
-          voltios = round(y * 0.033, 2)
+          v_dac = int(x * 2.55)
+          voltios = round(x * 0.033, 2)
           if DEBUG:
-            print(tipo_ssr,'salida(',x,')=',y, 'Vdac=',v_dac, '/', voltios,'V')
+            print(tipo_ssr,'mensaje=',x,'-- Vdac=',v_dac, '/', voltios,'V')
             print ('-' * 40)
             
         elif tipo_ssr == 'AF1': # uso salidas PWM
-          msg_duty = int(y * 10.2301)
-          voltios = round(y * 0.033, 2)
+          msg_duty = int(x * 10.2301)
+          voltios = round(x * 0.033, 2)
           if DEBUG:
-            print(tipo_ssr,'salida(',x,')=',y, 'Duty_PWM=',msg_duty, '/', voltios,'V')
+            print(tipo_ssr,'mensaje=',x,'-- Duty_PWM=',msg_duty, '/', voltios,'V')
             print ('-' * 40)
   
       elif tipo_ssr == 'SC':
@@ -252,13 +202,14 @@ def hora():
       +' - '+str(RTC().datetime()[4])+':'+str(RTC().datetime()[5])
       +':'+str(RTC().datetime()[6]))
   return h
-ee = '40'
+ee = 'p40'
 print ('Inicio:',hora())
 
 tp0 = utime.ticks_ms()
 
+#Interrupcion de whatchdog
 timer = Timer(-1)
-timer.init(period=30000, mode=Timer.PERIODIC,callback=lambda t:reiniciar())
+timer.init(period=30000, mode=Timer.PERIODIC,callback=lambda t:reiniciar()) # 30sg
 flag_reset = 0
 
 tp1 = utime.ticks_diff(utime.ticks_ms(), tp0)
@@ -319,17 +270,11 @@ t_ultimo_msg =  utime.ticks_ms()
 
 # ################## BUCLE PRINCIPAL #######################
 print('Tiempos inicio =',tp1,tp2,tp3)
-t1 = utime.ticks_ms()
 
 while True:
-  try:
-    if utime.ticks_diff(utime.ticks_ms(), t1) > 10000:
-      t1= utime.ticks_ms()
-      flag_reset = 0
-  except:
-    pass
+  flag_reset = 0 # reseteo flag_reset
     
-  if flag_reiniciar and utime.ticks_diff(utime.ticks_ms(), t_ultimo_msg) > 120000: # reinicio si no recibe msg en 2 minutos
+  if utime.ticks_diff(utime.ticks_ms(), t_ultimo_msg) > 300000: # reinicio si no recibe msg en 5 minutos
     print (hora(),' Reinicio por Error t_ultimo_msg')
     try:
       c.publish(topic_log, Nodo+ b' Reinicio por Error t_ultimo_msg')
@@ -356,9 +301,7 @@ while True:
         print(Nodo+str(i+1))
         c.subscribe(Nodo+str(i+1))
       c.subscribe(Nodo+b'/Conf')
-      c.subscribe(Nodo+b'/Conf/SSR')
       print(Nodo+b'/Conf')
-      print(Nodo+b'/Conf/SSR')
       print('....Suscripcion hecha')
       c.publish(topic_log, Nodo+ b' conectado ')
       print(Nodo+ b' conectado')
@@ -403,6 +346,7 @@ while True:
     except:
       n_errores += 1
       print(hora(),'error=',ee)
+      utime.sleep(2)
       if n_errores > 10:
         print (hora(),' Reinicio por Error en try check_msg()') 
         try:
