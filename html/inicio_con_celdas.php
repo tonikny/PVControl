@@ -55,7 +55,7 @@ mysqli_close($link);
             <div id= "Whn_bat" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;SOC máx</div>
+            <div class="divTableCell">SOC máx</div>
             <div id = "SOC_max" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
@@ -63,11 +63,11 @@ mysqli_close($link);
             <div id ="SOC_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vbat mín</div>
+            <div class="divTableCell">Vbat_mín</div>
             <div id = "Vbat_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vbat máx</div>
+            <div class="divTableCell">Vbat_máx</div>
             <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
         </div>
         
