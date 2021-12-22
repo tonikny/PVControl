@@ -1813,7 +1813,7 @@ $(function () {
             Temp = data['FV']['Temp'];
             PWM  = data['FV']['PWM'];
             
-            //Aux1,Aux2,Aux3,Aux4
+            //Aux1,Aux2,Aux3,Aux4....
             Aux1 = data['FV']['Aux1'];
             Aux2 = data['FV']['Aux2'];
             Aux3 = data['FV']['Aux3'];
@@ -1898,25 +1898,25 @@ $(function () {
             
             $("#Mod_bat").text(Mod_bat);
             
-            $("#Aux1").text(Aux1);
+            $("#Aux1").text(Aux1 + Unidades_Aux1);
             $("#Aux1n").text(Nombre_Aux1);
             
-            $("#Aux2").text(Aux2);           
+            $("#Aux2").text(Aux2 + Unidades_Aux2);           
             $("#Aux2n").text(Nombre_Aux2);
             
-            $("#Aux3").text(Aux3);           
+            $("#Aux3").text(Aux3 + Unidades_Aux3);           
             $("#Aux3n").text(Nombre_Aux3);
             
-            $("#Aux4").text(Aux4);           
+            $("#Aux4").text(Aux4 + Unidades_Aux4);           
             $("#Aux4n").text(Nombre_Aux4);
             
-            $("#Aux5").text(Aux5);           
+            $("#Aux5").text(Aux5 + Unidades_Aux5);           
             $("#Aux5n").text(Nombre_Aux5);
             
-            $("#Aux6").text(Aux6);           
+            $("#Aux6").text(Aux6 + Unidades_Aux6);           
             $("#Aux6n").text(Nombre_Aux6);
             
-            $("#Aux7").text(Aux6);           
+            $("#Aux7").text(Aux7+ Unidades_Aux7);           
             $("#Aux7n").text(Nombre_Aux7);
             
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)

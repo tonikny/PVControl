@@ -104,13 +104,15 @@ Vbat_max = Vbat_min = 0.0   # Variable para guardar Vbat maximo  y minimo diario
 flag_Abs= flag_Flot = 0     # Flags de Absorcion y Flotacion
 Vabs = Vflot = 0.0          # Valores de Absorcion y Flotacion
 Wh_bat = Whp_bat = Whn_bat = 0.0
+Wbat = 0.0
 
 #---Variables calculo SOC --------------------------------
 Ip = Ip1 = Ip2 = 0.0
 
-#---Variables Placas --------------------------------
+#---Variables Watios --------------------------------
 Wplaca = Iplaca = Vplaca = 0.0   # w, V e Intensidad de Placas(valor intensidad tras el regulador)
 Wh_placa = Wh_consumo = 0.0
+Wconsumo = 0.0
 
 #---Variables Auxiliares --------------------------------
 Aux1 = Aux2 = 0.0       # Valores de captura auxiliares (salida regulador, Iplaca2, etc)
@@ -422,30 +424,6 @@ def leer_sensor(variable, sensor) :  # leer sensor
             #logBD(f'lectura incoherente {variable}={y}')
             y = anterior
             y_err = 2 
-
-    return y,y_err
-
-def leer_sensor_a(n_sensor,sensor,anterior,minimo,maximo) :  # leer sensor
-    try:
-        y_err = 0 # error en lectura 0= No error....1= Error lectura.....2= Error limites max/min
-        if sensor =='':
-            return anterior , y_err
-        else:
-            y = float(eval(sensor))
-    except:
-        traceback.print_exc()
-        print (f'Error en sensor de {n_sensor}= sensor')
-        
-        y = anterior
-        y_err = 1
-        time.sleep(5) # espero 5sg
-
-    if y < minimo or y > maximo:
-        logBD(f'lectura incoherente {n_sensor}={y}')
-        print (f'Error min/max sensor {n_sensor}={y}')
-        
-        y = anterior
-        y_err = 2 
 
     return y,y_err
 
@@ -938,12 +916,9 @@ try:
                             Vbat_temp = min( Vbat_temp, vsis * 1) 
                         else:
                             Vbat_temp = max( Vbat_temp, -vsis * 1)
-                        Temp = Vbat_temp
                     else:
                         Vbat_temp = 0
-                        if 'Temp' not in locals(): Temp = 0
-                    
-            
+                        
       ### ------------------ Control Excedentes...Cálculo salida PWM ----------
         ee=36
         PWM_ant = PWM

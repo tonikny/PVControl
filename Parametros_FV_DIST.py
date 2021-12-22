@@ -47,12 +47,15 @@ sensores ={
 'Ired' : {},   # Sensor Intensidad de red
 'EFF'  : {},   # Eficienca Conversion 
 
+'Temp_Bat': {'Equipo':"d_['TEMP']['Ds18b20']['Temp0']",'Max': 50, 'Min':-5}  #  Sensor Temperatura
+
+# Expresiones calculadas
 'Wbat' : {'Equipo': "Ibat * Vbat"}, #  Potencia de/a baterias
 'Wplaca' : {'Equipo': "Iplaca * Vbat"}, #  Potencia de placas
 'Wred' : {'Equipo': "Ired * Vred"},     #  Potencia de/a red
 'Wconsumo': {'Equipo': "Wplaca-Wred-Wbat"}, # Consumo
 
-'Temp_Bat': {'Equipo':"d_['TEMP']['Ds18b20']['Temp0']",'Max': 50, 'Min':-5}  #  Sensor Temperatura
+'Temp': {'Equipo':"Temp_Bat"}  #  Temperatura que se guarda en BD y muestra en reloj Web
 
 }
 
