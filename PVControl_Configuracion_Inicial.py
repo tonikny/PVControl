@@ -59,13 +59,13 @@ else:
 if archivo != '':  
     hora =   time.strftime("%Y-%m-%d_%H:%M")
     fichero1 ='/home/pi/PVControl+/Parametros_FV.py'
-    fichero2 = f'/home/pi/PVControl+/Parametros_FV_{hora}.py'
+    fichero2 = f'/home/pi/PVControl+/Parametros_FV_{hora}.back'
     fichero3 = f'/home/pi/PVControl+/Parametros_FV_DIST.py'
     
     print ()
     try:
         shutil.copy(fichero1, fichero2)
-        print (Fore.RED+f'Se crea copia de seguridad de Parametros_FV.py anterior con el nombre...Parametros_FV_{hora}.py') 
+        print (Fore.RED+f'Se crea copia de seguridad de Parametros_FV.py anterior con el nombre...Parametros_FV_{hora}.back') 
     except:
         print ('ERROR.... No existe fichero Parametros_FV.py....se usa el archivo Parametros_FV_DIST como modelo')
         archivo = '2'    
