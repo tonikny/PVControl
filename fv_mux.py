@@ -98,7 +98,7 @@ try:
     sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
                   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
                   `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
-                  `sensores` varchar(3000) COLLATE latin1_spanish_ci NOT NULL,
+                  `sensores` varchar(5000) COLLATE latin1_spanish_ci NOT NULL,
                    PRIMARY KEY (`id_equipo`)
                  ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
 
@@ -109,7 +109,7 @@ try:
 
     try: #inicializamos registro en BD RAM
         cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)",
-                      ('CELDAS','"{}"'))
+                      ('CELDAS','{}'))
         db.commit()
     except:
         pass

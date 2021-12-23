@@ -103,7 +103,7 @@ try:
     
     try: #inicializamos registro en BD RAM
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('MQTT','"en espera"'))
+                      ('MQTT','{}'))
         db.commit()
     except:
         pass

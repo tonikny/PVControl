@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-10-28
+# Versión 2021-12-23
 
 import time,sys,os
 import MySQLdb 
@@ -13,123 +13,88 @@ import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
-# Asegurar que los permisos estan OK... se hara por HOOKS
-#subprocess.run(['sudo','chown', '-R','pi:pi', '/home/pi/PVControl+'], check=True)
-#subprocess.run(['sudo','chown', '-R','root:root', '/home/pi/PVControl+/etc/cron.d/pvcontrol'], check=True)
-#################################
+try:
+    from Parametros_FV import *
+except:
+    pass
+
 
 print()
 print (Style.BRIGHT + Fore.YELLOW +'#' * 90)
 print('  PROGRAMA DE CONFIGURACION INICIAL DE PVControl+')
 print(Fore.CYAN)
-print(' Este programa realiza una configuracion BASICA del archivo Parametros_FV.py')
-print (' Para un uso mas avanzado edite y modifique el fichero Parametros_FV.py')
+print(' Este programa realiza la configuracion de PVControl+')
+#print (' Para un uso mas avanzado edite y modifique el fichero Parametros_FV.py')
 print (Fore.YELLOW)
 print('#' * 90)
 
 print()
-print (Fore.RED + '  ATENCION.. SE CAMBIARAN LOS PARAMETROS DEL FICHERO Parametros_FV.py')
+#print (Fore.RED + '  ATENCION.. SE CAMBIARAN LOS PARAMETROS DEL FICHERO Parametros_FV.py')
 print()
 salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 para continuar ', type=str, default='0')
 
 if salir == "1": pass
 else: sys.exit()
 
-parametros_bateria = ['AH','CP','EC','vsis']
-parametros_ads     = ['RES','SHUNT','Temperatura_sensor',
-                      '_mux' ]
-parametros_mezcla =  ['_sensor',
-                      'usar_', '_hibrido', '_victron', '_bmv','_sma','_si','_sb1','_sb2',
-                      'IP_','_srne']
-
-parametros_simular = ['simular =','simular_reles']
-
-parametros_hibrido = ['dev_hibrido','t_muestra_hibrido']
-parametros_fronius = ['_sensor','_fronius','IP_FRONIUS']
-parametros_huawei = ['_sensor','_huawei','IP_HUAWEI']
-parametros_goodwe = ['_sensor','_goodwe','IP_GOODWE']
-
-f_salida = open("/home/pi/PVControl+/Parametros_FV.aux", "w") # Fichero auxiliar
-
-
 print()
-print (Fore.CYAN + ' MENU SELECCION DEL TIPO DE INSTALACION FV'+Fore.GREEN)
+print('#' * 80)
+print (Fore.YELLOW+' Se va a editar el archivo de configuracion Parametros_FV.py....' )
 print()
-print ('     0 = Usar archivo Parametros_FV.py actual')
+print ('..... pulse 1 para usar el archivo actual de Parametros_FV.py')
+print ('..... Pulse 2 si es la primera configuracion y usar el archivo patron Parametros_FV_DIST.py')
 print()
-print ( Fore.CYAN +'   ########## SISTEMAS CON BATERIA ##############'+Fore.GREEN)
-print ('     1 = PCB de PVControl+   (copia el archivo Parametros_FV_ADS.py en Parametros_FV.py y continua)')
-print ('     2 = HIBRIDO tipo Axpert (copia el archivo Parametros_FV_HIBRIDO.py en Parametros_FV.py y continua)')
-print()
-print ( Fore.CYAN +'   ########## SISTEMAS SIN BATERIA ##############'+Fore.GREEN)
-print ('     11 = FRONIUS SIN BATERIA (copia el archivo Parametros_FV_FRONIUS.py en Parametros_FV.py y continua)')
-print ('     12 = HUAWEI SIN BATERIA (copia el archivo Parametros_FV_HUAWEI.py en Parametros_FV.py y continua)')
-print ('     13 = GOODWE SIN BATERIA (copia el archivo Parametros_FV_GOODWE.py en Parametros_FV.py y continua)')
+print ('..... Pulse 0 para seguir sin modificar el archivo Parametros_FV.py')
 
-print()
-print ( Fore.CYAN +'   ########## OTROS SISTEMAS ##############'+Fore.GREEN)
-print ('     99 = Mezcla u otras instalaciones (SRNE, SMA, ...)')
-print ('          copia el archivo "patron" Parametros_FV_DIST.py en Parametros_FV.py y continua)')
 
-print ()
-print (Fore.CYAN + ' Elije Tipo Instalacion FV'+Fore.GREEN)
+s = click.prompt('    ', type=str, default='0')
 
-Tipo_instalacion = click.prompt('    ', type=str, default='0')
 
-fichero2 = '/home/pi/PVControl+/Parametros_FV.py'
-if Tipo_instalacion == '1': # ADS
-    parametros = parametros_bateria + parametros_ads
-    texto = ' Configuracion para PCB'
-    fichero1 ='/home/pi/PVControl+/Parametros_FV_ADS.py'
-    shutil.copy(fichero1, fichero2)
+if s== '1':
+    archivo = 'Parametros_FV.py'
+elif s == '2':
+    archivo = 'Parametros_FV_DIST.py'
+else:
+    archivo = ''
     
-elif Tipo_instalacion == '2': # Hibrido
-    parametros = parametros_bateria + parametros_hibrido
-    texto = ' Configuracion para HIBRIDO'
-    fichero1 ='/home/pi/PVControl+/Parametros_FV_HIBRIDO.py'
-    shutil.copy(fichero1, fichero2)
+if archivo != '':  
+    hora =   time.strftime("%Y-%m-%d_%H:%M")
+    fichero1 ='/home/pi/PVControl+/Parametros_FV.py'
+    fichero2 = f'/home/pi/PVControl+/Parametros_FV_{hora}.py'
+    fichero3 = f'/home/pi/PVControl+/Parametros_FV_DIST.py'
     
-elif Tipo_instalacion == '11': # Fronius
-    parametros = parametros_fronius
-    texto = ' Configuracion para FRONIUS'
-    fichero1 ='/home/pi/PVControl+/Parametros_FV_FRONIUS.py'
-    shutil.copy(fichero1, fichero2)
-
-elif Tipo_instalacion == '12': # Huawei
-    parametros = parametros_huawei
-    texto = ' Configuracion para HUAWEI'
-    fichero1 ='/home/pi/PVControl+/Parametros_FV_HUAWEI.py'
-    shutil.copy(fichero1, fichero2)
-
-elif Tipo_instalacion == '13': # goodwe
-    parametros = parametros_goodwe
-    texto = ' Configuracion para GOODWE'
-    fichero1 ='/home/pi/PVControl+/Parametros_FV_GOODWE.py'
-    shutil.copy(fichero1, fichero2)
-
+    print ()
+    try:
+        shutil.copy(fichero1, fichero2)
+        print (Fore.RED+f'Se crea copia de seguridad de Parametros_FV.py anterior con el nombre...Parametros_FV_{hora}.py') 
+    except:
+        print ('ERROR.... No existe fichero Parametros_FV.py....se usa el archivo Parametros_FV_DIST como modelo')
+        archivo = '2'    
     
-elif Tipo_instalacion == '99': # Otros
-    parametros = parametros_bateria + parametros_ads + parametros_hibrido + parametros_mezcla
-    texto = ' Configuracion para OTROS SISTEMAS'
-    fichero1 ='/home/pi/PVControl+/Parametros_FV_DIST.py'
-    shutil.copy(fichero1, fichero2)
-    
-elif Tipo_instalacion == '0': # Fichero actual
-    parametros = parametros_bateria + parametros_ads + parametros_hibrido + parametros_mezcla
-    texto = ' Configuracion usando Parametros_FV.py actual'
-    
-print (Fore.CYAN + texto)
+    if archivo =='2': shutil.copy(fichero3, fichero1)
+        
+    print()
+    print('#' * 80)
+    print (Fore.YELLOW+'Como primer paso se abrira en el editor de textos "geany" el archivo Parametros_FV.py.....')
+    print ()
+    print(Fore.RED+'ES MUY IMPORTANTE RELLENAR BIEN ESTE ARCHIVO SIN ERRORES DE SINTAXIS')
+    print ('LEA EL MANUAL SI TIENE DUDAS DE COMO RELLENAR EL ARCHIVO')
+    print(Fore.YELLOW+' MODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de geany para continuar')
+    print('#' * 80)
 
-narg = len(sys.argv)
-if str(sys.argv[narg-1]) == '-sim':    parametros += parametros_simular
+    continuar = click.prompt('pulsa una tecla para seguir.....    ', type=str, default=' ')
 
-try:
-    from Parametros_FV import * # para conexion a la BD
-except:
-    print (Fore.RED, '#' * 80)
-    print (Fore.CYAN,'NO EXISTE EL FICHERO Parametros_FV.py - Ejecute de nuevo y elija otra opcion')
-    print (Fore.RED, '#' * 80)
-    sys.exit()
+    comando = f"geany {fichero1}"
+    print ("Comando: ", comando)
+    proceso = subprocess.run(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if proceso.returncode==0:
+        msg = proceso.stdout
+    else:
+        msg = proceso.stderr
+    print (msg)
+
+    continuar = click.prompt('pulsa un tecla para seguir una vez finalizada la edicion de Parametros_FV.py.....    ', type=str, default=' ')
+
+
 
 # ######## ACTUALIZACION BD (CAMPOS,..) 
 try:
@@ -142,157 +107,108 @@ try:
 except:
     print( ' ERROR EN BD ')
 
+from Parametros_FV import *
 
-#print (parametros)    
-print()
-print (Fore.YELLOW +'#' * 90)
-print('  INTRODUCCION DE PARAMETROS DE PVControl+')
-print(Fore.CYAN)
-print(' Introduzca los datos de los parametros y pulse "INTRO"')
-print (' Pulsar "INTRO" asigna el valor que aparece por defecto entre corchetes ..[xxx]')
-print (Fore.YELLOW)
-print('#' * 90)
+
+db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+cursor = db.cursor()
 
 print()
-
-with open('/home/pi/PVControl+/Parametros_FV.py') as f:
-    for linea in f:
-        #print (Fore.BLUE + linea)
-        for p in parametros:
-            p1 = linea.find(p)
-            
-            if p1 >= 0:
-                print('-' * 70)
-                p2 = linea.find('=')
-                p = linea[:p2] # pongo el p el nombre completo del parametro y sus espacios 
-                p3 = linea.find('#')
-                Valor = linea[p2 + 1:p3].rstrip()
-                Valor = Valor.lstrip()
-                comillas = Valor.find('"') # Compruebo si el parametro debe llevar comillas
-                if comillas >= 0:
-                    Valor = Valor[1:-1]
-                                        
-                Descripcion = linea[p3 + 1:]
-                
-                print (Fore.BLUE + 'Parametro = '+ p,Fore.RED,' Valor actual = '+ Valor)
-                print (Fore.YELLOW+'    Descripcion : '+Descripcion) 
-                
-                ip = click.prompt(Fore.GREEN + '    Nuevo valor para '+ p +'?', type=str, default=Valor)
-                
-                if comillas >= 0: ip = '"' + ip + '"'        # Añado comillas
-                ip = ip + " " * (p3 - p2 - len(ip) - 2)      # Añados espacios
-                linea_s = p +  "= " + ip + "#" + Descripcion # Completo la nueva linea
-                
-                print ('original: ', linea, end='')
-                print ('final   : ', linea_s)
-                
-                if 'vsis' in p: # Adaptacion tabla parametros en BD
-                    print()
-                    print (Fore.RED + '  ATENCION.. SE ADAPTARA LA BASE DE DATOS PARA EL VOLTAJE SELECCIONADO')
-                    print ('  Para una adaptacion mas personal cambiar la tabla parametros de la Base de Datos')
-                    
-                    print()
-                    bd_act = click.prompt(Fore.GREEN + ' 1= Actualiza BD  --  0: No Actualiza', type=str, default='1')
-                    if bd_act == '1':
-                        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                        cursor = db.cursor()
+print('#' * 80)
+print (Fore.YELLOW+'  Actualización de la tabla parametros para el Control de Excedentes')
+print ()
+print(Fore.RED+'ES MUY IMPORTANTE DEFINIR LOS CAMPOS DE CONTROL DE EXCEDENTES ACORDES A LA INSTALACION FV')
+print ('LEA EL MANUAL SI TIENE DUDAS DE LO QUE TIENE QUE PONER')
+#print(Fore.YELLOW+' iNTRODMODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de geany para continuar')
+print('#' * 80)
         
-                        if '2' in ip:
-                            Sql = "sensor_PID = 'Vbat',objetivo_PID = '28.8',Vabs = '28.8',Vflot = '27.2',Vequ = '29.6'"
-                            print (Fore.CYAN +'tabla parametros configurada a 24V')
-                            
-                        elif '4' in ip:
-                            Sql = "sensor_PID = 'Vbat',objetivo_PID = '57.6', Vabs = '57.6',Vflot = '54.4', Vequ = '59.2'"
-                            print (Fore.CYAN +'tabla parametros configurada a 48V')
-                            
-                        elif '1' in ip:
-                            Sql = "sensor_PID = 'Vbat',objetivo_PID = '14.4', Vabs = '14.4',Vflot = '13.6', Vequ = '14.8'"
-                            print (Fore.CYAN +'tabla parametros configurada a 12V')
-                        
-                        Sql = "UPDATE parametros SET nuevo_soc = '100',"+Sql # Ponemos SOC a 100%
-                        print(Sql)
-                        cursor.execute(Sql)
-                        db.commit()
-                        cursor.close()
-                        db.close()
-                
-                elif 'AH' in p: # Valores PID en tabla parametros dependiendo de si se usa bateria o no
-                    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                    cursor = db.cursor()
-                    
-                    if float(Valor) < 1.0:
-                        AH_valor = 'SIN BATERIA'
-                        Sql = """sensor_PID = 'Wred',objetivo_PID = '0', Vabs = '0',Vflot = '0', Vequ = '0' ,
-                                 Kp = '0.1',Ki = '0', Kd = '0'"""
-                    else:
-                        AH_valor = 'CON BATERIA'
-                        Sql = """sensor_PID = 'Vbat', Kp = '10',Ki = '0', Kd = '0'"""
-                    
-                    print (Fore.CYAN +'Instalacion ',AH_valor,' se adapta PID en tabla parametros....')
-                    Sql = "UPDATE parametros SET " + Sql
-                    print(Sql)
-                    print()
-                    print (Fore.CYAN +' ...Valores PID en tabla parametros configurada a sistemas ',AH_valor)
-                    
-                    cursor.execute(Sql)
-                    db.commit()
-                    cursor.close()
-                    db.close()
-              
-                break # siguiente parametro
-                
-            else:
-                linea_s = linea
-                
-        f_salida.write(linea_s)  # Grabamos linea en fichero temporal 
+sensor_PID = click.prompt(Fore.YELLOW+'Introduce la variable de control de excedentes ', type=str, default='Vbat')
+if sensor_PID == 'Vbat':
+    Vabs = 14.4 * vsis
+    Vflot = 13.2 * vsis
+    Vequ = 14.8 * vsis
+    Tabs= 3600
+    Objetivo_PID = Vabs
+    
+    Vabs = click.prompt('Introduce valor de Vabs.. ', type=float, default=Vabs)
+    Vflot = click.prompt('Introduce valor de Vflot.. ', type=float, default=Vflot)
+    Vequ = click.prompt('Introduce valor de Vequ.. ', type=float, default=Vequ)
+    Tabs = click.prompt('Introduce valor de Tabs.. ', type=float, default=Tabs)
+    
+else:
+    Vabs = Vflot = Vequ = Objetivo_PID =0
+    Objetivo_PID = click.prompt('Introduce el valor objetivo de la variable de control de excedentes ', type=float, default=Objetivo_PID)
 
-f_salida.close()
 
+Sql = f"UPDATE parametros SET sensor_PID = '{sensor_PID}', objetivo_PID = '{Objetivo_PID}', Vabs = '{Vabs}', Vflot = '{Vflot}', Vequ = '{Vequ}'"
+print(Fore.MAGENTA+Sql)
+cursor.execute(Sql)
+db.commit()
+
+Kd= Ki = 0
+if AH > 0: Kp= 10
+else: Kp = 0.1
+
+print(Fore.YELLOW)
+
+Kp = click.prompt('Introduce el valor del parametro Kp del control de excedentes ', type=float, default=Kp)
+Kd = click.prompt('Introduce el valor del parametro Kd del control de excedentes ', type=float, default=Kd)
+Ki = click.prompt('Introduce el valor del parametro Ki del control de excedentes ', type=float, default=Ki)
+
+Sql = f"UPDATE parametros SET Kp = {Kp}, Kd = {Kd}, Ki = {Ki}"
+print(Fore.MAGENTA+Sql)
+cursor.execute(Sql)
+db.commit()
+
+
+print (Fore.CYAN +'tabla parametros configurada....')
+print ('... Recuerda adaptar los parametros del control PID ....Kp, Ki, Kd  para un control mas preciso')
+
+if AH > 0:
+    
+    SOC = click.prompt(Fore.YELLOW+'Introduce valor del SOC actual de la Bateria.. ', type=float, default=100)
+    
+    Sql = f"UPDATE parametros SET nuevo_soc = {SOC}" # Ponemos SOC a 100%
+    print(Fore.MAGENTA+Sql)
+    cursor.execute(Sql)
+    db.commit
+
+print (Fore.CYAN +'tabla parametros configurada')
+
+cursor.close()
+db.close()
+
+    
+# ############# Adaptacion Web #########################################
+try:
+    exec(open("/home/pi/PVControl+/PVControl_Configuracion_Web.py").read()) # adaptacion Web segun Parametros_FV.py
+except:
+    print (Fore.BLUE+ '#' * 60)
+    print (Fore.RED+ '--------- ERROR en configuracion WEB ---------')
+    print (Fore.BLUE+ '#' * 60)
+# #######################################################################
+
+    
+print (Fore.CYAN +'#' * 50)
+print ('#' * 50)
+print (Fore.RED + '  --- SI HA MODIFICADO EL FICHERO Parametros_FV.py ES NECESARIO REINICIAR PVControl+.. ')
+print (Fore.CYAN +'#' * 50)
 print()
-print (Fore.RED + '  --- CONFIGURACION Parametros_FV.py FINALIZADA --- ') 
-print()
-confirmacion = click.prompt(Fore.GREEN + '    Pulsa 1 para grabar o 0 para cancelar', type=str, default='1')
 
-if confirmacion == '1':
-    os.rename('/home/pi/PVControl+/Parametros_FV.py', '/home/pi/PVControl+/Parametros_FV.back')
-    os.rename('/home/pi/PVControl+/Parametros_FV.aux', '/home/pi/PVControl+/Parametros_FV.py')
+r_servicios = click.prompt(Fore.GREEN + '    Pulsa 1 para reiniciar PVControl+ o 0 para reinicio manual', type=str, default='1')
+print(r_servicios)
     
-    print (Fore.RED + '  --- NUEVO FICHERO Parametros_FV.py CREADO... ')
+if r_servicios == '1':
+    subprocess.run(['python3','Arrancar_servicios_PVControl+.py'], check=True)
     print()
-    
-    
-    # ############# Adaptacion Web #########################################
-    try:
-        exec(open("/home/pi/PVControl+/PVControl_Configuracion_Web.py").read()) # adaptacion Web segun Parametros_FV.py
-    except:
-        print (Fore.BLUE+ '#' * 60)
-        print (Fore.RED+ '--------- ERROR en configuracion WEB ---------')
-        print (Fore.BLUE+ '#' * 60)
-    # #######################################################################
-    
-    print (Fore.CYAN +'#' * 50)
-    print ('#' * 50)
-    print (Fore.RED + '  --- SI HA MODIFICADO EL FICHERO Parametros_FV.py ES NECESARIO REINICIAR PVControl+.. ')
-    print (Fore.CYAN +'#' * 50)
-    print()
-
-    r_servicios = click.prompt(Fore.GREEN + '    Pulsa 1 para reiniciar PVControl+ o 0 para reinicio manual', type=str, default='1')
-    print(r_servicios)
-    
-    if r_servicios == '1':
-        subprocess.run(['python3','Arrancar_servicios_PVControl+.py'], check=True)
-        print()
-        print (Fore.RED + '  --- SERVICIOS PVControl+ REINICIADOS --- ')
-    else:
-        print()
-        print (Fore.RED + '  --- SERVICIOS PVControl+ NO REINICIADOS --- ')
-        print ( ' Recuerde reiniciar manualmente los servicios afectados con '+ Fore.CYAN +
-                '\n sudo systemctl enable nombre_servicio'+
-                '\n sudo systemctl restart nombre_servicio\n')
-        
+    print (Fore.RED + '  --- SERVICIOS PVControl+ REINICIADOS --- ')
 else:
     print()
-    print (Fore.RED + '  --- CANCELADA MODIFICACION DEL ARCHIVO Parametros_FV.py --- ')
+    print (Fore.RED + '  --- SERVICIOS PVControl+ NO REINICIADOS --- ')
+    print ( ' Recuerde reiniciar manualmente los servicios afectados con '+ Fore.CYAN +
+            '\n sudo systemctl enable nombre_servicio'+
+            '\n sudo systemctl restart nombre_servicio\n')
+    
 
 salir = click.prompt(Fore.GREEN + '    Pulsa INTRO para salir', type=str, default='')
 

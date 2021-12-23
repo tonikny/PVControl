@@ -24,7 +24,7 @@ print (Fore.YELLOW)
 print('#' * 90)
 
 print()
-print (Fore.RED + '  ATENCION.. SE CAMBIARAN LOS ARCHIVOS '+ Fore.YELLOW + '(version.inc y Parametros_Web_red.js')
+print (Fore.RED + '  ATENCION.. SE CAMBIARAN LOS ARCHIVOS '+ Fore.YELLOW + '(version.inc y Parametros_Web.js')
 print()
 salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 para continuar ', type=str, default='1')
 
