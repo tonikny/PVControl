@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-11-22
+# Versión 2021-12-22
 
 import sys, time
 import MySQLdb,json
@@ -17,6 +17,7 @@ colorama.init()
 
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando '+ Fore.GREEN + sys.argv[0]) #+Style.RESET_ALL)
 
+"""
 #### Parametros_FV.py ##########
 usar_sdm120c = [1] 
 dev_sdm120c = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
@@ -25,6 +26,7 @@ publicar_sdm120c_mqtt = [0]     # Publica o no por MQTT los datos capturados (no
 grabar_datos_sdm120c = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
 n_muestras_sdm120c = [1]        # grabar en BD cada nmuestras
 # ###############################################
+"""
 
 equipo = 'sdm120c'
 

@@ -62,34 +62,48 @@ mysqli_close($link);
             <div id ="SOC_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vbat mín</div>
+            <div class="divTableCell">Vbat mín</div>
             <div id = "Vbat_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vbat máx</div>
+            <div class="divTableCell">Vbat_máx</div>
             <div id ="Vbat_max" class="divTableCell">&nbsp;</div>
         </div>
-        <div class="divTableRow">
-            <div class="divTableCell"></div>
-            <div class="divTableCell">&nbsp;</div>
-        </div>
+        
         <div class="divTableRow">
             <div class="divTableCell">Mod_bat</div>
             <div id ="Mod_bat" class="divTableCell">&nbsp;</div>
         </div>
-        <div class="divTableRow">
-            <div class="divTableCell"></div>
-            <div class="divTableCell">&nbsp;</div>
-        </div>
         
         <div class="divTableRow">
-            <div class="divTableCell">Aux1</div>
+            <div id ="Aux1n" class="divTableCell">Aux1</div>
             <div id ="Aux1" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">Aux2</div>
+            <div id ="Aux2n" class="divTableCell">Aux2</div>
             <div id ="Aux2" class="divTableCell">&nbsp;</div>
         </div>
+        <div class="divTableRow">
+            <div id ="Aux3n" class="divTableCell">Aux3</div>
+            <div id ="Aux3" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux4n" class="divTableCell">Aux4</div>
+            <div id ="Aux4" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux5n" class="divTableCell">Aux5</div>
+            <div id ="Aux5" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux6n" class="divTableCell">Aux6</div>
+            <div id ="Aux6" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux7n" class="divTableCell">Aux7</div>
+            <div id ="Aux7" class="divTableCell">&nbsp;</div>
+        </div>
+        
     </div>
 </div>
 
@@ -1625,9 +1639,16 @@ $(function () {
             Temp = data['FV']['Temp'];
             PWM  = data['FV']['PWM'];
             
-            //Aux1,Aux2
+            //Aux1,Aux2,Aux3,Aux4....
             Aux1 = data['FV']['Aux1'];
-            Aux2 = data['FV']['Aux2'];        
+            Aux2 = data['FV']['Aux2'];
+            Aux3 = data['FV']['Aux3'];
+            Aux4 = data['FV']['Aux4'];
+            Aux5 = data['FV']['Aux5'];
+            Aux6 = data['FV']['Aux6'];
+            Aux7 = data['FV']['Aux7'];
+            
+            
             // Actualizacion reloj Vbat 
             chart_vbat.series[0].setData([Vbat]);
             chart_vbat.yAxis[0].setTitle({
@@ -1703,8 +1724,28 @@ $(function () {
             $("#Vbat_max").text(Vbat_max + "V");
             
             $("#Mod_bat").text(Mod_bat);
-            $("#Aux1").text(Aux1);
-            $("#Aux2").text(Aux2);            
+            
+            $("#Aux1").text(Aux1 + Unidades_Aux1);
+            $("#Aux1n").text(Nombre_Aux1);
+            
+            $("#Aux2").text(Aux2 + Unidades_Aux2);           
+            $("#Aux2n").text(Nombre_Aux2);
+            
+            $("#Aux3").text(Aux3 + Unidades_Aux3);           
+            $("#Aux3n").text(Nombre_Aux3);
+            
+            $("#Aux4").text(Aux4 + Unidades_Aux4);           
+            $("#Aux4n").text(Nombre_Aux4);
+            
+            $("#Aux5").text(Aux5 + Unidades_Aux5);           
+            $("#Aux5n").text(Nombre_Aux5);
+            
+            $("#Aux6").text(Aux6 + Unidades_Aux6);           
+            $("#Aux6n").text(Nombre_Aux6);
+            
+            $("#Aux7").text(Aux7+ Unidades_Aux7);           
+            $("#Aux7n").text(Nombre_Aux7);
+            
             
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
             if (Mod_bat == "ABS")  {

@@ -1,5 +1,5 @@
 [Unit]
-Description= PVControl+ - Lectura SDM120CHUAWEI
+Description= PVControl+ - Lectura SDM120C
 After=fv.service
 
 [Service]

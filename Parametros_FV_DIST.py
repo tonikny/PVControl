@@ -29,14 +29,14 @@ simular_reles = 0   # Simular reles fisicos
 ## Si se definen las claves 'Max' y 'Min' se enviara un log si la captura esta fuera de dichos margenes 
  
 sensores ={
-'Vbat'    : {'Equipo':"d_['ADS1']['Vbat']", 'Max':65, 'Min':40},     # Sensor de Voltaje bateria
-'Vplaca'  : {'Equipo':"d_['ADS1']['Vplaca']", 'Max':500, 'Min':0},  # Sensor de Voltaje placa
+'Vbat'    : {'Equipo':"d_['HIBRIDO']['Vbat']", 'Max':66, 'Min':11},     # Sensor de Voltaje bateria
+'Vplaca'  : {'Equipo':"d_['HIBRIDO']['Vplaca']", 'Max':500, 'Min':-5},  # Sensor de Voltaje placa
 
-'Ibat'    : {'Equipo':"d_['ADS4']['Ibat']", 'Max':200, 'Min':-200}, # Sensor de Intensidad bateria
-'Iplaca'  : {'Equipo':"d_['ADS4']['Iplaca']", 'Max':200, 'Min':-1}, # Sensor de Intensidad Placas
+'Ibat'    : {'Equipo':"d_['HIBRIDO']['Ibat']", 'Max':200, 'Min':-200}, # Sensor de Intensidad bateria
+'Iplaca'  : {'Equipo':"d_['HIBRIDO']['Iplaca']", 'Max':200, 'Min':-1}, # Sensor de Intensidad Placas
 
-'Aux1'  : {'Equipo':"d_['ADS1']['Aux1']", 'Max':100, 'Min':0},    # Sensor Aux1
-'Aux2'  : {'Equipo':"d_['ADS1']['Aux2']", 'Max':100, 'Min':0},    # Sensor Aux2
+'Aux1'  : {'Equipo':"d_['SDM120C']['Vac']", 'Max':300, 'Min':0},    # Sensor Aux1
+'Aux2'  : {'Equipo':"d_['SDM120C']['Wac']", 'Max':1, 'Min':-2500},    # Sensor Aux2
 'Aux3'  : {},    # Sensor Aux3
 'Aux4'  : {},    # Sensor Aux4
 'Aux5'  : {},    # Sensor Aux5
@@ -47,13 +47,13 @@ sensores ={
 'Ired' : {},   # Sensor Intensidad de red
 'EFF'  : {},   # Eficienca Conversion 
 
-'Temp_Bat': {'Equipo':"d_['TEMP']['Ds18b20']['Temp0']",'Max': 50, 'Min':-5}  #  Sensor Temperatura
+'Temp_Bat': {},  #  Sensor Temperatura
 
 # Expresiones calculadas
 'Wbat' : {'Equipo': "Ibat * Vbat"}, #  Potencia de/a baterias
-'Wplaca' : {'Equipo': "Iplaca * Vbat"}, #  Potencia de placas
+'Wplaca' : {'Equipo': "d_['HIBRIDO']['Wplaca']"}, #  Potencia de placas
 'Wred' : {'Equipo': "Ired * Vred"},     #  Potencia de/a red
-'Wconsumo': {'Equipo': "Wplaca-Wred-Wbat"}, # Consumo
+'Wconsumo': {'Equipo': "d_['HIBRIDO']['PACW']"}, # Consumo
 
 'Temp': {'Equipo':"Temp_Bat"}  #  Temperatura que se guarda en BD y muestra en reloj Web
 
@@ -106,16 +106,16 @@ usar_mqtt_homeassistant = 0   # publica diccionario d_[FV] en topic PVControl/Da
 ###### Parametros Bateria ######
 ################################
 AH = 100.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
-CP = 1              # Indice Peukert
-EC = 1              # Eficiencia Carga
-vsis = 1            # Voltaje sistema - 1=12V  2=24V   4=48V
+CP = 1.              # Indice Peukert
+EC = 1.              # Eficiencia Carga
+vsis = 4.            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
 
 #######################################################
 ###### Parametros ADS1115  - Permite hasta 4 ADS ######
 #######################################################
-usar_ADS = [1,1] # activar o no el ADS
+usar_ADS = [0,0] # activar o no el ADS
 nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
 direccion_ADS = [72,75]                                              # direccion I2C del ADS
 
@@ -133,7 +133,7 @@ res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lec
 #########################
 ###### Multiplexor ######
 #########################
-usar_mux = 12   # Poner el numero de celdas a monitorizar (0= desactivar)...diccionario = d_['MUX'] / servicio = fv_mux
+usar_mux = 0   # Poner el numero de celdas a monitorizar (0= desactivar)...diccionario = d_['MUX'] / servicio = fv_mux
 
 t_muestra_mux = 5 # segundos entre capturas del mux
 n_muestras_mux = 4        # grabar en BD en tabla permanente cada X capturas 
@@ -164,7 +164,7 @@ celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = [0] #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [1] #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
 usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
@@ -173,7 +173,9 @@ t_muestra_hibrido = [5]         # Tiempo en segundos entre muestras del Hibrido
 publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del Hibrido
 
 grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
-n_muestras_hibrido = [5]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
+n_muestras_hibrido = [1]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
+
+protocolo_hibrido = [30]        # Nº de Protocolo del Hibrido (30 o 18)
 
 # -----------------------------------------------
 
@@ -316,6 +318,20 @@ grabar_datos_srne = 1      # 1 = Graba la tabla srne... 0 = No graba
 
 iplaca_srne_max = 85
 iplaca_srne_min = 0
+
+#####################
+###### SDM120C ######
+#####################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor usa el eastron se debe poner usar eastron = 1
+
+usar_sdm120c = [1] 
+dev_sdm120c = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
+t_muestra_sdm120c = [5]         # Tiempo en segundos entre muestras
+publicar_sdm120c_mqtt = [0]     # Publica o no por MQTT los datos capturados (no implementado aun)
+grabar_datos_sdm120c = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
+n_muestras_sdm120c = [1]        # grabar en BD cada nmuestras
 
 # -----------------------------------------------
 ##################

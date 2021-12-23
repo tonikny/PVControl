@@ -1,19 +1,18 @@
-# Version 30/Oct/2021  para ESP32 --  3 Reles SSR AF o SC
+# Version 22/Dic/2021  para ESP32 --  3 Reles SSR AF o SC
 
 ###### INICIO CONFIGURACION #######
-SSID='XXXXXXX'
-PASS='YYYYYYYY'
-
+SSID='XXXXXX'
+PASS='YYYYYY'
 # ################################
-Nodo = b'29' # Numero de Nodo MQTT
+Nodo = b'23' # Numero de Nodo MQTT
 # ################################
-IP = '192.168.0.29'
+IP = '192.168.0.131' # IP que se le asigna al ESP32
 IP_ROUTER = '192.168.0.1'
 
 logica= 'pos' # pos= positiva ,  neg==negativa...solo para SC
 # Mejor opcion logica pos en ESP32
 
-tipo_ssr = 'AF1'
+tipo_ssr = 'SC'   # poner el tipo de SSR
 # AF1 (SSR angulo fase por PWM)
 # AF2 (SSR angulo fase por DAC)
 # SC (SSR Semiciclos)
@@ -22,14 +21,14 @@ tipo_ssr = 'AF1'
 pines=[12,13,14] # GPIO ESP32 = 12,13,14 
 
 #config mqtt/red
-SERVER = '192.168.0.15' # IP de la Raspberry
+SERVER = '192.168.0.130' # IP de la Raspberry
 PORT = 1883
 USER = 'rpi'
 PASSWORD = 'fv'
  
 Nodo = b'PVControl/Reles/' + Nodo
 
-DEBUG = False 
+DEBUG = True 
 
 #nlog = nlog_max = 1000 # Nbucles para mandar OK al log
 
@@ -83,7 +82,7 @@ elif tipo_ssr == 'AF1': # control por Angulo de Fase por PWM + RC
   Rele2 = PWM(Pin(pines[1]), freq=1000, duty=duty_ini)
   Rele3 = PWM(Pin(pines[2]), freq=1000, duty=duty_ini)
 
-ee = 'p20'
+  ee = 'p20'
 elif tipo_ssr == 'SC':
   
   Rele1 = PWM(Pin(pines[0]), freq=5, duty=duty_ini)
@@ -159,9 +158,9 @@ def sub_cb_af(topic, msg): # SSR con Angulo de Fase o Paso por Cero
         if msg_freq > 50: msg_freq = 100 - msg_freq 
         if msg_freq == 0: msg_freq = 50
         if DEBUG:
-            print ('-' * 40)
-            print('Tipo SSR=',tipo_ssr, 'Duty_PWM=',msg_duty, 'Freq=',msg_freq )
-            print ('-' * 40)
+          print ('-' * 40)
+          print('Tipo SSR=',tipo_ssr, 'Duty_PWM=',msg_duty, 'Freq=',msg_freq )
+          print ('-' * 40)
         
       ee='22a'
       if topic[-1:] == b'1':        
@@ -192,7 +191,7 @@ def sub_cb_af(topic, msg): # SSR con Angulo de Fase o Paso por Cero
      
         print('Nodo=',Nodo,'  - time_diff=',utime.ticks_diff(utime.ticks_ms(), t_ultimo_msg),'  - msg=',msg)  
       
-	  ee='22c'
+      ee='22c'
       t_ultimo_msg = utime.ticks_ms()
   except:
     print ('Error en sub_cb_af =',ee)
