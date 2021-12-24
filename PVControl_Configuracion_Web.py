@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-24
+# Versión 2021-12-24
 
 import time,sys,os
 import MySQLdb 
