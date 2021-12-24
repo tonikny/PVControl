@@ -1,92 +1,62 @@
 # ------------------------------------------------------------------
-######    PARAMETROS INSTALACION PVControl+  -- version: 2021-09-22
+######    PARAMETROS INSTALACION PVControl+  -- version: 2021-12-21
 # ------------------------------------------------------------------
 
-################################
-###### Parametros Bateria ######
-################################
-AH = 500.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
-CP = 1              # Indice Peukert
-EC = 0.95           # Eficiencia Carga
-vsis = 4            # Voltaje sistema - 1=12V  2=24V   4=48V
-vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
+# ====================================================================
+# ====================================================================
+#             1.- SECCION PRINCIPAL PARAMETRIZACION        
+# ====================================================================
+# ====================================================================
+
+
+########################
+###### Simulacion ######
+########################
+simular = 0         # Simulacion datos FV --- 1 para simular....0 para no simular
+simular_reles = 0   # Simular reles fisicos
 # -----------------------------------------------
 
 ################################
 ##### Parametros sensores ######
 ################################
 
-Vbat_sensor   = "d_['ADS1']['Vbat']"     # Sensor de Voltaje bateria ( d_['ADS1']['Vbat'], d_hibrido['Vbat'], d_victron['Vbat'].....)
-Vplaca_sensor = "d_['ADS1']['Vplaca']"   # Sensor de Voltaje placas ( d_['ADS1']['Vplaca'], d_hibrido['Vplaca'],d_victron['Vbat'].....)
+# 'Variable' : {'Equipo':"expresion captura",'Max':Valor maximo, 'Min':Valor minimo,......},
 
-Ibat_sensor   = "d_['ADS4']['Ibat']"     # Sensor de Intensidad Bateria ( d_['ADS4']['Ibat'], d_hibrido['Ibat'], d_victron['Vbat'].....)
-Iplaca_sensor = "d_['ADS4']['Iplaca']"   # Sensor de Intensidad Placas ( d_['ADS4']['Iplaca'], d_hibrido['Iplaca'], .....)
+## Se pueden crear las variables que se quieran y con el nombre que se quiera
+## La "expresion de captura" puede ser cualquier expresion python3 valida
+## En los programas de captura que utilicen la tabla en BD RAM la sintaxis sera.... "d_['CLAVE']['Variable']".... d_['ADS1']['Vbat'], d_['HIBRIDO']['Vbat'],...
+## En los programas de captura que aun utilicen los archivos pkl la sintaxis sera.... "d_clave['Variable']".... d_sma['Vbat'], d_srne['Vbat'],...
+## Si se definen las claves 'Max' y 'Min' se enviara un log si la captura esta fuera de dichos margenes 
+ 
+sensores ={
+'Vbat'    : {'Equipo':"d_['ADS1']['Vbat']", 'Max':32, 'Min':0},     # Sensor de Voltaje bateria
+'Vplaca'  : {'Equipo':"d_['ADS1']['Vplaca']", 'Max':100, 'Min':0},  # Sensor de Voltaje placa
 
-Aux1_sensor   = "d_['ADS1']['Aux1']"     # ...
-Aux2_sensor   = ""        # ...
+'Ibat'    : {'Equipo':"d_['ADS4']['Ibat']", 'Max':200, 'Min':-200}, # Sensor de Intensidad bateria
+'Iplaca'  : {'Equipo':"d_['ADS4']['Iplaca']", 'Max':200, 'Min':-1}, # Sensor de Intensidad Placas
 
-Vred_sensor   = ""        # Sensor Voltaje de red (d_huawei['Vred'],...)
-Ired_sensor   = ""        # Sensor Intensidad de red (d_huawei['Ired'],...)
-EFF_sensor    = ""        # Eficienca Conversion (d_huawei['EFF'],...)
+'Aux1'  : {'Equipo':"d_['ADS1']['Aux1']", 'Max':100, 'Min':0},    # Sensor Aux1
+'Aux2'  : {'Equipo':"d_['ADS1']['Aux2']", 'Max':100, 'Min':0},    # Sensor Aux2
+'Aux3'  : {},    # Sensor Aux3
+'Aux4'  : {},    # Sensor Aux4
+'Aux5'  : {},    # Sensor Aux5
+'Aux6'  : {},    # Sensor Aux6
+'Aux7'  : {},    # Sensor Aux7
 
-Wplaca_sensor  = "Iplaca * Vbat"          # Iplaca * Vbat, d_hibrido['Wplaca'].....
-Consumo_sensor = "Vbat * (Iplaca-Ibat)"   # Vbat * (Iplaca-Ibat), d_hibrido['PACW'].
+'Vred' : {},   # Sensor Voltaje de red 
+'Ired' : {},   # Sensor Intensidad de red
+'EFF'  : {},   # Eficienca Conversion 
 
-Temperatura_sensor = "d_['TEMP']['Temp0']"   #  d_['TEMP']['Temp0'],d_['TEMP']['Temp1'],..... d_snre['Temp0'].....
+'Wbat' : {'Equipo': "Ibat * Vbat"}, #  Potencia de/a baterias
+'Wplaca' : {'Equipo': "Iplaca * Vbat"}, #  Potencia de placas
+'Wred' : {'Equipo': "Ired * Vred"},     #  Potencia de/a red
+'Wconsumo': {'Equipo': "Wplaca-Wred-Wbat"}, # Consumo
 
-################################
-###### Parametros ADS1115 ######
-################################
-usar_ADS = [1,1] # activar o no el ADS
-nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
-direccion_ADS = [72,75]                                              # direccion I2C del ADS
+'Temp_Bat': {'Equipo':"d_['TEMP']['Ds18b20']['Temp0']",'Max': 50, 'Min':-5},  #  Sensor Temperatura bateria
 
-var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
+'Temp': {'Equipo':"Temp_Bat"}  #  Temperatura que se guarda en BD y muestra en reloj Web
 
-tmuestra_ADS = [1,1]                                             # tiempo en sg entre capturas
-rate_ADS = [[250,250,250,250],[250,250,250,250]]                     # datarate de lectura
-bucles_ADS = [[10,5,5,5], [4,2,4,2]]                                 # Numero de bucles de lectura
-
-gain_ADS = [[2,2,2,2], [2,2,2,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
-modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
-res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lectura ADS - Lectura real
-
-# -----------------------------------------------
-
-##########################################################
-###### Parametros Mensaje error lectura incoherente ######
-##########################################################
-Vbat_max_log = 66     # Maximo voltaje bateria admisible para no dar aviso log
-Vbat_min_log = 11     # Minimo voltaje bateria admisible para no dar aviso log
-
-Aux1_max_log = 14
-Aux1_min_log = -1
-
-Aux2_max_log = 14
-Aux2_min_log = -1
-
-Vplaca_max_log = 500  # Maximo voltaje placas admisible para no dar aviso log
-Vplaca_min_log = -5   # Minimo voltaje placas admisible para no dar aviso log
-
-Ibat_max_log = 200    # Maxima intensidad bateria admisible para no dar aviso log
-Ibat_min_log = -200   # Minima intensidad bateria admisible para no dar aviso log
-
-Iplaca_max_log = 250  # Maxima intensidad placa admisible para no dar aviso log
-Iplaca_min_log = -1.5 # Minima intensidad placa admisible para no dar aviso log 
-Iplaca_error = 0.1    # poner el valor que por debajo se considerara Iplaca=0
-
-Ired_max_log = 60     # Maxima intensidad red admisible para no dar aviso log
-Ired_min_log = -60    # Minima intensidad red admisible para no dar aviso log
-Vred_max_log = 280    # Maximo voltaje red admisible para no dar aviso log
-Vred_min_log = 180    # Minimo voltaje red admisible para no dar aviso log
-
-EFF_max_log = 110     # Maximo EFF admisible para no dar aviso log
-EFF_min_log = 50      # Minimo EFF admisible para no dar aviso log
-
-Temp_max_log = 50     # Maxima temperatura admisible para no dar aviso log
-Temp_min_log = -10    # Minima temperatura admisible para no dar aviso log
-
-t_muestra_max = 6     # valor para grabar en el log si tarda mas el bucle en ejecutarse
+}
 
 # -----------------------------------------------
 
@@ -101,7 +71,9 @@ basedatos = "control_solar"
 grabar_datos_s = "False"   # expresion para grabar cada muestra en la tabla datos_s
                            # Ejemplos: 'True'.. 'False'.. 'Vplaca > 10'... 'PWM > 0'
 
+t_muestra_max = 6     # valor para grabar en el log si tarda mas el bucle en ejecutarse
 # -----------------------------------------------
+
 ##################
 ###### MQTT ######
 ##################
@@ -113,7 +85,7 @@ mqtt_clave   = "fv"
 pub_diver = 0  # publica datos ejecucion diver en "PVControl/Opcion/Diver"
 pub_time  = 0  # publica datos de tiempo de ejecucion en "PVControl/Opcion/Time"
 
-usar_mqtt = 1  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
+usar_mqtt = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
                # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt
                 
 mqtt_suscripciones=[] #  lista de topics a los que se suscribe fv_mqtt.py para guardar en tabla equipos.. diccionario=d_['MQTT']
@@ -121,71 +93,40 @@ mqtt_suscripciones=[] #  lista de topics a los que se suscribe fv_mqtt.py para g
 usar_mqtt_homeassistant = 0   # publica diccionario d_[FV] en topic PVControl/DatosFV para poder ser usado por Home Assistant
 
 # -----------------------------------------------
-###############################
-###### Telegram & MOTION ######
-###############################
-usar_telegram = 0 # 1 para usar  ..... 0 para no usar
-TOKEN ='XXXXXX:YYYYYYYYYY......'# bot Telegram...cambiar por el que cada uno de de alta
 
-# ID de Usuarios autorizados a mandar mensajes, los msg periodicos se mandan al primer declarado
-Aut = [111111,22222] # Lista de ID de Telegram autorizados
-
-cid_alarma = 1111111 # # Id Telegram a donde se enviara la foto/video de alarma
-
-msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora -- 0 = No manda mensaje
-
-#-------- Vigilancia por Camara con Motion y Clarifai
-motion_telegram = 0 # 1 = Envia foto deteccion a Telegram
-motion_clarifai = 0 # activa reconocimiento por Clarifai
-api_key = 'xxxxxxxxxxxx' # Key Clarifai
-workflow_id = 'yyyyyyyy' # Nombre del Workflow creado en Clarifai
-
-# fconfiguración horaria para motion
-# dias de la semana 1-7. Horas 24 bits 0=no grabar 1=si
-horario_alarma = {
-    1:'111111110000000000000000',
-    2:'111111110000000000000000',
-    3:'111111110000000000000000',
-    4:'111111110000000000000000',
-    5:'111111110000000000000000',
-    6:'111111111000000000000000',
-    7:'111111111000000000000000'}
-
-# -----------------------------------------------
-#########################
-###### PV_OUTPUT ########
-#########################
-usar_pvoutput = 0 # 1 para usar  ..... 0 para no usar
-
-pvoutput_key = "xxxxxxxx" # Key PVoutput
-pvoutput_id = "1233455"
+# ====================================================================
+# ====================================================================
+#    2.- SECCION PARAMETRIZACION SEGUN EQUIPAMIENTO INSTALADO        
+# ====================================================================
+# ====================================================================
 
 
-# -----------------------------------------------
-########################
-###### Simulacion ######
-########################
-simular = 0         # Simulacion datos FV --- 1 para simular....0 para no simular
-simular_reles = 0   # Simular reles fisicos
-
+################################
+###### Parametros Bateria ######
+################################
+AH = 100.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
+CP = 1              # Indice Peukert
+EC = 1              # Eficiencia Carga
+vsis = 1            # Voltaje sistema - 1=12V  2=24V   4=48V
+vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
 
-# -----------------------------------------------
-######################## 
-###### Daly ######
-########################
-usar_daly = 0  # Poner cantidad de series a leer pon 0 si no lo quieres usar
+#######################################################
+###### Parametros ADS1115  - Permite hasta 4 ADS ######
+#######################################################
+usar_ADS = [1,1] # activar o no el ADS
+nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
+direccion_ADS = [72,75]                                              # direccion I2C del ADS
 
-dev_daly = "/dev/ttyUSB0"  # donde esta el cable
+var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
 
-grabar_datos_daly = 1   #grabar datos en bbdd
+tmuestra_ADS = [0.200,1]                                             # tiempo en sg entre capturas
+rate_ADS = [[250,250,250,250],[250,250,250,250]]                     # datarate de lectura
+bucles_ADS = [[10,5,5,5], [4,2,4,2]]                                 # Numero de bucles de lectura
 
-t_muestra_daly = 5      # Tiempo en segundos entre muestras
-
-n_muestras_daly = 5     #  grabar en BD en tabla 'datos_celdas' cada X capturas del fv_daly 
-
-
-#----------------------------------------------
+gain_ADS = [[2,2,2,2], [2,2,2,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
+res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lectura ADS - Lectura real
 
 # -----------------------------------------------
 #########################
@@ -193,7 +134,8 @@ n_muestras_daly = 5     #  grabar en BD en tabla 'datos_celdas' cada X capturas 
 #########################
 usar_mux = 0   # Poner el numero de celdas a monitorizar (0= desactivar)...diccionario = d_['MUX'] / servicio = fv_mux
 
-t_muestra_mux = 10 # segundos entre capturas del mux
+t_muestra_mux = 5 # segundos entre capturas del mux
+n_muestras_mux = 4        # grabar en BD en tabla permanente cada X capturas 
 
 pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1, #A2_2 = entrada A2 del ADS2
                       #A2_3 = entrada A2 del ADS3, #A2_4 = entrada A2 del ADS4
@@ -201,41 +143,52 @@ pin_ADS_mux1 = "A2_2" #A2_1 = entrada A2 del ADS1, #A2_2 = entrada A2 del ADS2
 pin_ADS_mux2 = 'A3_2' #A3_1 = entrada A3 del ADS1, #A3_2 = entrada A3 del ADS2
                       #A3_3 = entrada A3 del ADS3, #A3_4 = entrada A3 del ADS4
 
-captura_mux = "D"  # D = lectura modo diferencial.... S = modo simple
+captura_mux = "S"  # D = lectura modo diferencial.... S = modo simple
                    # ATENCION si el modo de captura es diferencial se deben usar los 2 MUX y 
                    #   configurar en la PCB las salidas del MUX para usar las entradas A2 y A3 del mismo ADS
              
 gain_mux = 1       # Voltios Fondo escala del ADS1115... 1=4,096 - 2=2.048
 
-r_mux =  [47] * 32 # Ratio Divisores de Voltaje de cada entrada de los Mux - Ejecutar el programa.. python3 fv_mux_calibracion.py  ... para calibrar los valores medidos
+r_mux = [47] * 32  # Ratio Divisores de Voltaje de cada entrada de los Mux - Ejecutar el programa.. python3 fv_mux_calibracion.py  ... para calibrar los valores medidos
                    # Dicho programa creara en la BD la tabla "parametros1" y un registro donde se incluira la calibracion realizada
 
 celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para mandar log
 
 # -----------------------------------------------
-#####################
-###### HIBRIDO ######
-#####################
+#################################################
+###### HIBRIDO  -  Permite hasta 9 Equipos ######
+#################################################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = 0 #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [0] #1 para leer datos Hibrido ..... 0 para no usar
 
-dev_hibrido = "/dev/hidraw0"  # puerto donde reconoce la RPi al Hibrido
-usar_crc = 1                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
+dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
+usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
 
-t_muestra_hibrido = 5         # Tiempo en segundos entre muestras del Hibrido
-publicar_hibrido_mqtt = 1     # Publica o no por MQTT los datos capturados del Hibrido
+t_muestra_hibrido = [5]         # Tiempo en segundos entre muestras del Hibrido
+publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del Hibrido
 
-grabar_datos_hibrido = 1      # 1 = Graba la tabla Hibrido... 0 = No graba
-n_muestras_hibrido = 5        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
-
-iplaca_hibrido_max = 80
-iplaca_hibrido_min = 0
+grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
+n_muestras_hibrido = [1]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
 # -----------------------------------------------
+
+#########################
+###### DALY ######
+#########################
+usar_daly = 0   # Poner el numero de celdas a monitorizar (0= desactivar)...diccionario = d_['DALY'] / servicio = fv_daly
+t_muestra_daly = 1 # segundos entre capturas para tabla en RAM 
+
+grabar_datos_daly = 1      # 1 = Graba la tabla ... 0 = No graba
+n_muestras_daly = 10        # grabar en BD en tabla permanente cada X capturas 
+dev_daly = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Hibrido
+
+
+# -----------------------------------------------
+
 #####################
 ###### VICTRON ######
 #####################
@@ -392,4 +345,56 @@ OLED_salida1 =[0,1,2,3] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo
 OLED_salida2 =[4] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo
 
 # -----------------------------------------------
+# ====================================================================
+# ====================================================================
+#    3.- SECCION PARAMETRIZACION SERVICIOS ADICIONALES 
+# ====================================================================
+# ====================================================================
+
+###############################
+###### Telegram & MOTION ######
+###############################
+usar_telegram = 0 # 1 para usar  ..... 0 para no usar
+TOKEN ='XXXXXX:YYYYYYYYYY......'# bot Telegram...cambiar por el que cada uno de de alta
+
+# ID de Usuarios autorizados a mandar mensajes, los msg periodicos se mandan al primer declarado
+Aut = [111111,22222] # Lista de ID de Telegram autorizados
+
+cid_alarma = 1111111 # # Id Telegram a donde se enviara la foto/video de alarma
+
+msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora -- 0 = No manda mensaje
+# -----------------------------------------------
+
+#########################
+###### PV_OUTPUT ########
+#########################
+usar_pvoutput = 0 # 1 para usar  ..... 0 para no usar
+
+pvoutput_key = "xxxxxxxx" # Key PVoutput
+pvoutput_id = "1233455"
+# -----------------------------------------------
+
+#########################################################
+###### Vigilancia por Camara con Motion y Clarifai ######
+#########################################################
+
+motion_telegram = 0 # 1 = Envia foto deteccion a Telegram
+motion_clarifai = 0 # activa reconocimiento por Clarifai
+api_key = 'xxxxxxxxxxxx' # Key Clarifai
+workflow_id = 'yyyyyyyy' # Nombre del Workflow creado en Clarifai
+
+# fconfiguración horaria para motion
+# dias de la semana 1-7. Horas 24 bits 0=no grabar 1=si
+horario_alarma = {
+    1:'111111110000000000000000',
+    2:'111111110000000000000000',
+    3:'111111110000000000000000',
+    4:'111111110000000000000000',
+    5:'111111110000000000000000',
+    6:'111111111000000000000000',
+    7:'111111111000000000000000'}
+
+# -----------------------------------------------
+
+
 

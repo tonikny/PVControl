@@ -48,19 +48,11 @@ print ('..... Pulse 0 para seguir sin modificar el archivo Parametros_FV.py')
 
 s = click.prompt('    ', type=str, default='0')
 
-
-if s== '1':
-    archivo = 'Parametros_FV.py'
-elif s == '2':
-    archivo = 'Parametros_FV_DIST.py'
-else:
-    archivo = ''
-    
-if archivo != '':  
+if s != '':  
     hora =   time.strftime("%Y-%m-%d_%H:%M")
     fichero1 ='/home/pi/PVControl+/Parametros_FV.py'
     fichero2 = f'/home/pi/PVControl+/Parametros_FV_{hora}.back'
-    fichero3 = f'/home/pi/PVControl+/Parametros_FV_DIST.py'
+    fichero3 = '/home/pi/PVControl+/Parametros_FV_DIST.py'
     
     print ()
     try:
@@ -70,8 +62,9 @@ if archivo != '':
         print ('ERROR.... No existe fichero Parametros_FV.py....se usa el archivo Parametros_FV_DIST como modelo')
         archivo = '2'    
     
-    if archivo =='2': shutil.copy(fichero3, fichero1)
-        
+    if s == '2':
+        shutil.copy(fichero3, fichero1)
+        print('Copiado archivo Parametros_FV_DIST.py en Parametros_FV.py')
     print()
     print('#' * 80)
     print (Fore.YELLOW+'Como primer paso se abrira en el editor de textos "geany" el archivo Parametros_FV.py.....')

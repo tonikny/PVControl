@@ -35,8 +35,8 @@ sensores ={
 'Ibat'    : {'Equipo':"d_['HIBRIDO']['Ibat']", 'Max':200, 'Min':-200}, # Sensor de Intensidad bateria
 'Iplaca'  : {'Equipo':"d_['HIBRIDO']['Iplaca']", 'Max':200, 'Min':-1}, # Sensor de Intensidad Placas
 
-'Aux1'  : {'Equipo':"d_['SDM120C']['Vac']", 'Max':300, 'Min':0},    # Sensor Aux1
-'Aux2'  : {'Equipo':"d_['SDM120C']['Wac']", 'Max':1, 'Min':-2500},    # Sensor Aux2
+'Aux1'  : {},    # Sensor Aux1
+'Aux2'  : {},    # Sensor Aux2
 'Aux3'  : {},    # Sensor Aux3
 'Aux4'  : {},    # Sensor Aux4
 'Aux5'  : {},    # Sensor Aux5
@@ -86,7 +86,7 @@ mqtt_clave   = "fv"
 pub_diver = 0  # publica datos ejecucion diver en "PVControl/Opcion/Diver"
 pub_time  = 0  # publica datos de tiempo de ejecucion en "PVControl/Opcion/Time"
 
-usar_mqtt = 1  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
+usar_mqtt = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
                # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt
                 
 mqtt_suscripciones=[] #  lista de topics a los que se suscribe fv_mqtt.py para guardar en tabla equipos.. diccionario=d_['MQTT']
@@ -164,7 +164,7 @@ celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = [1] #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [0] #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
 usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
@@ -324,9 +324,9 @@ iplaca_srne_min = 0
 #####################
 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
-## Si algun sensor usa el eastron se debe poner usar eastron = 1
+## Si algun sensor usa sdm120c se debe poner usar_sdm120c = 1
 
-usar_sdm120c = [1] 
+usar_sdm120c = [0] 
 dev_sdm120c = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
 t_muestra_sdm120c = [5]         # Tiempo en segundos entre muestras
 publicar_sdm120c_mqtt = [0]     # Publica o no por MQTT los datos capturados (no implementado aun)
