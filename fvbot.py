@@ -315,7 +315,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             columns = [column[0] for column in cursor.description]
                             TC1 = []
                             for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
-                            
+                            ee ='i92'
                             L_celdas = ''
                             if len(TC1) > 0: # Hay datos de celdas
                                 TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
@@ -327,7 +327,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                                 Cmax = max(TC, key = TC.get) # clave del valor maximo
                                 Cmin = min(TC, key = TC.get) # clave del valor minimo
                                 
-                            L_celdas += f'\nCmax={Cmax}={TC[Cmax]:.3f}V -- Cmin={Cmin}={TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+                                L_celdas += f'\nCmax={Cmax}={TC[Cmax]:.3f}V -- Cmin={Cmin}={TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
                             
                             ##### MENSAJE    
                             ee ='i99'
