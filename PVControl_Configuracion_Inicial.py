@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-23
+# Versión 2021-12-24
 
 import time,sys,os
 import MySQLdb 
@@ -167,6 +167,40 @@ if AH > 0:
     db.commit
 
 print (Fore.CYAN +'tabla parametros configurada')
+
+# Borramos tabla equipos y la creamos de nuevo
+
+sql = "DROP TABLE `equipos`"
+import warnings # quitamos warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    cursor.execute(sql)
+
+sql = """ CREATE TABLE IF NOT EXISTS `equipos` (
+           `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
+           `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
+           `sensores` varchar(5000) COLLATE latin1_spanish_ci NOT NULL,
+            PRIMARY KEY (`id_equipo`)
+          ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    cursor.execute(sql)
+    
+try: #inicializamos registros en BD RAM
+    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                  ('FV','{}'))
+    db.commit()              
+except:
+    pass
+try: 
+    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                  ('RELES','{}'))
+    db.commit()
+except:
+    pass    
+
 
 cursor.close()
 db.close()

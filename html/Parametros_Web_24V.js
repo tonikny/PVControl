@@ -94,7 +94,28 @@
 	Vbat_min_rojo = 22;
 	Vbat_min_naranja = 23;
 	
-	
+	Nombre_Aux1 = 'Aux1';
+	Unidades_Aux1 = 'V';
+
+	Nombre_Aux2 = 'Aux2';
+	Unidades_Aux2 = 'V';
+
+	Nombre_Aux3 = 'Aux3';
+	Unidades_Aux3 = 'V';
+
+	Nombre_Aux4 = 'Aux4';
+	Unidades_Aux4 = 'V';
+
+	Nombre_Aux5 = 'Aux5';
+	Unidades_Aux5 = 'V';
+
+	Nombre_Aux6 = 'Aux6';
+	Unidades_Aux6 = 'V';
+
+	Nombre_Aux7 = 'Aux7';
+	Unidades_Aux7 = 'V';
+
+
 // Pagina Historico1.php,  Historico_horas.php, historico_con_temp.php  ........
 
 	// Se usan los mismos datos puestos en el Grafico Tiempo Real de inicio.php
