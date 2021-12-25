@@ -48,7 +48,7 @@ print ('..... Pulse 0 para seguir sin modificar el archivo Parametros_FV.py')
 
 s = click.prompt('    ', type=str, default='0')
 
-if s != '':  
+if s != '0':  
     hora =   time.strftime("%Y-%m-%d_%H:%M")
     fichero1 ='/home/pi/PVControl+/Parametros_FV.py'
     fichero2 = f'/home/pi/PVControl+/Parametros_FV_{hora}.back'
@@ -87,6 +87,14 @@ if s != '':
 
     continuar = click.prompt('pulsa un tecla para seguir una vez finalizada la edicion de Parametros_FV.py.....    ', type=str, default=' ')
 
+# Actualizar enlaces escritorio
+res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Arrancar_Servicios_PVControl+.sh'])
+res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Parar_Servicos_PVControl+.sh'])
+res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Deshabilitar_Servicios_PVControl+.sh'])
+
+
+res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Arrancar_servicios_PVControl+.py','/home/pi/Desktop'])
+res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVControl+.py','/home/pi/Desktop'])
 
 
 # ######## ACTUALIZACION BD (CAMPOS,..) 
@@ -161,10 +169,10 @@ if AH > 0:
     
     SOC = click.prompt(Fore.YELLOW+'Introduce valor del SOC actual de la Bateria.. ', type=float, default=100)
     
-    Sql = f"UPDATE parametros SET nuevo_soc = {SOC}" # Ponemos SOC a 100%
+    Sql = f"UPDATE parametros SET nuevo_soc = '{SOC}'" # Ponemos SOC a 100%
     print(Fore.MAGENTA+Sql)
     cursor.execute(Sql)
-    db.commit
+    db.commit()
 
 print (Fore.CYAN +'tabla parametros configurada')
 
