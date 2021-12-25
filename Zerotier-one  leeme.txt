@@ -1,11 +1,16 @@
 
 Para darse de lata en la red LAN virtual comun de PVControl realizar estos pasos:
 
-1. Ejecutar desde una ventana de terminal los sigiientes comandos:
+1. Ejecutar desde una ventana de terminal los siguientes comandos:
 
-		sudo systemctl enable zerotier-one
-		sudo systemctl start zerotier-one
+		curl -s https://install.zerotier.com/ | sudo bash
+
+		Cuando acabe pon esto
+
 		sudo zerotier-cli join 8286ac0e4751a285
+
+		Te debe dar "200 OK"
+
 		
 	Con eso ya estaria conectado a la red pero aun hace falta que se le asigne una IP del tipo 192.168.195.XXX por lo que
 	hace falta poner un mensaje a Mleon indicando la IP publica que se tiene

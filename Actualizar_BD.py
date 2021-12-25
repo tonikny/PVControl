@@ -93,7 +93,7 @@ print("Tabla = RELES")
 
 def c_campo(campo,sql):
     try:
-        cursor.execute(Sql)
+        cursor.execute(sql)
         print (f'Creado campo {campo}')
     except: 
         print (f'Campo {campo} ya estaba creado')
@@ -111,5 +111,71 @@ Sql="ALTER TABLE `reles` ADD `calibracion` VARCHAR(500) CHARACTER SET latin1 COL
 c_campo('calibracion',Sql)
   
 db.commit()
+
+
+# Borramos tabla equipos y la creamos de nuevo
+print ( "#" * 30)
+print("Tabla = equipos....", end='')
+
+sql = "DROP TABLE `equipos`"
+import warnings # quitamos warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    cursor.execute(sql)
+
+sql = """ CREATE TABLE IF NOT EXISTS `equipos` (
+           `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
+           `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
+           `sensores` varchar(5000) COLLATE latin1_spanish_ci NOT NULL,
+            PRIMARY KEY (`id_equipo`)
+          ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    cursor.execute(sql)
+    
+try: #inicializamos registros en BD RAM si no existen
+    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                  ('FV','{}'))
+    db.commit()
+except:
+    pass
+try: 
+    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                  ('RELES','{}'))    
+    db.commit()
+except:
+    pass
+try: 
+    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                  ('TEMP','{}'))    
+    db.commit()
+except:
+    pass
+print ('...OK')
+
+
+# tabla datos_celdas
+print ( "#" * 30)
+print("Tabla = datos_celdas....",end='')
+
+sql = """    
+    CREATE TABLE IF NOT EXISTS `datos_celdas` (
+    `id_celda` int(11) NOT NULL AUTO_INCREMENT,
+    `Tiempo` datetime NOT NULL DEFAULT current_timestamp(),
+    `C1` float NOT NULL DEFAULT 0,
+     PRIMARY KEY (`id_celda`),
+     KEY `Tiempo` (`Tiempo`)
+     ) 
+     ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+     """
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    cursor.execute(sql)
+print ('...OK')
+db.commit()
+
+
 cursor.close()
 db.close()
