@@ -115,7 +115,7 @@ if TEST == 1:
             print()
             print (Fore.GREEN+f'Probando puerto {dev}....')
             if os.path.exists(dev):
-                for cmd in (b'^P005PI',b'^P005GS'):
+                for cmd in (b'QPIGS',b'^P005GS'):
                     for crc in (0,1):
                         try:
                             print (Fore.YELLOW+ f'  .... Test en {dev} comando={cmd} crc={crc}....')
@@ -521,7 +521,7 @@ def comando(cmd,I_Hibrido):
         if os.path.exists(dev_hibrido[I_Hibrido]):
             if DEBUG == 1:
                     print(f'Mandando comando {cmd_crc} al Hibrido {dev_hibrido[I_Hibrido]}')
-            if dev_hibrido[-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
+            if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
                 err=21
                 ser = serial.Serial(dev_hibrido[I_Hibrido], 2400, timeout = 1) 
                 err=22
