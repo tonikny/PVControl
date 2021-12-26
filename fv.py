@@ -854,14 +854,7 @@ try:
                     continue
 
             ee=30.4
-            if usar_sma == 1:
-                archivo_ram='/run/shm/datos_sma.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_sma = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
+            
             
             if usar_smameter == 1:
                 archivo_ram='/run/shm/datos_smameter.pkl'
