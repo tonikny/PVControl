@@ -864,71 +864,92 @@ try:
                 
             ## Capturando valores desde xxxxx.pkl...esta opcion se ira eliminando dejando solo la tabla de equipos
             
-            ee=30.2
-            if usar_victron == 1:
-                archivo_ram='/run/shm/datos_victron.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_victron = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.3
-            if usar_bmv == 1:
-                archivo_ram='/run/shm/datos_bmv.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_bmv = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.4
-            if usar_sma == 1:
-                archivo_ram='/run/shm/datos_sma.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_sma = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-            
-            if usar_smameter == 1:
-                archivo_ram='/run/shm/datos_smameter.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_smameter = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-            
-            if usar_goodwe == 1:
-                archivo_ram='/run/shm/datos_goodwe.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_goodwe = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue 
-                          
-            ee=30.43             
-            if usar_must == 1:
-                archivo_ram='/run/shm/datos_must.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_must = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.5
-            if usar_srne == 1:
-                d_srne = Srne.get_datos()
-                if d_srne is None:
-                    logBD('error lectura archivo ram SRNE')
-                    continue
-            
+            try:
+                ee=30.2
+                if usar_victron == 1:
+                    archivo_ram='/run/shm/datos_victron.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_victron = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                ee=30.3
+                if usar_bmv == 1:
+                    archivo_ram='/run/shm/datos_bmv.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_bmv = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:    
+                ee=30.4
+                if usar_sma == 1:
+                    archivo_ram='/run/shm/datos_sma.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_sma = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                if usar_smameter == 1:
+                    archivo_ram='/run/shm/datos_smameter.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_smameter = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                if usar_goodwe == 1:
+                    archivo_ram='/run/shm/datos_goodwe.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_goodwe = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue 
+            except:
+                pass
+                
+            try:
+                ee=30.43             
+                if usar_must == 1:
+                    archivo_ram='/run/shm/datos_must.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_must = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                ee=30.5
+                if usar_srne == 1:
+                    d_srne = Srne.get_datos()
+                    if d_srne is None:
+                        logBD('error lectura archivo ram SRNE')
+                        continue
+            except:
+                pass
+                
             # LECTURA SENSORES EQUIPOS
             ee=34
             Estado['Sensor_error'] = ''
