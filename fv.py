@@ -35,6 +35,7 @@ import subprocess
 import click # para DEBUG parando ejecucion donde se quiera
 
 basepath = '/home/pi/PVControl+/'
+parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
 
 """
 Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
@@ -61,7 +62,8 @@ elif '-p2' in sys.argv: DEBUG= 2
 elif '-p3' in sys.argv: DEBUG= 3
 elif '-p4' in sys.argv: DEBUG= 50
 elif '-p' in sys.argv: DEBUG= 100
-elif '-r' in sys.argv: DEBUG1= 'RELES'
+if '-r' in sys.argv: DEBUG1= 'RELES'
+elif '-t' in sys.argv: DEBUG1= 'TEST'
  
 
 print (Fore.RED + f'DEBUG={DEBUG} - DEBUG1={DEBUG1}')
@@ -404,12 +406,11 @@ def leer_sensor(variable, sensor) :  # leer sensor
         y = round(float(eval(sensor['Equipo'])),3)
     
     except:
-        traceback.print_exc()
-        print (Fore.RED+f'Error en sensor de {n_sensor}= sensor',flush=True, end='')
+        #traceback.print_exc()
         
+        print (Fore.RED+f'Error en sensor..{variable } ..valor anterior = {anterior}   - ',flush=True, end='')
         y = anterior
         y_err = 1
-        time.sleep(5) # espero 5sg
     
     if 'Min' in sensor.keys() : 
         if y < sensor['Min']:
@@ -511,25 +512,36 @@ except Exception as e:
 
 
 # inicializando variables definidas en Parametros_FV.py
-print()
-print (Fore.GREEN+'#' *80)
-print (Fore.CYAN+'Captura inicial de los sensores')
-try:
-    for sensor in sensores:
-        print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
-        if 'Equipo' in sensores[sensor].keys():
-            exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
-            print (Fore.GREEN,end='')
-        else:
-            print (Fore.RED+'Variable sin sensor definido = ',end='')
-            exec (f'{sensor}= 0.0')
-            
-        print ( f'{eval(sensor)}')
-except:
-    print (Fore.RED,'ERROR en definicion sensores en Parametros_FV.py')
-    sys.exit()
+while True:
+    errores = 0
+    print()
+    print (Fore.GREEN+'#' *80)
+    print (Fore.CYAN+'Captura inicial de los sensores')
+    try:
+        for sensor in sensores:
+            print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
+            if 'Equipo' in sensores[sensor].keys():
+                exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
+                print (Fore.GREEN,end='')
+                if eval(f'{sensor}_err') == 1: errores += 1
+            else:
+                print (Fore.RED+'Variable sin sensor definido = ',end='')
+                exec (f'{sensor}= 0.0')
+                
+            print ( f'{eval(sensor)}')
+    except:
+        print (Fore.RED,'ERROR no conocido en definicion sensores en Parametros_FV.py')
+        sys.exit()
 
-print (Fore.GREEN+'#' *80)
+    print (Fore.GREEN+'#' *80)
+    if DEBUG1 != 'TEST': break
+    else: 
+        print (Fore.RED+f'  Nº errores en definicion de sensores = {errores}')
+        salir = click.prompt(Fore.CYAN + '     pulse 0 para salir... 1 para otro bucle de test ..... ', type=int, default=0)
+        if salir == 0: break
+        else: exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+
+        
 print()
 
 ##  ------ inicializamos reles ------------------------
@@ -663,6 +675,9 @@ try:
         hora1=time.time()
         
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
+            if int(time.time()%100) < 10: # cada 100 sg
+                exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                        
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
@@ -899,7 +914,8 @@ try:
                     continue
             
             # LECTURA SENSORES EQUIPOS
-            ee=34            
+            ee=34
+            
             for sensor in sensores:
                 #print (f"{sensor} = {sensores[sensor]}")
                 if 'Equipo' in sensores[sensor].keys():    
@@ -907,7 +923,12 @@ try:
                     #print (s)
                     exec(s)
                     #print (f'{sensor}= {eval(sensor)}')
-    
+                    errores = 0
+                    if eval(f'{sensor}_err') == 1: errores += 1
+                    if errores > 0:
+                        time.sleep(1) # espero
+                        
+                        
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
                     if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
