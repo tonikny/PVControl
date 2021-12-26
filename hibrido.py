@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-07
+# Versión 2021-12-25
 
 import os, sys, time
 import serial
@@ -277,36 +277,51 @@ def on_message(client, userdata, msg):
                     ##########################################################################
                     #print ('Respuesta Hibrido=',r)
                     ee = '20'
-                    Vgen = float(r[3]) # Voltaje AC entrada Linea
-                    Fgen = float(r[4]) # Frecuencia AC entrada Linea
+                    Datos = {} # inicializo diccionario
                     
-                    PACW = float(r[8])  # W consumo activo
-                    PACVA = float(r[7]) # VA consumo aparente
+                    Datos['Vgen'] = float(r[3]) # Voltaje AC entrada Linea
+                    Datos['Fgen'] = float(r[4]) # Frecuencia AC entrada Linea
                     
-                    Vbus = float(r[10]) # V 
-                    Vbat = float(r[11]) # Voltaje bateria
+                    Datos['PACW'] = float(r[8])  # W consumo activo
+                    Datos['PACVA'] = float(r[7]) # VA consumo aparente
+                    ee = '22'
+                    Datos['Vbus'] = float(r[10]) # V 
+                    Datos['Vbat'] = float(r[11]) # Voltaje bateria
                     
-                    Ibatp = float(r[12]) # A carga Bateria
-                    
-                    Temp = float(r[14])  # Grados
+                    Datos['Ibatp'] = float(r[12]) # A carga Bateria
+                    ee = '24'
+                    Datos['Temp'] = float(r[14])  # Grados
                     #Iplaca = r[15]
                                     
-                    Vplaca = float(r[16]) # Voltaje placas
+                    Datos['Vplaca'] = float(r[16]) # Voltaje placas
                                     
-                    Ibatn = float(r[18])  # A descarga bateria
+                    Datos['Ibatn'] = float(r[18])  # A descarga bateria
                     
-                    Wplaca = float(r[22]) # W produccion placas
+                    Datos['Wplaca'] = float(r[22]) # W produccion placas
+                    ee = '26'
+                    Datos['Flot'] = int(r[23][0]) # estado bit flotacion
+                    Datos['OnOff'] = int(r[23][1]) # estado pulsador OnOff Hibrido
                     
-                    Flot = int(r[23][0]) # estado bit flotacion
-                    OnOff = int(r[23][1]) # estado pulsador OnOff Hibrido
+                    Datos['Iplaca'] = round(float(Datos['Wplaca'])/float(Datos['Vbat']),1)  # Intensidad producida por placas en relacion a Vbat
+                    Datos['Ibat']  = round(float(Datos['Ibatp']) - float(Datos['Ibatn']),2) # Intensidad de bateria             
                     
-                    Iplaca = round(float(Wplaca)/float(Vbat),1)  # Intensidad producida por placas en relacion a Vbat
-                    Ibat  = round(float(Ibatp) - float(Ibatn),2) # Intensidad de bateria             
-
+                    ee = '28'
+                    """
                     Datos = {'Vbat': Vbat,'Ibat':Ibat,'Ibatp':Ibatp,'Ibatn':Ibatn,'Iplaca': Iplaca,
                                  'Vplaca': Vplaca,'Wplaca': Wplaca,'Vbus':Vbus,'PACW':PACW,'PACVA':PACVA,
                                  'Temp':Temp,'Flot':Flot,'OnOff':OnOff }
-
+                    """
+                    Datos_BD = Datos.copy()
+                    
+                    Datos['Iplaca_PV'] = float(r[15])  # Intensidad de PV1
+                    Datos['Vac'] = float(r[5])  # Voltaje AC
+                    Datos['Fac'] = float(r[6])  # Frecuencia AC
+                    
+                    Datos['Carga'] = int(r[19][5]) # estado carga
+                    Datos['Carga_SCC'] = int(r[19][6]) # estado carga SCC
+                    Datos['Carga_AC'] = int(r[19][7]) # estado carga AC
+                    
+                    
                 elif protocolo_hibrido[I_Hibrido]==18:
                     ee = '10f'
                     Vgrid = float(r[3])/10
@@ -373,6 +388,7 @@ def on_message(client, userdata, msg):
                                  'Bat_status':Bat_status,'Bat_Power_Direction':Bat_Power_Direction,
                                  'Line_Power_Direction':Line_Power_Direction}
 
+                    Datos_BD = Datos.copy()
                     
                 if DEBUG == 1:print(Fore.GREEN+'Datos=',Datos,Fore.RESET)
                 
@@ -399,19 +415,22 @@ def on_message(client, userdata, msg):
                         # Insertar Registro en BD
                         if n_muestras_contador[I_Hibrido] == 1:
                             ee = '50a'
-                            Datos['Tiempo'] = tiempo
-                            del Datos['Ibat'] # se quita la clave que no esta en tabla BD
-                            if protocolo_hibrido[I_Hibrido]==18:
-                                del Datos['Change']
-                                del Datos['Mppt1']
-                                del Datos['Mppt2']
-                                del Datos['Conexion']
-                                del Datos['Bat_status']
-                                del Datos['Bat_Power_Direction']
-                                del Datos['Line_Power_Direction']
+                            Datos_BD['Tiempo'] = tiempo
+                            ee = '50b'
                             
-                            campos = ",".join(Datos.keys())
-                            valores = "','".join(str(v) for v in Datos.values())
+                            del Datos_BD['Ibat'] # se quita la clave que no esta en tabla BD
+                            if protocolo_hibrido[I_Hibrido]==18:
+                                del Datos_BD['Change']
+                                del Datos_BD['Mppt1']
+                                del Datos_BD['Mppt2']
+                                del Datos_BD['Conexion']
+                                del Datos_BD['Bat_status']
+                                del Datos_BD['Bat_Power_Direction']
+                                del Datos_BD['Line_Power_Direction']
+                            
+                            print ('Datos_BD=',Datos_BD)
+                            campos = ",".join(Datos_BD.keys())
+                            valores = "','".join(str(v) for v in Datos_BD.values())
                             Sql = f"INSERT INTO hibrido{N_Hibrido} ("+campos+") VALUES ('"+valores+"')"
                             #print (Fore.RESET+Sql)
                             cursor.execute(Sql)
