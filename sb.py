@@ -18,13 +18,13 @@ if usar_SB1 == 0:
 sb = ModbusClient()
 host = 'sb.host(IP_'+sys.argv[1]+')'
 exec(host)
-#sb.host(IP_SB1)
+
 sb.port(502)
 sb.unit_id(3)
 sb.open()
-print(sb.open(),sb.host())
-Equipo = sys.argv[1]
 
+Equipo = sys.argv[1]
+print('Equipo:',Equipo,'Puerto abierto',sb.open(),'IP',sb.host())
 crear_pkl = 0 # poner a 1 para versiones antiguas de PVControl que no usan BD en RAM
 
 DEBUG = False
