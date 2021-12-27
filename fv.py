@@ -195,7 +195,7 @@ try:
         pass    
     try:
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('ESTADO','{}'))
+                      ('_PVControl+','{}'))
         db.commit()              
     except:
         pass
@@ -540,7 +540,7 @@ except Exception as e:
 
 while True:
     errores = 0
-    Estado['Estado'] = 'OK'
+    Estado['PVControl+'] = 'OK'
     print()
     print (Fore.GREEN+'#' *80)
     print (Fore.CYAN+'Captura inicial de los sensores')
@@ -555,7 +555,7 @@ while True:
                         if eval(f'{sensor}_err') == 1:
                             errores += 1
                             #Estado['Sensor_error'] = errores
-                            Estado['Estado'] = 'ERROR'
+                            Estado['PVControl+'] = 'ERROR'
                             
                     else:
                         print (Fore.RED+'Variable sin sensor definido = ',end='')
@@ -566,7 +566,7 @@ while True:
                         exec (f'{sensor}= {l[0]}')
                     except:
                         exec (f'{sensor}= 0.0')
-                        Estado['Estado'] = 'ERROR'
+                        Estado['PVControl+'] = 'ERROR'
                 
                 elif type(sensores[sensor]) in (int,float,str):
                     try:
@@ -729,11 +729,11 @@ try:
             if int(time.time()%100) < 10: # cada 100 sg
                 try:
                     exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-                    Estado['Estado'] = 'OK'
+                    Estado['PVControl+'] = 'OK'
                     Estado['PVControl+_error'] = ''                
              
                 except:
-                    Estado['Estado'] = 'ERROR CRITICO EN Parametros_FV.py'
+                    Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
                     Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'                
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
@@ -985,32 +985,41 @@ try:
                             errores = 0
                             if eval(f'{sensor}_err') == 1:
                                 errores += 1
-                                Estado['Estado'] = 'ERROR'
+                                Estado['PVControl+'] = 'ERROR'
                                 Estado['Sensor_error'] += sensor + ' / '
                                 Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
                             if errores > 0: 
                                 time.sleep(1) # espero
+                        else:
+                            #print (Fore.RED+'Variable sin sensor definido = ',end='')
+                            exec (f'{sensor}= 0.0')   
+                            
                                 
                     elif type(sensores[sensor]) is set:
                         l = list (sensores[sensor])
                         try:
-                            exec (f'{sensor}= {l[0]}')
+                            if len(l)>0: exec (f'{sensor}= {l[0]}')
+                            else:  exec (f'{sensor}= 0.0')
                         except:
                             exec (f'{sensor}= 0.0')
-                            Estado['Estado'] = 'ERROR'
+                            Estado['PVControl+'] = 'ERROR'
                             Estado['Sensor_error'] += sensor + ' / '
-                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
+                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.00)'
                     elif type(sensores[sensor]) in (int,float,str):
                         try:
-                            exec (f'{sensor}= {sensores[sensor]}')
+                            if sensores[sensor] != '': exec (f'{sensor}= {sensores[sensor]}')
+                            else: exec (f'{sensor}= 0.0')
                         except:
                             exec (f'{sensor}= 0.0')
+                            Estado['PVControl+'] = 'ERROR'
+                            Estado['Sensor_error'] += sensor + ' / '
+                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.0)'
                             
                     else:
                         print('Tipo no tratado en sensores=',type(sensores[sensor]))
                 except:
                     print('Error no conocido en sensores')                
-                    Estado['Estado'] = 'ERROR'
+                    Estado['PVControl+'] = 'ERROR'
                     Estado['Sensor_error'] += sensor + ' / '
                     Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
                     
@@ -1217,7 +1226,7 @@ try:
                 if diaok == 1 and horaok == 1:
                     Rele_H[id_rele] += 1
             except:
-                Estado['Estado'] = 'ERROR'
+                Estado['PVControl+'] = 'ERROR'
                 Estado['Reles_h'] = r['id_rele']
                 
 
@@ -1257,7 +1266,7 @@ try:
                         pass                
                         #print (Fore.RED+ 'FALSE')
                 except:
-                    Estado['Estado'] = 'ERROR'
+                    Estado['PVControl+'] = 'ERROR'
                     Estado['Reles_c'] += condicion + ' / '
                     Estado['PVControl+_error'] = 'Corrija condicion en el Rele'
                 
@@ -1283,7 +1292,7 @@ try:
                 if TC2 in ('', ' ','1'): TC2 = 'True'
                 if (eval(TC1) and eval(TC2)): exec(r['accion']) 
             except:
-                Estado['Estado'] = 'ERROR'
+                Estado['PVControl+'] = 'ERROR'
                 Estado['Condiciones'] += f"{r['id_condicion']}: {TC1} {TC2}-> {r['accion']}"
                 Estado['PVControl+_error'] = 'Corrija definicion en tabla condiciones'
                 
@@ -1492,7 +1501,7 @@ try:
         
         ee=320.0
         salida_ESTADO = json.dumps(Estado)
-        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = 'ESTADO'") # grabacion en BD RAM
+        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = '_PVControl+'") # grabacion en BD RAM
         cursor.execute(sql)
         
         db.commit()
