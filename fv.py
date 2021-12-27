@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-21
+# Versión 2021-12-27
 
 import time,sys
 import traceback
 import datetime
 import MySQLdb 
 import random # para simulacion usando random.choice
+import pickle,json
 
 from smbus import SMBus
 
@@ -19,14 +20,17 @@ import paho.mqtt.client as mqtt
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
+"""
+Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
+Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
+Style: DIM, NORMAL, BRIGHT, RESET_ALL
+"""
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
 
 import RPi.GPIO as GPIO # reles 4XX via GPIO
 GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
 #GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
 GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
-
-import pickle,json
-from Srne import Srne # Libreria reguladores SRNE
 
 import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
@@ -37,22 +41,31 @@ import click # para DEBUG parando ejecucion donde se quiera
 basepath = '/home/pi/PVControl+/'
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
 
-"""
-Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Style: DIM, NORMAL, BRIGHT, RESET_ALL
-"""
-print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
+try:
+    #Parametros Instalacion FV
+    from Parametros_FV import *
 
-#Parametros Instalacion FV
-from Parametros_FV import *
+    from Srne import Srne # Libreria reguladores SRNE
 
-#aseguro que los valores introducidos en Parametros_FV.py son float
-AH = float(AH)
-CP = float(CP)
-EC = float(EC)  
-vflotacion = float(vflotacion)
+    #aseguro que los valores introducidos en Parametros_FV.py son float
+    AH = float(AH)
+    CP = float(CP)
+    EC = float(EC)  
+    vflotacion = float(vflotacion)
+    
+    if usar_telegram == 1:
+        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
+        bot.skip_pending = True # Skip the pending messages
+        cid = Aut[0]
+    try:
+        bus = SMBus(1) # Activo Bus I2C para PCF
+    except:
+        pass
 
+except:
+    print ('Error irrecuperable en Parametros_FV.py')
+    
+    
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
 DEBUG= 0
@@ -65,20 +78,10 @@ elif '-p' in sys.argv: DEBUG= 100
 if '-r' in sys.argv: DEBUG1= 'RELES'
 elif '-t' in sys.argv: DEBUG1= 'TEST'
  
-
 print (Fore.RED + f'DEBUG={DEBUG} - DEBUG1={DEBUG1}')
-
-if usar_telegram == 1:
-    bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-    bot.skip_pending = True # Skip the pending messages
-    cid = Aut[0]
-try:
-    bus = SMBus(1) # Activo Bus I2C para PCF
-except:
-    pass
-
-#Inicializando las variables del programa
-#---------------------------------------------------------------
+#########################################################################################
+#              Inicializando las variables del programa
+#########################################################################################
 
 NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'} # Condiciones de dia de la semana
 
@@ -157,7 +160,10 @@ N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
 
+
+#########################################################################################
 # Creacion tabla RAM equipos en BD si no existe
+#########################################################################################
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
@@ -205,8 +211,13 @@ try:
 
 
 except:
-    print (Fore.RED,'ERROR inicializando tabla equipos')
+    print (Fore.RED,'ERROR inicializando tabla equipos... abortando PVControl+')
     sys.exit()
+
+
+#########################################################################################
+#                 DEFINICION DE FUNCIONES
+#########################################################################################
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -484,6 +495,11 @@ def Calcular_PWM(PWM):
 
     return PWM
 
+
+#########################################################################################
+#    INICIALIZACION PVControl+
+#########################################################################################
+
 ## RECUPERAR DE LA BD ALGUNOS DATOS ##
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
@@ -521,6 +537,7 @@ except Exception as e:
 
 
 # inicializando variables definidas en Parametros_FV.py
+
 while True:
     errores = 0
     Estado['Estado'] = 'OK'
@@ -530,22 +547,41 @@ while True:
     try:
         for sensor in sensores:
             print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
-            if 'Equipo' in sensores[sensor].keys():
-                exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
-                print (Fore.GREEN,end='')
-                if eval(f'{sensor}_err') == 1:
-                    errores += 1
-                    #Estado['Sensor_error'] = errores
-                    Estado['Estado'] = 'ERROR'
-                    
-            else:
-                print (Fore.RED+'Variable sin sensor definido = ',end='')
-                exec (f'{sensor}= 0.0')
+            try:
+                if type(sensores[sensor]) is dict:
+                    if 'Equipo' in sensores[sensor].keys():
+                        exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
+                        print (Fore.GREEN,end='')
+                        if eval(f'{sensor}_err') == 1:
+                            errores += 1
+                            #Estado['Sensor_error'] = errores
+                            Estado['Estado'] = 'ERROR'
+                            
+                    else:
+                        print (Fore.RED+'Variable sin sensor definido = ',end='')
+                        exec (f'{sensor}= 0.0')
+                elif type(sensores[sensor]) is set:
+                    l = list (sensores[sensor])
+                    try:
+                        exec (f'{sensor}= {l[0]}')
+                    except:
+                        exec (f'{sensor}= 0.0')
+                        Estado['Estado'] = 'ERROR'
                 
+                elif type(sensores[sensor]) in (int,float,str):
+                    try:
+                        exec (f'{sensor}= {sensores[sensor]}')
+                    except:
+                        exec (f'{sensor}= 0.0')
+                    
+                    
+            except:
+                print('Error no conocido en sensores')
+                    
             print ( f'{eval(sensor)}')
     except:
         print (Fore.RED,'ERROR no conocido en definicion sensores en Parametros_FV.py')
-        sys.exit()
+        #sys.exit()
 
     print (Fore.GREEN+'#' *80)
     if DEBUG1 != 'TEST': break
@@ -688,12 +724,17 @@ try:
 
         hora1=time.time()
         
-        Estado['Estado'] = 'OK'
         
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
             if int(time.time()%100) < 10: # cada 100 sg
-                exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-                        
+                try:
+                    exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                    Estado['Estado'] = 'OK'
+                    Estado['PVControl+_error'] = ''                
+             
+                except:
+                    Estado['Estado'] = 'ERROR CRITICO EN Parametros_FV.py'
+                    Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'                
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
@@ -934,20 +975,45 @@ try:
             Estado['Sensor_error'] = ''
             for sensor in sensores:
                 #print (f"{sensor} = {sensores[sensor]}")
-                if 'Equipo' in sensores[sensor].keys():    
-                    s= f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' 
-                    #print (s)
-                    exec(s)
-                    #print (f'{sensor}= {eval(sensor)}')
-                    errores = 0
-                    if eval(f'{sensor}_err') == 1:
-                        errores += 1
-                        Estado['Estado'] = 'ERROR'
-                        Estado['Sensor_error'] += sensor + ' / '
-                    if errores > 0: 
-                        time.sleep(1) # espero
-                        
-                        
+                try:
+                    if type(sensores[sensor]) is dict:
+                        if 'Equipo' in sensores[sensor].keys():    
+                            s= f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' 
+                            #print (s)
+                            exec(s)
+                            #print (f'{sensor}= {eval(sensor)}')
+                            errores = 0
+                            if eval(f'{sensor}_err') == 1:
+                                errores += 1
+                                Estado['Estado'] = 'ERROR'
+                                Estado['Sensor_error'] += sensor + ' / '
+                                Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
+                            if errores > 0: 
+                                time.sleep(1) # espero
+                                
+                    elif type(sensores[sensor]) is set:
+                        l = list (sensores[sensor])
+                        try:
+                            exec (f'{sensor}= {l[0]}')
+                        except:
+                            exec (f'{sensor}= 0.0')
+                            Estado['Estado'] = 'ERROR'
+                            Estado['Sensor_error'] += sensor + ' / '
+                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
+                    elif type(sensores[sensor]) in (int,float,str):
+                        try:
+                            exec (f'{sensor}= {sensores[sensor]}')
+                        except:
+                            exec (f'{sensor}= 0.0')
+                            
+                    else:
+                        print('Tipo no tratado en sensores=',type(sensores[sensor]))
+                except:
+                    print('Error no conocido en sensores')                
+                    Estado['Estado'] = 'ERROR'
+                    Estado['Sensor_error'] += sensor + ' / '
+                    Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
+                    
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
                     if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
@@ -1193,6 +1259,7 @@ try:
                 except:
                     Estado['Estado'] = 'ERROR'
                     Estado['Reles_c'] += condicion + ' / '
+                    Estado['PVControl+_error'] = 'Corrija condicion en el Rele'
                 
                     print (f'Error condicion rele {id_rele}-{condicion}')
                     #logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
@@ -1218,6 +1285,7 @@ try:
             except:
                 Estado['Estado'] = 'ERROR'
                 Estado['Condiciones'] += f"{r['id_condicion']}: {TC1} {TC2}-> {r['accion']}"
+                Estado['PVControl+_error'] = 'Corrija definicion en tabla condiciones'
                 
                 #print (f"Error Condicion {r['id_condicion']}")
                 #logBD(f"Error en id_condicion={r['id_condicion']}")
