@@ -115,7 +115,7 @@ if TEST == 1:
             print()
             print (Fore.GREEN+f'Probando puerto {dev}....')
             if os.path.exists(dev):
-                for cmd in (b'^P005PI',b'^P005GS'):
+                for cmd in (b'QPIGS',b'^P005GS'):
                     for crc in (0,1):
                         try:
                             print (Fore.YELLOW+ f'  .... Test en {dev} comando={cmd} crc={crc}....')
@@ -261,6 +261,7 @@ def on_message(client, userdata, msg):
                     '00010000', '00', '00', '00000', '010']
             else:
                 ee = '10c'
+                #print (cmd, I_Hibrido)
                 r= comando(cmd,I_Hibrido)
                 ee = '10d'
                 r = [i.decode() for i in r]
@@ -497,12 +498,13 @@ def comando(cmd,I_Hibrido):
         else:
             cmd_crc = cmd1 + b'\r'
 
-        #print ('Comando=',cmd_crc)
+        #print ('Comando=',cmd_crc, end=' -- ')
         err=20
+        
         if os.path.exists(dev_hibrido[I_Hibrido]):
             if DEBUG == 1:
-                    print(f'Mandando comando {cmd_crc} al Hibrido {dev_hibrido[I_Hibrido]}')
-            if dev_hibrido[-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
+                print(f'Mandando comando {cmd_crc} al Hibrido {dev_hibrido[I_Hibrido]}')
+            if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
                 err=21
                 ser = serial.Serial(dev_hibrido[I_Hibrido], 2400, timeout = 1) 
                 err=22
@@ -510,6 +512,7 @@ def comando(cmd,I_Hibrido):
                 ser.write(bytes(cmd_crc)) # Envio comando al Hibrido
                 err=30
                 r = ser.readline()  # lectura respuesta Hibrido
+                
             else:   # Hibridos con puerto tipo  /dev/hidraw
                 err=21
                 fd = open(dev_hibrido[I_Hibrido],'rb+')
@@ -536,7 +539,7 @@ def comando(cmd,I_Hibrido):
                     r = r + fd.read(1)
             err=40
             r = r[0:len(r)-3] # quita CRC
-            #print (r)
+            #print ('Contestacion Hibrido =',r)
             
             #Añado a la respuesta fecha hora y comando enviado
             if protocolo_hibrido[I_Hibrido]==30:            

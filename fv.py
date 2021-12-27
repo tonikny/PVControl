@@ -35,6 +35,7 @@ import subprocess
 import click # para DEBUG parando ejecucion donde se quiera
 
 basepath = '/home/pi/PVControl+/'
+parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
 
 """
 Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
@@ -61,7 +62,8 @@ elif '-p2' in sys.argv: DEBUG= 2
 elif '-p3' in sys.argv: DEBUG= 3
 elif '-p4' in sys.argv: DEBUG= 50
 elif '-p' in sys.argv: DEBUG= 100
-elif '-r' in sys.argv: DEBUG1= 'RELES'
+if '-r' in sys.argv: DEBUG1= 'RELES'
+elif '-t' in sys.argv: DEBUG1= 'TEST'
  
 
 print (Fore.RED + f'DEBUG={DEBUG} - DEBUG1={DEBUG1}')
@@ -148,6 +150,7 @@ Rele_Tiempo: dict = {} # Tiempo activo en segundos de cada rele en el dia
 
 datos_FV: dict = {}  # datos que se publican en tabla equipos y se usan en pagina web inicio
 d_: dict ={}         # diccionario de captura de equipos
+Estado : dict ={}    # diccionario del estado de funcionamiento de fv.py 
 
 #---Variables PID --------------------------------
 N = 5  # numero de muestras para control PID
@@ -184,6 +187,14 @@ try:
         db.commit()
     except:
         pass    
+    try:
+        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                      ('ESTADO','{}'))
+        db.commit()              
+    except:
+        pass
+    
+
     try:
         sql = 'SELECT * FROM equipos'
         nequipos = int(cursor.execute(sql))
@@ -404,12 +415,11 @@ def leer_sensor(variable, sensor) :  # leer sensor
         y = round(float(eval(sensor['Equipo'])),3)
     
     except:
-        traceback.print_exc()
-        print (Fore.RED+f'Error en sensor de {n_sensor}= sensor',flush=True, end='')
+        #traceback.print_exc()
         
+        print (Fore.RED+f'Error en sensor..{variable } ..valor anterior = {anterior}   - ',flush=True, end='')
         y = anterior
         y_err = 1
-        time.sleep(5) # espero 5sg
     
     if 'Min' in sensor.keys() : 
         if y < sensor['Min']:
@@ -511,25 +521,41 @@ except Exception as e:
 
 
 # inicializando variables definidas en Parametros_FV.py
-print()
-print (Fore.GREEN+'#' *80)
-print (Fore.CYAN+'Captura inicial de los sensores')
-try:
-    for sensor in sensores:
-        print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
-        if 'Equipo' in sensores[sensor].keys():
-            exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
-            print (Fore.GREEN,end='')
-        else:
-            print (Fore.RED+'Variable sin sensor definido = ',end='')
-            exec (f'{sensor}= 0.0')
-            
-        print ( f'{eval(sensor)}')
-except:
-    print (Fore.RED,'ERROR en definicion sensores en Parametros_FV.py')
-    sys.exit()
+while True:
+    errores = 0
+    Estado['Estado'] = 'OK'
+    print()
+    print (Fore.GREEN+'#' *80)
+    print (Fore.CYAN+'Captura inicial de los sensores')
+    try:
+        for sensor in sensores:
+            print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
+            if 'Equipo' in sensores[sensor].keys():
+                exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
+                print (Fore.GREEN,end='')
+                if eval(f'{sensor}_err') == 1:
+                    errores += 1
+                    #Estado['Sensor_error'] = errores
+                    Estado['Estado'] = 'ERROR'
+                    
+            else:
+                print (Fore.RED+'Variable sin sensor definido = ',end='')
+                exec (f'{sensor}= 0.0')
+                
+            print ( f'{eval(sensor)}')
+    except:
+        print (Fore.RED,'ERROR no conocido en definicion sensores en Parametros_FV.py')
+        sys.exit()
 
-print (Fore.GREEN+'#' *80)
+    print (Fore.GREEN+'#' *80)
+    if DEBUG1 != 'TEST': break
+    else: 
+        print (Fore.RED+f'  Nº errores en definicion de sensores = {errores}')
+        salir = click.prompt(Fore.CYAN + '     pulse 0 para salir... 1 para otro bucle de test ..... ', type=int, default=0)
+        if salir == 0: break
+        else: exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+
+        
 print()
 
 ##  ------ inicializamos reles ------------------------
@@ -662,7 +688,12 @@ try:
 
         hora1=time.time()
         
+        Estado['Estado'] = 'OK'
+        
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
+            if int(time.time()%100) < 10: # cada 100 sg
+                exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                        
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
@@ -833,73 +864,95 @@ try:
                 
             ## Capturando valores desde xxxxx.pkl...esta opcion se ira eliminando dejando solo la tabla de equipos
             
-            ee=30.2
-            if usar_victron == 1:
-                archivo_ram='/run/shm/datos_victron.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_victron = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.3
-            if usar_bmv == 1:
-                archivo_ram='/run/shm/datos_bmv.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_bmv = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.4
-            if usar_sma == 1:
-                archivo_ram='/run/shm/datos_sma.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_sma = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-            
-            if usar_smameter == 1:
-                archivo_ram='/run/shm/datos_smameter.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_smameter = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-            
-            if usar_goodwe == 1:
-                archivo_ram='/run/shm/datos_goodwe.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_goodwe = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue 
-                          
-            ee=30.43             
-            if usar_must == 1:
-                archivo_ram='/run/shm/datos_must.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_must = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.5
-            if usar_srne == 1:
-                d_srne = Srne.get_datos()
-                if d_srne is None:
-                    logBD('error lectura archivo ram SRNE')
-                    continue
-            
+            try:
+                ee=30.2
+                if usar_victron == 1:
+                    archivo_ram='/run/shm/datos_victron.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_victron = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                ee=30.3
+                if usar_bmv == 1:
+                    archivo_ram='/run/shm/datos_bmv.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_bmv = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:    
+                ee=30.4
+                if usar_sma == 1:
+                    archivo_ram='/run/shm/datos_sma.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_sma = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                if usar_smameter == 1:
+                    archivo_ram='/run/shm/datos_smameter.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_smameter = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                if usar_goodwe == 1:
+                    archivo_ram='/run/shm/datos_goodwe.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_goodwe = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue 
+            except:
+                pass
+                
+            try:
+                ee=30.43             
+                if usar_must == 1:
+                    archivo_ram='/run/shm/datos_must.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_must = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                ee=30.5
+                if usar_srne == 1:
+                    d_srne = Srne.get_datos()
+                    if d_srne is None:
+                        logBD('error lectura archivo ram SRNE')
+                        continue
+            except:
+                pass
+                
             # LECTURA SENSORES EQUIPOS
-            ee=34            
+            ee=34
+            Estado['Sensor_error'] = ''
             for sensor in sensores:
                 #print (f"{sensor} = {sensores[sensor]}")
                 if 'Equipo' in sensores[sensor].keys():    
@@ -907,7 +960,15 @@ try:
                     #print (s)
                     exec(s)
                     #print (f'{sensor}= {eval(sensor)}')
-    
+                    errores = 0
+                    if eval(f'{sensor}_err') == 1:
+                        errores += 1
+                        Estado['Estado'] = 'ERROR'
+                        Estado['Sensor_error'] += sensor + ' / '
+                    if errores > 0: 
+                        time.sleep(1) # espero
+                        
+                        
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
                     if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
@@ -1085,29 +1146,35 @@ try:
         
         # -------------------- Bucle de condiciones de horario --------------------------
         ee=56.0
+        #Estado['Reles_h'] = ''
         for r in TCH:
-            id_rele = r['id_rele']
-            
-            diaok = 0 # variables de control para ver si esta dentro de horario
-            horaok = 0
-            dias_activos=r['parametro_h'].upper()
-            
-            if  dias_activos == 'T': #Todos los dias de la semana
-                diaok = 1
-            elif NDIA[diasemana] in dias_activos:
-                diaok = 1
+            try:
+                id_rele = r['id_rele']
+                
+                diaok = 0 # variables de control para ver si esta dentro de horario
+                horaok = 0
+                dias_activos=r['parametro_h'].upper()
+                
+                if  dias_activos == 'T': #Todos los dias de la semana
+                    diaok = 1
+                elif NDIA[diasemana] in dias_activos:
+                    diaok = 1
 
-            if str(r['valor_h_ON']).zfill(8) > str(r['valor_h_OFF']).zfill(8): #True si periodo pasa por 0:00
-                if (hora >= str(r['valor_h_ON']).zfill(8) and hora <= "23:59:59"): 
-                    horaok = 1                                                       
-                if (hora >= "00:00:00" and hora <= str(r['valor_h_OFF']).zfill(8)): 
+                if str(r['valor_h_ON']).zfill(8) > str(r['valor_h_OFF']).zfill(8): #True si periodo pasa por 0:00
+                    if (hora >= str(r['valor_h_ON']).zfill(8) and hora <= "23:59:59"): 
+                        horaok = 1                                                       
+                    if (hora >= "00:00:00" and hora <= str(r['valor_h_OFF']).zfill(8)): 
+                        horaok = 1
+
+                elif (hora >= str(r['valor_h_ON']).zfill(8) and hora <= str(r['valor_h_OFF']).zfill(8)):
                     horaok = 1
 
-            elif (hora >= str(r['valor_h_ON']).zfill(8) and hora <= str(r['valor_h_OFF']).zfill(8)):
-                horaok = 1
-
-            if diaok == 1 and horaok == 1:
-                Rele_H[id_rele] += 1
+                if diaok == 1 and horaok == 1:
+                    Rele_H[id_rele] += 1
+            except:
+                Estado['Estado'] = 'ERROR'
+                Estado['Reles_h'] = r['id_rele']
+                
 
         for r in TCH:
             id_rele = r['id_rele']
@@ -1119,7 +1186,7 @@ try:
 
         # -------------------- Bucle de condiciones de parametros FV --------------------------
         ee=58.0
-        
+        Estado['Reles_c'] = ''
         for r in TCFV:
             id_rele = r['id_rele']
             condicion = f"{r['parametro']} {r['condicion']} {r['valor']}"
@@ -1145,8 +1212,11 @@ try:
                         pass                
                         #print (Fore.RED+ 'FALSE')
                 except:
+                    Estado['Estado'] = 'ERROR'
+                    Estado['Reles_c'] += condicion + ' / '
+                
                     print (f'Error condicion rele {id_rele}-{condicion}')
-                    logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
+                    #logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
                     #db.commit()
             else:
                 pass
@@ -1156,6 +1226,8 @@ try:
              
         # -------------------- Bucle de condiciones  --------------------------
         ee=60.0
+        Estado['Condiciones'] = ''
+        
         for r in TC:
             try:
                 TC1 = r['condicion1']
@@ -1165,8 +1237,11 @@ try:
                 if TC2 in ('', ' ','1'): TC2 = 'True'
                 if (eval(TC1) and eval(TC2)): exec(r['accion']) 
             except:
-                print (f"Error Condicion {r['id_condicion']}")
-                logBD(f"Error en id_condicion={r['id_condicion']}")
+                Estado['Estado'] = 'ERROR'
+                Estado['Condiciones'] += f"{r['id_condicion']}: {TC1} {TC2}-> {r['accion']}"
+                
+                #print (f"Error Condicion {r['id_condicion']}")
+                #logBD(f"Error en id_condicion={r['id_condicion']}")
 
         #-------------------- Bucle encendido/apagado reles ------------------------------------
         ee=62.0
@@ -1367,6 +1442,12 @@ try:
         salida_RELES = json.dumps(Rele_Dict)
         sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_RELES}' WHERE id_equipo = 'RELES'") # grabacion en BD RAM
         cursor.execute(sql)
+        
+        ee=320.0
+        salida_ESTADO = json.dumps(Estado)
+        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = 'ESTADO'") # grabacion en BD RAM
+        cursor.execute(sql)
+        
         db.commit()
         
         if DEBUG1 == 'RELES' : 

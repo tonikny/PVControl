@@ -107,7 +107,7 @@ usar_mqtt_homeassistant = 0   # publica diccionario d_[FV] en topic PVControl/Da
 AH = 100.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
 CP = 1              # Indice Peukert
 EC = 1              # Eficiencia Carga
-vsis = 1            # Voltaje sistema - 1=12V  2=24V   4=48V
+vsis = 2            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
 
@@ -124,9 +124,9 @@ tmuestra_ADS = [0.200,1]                                             # tiempo en
 rate_ADS = [[250,250,250,250],[250,250,250,250]]                     # datarate de lectura
 bucles_ADS = [[10,5,5,5], [4,2,4,2]]                                 # Numero de bucles de lectura
 
-gain_ADS = [[2,2,2,2], [2,2,2,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+gain_ADS = [[2,2,2,2], [16,2,16,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
 modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
-res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lectura ADS - Lectura real
+res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]            # ratio lectura ADS - Lectura real
 
 # -----------------------------------------------
 #########################

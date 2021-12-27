@@ -3,7 +3,7 @@
 
 # Versión 2021-12-24
 
-import time,sys,os
+import time,sys,os,glob
 import MySQLdb 
 
 import subprocess,shutil
@@ -12,6 +12,10 @@ import click
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
+
+#############################################
+carpeta = '/home/pi/PVControl+/Parametros_FV_*'
+#############################################
 
 try:
     from Parametros_FV import *
@@ -39,32 +43,60 @@ else: sys.exit()
 print()
 print('#' * 80)
 print (Fore.YELLOW+' Se va a editar el archivo de configuracion Parametros_FV.py....' )
+print(Style.BRIGHT+Fore.CYAN)
+
+f=[] # lista ficheros
+#f.append(carpeta[:-2]+'.py')
+
+if carpeta[:-2]+'.py' in glob.glob(carpeta[:-2]+'*'):
+    f.append(carpeta[:-2]+'.py')
+    e = 0
+else:
+    f.append('No existe fichero Parametros_FV.py.... NO seleccionar esta opcion ')
+    e = 1
+    
+i= 0
+#ficheros = sorted()
+for fic in sorted(glob.glob(carpeta),reverse=False):
+    i += 1
+    print(f'  {i} = {fic}')
+    f.append(fic)
+
 print()
-print ('..... pulse 1 para usar el archivo actual de Parametros_FV.py')
-print ('..... Pulse 2 si es la primera configuracion y usar el archivo patron Parametros_FV_DIST.py')
+print(f'  0 = Archivo actual {f[0]}')
+    
+print(Fore.YELLOW)
+print ('..... elija el numero a usar de los archivos preconfigurados')
+
+print ('..... Pulse 0 para usar el archivo Parametros_FV.py actual')
 print()
-print ('..... Pulse 0 para seguir sin modificar el archivo Parametros_FV.py')
+print ('..... Pulse 99 para seguir sin modificar el archivo Parametros_FV.py')
 
+print(Fore.CYAN)
+s = click.prompt('    ', type=int, default= e)
 
-s = click.prompt('    ', type=str, default='0')
+fichero3 = f[s]
 
-if s != '':  
+if s != 99:  
     hora =   time.strftime("%Y-%m-%d_%H:%M")
     fichero1 ='/home/pi/PVControl+/Parametros_FV.py'
     fichero2 = f'/home/pi/PVControl+/Parametros_FV_{hora}.back'
-    fichero3 = '/home/pi/PVControl+/Parametros_FV_DIST.py'
     
     print ()
     try:
         shutil.copy(fichero1, fichero2)
-        print (Fore.RED+f'Se crea copia de seguridad de Parametros_FV.py anterior con el nombre...Parametros_FV_{hora}.back') 
+        print (Fore.GREEN + f'Se crea copia de seguridad de Parametros_FV.py anterior con el nombre...Parametros_FV_{hora}.back') 
     except:
-        print ('ERROR.... No existe fichero Parametros_FV.py....se usa el archivo Parametros_FV_DIST como modelo')
-        archivo = '2'    
-    
-    if s == '2':
-        shutil.copy(fichero3, fichero1)
-        print('Copiado archivo Parametros_FV_DIST.py en Parametros_FV.py')
+        print (Fore.RED + f'ERROR.... No existe fichero {fichero1}....no se realiza copia de seguridad')
+        
+    try:
+        if s!= 0:
+            shutil.copy(fichero3, fichero1)
+            print(f'Copiado archivo {fichero3} en {fichero1}')
+    except:
+        print ('Error en la eleccion seleccionada.. abortando')
+        sys.exit()
+        
     print()
     print('#' * 80)
     print (Fore.YELLOW+'Como primer paso se abrira en el editor de textos "geany" el archivo Parametros_FV.py.....')
@@ -75,7 +107,7 @@ if s != '':
     print('#' * 80)
 
     continuar = click.prompt('pulsa una tecla para seguir.....    ', type=str, default=' ')
-
+    
     comando = f"geany {fichero1}"
     print ("Comando: ", comando)
     proceso = subprocess.run(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -87,6 +119,14 @@ if s != '':
 
     continuar = click.prompt('pulsa un tecla para seguir una vez finalizada la edicion de Parametros_FV.py.....    ', type=str, default=' ')
 
+# Actualizar enlaces escritorio
+res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Arrancar_Servicios_PVControl+.sh'])
+res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Parar_Servicos_PVControl+.sh'])
+res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Deshabilitar_Servicios_PVControl+.sh'])
+
+
+res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Arrancar_servicios_PVControl+.py','/home/pi/Desktop'])
+res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVControl+.py','/home/pi/Desktop'])
 
 
 # ######## ACTUALIZACION BD (CAMPOS,..) 
@@ -161,46 +201,12 @@ if AH > 0:
     
     SOC = click.prompt(Fore.YELLOW+'Introduce valor del SOC actual de la Bateria.. ', type=float, default=100)
     
-    Sql = f"UPDATE parametros SET nuevo_soc = {SOC}" # Ponemos SOC a 100%
+    Sql = f"UPDATE parametros SET nuevo_soc = '{SOC}'" # Ponemos SOC a 100%
     print(Fore.MAGENTA+Sql)
     cursor.execute(Sql)
-    db.commit
+    db.commit()
 
 print (Fore.CYAN +'tabla parametros configurada')
-
-# Borramos tabla equipos y la creamos de nuevo
-
-sql = "DROP TABLE `equipos`"
-import warnings # quitamos warnings
-
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    cursor.execute(sql)
-
-sql = """ CREATE TABLE IF NOT EXISTS `equipos` (
-           `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
-           `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
-           `sensores` varchar(5000) COLLATE latin1_spanish_ci NOT NULL,
-            PRIMARY KEY (`id_equipo`)
-          ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
-
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    cursor.execute(sql)
-    
-try: #inicializamos registros en BD RAM
-    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                  ('FV','{}'))
-    db.commit()              
-except:
-    pass
-try: 
-    cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                  ('RELES','{}'))
-    db.commit()
-except:
-    pass    
-
 
 cursor.close()
 db.close()
