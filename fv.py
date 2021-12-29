@@ -1273,7 +1273,7 @@ try:
             if Rele[id_rele] == 100 and Flag_Rele_Encendido == 0 and Rele_Ant[id_rele] < 100 :
                 #print (tiempo,' - Enciendo rele ',id_rele)
                 Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,100,tipo_act_rele)
-                if r['prioridad'] == 0 and Rele[id_rele] == 100: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
+                if Rele_Dict[id_rele]['prioridad'] == 0 and Rele[id_rele] == 100: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
             
             ### apagar rele
             if Rele[id_rele] == 0 and Rele_Ant[id_rele]>0: # and r['prioridad']== 0:
@@ -1360,10 +1360,10 @@ try:
         ## --------- Actualizando Tabla Reles y tabla reles_segundos_on -----------------------
         # ---- Actualizacion Nº conmutaciones y tiempo encendido de cada rele -----------------
         
-        #for I in range(nreles):
-        for id_rele in Rele_Dict:
+        for I in range(nreles):
+        #for id_rele in Rele_Dict:
  
-            #id_rele = TR[I]['id_rele']
+            id_rele = TR[I]['id_rele']
             if Grabar == 1: # actualizo BD cada N bucles
                 # Actualizacion estado Tabla reles
                 if Rele[id_rele] != TR[I]['estado']:
