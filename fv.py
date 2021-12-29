@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-27
+# Versión 2021-12-29
 
 import time,sys
 import traceback
 import datetime
 import MySQLdb 
 import random # para simulacion usando random.choice
-import pickle,json
 
 from smbus import SMBus
 
@@ -20,17 +19,14 @@ import paho.mqtt.client as mqtt
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
-"""
-Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
-Style: DIM, NORMAL, BRIGHT, RESET_ALL
-"""
-print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
 
 import RPi.GPIO as GPIO # reles 4XX via GPIO
 GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
 #GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
 GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
+
+import pickle,json
+from Srne import Srne # Libreria reguladores SRNE
 
 import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
@@ -41,31 +37,22 @@ import click # para DEBUG parando ejecucion donde se quiera
 basepath = '/home/pi/PVControl+/'
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
 
-try:
-    #Parametros Instalacion FV
-    from Parametros_FV import *
+"""
+Fore: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
+Back: BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET.
+Style: DIM, NORMAL, BRIGHT, RESET_ALL
+"""
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
 
-    from Srne import Srne # Libreria reguladores SRNE
+#Parametros Instalacion FV
+from Parametros_FV import *
 
-    #aseguro que los valores introducidos en Parametros_FV.py son float
-    AH = float(AH)
-    CP = float(CP)
-    EC = float(EC)  
-    vflotacion = float(vflotacion)
-    
-    if usar_telegram == 1:
-        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-        bot.skip_pending = True # Skip the pending messages
-        cid = Aut[0]
-    try:
-        bus = SMBus(1) # Activo Bus I2C para PCF
-    except:
-        pass
+#aseguro que los valores introducidos en Parametros_FV.py son float
+AH = float(AH)
+CP = float(CP)
+EC = float(EC)  
+vflotacion = float(vflotacion)
 
-except:
-    print ('Error irrecuperable en Parametros_FV.py')
-    
-    
 #Comprobacion argumentos en comando de fv.py
 narg = len(sys.argv)
 DEBUG= 0
@@ -78,10 +65,20 @@ elif '-p' in sys.argv: DEBUG= 100
 if '-r' in sys.argv: DEBUG1= 'RELES'
 elif '-t' in sys.argv: DEBUG1= 'TEST'
  
+
 print (Fore.RED + f'DEBUG={DEBUG} - DEBUG1={DEBUG1}')
-#########################################################################################
-#              Inicializando las variables del programa
-#########################################################################################
+
+if usar_telegram == 1:
+    bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
+    bot.skip_pending = True # Skip the pending messages
+    cid = Aut[0]
+try:
+    bus = SMBus(1) # Activo Bus I2C para PCF
+except:
+    pass
+
+#Inicializando las variables del programa
+#---------------------------------------------------------------
 
 NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'} # Condiciones de dia de la semana
 
@@ -160,10 +157,7 @@ N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
 
-
-#########################################################################################
 # Creacion tabla RAM equipos en BD si no existe
-#########################################################################################
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
@@ -195,7 +189,7 @@ try:
         pass    
     try:
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('_PVControl+','{}'))
+                      ('ESTADO','{}'))
         db.commit()              
     except:
         pass
@@ -211,13 +205,8 @@ try:
 
 
 except:
-    print (Fore.RED,'ERROR inicializando tabla equipos... abortando PVControl+')
+    print (Fore.RED,'ERROR inicializando tabla equipos')
     sys.exit()
-
-
-#########################################################################################
-#                 DEFINICION DE FUNCIONES
-#########################################################################################
 
 # -----------------------MQTT MOSQUITTO ------------------------
 
@@ -495,11 +484,6 @@ def Calcular_PWM(PWM):
 
     return PWM
 
-
-#########################################################################################
-#    INICIALIZACION PVControl+
-#########################################################################################
-
 ## RECUPERAR DE LA BD ALGUNOS DATOS ##
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
@@ -537,51 +521,31 @@ except Exception as e:
 
 
 # inicializando variables definidas en Parametros_FV.py
-
 while True:
     errores = 0
-    Estado['PVControl+'] = 'OK'
+    Estado['Estado'] = 'OK'
     print()
     print (Fore.GREEN+'#' *80)
     print (Fore.CYAN+'Captura inicial de los sensores')
     try:
         for sensor in sensores:
             print (Fore.RESET+f"{sensor}"+Fore.MAGENTA+f" = {sensores[sensor]}", end=' = ')
-            try:
-                if type(sensores[sensor]) is dict:
-                    if 'Equipo' in sensores[sensor].keys():
-                        exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
-                        print (Fore.GREEN,end='')
-                        if eval(f'{sensor}_err') == 1:
-                            errores += 1
-                            #Estado['Sensor_error'] = errores
-                            Estado['PVControl+'] = 'ERROR'
-                            
-                    else:
-                        print (Fore.RED+'Variable sin sensor definido = ',end='')
-                        exec (f'{sensor}= 0.0')
-                elif type(sensores[sensor]) is set:
-                    l = list (sensores[sensor])
-                    try:
-                        exec (f'{sensor}= {l[0]}')
-                    except:
-                        exec (f'{sensor}= 0.0')
-                        Estado['PVControl+'] = 'ERROR'
+            if 'Equipo' in sensores[sensor].keys():
+                exec(f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' )
+                print (Fore.GREEN,end='')
+                if eval(f'{sensor}_err') == 1:
+                    errores += 1
+                    #Estado['Sensor_error'] = errores
+                    Estado['Estado'] = 'ERROR'
+                    
+            else:
+                print (Fore.RED+'Variable sin sensor definido = ',end='')
+                exec (f'{sensor}= 0.0')
                 
-                elif type(sensores[sensor]) in (int,float,str):
-                    try:
-                        exec (f'{sensor}= {sensores[sensor]}')
-                    except:
-                        exec (f'{sensor}= 0.0')
-                    
-                    
-            except:
-                print('Error no conocido en sensores')
-                    
             print ( f'{eval(sensor)}')
     except:
         print (Fore.RED,'ERROR no conocido en definicion sensores en Parametros_FV.py')
-        #sys.exit()
+        sys.exit()
 
     print (Fore.GREEN+'#' *80)
     if DEBUG1 != 'TEST': break
@@ -724,17 +688,12 @@ try:
 
         hora1=time.time()
         
+        Estado['Estado'] = 'OK'
         
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
             if int(time.time()%100) < 10: # cada 100 sg
-                try:
-                    exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-                    Estado['PVControl+'] = 'OK'
-                    Estado['PVControl+_error'] = ''                
-             
-                except:
-                    Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
-                    Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'                
+                exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                        
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
@@ -905,124 +864,111 @@ try:
                 
             ## Capturando valores desde xxxxx.pkl...esta opcion se ira eliminando dejando solo la tabla de equipos
             
-            ee=30.2
-            if usar_victron == 1:
-                archivo_ram='/run/shm/datos_victron.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_victron = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.3
-            if usar_bmv == 1:
-                archivo_ram='/run/shm/datos_bmv.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_bmv = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.4
-            if usar_sma == 1:
-                archivo_ram='/run/shm/datos_sma.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_sma = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-            
-            if usar_smameter == 1:
-                archivo_ram='/run/shm/datos_smameter.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_smameter = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-            
-            if usar_goodwe == 1:
-                archivo_ram='/run/shm/datos_goodwe.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_goodwe = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue 
-                          
-            ee=30.43             
-            if usar_must == 1:
-                archivo_ram='/run/shm/datos_must.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_must = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.5
-            if usar_srne == 1:
-                d_srne = Srne.get_datos()
-                if d_srne is None:
-                    logBD('error lectura archivo ram SRNE')
-                    continue
-            
+            try:
+                ee=30.2
+                if usar_victron == 1:
+                    archivo_ram='/run/shm/datos_victron.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_victron = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                ee=30.3
+                if usar_bmv == 1:
+                    archivo_ram='/run/shm/datos_bmv.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_bmv = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:    
+                ee=30.4
+                if usar_sma == 1:
+                    archivo_ram='/run/shm/datos_sma.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_sma = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                if usar_smameter == 1:
+                    archivo_ram='/run/shm/datos_smameter.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_smameter = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                if usar_goodwe == 1:
+                    archivo_ram='/run/shm/datos_goodwe.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_goodwe = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue 
+            except:
+                pass
+                
+            try:
+                ee=30.43             
+                if usar_must == 1:
+                    archivo_ram='/run/shm/datos_must.pkl'
+                    try:
+                        with open(archivo_ram, 'rb') as f:
+                            d_must = pickle.load(f)
+                    except:
+                        logBD('error lectura '+archivo_ram)
+                        continue
+            except:
+                pass
+                
+            try:
+                ee=30.5
+                if usar_srne == 1:
+                    d_srne = Srne.get_datos()
+                    if d_srne is None:
+                        logBD('error lectura archivo ram SRNE')
+                        continue
+            except:
+                pass
+                
             # LECTURA SENSORES EQUIPOS
             ee=34
             Estado['Sensor_error'] = ''
             for sensor in sensores:
                 #print (f"{sensor} = {sensores[sensor]}")
-                try:
-                    if type(sensores[sensor]) is dict:
-                        if 'Equipo' in sensores[sensor].keys():    
-                            s= f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' 
-                            #print (s)
-                            exec(s)
-                            #print (f'{sensor}= {eval(sensor)}')
-                            errores = 0
-                            if eval(f'{sensor}_err') == 1:
-                                errores += 1
-                                Estado['PVControl+'] = 'ERROR'
-                                Estado['Sensor_error'] += sensor + ' / '
-                                Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
-                            if errores > 0: 
-                                time.sleep(1) # espero
-                        else:
-                            #print (Fore.RED+'Variable sin sensor definido = ',end='')
-                            exec (f'{sensor}= 0.0')   
-                            
-                                
-                    elif type(sensores[sensor]) is set:
-                        l = list (sensores[sensor])
-                        try:
-                            if len(l)>0: exec (f'{sensor}= {l[0]}')
-                            else:  exec (f'{sensor}= 0.0')
-                        except:
-                            exec (f'{sensor}= 0.0')
-                            Estado['PVControl+'] = 'ERROR'
-                            Estado['Sensor_error'] += sensor + ' / '
-                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.00)'
-                    elif type(sensores[sensor]) in (int,float,str):
-                        try:
-                            if sensores[sensor] != '': exec (f'{sensor}= {sensores[sensor]}')
-                            else: exec (f'{sensor}= 0.0')
-                        except:
-                            exec (f'{sensor}= 0.0')
-                            Estado['PVControl+'] = 'ERROR'
-                            Estado['Sensor_error'] += sensor + ' / '
-                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.0)'
-                            
-                    else:
-                        print('Tipo no tratado en sensores=',type(sensores[sensor]))
-                except:
-                    print('Error no conocido en sensores')                
-                    Estado['PVControl+'] = 'ERROR'
-                    Estado['Sensor_error'] += sensor + ' / '
-                    Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
-                    
+                if 'Equipo' in sensores[sensor].keys():    
+                    s= f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' 
+                    #print (s)
+                    exec(s)
+                    #print (f'{sensor}= {eval(sensor)}')
+                    errores = 0
+                    if eval(f'{sensor}_err') == 1:
+                        errores += 1
+                        Estado['Estado'] = 'ERROR'
+                        Estado['Sensor_error'] += sensor + ' / '
+                    if errores > 0: 
+                        time.sleep(1) # espero
+                        
+                        
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
                     if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
@@ -1059,6 +1005,12 @@ try:
             for id_rele in Rele_Dict:
                 Rele_Tiempo[id_rele] = Rele_Dict[id_rele]['segundos_on'] = 0 # inicializo tiempo de reles 
                 Rele_Dict[id_rele]['nconmutaciones'] = 0 # inicializo numero conmutaciones
+                try: # aseguro que existe el registro diario de actividad del rele
+                    cursor.execute("INSERT INTO reles_segundos_on (id_rele,fecha,segundos_on,nconmutaciones) VALUES (%s,%s,%s,%s)",
+                      (id_rele,time.strftime("%Y-%m-%d"),0,0))
+                except:
+                    print ('Error creacion registros diarios reles_segundos_on')
+            db.commit()        
         
         else: # calculo Wh
             if Ibat < 0: Whn_bat = round(Whn_bat - (Wbat * t_muestra/3600),2)
@@ -1226,7 +1178,7 @@ try:
                 if diaok == 1 and horaok == 1:
                     Rele_H[id_rele] += 1
             except:
-                Estado['PVControl+'] = 'ERROR'
+                Estado['Estado'] = 'ERROR'
                 Estado['Reles_h'] = r['id_rele']
                 
 
@@ -1266,9 +1218,8 @@ try:
                         pass                
                         #print (Fore.RED+ 'FALSE')
                 except:
-                    Estado['PVControl+'] = 'ERROR'
+                    Estado['Estado'] = 'ERROR'
                     Estado['Reles_c'] += condicion + ' / '
-                    Estado['PVControl+_error'] = 'Corrija condicion en el Rele'
                 
                     print (f'Error condicion rele {id_rele}-{condicion}')
                     #logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
@@ -1292,9 +1243,8 @@ try:
                 if TC2 in ('', ' ','1'): TC2 = 'True'
                 if (eval(TC1) and eval(TC2)): exec(r['accion']) 
             except:
-                Estado['PVControl+'] = 'ERROR'
+                Estado['Estado'] = 'ERROR'
                 Estado['Condiciones'] += f"{r['id_condicion']}: {TC1} {TC2}-> {r['accion']}"
-                Estado['PVControl+_error'] = 'Corrija definicion en tabla condiciones'
                 
                 #print (f"Error Condicion {r['id_condicion']}")
                 #logBD(f"Error en id_condicion={r['id_condicion']}")
@@ -1302,16 +1252,15 @@ try:
         #-------------------- Bucle encendido/apagado reles ------------------------------------
         ee=62.0
         Flag_Rele_Encendido = 0
-        for r in TR:
-            id_rele = r['id_rele']
+        for id_rele in Rele_Dict:
             tipo_act_rele = 0
             
             ### forzado ON/OFF
-            if r['modo'] == 'ON' :
+            if Rele_Dict[id_rele] == 'ON' :
                 Rele[id_rele] = 100
                 tipo_act_rele = 1
                 
-            elif r['modo'] == 'OFF' :
+            elif Rele_Dict[id_rele]['modo'] == 'OFF' :
                 Rele[id_rele] = 0
                 tipo_act_rele = 1
                    
@@ -1410,8 +1359,11 @@ try:
         
         ## --------- Actualizando Tabla Reles y tabla reles_segundos_on -----------------------
         # ---- Actualizacion Nº conmutaciones y tiempo encendido de cada rele -----------------
-        for I in range(nreles):
-            id_rele = TR[I]['id_rele']
+        
+        #for I in range(nreles):
+        for id_rele in Rele_Dict:
+ 
+            #id_rele = TR[I]['id_rele']
             if Grabar == 1: # actualizo BD cada N bucles
                 # Actualizacion estado Tabla reles
                 if Rele[id_rele] != TR[I]['estado']:
@@ -1425,7 +1377,7 @@ try:
                         sql = (f"UPDATE reles_segundos_on SET segundos_on = {Rele_Dict[id_rele]['segundos_on']}, nconmutaciones = {Rele_Dict[id_rele]['nconmutaciones']}"+ 
                              f" WHERE id_rele = {id_rele} and fecha ='{time.strftime('%Y-%m-%d')}'")
                         cursor.execute(sql)
-                    except : # inicializo registro
+                    except : 
                         print ('Error actualizacion reles_segundos_on')
                         
             # calculo encendido reles 
@@ -1501,7 +1453,7 @@ try:
         
         ee=320.0
         salida_ESTADO = json.dumps(Estado)
-        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = '_PVControl+'") # grabacion en BD RAM
+        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = 'ESTADO'") # grabacion en BD RAM
         cursor.execute(sql)
         
         db.commit()
