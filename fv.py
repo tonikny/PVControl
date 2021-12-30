@@ -619,6 +619,7 @@ for r in TR: # inicializando reles
         cursor.execute("INSERT INTO reles_segundos_on (id_rele,fecha,segundos_on,nconmutaciones) VALUES (%s,%s,%s,%s)",
                        (id_rele,time.strftime("%Y-%m-%d"),0,0))
     except:
+        #print ('Ya existe registro del rele en tabla reles_segundos_on')
         pass    
     
     if r['modo'] == 'PRG': # apago todos los reles en modo PRG por defecto
@@ -646,7 +647,7 @@ try:
         id_rele = r['id_rele']
         try:
             Rele_Dict[id_rele]['nconmutaciones']= r['nconmutaciones']
-            Rele_Dict[id_rele]['segundos_on']= r['segundos_on']
+            Rele_Dict[id_rele]['segundos_on']= Rele_Tiempo[id_rele] = r['segundos_on']
         except:
             pass
 except:
@@ -664,8 +665,8 @@ if nreles > 0 : # apagado reles en BD
 #print ('ERROR LECTURA VOLTAJE BATERIA.....SISTEMA POR DEFECTO a 24V')
 if AH > 1:
     try:
-        if simular != 1 and Vbat_sensor != "":
-            Vbat, Vbat_err = leer_sensor('Vbat',Vbat_sensor,vsis*12.0,Vbat_min_log,Vbat_max_log)
+        if simular != 1 and len(sensores['Vbat'])>0:
+            Vbat, Vbat_err = leer_sensor('Vbat',sensores['Vbat'])
         else:
             Vbat = vsis * 12.0
     except:
@@ -675,7 +676,7 @@ if AH > 1:
     if Vbat > 11 and Vbat < 15.5 : vsis = 1
     elif Vbat > 22 and Vbat < 31 : vsis = 2
     elif Vbat > 44 and Vbat < 62 : vsis = 4
-    else : log='Error: Imposible reconocer el voltaje del sistema'
+    else : print(f'Vbat = {Vbat}: Imposible reconocer el voltaje del sistema')
 
     Vflot = 13.7 * vsis
     Vabs = 14.4 * vsis
@@ -724,13 +725,19 @@ try:
 
         hora1=time.time()
         
-        
+        if 'ERROR CRITICO' in Estado['PVControl+']:
+            Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
+            Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'   
+        else:
+            Estado['PVControl+'] = 'OK'
+            Estado['PVControl+_error'] = ''
+       
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
             if int(time.time()%100) < 10: # cada 100 sg
                 try:
                     exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
                     Estado['PVControl+'] = 'OK'
-                    Estado['PVControl+_error'] = ''                
+                    Estado['PVControl+_error'] = ''              
              
                 except:
                     Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
@@ -762,7 +769,7 @@ try:
             TR=[] 
             Reles_D = []
             for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
-                        
+            
             for r in TR: # actualizar diccionarios por si se han creado/borrado nuevos reles o modificado campos (salvo estado)
                 id_rele = r['id_rele']
               
@@ -895,9 +902,14 @@ try:
             try:
                 for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
             except:
-                print ('Error Lectura Tabla equipos')
-                logBD('Error lectura Tabla Equipos')    
-                time.sleep(5)
+                if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                else: Estado['PVControl+'] = 'ERROR'
+                
+                Estado['PVControl+_error'] += f" #### Error lectura tabla equipos clave {d_[row[0]]}"                
+            
+                #print ('Error Lectura Tabla equipos')
+                #logBD('Error lectura Tabla Equipos')    
+                #time.sleep(5)
                 
             if DEBUG == 100:
                 print ('#'*40)
@@ -963,31 +975,29 @@ try:
             
             # LECTURA SENSORES EQUIPOS
             ee=34
-            Estado['Sensor_error'] = ''
             for sensor in sensores:
                 #print (f"{sensor} = {sensores[sensor]}")
                 try:
                     if type(sensores[sensor]) is dict:
                         if 'Equipo' in sensores[sensor].keys():    
                             s= f'{sensor}, {sensor}_err =leer_sensor("{sensor}",{sensores[sensor]})' 
-                            #print (s)
                             exec(s)
-                            #print (f'{sensor}= {eval(sensor)}')
                             errores = 0
                             if eval(f'{sensor}_err') == 1:
                                 errores += 1
-                                Estado['PVControl+'] = 'ERROR'
-                                Estado['Sensor_error'] += sensor + ' / '
-                                Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
+                                if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                                else: Estado['PVControl+'] = 'ERROR'
+                
+                                Estado['PVControl+_error'] += f' #### Corrija en Parametros_FV.py definicion sensor {sensor}'
                             if errores > 0: 
                                 time.sleep(1) # espero
                         else:
-                            #print (Fore.RED+'Variable sin sensor definido = ',end='')
                             exec (f'{sensor}= 0.0')
                             if len (sensores[sensor]) > 0:
-                                Estado['PVControl+'] = 'ERROR'
-                                Estado['Sensor_error'] += sensor + ' / '
-                                Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.00)'
+                                if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                                else: Estado['PVControl+'] = 'ERROR'
+                
+                                Estado['PVControl+_error'] += ' #### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
                                     
                     elif type(sensores[sensor]) is set:
                         l = list (sensores[sensor])
@@ -996,26 +1006,30 @@ try:
                             else:  exec (f'{sensor}= 0.0')
                         except:
                             exec (f'{sensor}= 0.0')
-                            Estado['PVControl+'] = 'ERROR'
-                            Estado['Sensor_error'] += sensor + ' / '
-                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.00)'
+                            if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                            else: Estado['PVControl+'] = 'ERROR'
+                
+                            Estado['PVControl+_error'] += f' #### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
+                                
                     elif type(sensores[sensor]) in (int,float,str):
                         try:
                             if sensores[sensor] != '': exec (f'{sensor}= {sensores[sensor]}')
                             else: exec (f'{sensor}= 0.0')
                         except:
                             exec (f'{sensor}= 0.0')
-                            Estado['PVControl+'] = 'ERROR'
-                            Estado['Sensor_error'] += sensor + ' / '
-                            Estado['PVControl+_error'] = 'Corrija definicion sensor indicado (se ponen a 0.0)'
+                            if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                            else: Estado['PVControl+'] = 'ERROR'
+                           
+                            Estado['PVControl+_error'] += f' #### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
                             
                     else:
                         print('Tipo no tratado en sensores=',type(sensores[sensor]))
                 except:
-                    print('Error no conocido en sensores')                
-                    Estado['PVControl+'] = 'ERROR'
-                    Estado['Sensor_error'] += sensor + ' / '
-                    Estado['PVControl+_error'] = 'Corrija definicion sensor indicado'
+                    if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                    else: Estado['PVControl+'] = 'ERROR'
+                
+                    Estado['PVControl+_error'] += f' #### Except ... Corrija en Parametros_FV.py definicion sensor {sensor}'
+                            
                     
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
@@ -1041,7 +1055,7 @@ try:
         
         dia_anterior = dia
         dia = time.strftime("%Y-%m-%d")
-        
+
         if dia_anterior != dia: #cambio de dia
             Wh_bat = Whp_bat = Whn_bat = Wh_placa = Whp_red = Whn_red = 0.0
             CD1 = CD2 = CD3 = CD4 = CD5 = 0.0
@@ -1072,7 +1086,7 @@ try:
             Wh_red = Whp_red - Whn_red
             Wh_placa = round(Wh_placa + (Wplaca * t_muestra/3600),2)
             Wh_consumo = Wh_placa - Wh_red - Wh_bat
-            
+        
         if AH > 1:   #Calculo SOC solo si hay batería
             ## -------- CALCULO SOC% A C20 ----------
             if Ibat < 0 :
@@ -1201,7 +1215,6 @@ try:
         
         # -------------------- Bucle de condiciones de horario --------------------------
         ee=56.0
-        #Estado['Reles_h'] = ''
         for r in TCH:
             try:
                 id_rele = r['id_rele']
@@ -1241,7 +1254,6 @@ try:
 
         # -------------------- Bucle de condiciones de parametros FV --------------------------
         ee=58.0
-        Estado['Reles_c'] = ''
         for r in TCFV:
             id_rele = r['id_rele']
             condicion = f"{r['parametro']} {r['condicion']} {r['valor']}"
@@ -1267,11 +1279,12 @@ try:
                         pass                
                         #print (Fore.RED+ 'FALSE')
                 except:
-                    Estado['PVControl+'] = 'ERROR'
-                    Estado['Reles_c'] += condicion + ' / '
-                    Estado['PVControl+_error'] = 'Corrija condicion en el Rele'
+                    if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                    else: Estado['PVControl+'] = 'ERROR'
                 
-                    print (f'Error condicion rele {id_rele}-{condicion}')
+                    Estado['PVControl+_error'] += f' #### Corrija condicion del rele {id_rele}-{condicion} en tabla reles_c'
+                
+                    #print (f'Error condicion rele {id_rele}-{condicion}')
                     #logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
                     #db.commit()
             else:
@@ -1282,8 +1295,6 @@ try:
              
         # -------------------- Bucle de condiciones  --------------------------
         ee=60.0
-        Estado['Condiciones'] = ''
-        
         for r in TC:
             try:
                 TC1 = r['condicion1']
@@ -1293,13 +1304,19 @@ try:
                 if TC2 in ('', ' ','1'): TC2 = 'True'
                 if (eval(TC1) and eval(TC2)): exec(r['accion']) 
             except:
-                Estado['PVControl+'] = 'ERROR'
-                Estado['Condiciones'] += f"{r['id_condicion']}: {TC1} {TC2}-> {r['accion']}"
-                Estado['PVControl+_error'] = 'Corrija definicion en tabla condiciones'
+                if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                else: Estado['PVControl+'] = 'ERROR'
+                
+                Estado['PVControl+_error'] += f" #### Corrija definicion id_condicion = {r['id_condicion']} en tabla condiciones "
                 
                 #print (f"Error Condicion {r['id_condicion']}")
                 #logBD(f"Error en id_condicion={r['id_condicion']}")
-
+        
+        #print ('Antes=',Estado['Condiciones'])
+        #Estado['Condiciones'] = Estado['Condiciones'].replace("'", "''")
+        #print ('Despues=',Estado['Condiciones'])
+        
+        
         #-------------------- Bucle encendido/apagado reles ------------------------------------
         ee=62.0
         Flag_Rele_Encendido = 0
@@ -1410,7 +1427,7 @@ try:
                 TR_refresco = TR[:]
         
         ## --------- Actualizando Tabla Reles y tabla reles_segundos_on -----------------------
-        # ---- Actualizacion Nº conmutaciones y tiempo encendido de cada rele -----------------
+        # ---- Actualizacion Nº conmutaciones y tiempo encendido de cada rele -----------------        
         for I in range(nreles):
             id_rele = TR[I]['id_rele']
             if Grabar == 1: # actualizo BD cada N bucles
@@ -1444,7 +1461,6 @@ try:
                         db.rollback()
                         logBD('tabla reles_grab NO grabados por fallo')
                         
-        
         #------------------------Escribir en la tabla valores FV  ---------------------------
         
         if TP['grabar_datos'] == "S" and Grabar == 1:
@@ -1501,8 +1517,10 @@ try:
         cursor.execute(sql)
         
         ee=320.0
+        if Estado['PVControl+_error'] == '': del Estado['PVControl+_error'] 
         salida_ESTADO = json.dumps(Estado)
         sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = '_PVControl+'") # grabacion en BD RAM
+        #print ('sql=',sql)
         cursor.execute(sql)
         
         db.commit()
