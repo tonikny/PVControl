@@ -221,7 +221,7 @@ $(function () {
      },
      {// ########## Valores eje PWM ######################
       opposite: true,
-      min: 0,
+      min: -50,
       max: Escala_PWM_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',

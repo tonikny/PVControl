@@ -83,8 +83,10 @@ def ADS_captura (ADS):  # como entrada solo el indice del ADS de las listas defi
                 print(Fore.CYAN+time.strftime("%Y-%m-%d %H:%M:%S"),
                       f' -- Leyendo Parametros_FV.py para {nombre_ADS[ADS]} - Capturas={Ncapturas}')
                 Ncapturas = 0 
-                
-                exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                try:
+                    exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                except:
+                    print ('Error en Parametros_FV.py')
                 ee = '20a'
                 N1 = N
                 ADS_modo = 'Disparado'  # valor por defecto
