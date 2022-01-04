@@ -146,6 +146,7 @@ Puerto = estado = 0
 ## Definir diccionarios Rele y Rele_Ant
 Rele: dict = {}        # Situacion actual de los reles
 Rele_Dict: dict = {}   # Diccionario completo de la tabla de Reles
+Rele_Dict_Aux: dict = {}   # Diccionario completo de la tabla de Reles--copia para actualizacion/borrado
 
 Rele_Ant: dict = {}    # Situacion anterior de los reles
 Rele_H: dict = {}      # Situacion condiciones horario
@@ -158,7 +159,7 @@ Estado : dict ={}    # diccionario del estado de funcionamiento de fv.py
 #---Variables PID --------------------------------
 N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
-PWM = IPWM_P = IPWM_I = IPWM_D = 0.0
+PWM = IPWM_P = IPWM_I = IPWM_D = PWM_ant = 0.0
 
 
 #########################################################################################
@@ -283,7 +284,7 @@ def calibracion_rele(adr,out): # linealiza la respuesta del SSR por cada rele se
                 if ssr[i][0] > out : break
             x1, y1 =  ssr[i-1][0], ssr[i-1][1] # puntos de la recta
             x2, y2 =  ssr[i][0], ssr[i][1]
-            out = int(y1 + (y2-y1)/(x2-x1)*(out-x1)) # ecuacion recta
+            out = (y1 + (y2-y1)/(x2-x1)*(out-x1)) # ecuacion recta
     except:
         pass 
     #print ('ssr=',ssr)
@@ -382,18 +383,15 @@ def act_rele(adr,out,tipo) :
         
         elif int(adr/100) == 6: #Rele TASMOTA - Semiciclos
             try:
-                if out < 50: Freq = out 
-                else: Freq= 100 - out
-                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out))  # Logica Negativa PWM via MQTT 
-                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PwmFrequency",str(Freq))  # Freq via MQTT 
-            except:
-                logBD(f'Error TASMOTA -SC {adr}={out}') 
-        elif int(adr/100) == 7: #Rele TASMOTA Angulo de fase.
-            try:
                 out1 = calibracion_rele(adr,out)
-                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/Channel"+str(adr)[-1],str(out1))  # PWM via MQTT  
+                duty = int(out1 *10.23)
+                #if out < 50: Freq = out 
+                #else: Freq= 100 - out
+                #client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PwmFrequency",str(Freq))  # Freq via MQTT 
+                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PWM"+str(adr)[-1],str(duty))  # Logica positiva PWM via MQTT 
+                
             except:
-                logBD(f'Error TASMOTA - AF {adr}={out}- Calibr.={out1}')         
+                logBD(f'Error TASMOTA AF / SC {adr}={out}') 
          
     return out, cambio
 
@@ -435,14 +433,14 @@ def leer_sensor(variable, sensor) :  # leer sensor
     if 'Min' in sensor.keys() : 
         if y < sensor['Min']:
             print (Fore.RED+f"Error:{variable}={y}/Min={sensor['Min']}. Valor anterior={anterior}..", flush=True,end='')     
-            #logBD(f'lectura incoherente {variable}={y}')
+            logBD(f'lectura incoherente {variable}={y}')
             y = anterior
             y_err = 2 
     
     if 'Max' in sensor.keys() : 
         if y > sensor['Max']:
             print (Fore.RED+f"Error:{variable}={y}/Max={sensor['Max']}. Valor anterior={anterior}.. ", flush=True,end='')     
-            #logBD(f'lectura incoherente {variable}={y}')
+            logBD(f'lectura incoherente {variable}={y}')
             y = anterior
             y_err = 2 
 
@@ -725,6 +723,8 @@ try:
 
         hora1=time.time()
         
+        if 'ERROR' in Estado['PVControl+']:  print (Estado['PVControl+'],Estado['PVControl+_error'])
+            
         if 'ERROR CRITICO' in Estado['PVControl+']:
             Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
             Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'   
@@ -741,7 +741,7 @@ try:
              
                 except:
                     Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
-                    Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'                
+                    Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'                        
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
@@ -770,6 +770,8 @@ try:
             Reles_D = []
             for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
             
+            #print (Rele_Dict)
+            Rele_Dict_Aux = {}
             for r in TR: # actualizar diccionarios por si se han creado/borrado nuevos reles o modificado campos (salvo estado)
                 id_rele = r['id_rele']
               
@@ -801,7 +803,9 @@ try:
                     except:
                         pass    
                        
-                Rele_Dict[r['id_rele']] = r.copy() # genero diccionario tabla Reles
+                Rele_Dict_Aux[r['id_rele']] = r.copy() # genero diccionario tabla Reles
+            
+            Rele_Dict = Rele_Dict_Aux.copy() # copio el nuevo diccionario creado con las actualizaciones
             
             sql='SELECT * FROM reles INNER JOIN reles_c ON reles.id_rele = reles_c.id_rele'
             fvcon=cursor.execute(sql)
@@ -906,7 +910,6 @@ try:
                 else: Estado['PVControl+'] = 'ERROR'
                 
                 Estado['PVControl+_error'] += f" #### Error lectura tabla equipos clave {d_[row[0]]}"                
-            
                 #print ('Error Lectura Tabla equipos')
                 #logBD('Error lectura Tabla Equipos')    
                 #time.sleep(5)
@@ -997,8 +1000,8 @@ try:
                                 if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                                 else: Estado['PVControl+'] = 'ERROR'
                 
-                                Estado['PVControl+_error'] += ' #### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
-                                    
+                                Estado['PVControl+_error'] += f' ### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
+                                
                     elif type(sensores[sensor]) is set:
                         l = list (sensores[sensor])
                         try:
@@ -1008,9 +1011,9 @@ try:
                             exec (f'{sensor}= 0.0')
                             if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                             else: Estado['PVControl+'] = 'ERROR'
-                
-                            Estado['PVControl+_error'] += f' #### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
-                                
+                            
+                            Estado['PVControl+_error'] += f' ## Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
+                            
                     elif type(sensores[sensor]) in (int,float,str):
                         try:
                             if sensores[sensor] != '': exec (f'{sensor}= {sensores[sensor]}')
@@ -1020,7 +1023,7 @@ try:
                             if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                             else: Estado['PVControl+'] = 'ERROR'
                            
-                            Estado['PVControl+_error'] += f' #### Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
+                            Estado['PVControl+_error'] += f' # Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
                             
                     else:
                         print('Tipo no tratado en sensores=',type(sensores[sensor]))
@@ -1028,8 +1031,7 @@ try:
                     if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                     else: Estado['PVControl+'] = 'ERROR'
                 
-                    Estado['PVControl+_error'] += f' #### Except ... Corrija en Parametros_FV.py definicion sensor {sensor}'
-                            
+                    Estado['PVControl+_error'] += f' ##### Except ... Corrija en Parametros_FV.py definicion sensor {sensor}'
                     
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
@@ -1044,6 +1046,7 @@ try:
                         
       ### ------------------ Control Excedentes...Cálculo salida PWM ----------
         ee=36
+        
         PWM_ant = PWM
         PWM_Max = Nreles_Diver * 100 
         PWM = Calcular_PWM(PWM) #  calculo de PWM con PWM_Max segun tabla reles
@@ -1362,7 +1365,7 @@ try:
         reles_exc_prio: dict = {}  # inicializacion dict reles excedentes por prioridad
         PWM_Max_1 = 0
         for r in TR:
-            if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[r['id_rele']] >= 0 and Flag_Rele_Encendido != 1:
+            if r['modo'] == 'PRG' and r['prioridad']!= 0 and Rele_H[r['id_rele']] >= 0 : #and Flag_Rele_Encendido != 1:
                 if r['prioridad'] not in reles_exc_prio.keys():
                     reles_exc_prio [r['prioridad']] = []
                 reles_exc_prio[r['prioridad']].append({'id_rele': r['id_rele'], 'salto': r['salto']})
@@ -1387,11 +1390,11 @@ try:
                     
                     for rele_prio in reles_exc_prio[prio]:
                         id_rele = rele_prio['id_rele']
-                        valor = min(100,round(PWM_R/nreles_prio))
+                        valor = min(100,PWM_R/nreles_prio)
                         salto = rele_prio['salto']
-                        nivel_rele =  int(salto * round(valor/salto))
-                        Rele[id_rele] = (min(PWM_R, nivel_rele) // salto) * salto
-
+                        nivel_rele =  round(salto * (valor // salto),3) # resolucion hasta 0.001
+                        Rele[id_rele] = min(PWM_R, nivel_rele)
+                        
                         if Rele[id_rele] != Rele_Ant[id_rele]:
                             #print (Rele_Dict)
                             Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele, Rele[id_rele],0)
