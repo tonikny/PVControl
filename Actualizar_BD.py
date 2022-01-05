@@ -107,9 +107,12 @@ c_campo('potencia',Sql)
 Sql="ALTER TABLE `reles` ADD `retardo` INT(11) NULL DEFAULT '0' COMMENT 'Segundos a esperar entre dos cambios de estado del rele'"            
 c_campo('retardo',Sql)
 
-Sql="ALTER TABLE `reles` ADD `calibracion` VARCHAR(500) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL DEFAULT '[[0,0],[5,38],[10,44],[20,51],[30,56],[40,60],[50,67],[60,68],[70,84],[80,90],[90,85],[95,87],[100,100]]' COMMENT 'Calibracion respuesta SSR [%Potencia, Duty PWM]'"            
+Sql="ALTER TABLE `reles` ADD `calibracion` VARCHAR(500) CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL DEFAULT '[[0,0],[1,22],[5,31],[10,36],[20,43],[30,48],[40,53],[50,56],[60,60],[70,65],[80,70],[90,75],[95,77],[99,87],[100,100]]' COMMENT 'Calibracion respuesta SSR [%Potencia, Duty PWM]'"            
 c_campo('calibracion',Sql)
-  
+
+cursor.execute("ALTER TABLE `reles` CHANGE `salto` `salto` FLOAT NULL DEFAULT '100'")
+print ('Campo salto puesto a FLOAT') 
+ 
 db.commit()
 
 
