@@ -296,102 +296,106 @@ def act_rele(adr,out,tipo) :
     #tipo = 0 funcionamiento normal ...se actualiza marca temporal
     #tipo = 1 Fuerzo actualizacion ... marca temporal a 0
     #tipo = 2 Refresco ... no actualiza marca temporal
-    
-    cambio = Rele_Dict[adr]['cambio']
-    
-    if tipo == 0: # modo normal de actuacion
-        if out == Rele_Ant[adr]:
-            return Rele[adr], cambio # no se actua sobre los reles ni marca temporal por tener misma salida
-        else:
-            if time.time() < Rele_Dict[adr]['retardo'] + Rele_Dict[adr]['cambio']:
-                if DEBUG == 50:
-                    print (Fore.GREEN + time.strftime("%H:%M:%S"),
-                           f"Cambio...T{time.time():.1f} - R{Rele_Dict[adr]['retardo']} - C{Rele_Dict[adr]['cambio']:.1f} sg "+
-                           f'- Orden {out} - Dejando Rele {adr} con valor {Rele_Ant[adr]} ')     
-                return Rele_Ant[adr], cambio
-                        
-        if DEBUG == 50:
-            print (Fore.RED + time.strftime("%H:%M:%S"),f'- Activando rele {adr} con valor {out}',
-                   f"Cambio...T{time.time():.1f} - R{Rele_Dict[adr]['retardo']} - C{Rele_Dict[adr]['cambio']:.1f} sg",
-                   f"= T{time.time()- Rele_Dict[adr]['retardo'] - Rele_Dict[adr]['cambio']:.1f} sg")
-        cambio = round(time.time(),1)
-    
-    elif tipo == 1: # ON/OFF forzado
-        if DEBUG == 50: print (Fore.RED + time.strftime("%H:%M:%S"),f'- Forzado rele {adr} con valor {out}')
-        cambio = 0
+    try:
+        cambio = Rele_Dict[adr]['cambio']
         
-    elif tipo == 2: # Refresco
-        if DEBUG == 100: print(Fore.BLUE+f'Refresco rele {adr}')   
-    
-    # ----- Activacion real de Reles -----------    
-    if simular_reles == 0:
-        if int(adr/100) == 2: #Rele WIFI por MQTT
-            try:
-                out1 = calibracion_rele(adr,out)
-                client.publish(f'PVControl/Reles/{adr}',int(out1))  # via MQTT
-                
-            except:
-                if simular != 1:
-                    logBD(f'Error rele wifi {adr}= {out1}')   
-
-        elif int(adr/100) == 3: # Rele I2C
-            adr_pcf=int(adr/10)
-            puerto= adr%adr_pcf
-            try:
-                estado = bus.read_byte(adr_pcf)  #devuelve el valor en decimal
-                if out == 100 :
-                    i2c_out = estado & (2**(puerto-1) ^ (255))
-                else :
-                    i2c_out = estado | 2**(puerto-1)
-                bus.write_byte(adr_pcf,i2c_out)
-                
-            except:
-                if simular != 1:
-                    logBD(f'Error bus I2C {adr}= {out}')
-
-        elif int(adr/100) == 4: # Rele GPIO .. esta por regulacion SC
-            try:
-                #if DEBUG >= 2: print('rele GPIO=',adr, int(out))
-                for I in range (NGPIO):
-                    if Rele_SSR[I][1] == adr % 100:
-                        out1=int(out) #por ahora resolucion maxima de 1 
-                        
-                        #print('rele GPIO=',adr, 'duty=',int(out1))
-                        
-                        Rele_SSR[I][0].ChangeDutyCycle(out1)
-                        if out1 == 0 or out1 == 100:
-                            pass
-                            #Rele_SSR[I][0].ChangeFrequency(5)
-                        elif out1 <= 50:
-                            #print (' frec=',out)
-                            Rele_SSR[I][0].ChangeFrequency(out1)
-                        else:
-                            Rele_SSR[I][0].ChangeFrequency(100-out1)
-                            #print (' frec=',100-out1)
-                        break
-            except:
-                print ('Error rele GPIO')
-                print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out1)         
-
-        elif int(adr/100) == 5: #Rele Sonoff (tasmota)
-            try:
-                if out == 100: out1 = "ON"
-                else:          out1 = "OFF"
-                client.publish("cmnd/PVControl/Reles/{adr}/POWER",str(out1))  # via MQTT
-            except:
-                logBD(f'Error TASMOTA ON/OFF {adr}={out} - ´{out1}')
+        if tipo == 0: # modo normal de actuacion
+            if out == Rele_Ant[adr]:
+                return Rele[adr], cambio # no se actua sobre los reles ni marca temporal por tener misma salida
+            else:
+                if time.time() < Rele_Dict[adr]['retardo'] + Rele_Dict[adr]['cambio']:
+                    if DEBUG == 50:
+                        print (Fore.GREEN + time.strftime("%H:%M:%S"),
+                               f"Cambio...T{time.time():.1f} - R{Rele_Dict[adr]['retardo']} - C{Rele_Dict[adr]['cambio']:.1f} sg "+
+                               f'- Orden {out} - Dejando Rele {adr} con valor {Rele_Ant[adr]} ')     
+                    return Rele_Ant[adr], cambio
+                            
+            if DEBUG == 50:
+                print (Fore.RED + time.strftime("%H:%M:%S"),f'- Activando rele {adr} con valor {out}',
+                       f"Cambio...T{time.time():.1f} - R{Rele_Dict[adr]['retardo']} - C{Rele_Dict[adr]['cambio']:.1f} sg",
+                       f"= T{time.time()- Rele_Dict[adr]['retardo'] - Rele_Dict[adr]['cambio']:.1f} sg")
+            cambio = round(time.time(),1)
         
-        elif int(adr/100) == 6: #Rele TASMOTA - Semiciclos
-            try:
-                out1 = calibracion_rele(adr,out)
-                duty = int(out1 *10.23)
-                #if out < 50: Freq = out 
-                #else: Freq= 100 - out
-                #client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PwmFrequency",str(Freq))  # Freq via MQTT 
-                client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PWM"+str(adr)[-1],str(duty))  # Logica positiva PWM via MQTT 
-                
-            except:
-                logBD(f'Error TASMOTA AF / SC {adr}={out}') 
+        elif tipo == 1: # ON/OFF forzado
+            if DEBUG == 50: print (Fore.RED + time.strftime("%H:%M:%S"),f'- Forzado rele {adr} con valor {out}')
+            cambio = 0
+            
+        elif tipo == 2: # Refresco
+            if DEBUG == 100: print(Fore.BLUE+f'Refresco rele {adr}')   
+        
+        # ----- Activacion real de Reles -----------    
+        if simular_reles == 0:
+            if int(adr/100) == 2: #Rele WIFI por MQTT
+                try:
+                    out1 = calibracion_rele(adr,out)
+                    client.publish(f'PVControl/Reles/{adr}',int(out1))  # via MQTT
+                    
+                except:
+                    if simular != 1:
+                        logBD(f'Error rele wifi {adr}= {out1}')   
+
+            elif int(adr/100) == 3: # Rele I2C
+                adr_pcf=int(adr/10)
+                puerto= adr%adr_pcf
+                try:
+                    estado = bus.read_byte(adr_pcf)  #devuelve el valor en decimal
+                    if out == 100 :
+                        i2c_out = estado & (2**(puerto-1) ^ (255))
+                    else :
+                        i2c_out = estado | 2**(puerto-1)
+                    bus.write_byte(adr_pcf,i2c_out)
+                    
+                except:
+                    if simular != 1:
+                        logBD(f'Error bus I2C {adr}= {out}')
+
+            elif int(adr/100) == 4: # Rele GPIO .. esta por regulacion SC
+                try:
+                    #if DEBUG >= 2: print('rele GPIO=',adr, int(out))
+                    for I in range (NGPIO):
+                        if Rele_SSR[I][1] == adr % 100:
+                            out1=int(out) #por ahora resolucion maxima de 1 
+                            
+                            #print('rele GPIO=',adr, 'duty=',int(out1))
+                            
+                            Rele_SSR[I][0].ChangeDutyCycle(out1)
+                            if out1 == 0 or out1 == 100:
+                                pass
+                                #Rele_SSR[I][0].ChangeFrequency(5)
+                            elif out1 <= 50:
+                                #print (' frec=',out)
+                                Rele_SSR[I][0].ChangeFrequency(out1)
+                            else:
+                                Rele_SSR[I][0].ChangeFrequency(100-out1)
+                                #print (' frec=',100-out1)
+                            break
+                except:
+                    print ('Error rele GPIO')
+                    print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out1)         
+
+            elif int(adr/100) == 5: #Rele Sonoff (tasmota)
+                try:
+                    if out == 100: out1 = "ON"
+                    else:          out1 = "OFF"
+                    client.publish("cmnd/PVControl/Reles/{adr}/POWER",str(out1))  # via MQTT
+                except:
+                    logBD(f'Error TASMOTA ON/OFF {adr}={out} - ´{out1}')
+            
+            elif int(adr/100) == 6: #Rele TASMOTA
+                try:
+                    out1 = calibracion_rele(adr,out)
+                    duty = int(out1 *10.23)
+                    #if out < 50: Freq = out 
+                    #else: Freq= 100 - out
+                    #client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PwmFrequency",str(Freq))  # Freq via MQTT 
+                    client.publish("cmnd/PVControl/Reles/"+str(adr)[0:2]+"/PWM"+str(adr)[-1],str(duty))  # Logica positiva PWM via MQTT 
+                    
+                except:
+                    logBD(f'Error TASMOTA AF / SC {adr}={out}') 
+    except:
+        log = f'Error no reconocido en activacion rele={adr} valor={out}  tipo={tipo}'
+        print (log)
+        logBD(log)        
          
     return out, cambio
 
@@ -1392,6 +1396,7 @@ try:
                         id_rele = rele_prio['id_rele']
                         valor = min(100,PWM_R/nreles_prio)
                         salto = rele_prio['salto']
+                        if salto == 0: salto = 1 # por si da error mientras se actualiza la BD
                         nivel_rele =  round(salto * (valor // salto),3) # resolucion hasta 0.001
                         Rele[id_rele] = min(PWM_R, nivel_rele)
                         

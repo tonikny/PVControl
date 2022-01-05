@@ -3,7 +3,7 @@
 
 # 2021-12-3  Manda un mensaje de informacion FV al Telegram
 #... uso habitual con crontab configurando archivo pvcontrol
-#....ese archivo debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
+#....el archivo pvcontrol debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
 
 import time, datetime
 import MySQLdb 
@@ -80,11 +80,15 @@ try:
     PWM=int(var[11])
     
    # RELES
-    sql_reles='SELECT * FROM reles'
-    nreles=cursor.execute(sql_reles)
-    nreles=int(nreles)  # = numero de reles
-    TR=cursor.fetchall()
-
+    sql_reles='SELECT * FROM reles ORDER BY id_rele'
+    TR = []
+    try:
+        nparametros=cursor.execute(sql_reles)
+        columns = [column[0] for column in cursor.description]      
+        for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
+    except:
+        pass      
+    
     ### CELDAS
     sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
     TC1 = []
@@ -139,34 +143,21 @@ while salir!=True and N<Nmax:
     L2=f'Iplaca={Iplaca:.1f}A - Ibat={Ibat:.1f}A - Vpl={Vplaca:.0f}'
     L3=f'Kwh: Placa={Wh_placa/1000:.1f} - Bat={Whp_bat/1000:.1f}-{Whn_bat/1000:.1f}={(Whp_bat-Whn_bat)/1000:.1f}'
             
-    L4='RELES('
-   
-    for I in range(nreles): # Reles wifi
-        Puerto=(TR[I][0]%10)-1
-        addr=int((TR[I][0]-Puerto)/10)
-        if int(addr/10)== 2:
-            valor=int(TR[I][3]/10)
-            if valor ==10:
-                texto='X'
-            else:
-                texto=str(valor)
-            L4=L4+texto
-    L4=L4+') ('
-
-    for I in range(nreles): # Reles i2C
-        Puerto=(TR[I][0]%10)-1
-        addr=int((TR[I][0]-Puerto)/10)
-        if int(addr/10)== 3:
-            valor=int(TR[I][3]/10)
-            if valor ==10:
-                texto='X'
-            else:
-                texto=str(valor)
-            L4=L4+texto
-            
-    L4 = L4 + ')'
-
-    #L5 =  Hora_BD + ' - T=' + str(round(Temp,1))+'ºC'
+    L4='RELES:'
+    
+    # Rele={2:'3X', 3:'XX0X', 7:'4'}
+    Rele = {}
+    for r in TR: # inicializando reles
+        id_rele = r['id_rele']
+        tipo_rele = int(id_rele/100)
+        if tipo_rele not in Rele.keys(): Rele[tipo_rele] = '' # inicializo valor
+        valor = f"{r['estado']/10:1.0f}"
+        if valor == '10': valor = 'X'
+        Rele[tipo_rele] += valor
+        
+    for r in Rele: L4 +=f'{r}({Rele[r]}) '
+    L4 = L4[:-1]
+    
     
     Temperaturas = str(round(Temp,1))+'//'
     for sensor in sensores:
@@ -199,7 +190,7 @@ while salir!=True and N<Nmax:
         Cmax = max(TC, key = TC.get) # clave del valor maximo
         Cmin = min(TC, key = TC.get) # clave del valor minimo
         
-        L_celdas += f'\nCmax={Cmax}:{TC[Cmax]:.3f}V -- Cmin={Cmin}:{TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+        L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V -- {Cmin}={TC[Cmin]:.3f}V -- {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
   
     
    ###Usando BOT
@@ -214,21 +205,8 @@ while salir!=True and N<Nmax:
         N=N+1
         if N == 10:
             pass
-            #En mi caso a los 10 intentos reinicio el router que lo tengo en el rele 334
-            """
-            sql = "UPDATE reles SET modo='OFF' WHERE id_rele=334 " 
-            cursor.execute(sql)
-            db.commit()
-            logBD("Apago rele del Router a los 10 intentos")
-            time.sleep(10)
-
-            sql = "UPDATE reles SET modo='PRG' WHERE id_rele=334 " 
-            cursor.execute(sql)
-            db.commit()
-            logBD("Enciendo rele del Router")
-            time.sleep(60)
-            """
-           
+            #poner aqui lo que se quiere hacer en caso de 10 intentos fallidos
+            
 #--------------------------------------------------
 
 if N>=Nmax: 
