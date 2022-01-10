@@ -543,6 +543,7 @@ except Exception as e:
 while True:
     errores = 0
     Estado['PVControl+'] = 'OK'
+    Estado['PVControl+_error'] = ''
     print()
     print (Fore.GREEN+'#' *80)
     print (Fore.CYAN+'Captura inicial de los sensores')
