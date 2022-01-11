@@ -182,12 +182,17 @@ protocolo_hibrido = [30]        # Nº de Protocolo del Hibrido (30 o 18)
 #########################
 ###### DALY ######
 #########################
-usar_daly = 0   # Poner el numero de celdas a monitorizar (0= desactivar)...diccionario = d_['DALY'] / servicio = fv_daly
-t_muestra_daly = 1 # segundos entre capturas para tabla en RAM 
-
-grabar_datos_daly = 1      # 1 = Graba la tabla ... 0 = No graba
-n_muestras_daly = 10        # grabar en BD en tabla permanente cada X capturas 
-dev_daly = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Hibrido
+usar_daly = 0                   # 1 = Se usa 0 = No se usa
+t_muestra_daly = 1              # segundos entre capturas para tabla en RAM 
+grabar_datos_daly = 1           # 1 = Graba la tabla ... 0 = No graba
+leer_soc_daly = 1               # 1 = leer soc ibat vbat .... 0 = NO SE USA
+leer_temp_daly = 0              # 1 = leer la temperaturas ... 0 = NO SE USA 
+leer_ciclos_daly = 1            # 1 = leer los ciclos el numero de celdas y varias cosas mas que no tengo claro = 0 NO SE USA
+leer_V_Max_Min_daly = 1         # 1 = leer el valor max y min de las celdas ... 0 = NO SE USA
+n_muestras_daly = 5             # grabar en BD en tabla permanente cada X capturas 
+Valor_error_max_daly = 4.5      # no grabar si alguna lectura da este valor
+Valor_error_min_daly = 2.8      # no grabar si alguna lectura da este valor
+dev_daly = "/dev/ttyUSB0"       # puerto donde reconoce la RPi al Hibrido
 
 
 # -----------------------------------------------

@@ -228,7 +228,7 @@ def leer_temp_bms():
 
 
     partes = struct.unpack('>b b b b 4x', respuesta)
-    
+   
     DALY['Temp_Max'] = partes[0] - 40
     DALY['Sensor_Max'] = partes[1]
     DALY['Temp_Min'] = partes[2] - 40
@@ -365,16 +365,16 @@ if usar_daly == 1: # 1 entra 0 no entraria dato declaro en parametros.py
                 Vcelda_min_actual = {'Celda': 'Cx', 'Valor': 100} 
                 Valor_Max_dia = [0] * N_celdas
                 Valor_Min_dia = [100] * N_celdas
-                if leer_ciclos == 1:leer_ciclos_bms()
+                if leer_ciclos_daly == 1:leer_ciclos_bms()
                 
 
 
             ee='58'
             ########lectura de los datos que queramos tener se configura en parametros_fv.py ##########
-            if leer_ciclos == 1:leer_ciclos_bms()       #lee los ciclos el numero de celdas y varias cosas mas que no tengo claro que son
-            if leer_soc == 1:leer_soc_bms()             #lee soc ibat vbat
-            if leer_temp == 1:leer_temp_bms()           #lee la temperaturas 
-            if leer_V_Max_Min == 1:leer_V_Max_Min_bms() #lee el valor max y min de las celdas
+            if leer_ciclos_daly == 1:leer_ciclos_bms()       #lee los ciclos el numero de celdas y varias cosas mas que no tengo claro que son
+            if leer_soc_daly == 1:leer_soc_bms()             #lee soc ibat vbat
+            if leer_temp_daly == 1:leer_temp_bms()           #lee la temperaturas 
+            if leer_V_Max_Min_daly == 1:leer_V_Max_Min_bms() #lee el valor max y min de las celdas
             
             #este lo leemo si o si es la lectura de las celdas.
             
@@ -426,7 +426,7 @@ if usar_daly == 1: # 1 entra 0 no entraria dato declaro en parametros.py
                 ee='70'
                 #comprobamos si el valor es mayor o menor al programado en parametros_fv.py para darlo como error de lectura
                 # y asi no desvirtualizar la realidad.
-                if Valor_error_max > DALY['Vceldamax']['Valor'] and Valor_error_min < DALY['Vceldamin']['Valor']:
+                if Valor_error_max_daly > DALY['Vceldamax']['Valor'] and Valor_error_min_daly < DALY['Vceldamin']['Valor']:
                     
                 
                     if grabar_datos_daly == 1 and n_muestras_daly_contador == n_muestras_daly-1:

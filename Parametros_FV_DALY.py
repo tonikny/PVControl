@@ -29,14 +29,14 @@ simular_reles = 0   # Simular reles fisicos
 ## Si se definen las claves 'Max' y 'Min' se enviara un log si la captura esta fuera de dichos margenes 
  
 sensores ={
-'Vbat'    : {'Equipo':"d_['ADS1']['Vbat']", 'Max':32, 'Min':0},     # Sensor de Voltaje bateria
-'Vplaca'  : {'Equipo':"d_['ADS1']['Vplaca']", 'Max':100, 'Min':0},  # Sensor de Voltaje placa
+'Vbat'    : {'Equipo':"d_['DALY']['Vbat']", 'Max':66, 'Min':11},     # Sensor de Voltaje bateria
+'Vplaca'  : {},  # Sensor de Voltaje placa
 
-'Ibat'    : {'Equipo':"d_['ADS4']['Ibat']", 'Max':200, 'Min':-200}, # Sensor de Intensidad bateria
-'Iplaca'  : {'Equipo':"d_['ADS4']['Iplaca']", 'Max':200, 'Min':-1}, # Sensor de Intensidad Placas
+'Ibat'    : {'Equipo':"d_['DALY']['Ibat']", 'Max':200, 'Min':-200}, # Sensor de Intensidad bateria
+'Iplaca'  : {}, # Sensor de Intensidad Placas
 
-'Aux1'  : {'Equipo':"d_['ADS1']['Aux1']", 'Max':100, 'Min':0},    # Sensor Aux1
-'Aux2'  : {'Equipo':"d_['ADS1']['Aux2']", 'Max':100, 'Min':0},    # Sensor Aux2
+'Aux1'  : {},    # Sensor Aux1
+'Aux2'  : {},    # Sensor Aux2
 'Aux3'  : {},    # Sensor Aux3
 'Aux4'  : {},    # Sensor Aux4
 'Aux5'  : {},    # Sensor Aux5
@@ -47,16 +47,18 @@ sensores ={
 'Ired' : {},   # Sensor Intensidad de red
 'EFF'  : {},   # Eficienca Conversion 
 
-'Wbat' : {'Equipo': "Ibat * Vbat"}, #  Potencia de/a baterias
-'Wplaca' : {'Equipo': "Iplaca * Vbat"}, #  Potencia de placas
-'Wred' : {'Equipo': "Ired * Vred"},     #  Potencia de/a red
-'Wconsumo': {'Equipo': "Wplaca-Wred-Wbat"}, # Consumo
+'Temp_Bat': {},  #  Sensor Temperatura
 
-'Temp_Bat': {'Equipo':"d_['TEMP']['Ds18b20']['Temp0']",'Max': 50, 'Min':-5},  #  Sensor Temperatura bateria
+# Expresiones calculadas
+'Wbat' : {'Equipo': "Ibat * Vbat"}, #  Potencia de/a baterias
+'Wplaca' : {}, #  Potencia de placas
+'Wred' : {'Equipo': "Ired * Vred"},     #  Potencia de/a red
+'Wconsumo': {}, # Consumo
 
 'Temp': {'Equipo':"Temp_Bat"}  #  Temperatura que se guarda en BD y muestra en reloj Web
 
 }
+
 
 # -----------------------------------------------
 
@@ -105,16 +107,16 @@ usar_mqtt_homeassistant = 0   # publica diccionario d_[FV] en topic PVControl/Da
 ###### Parametros Bateria ######
 ################################
 AH = 100.           # Capacidad en Ah de la Bateria a C20 (poner 0 para instalaciones sin Bateria)
-CP = 1              # Indice Peukert
-EC = 1              # Eficiencia Carga
-vsis = 2            # Voltaje sistema - 1=12V  2=24V   4=48V
+CP = 1.              # Indice Peukert
+EC = 1.              # Eficiencia Carga
+vsis = 4.            # Voltaje sistema - 1=12V  2=24V   4=48V
 vflotacion = 13.7   # Valor por defecto de flotacion a 25ºC a 12V (no se usa por ahora)
 # -----------------------------------------------
 
 #######################################################
 ###### Parametros ADS1115  - Permite hasta 4 ADS ######
 #######################################################
-usar_ADS = [1,1] # activar o no el ADS
+usar_ADS = [0,0] # activar o no el ADS
 nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
 direccion_ADS = [72,75]                                              # direccion I2C del ADS
 
@@ -124,9 +126,9 @@ tmuestra_ADS = [0.200,1]                                             # tiempo en
 rate_ADS = [[250,250,250,250],[250,250,250,250]]                     # datarate de lectura
 bucles_ADS = [[10,5,5,5], [4,2,4,2]]                                 # Numero de bucles de lectura
 
-gain_ADS = [[2,2,2,2], [16,2,16,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+gain_ADS = [[2,2,2,2], [2,2,2,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
 modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
-res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]            # ratio lectura ADS - Lectura real
+res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lectura ADS - Lectura real
 
 # -----------------------------------------------
 #########################
@@ -174,12 +176,14 @@ publicar_hibrido_mqtt = [1]     # Publica o no por MQTT los datos capturados del
 grabar_datos_hibrido = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
 n_muestras_hibrido = [1]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
+protocolo_hibrido = [30]        # Nº de Protocolo del Hibrido (30 o 18)
+
 # -----------------------------------------------
 
 #########################
 ###### DALY ######
 #########################
-usar_daly = 0                   # 1 = Se usa 0 = No se usa
+usar_daly = 1                   # 1 = Se usa 0 = No se usa
 t_muestra_daly = 1              # segundos entre capturas para tabla en RAM 
 grabar_datos_daly = 1           # 1 = Graba la tabla ... 0 = No graba
 leer_soc_daly = 1               # 1 = leer soc ibat vbat .... 0 = NO SE USA
@@ -190,6 +194,7 @@ n_muestras_daly = 5             # grabar en BD en tabla permanente cada X captur
 Valor_error_max_daly = 4.5      # no grabar si alguna lectura da este valor
 Valor_error_min_daly = 2.8      # no grabar si alguna lectura da este valor
 dev_daly = "/dev/ttyUSB0"       # puerto donde reconoce la RPi al Hibrido
+
 
 
 
@@ -321,6 +326,20 @@ grabar_datos_srne = 1      # 1 = Graba la tabla srne... 0 = No graba
 
 iplaca_srne_max = 85
 iplaca_srne_min = 0
+
+#####################
+###### SDM120C ######
+#####################
+
+## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
+## Si algun sensor usa sdm120c se debe poner usar_sdm120c = 1
+
+usar_sdm120c = [0] 
+dev_sdm120c = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
+t_muestra_sdm120c = [5]         # Tiempo en segundos entre muestras
+publicar_sdm120c_mqtt = [0]     # Publica o no por MQTT los datos capturados (no implementado aun)
+grabar_datos_sdm120c = [1]      # 1 = Graba la tabla Hibrido... 0 = No graba
+n_muestras_sdm120c = [1]        # grabar en BD cada nmuestras
 
 # -----------------------------------------------
 ##################
