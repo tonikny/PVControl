@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-26
+# Versión 2022-01-14
 
 import time,sys #, subprocess
 import traceback
@@ -131,34 +131,20 @@ def OLED(pantalla,modo):
         draw.text((4, 34),  'Vpla='+str(d_['FV']['Vplaca']), font=font, fill=255)
         draw.text((69, 34), 'Ipla='+str(d_['FV']['Iplaca']), font=font, fill=255)
 
-        L4 = 'R('
-        """
-        for r in d_['RELES']:
+        # Rele={2:'3X', 3:'XX0X', 7:'4'}
+        L4 = 'R='
+        Rele={}
         
-
-        for I in range(nreles): # Reles wifi
-            Puerto = (TR[I][0] % 10) - 1
-            addr = int((TR[I][0]-Puerto) / 10)
-            if int(addr/10) == 2:
-                valor = int(TR[I][3] / 10)
-                if valor == 10:
-                    texto ='X'
-                else:
-                    texto=str(valor)
-                L4=L4+texto
-        L4 = L4 + ')('
-        for I in range(nreles): # Reles i2C
-            Puerto = (TR[I][0] % 10) - 1
-            addr=int((TR[I][0] - Puerto) / 10)
-            if int(addr/10) == 3:
-                valor = int(TR[I][3] / 10)
-                if valor == 10:
-                    texto ='X'
-                else:
-                    texto = str(valor)
-                L4 = L4 + texto
-        L4 = L4 + ')'
-        """
+        for r in d_['RELES']:
+            tipo_rele = int(int(r)/100)
+            if tipo_rele not in Rele.keys(): Rele[tipo_rele] = '' # inicializo valor
+            valor = f"{d_['RELES'][r]['estado']/10:1.0f}"
+            if valor == '10': valor = 'X'
+            Rele[tipo_rele] += valor
+        
+        for r in Rele: L4 +=f'{r}{Rele[r]}-'
+        L4 = L4[:-1] 
+        
         draw.text((2, 49), L4, font=font11, fill=255)
 
     elif modo == 2:
@@ -186,8 +172,8 @@ def OLED(pantalla,modo):
         lineax=0
         lineay=0
         
-        for rele in d_['RELES']:
-            valor = float(rele[1])
+        for r in d_['RELES']:
+            valor = float(d_['RELES'][r]['estado'])
             if valor > 0:
                 fill1=0
                 fill2=255
@@ -195,7 +181,7 @@ def OLED(pantalla,modo):
                 fill1=255
                 fill2=0
             draw.rectangle((lineax, lineay, lineax+63, lineay+10), outline=255, fill=fill2)
-            draw.text((lineax+2, lineay), rele[0], font=font, fill=fill1)
+            draw.text((lineax+2, lineay), d_['RELES'][r]['nombre'], font=font, fill=fill1)
             lineay +=10
             if lineay>53:
                 lineax=66
