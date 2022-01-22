@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-02
+# Versión 2022-01-22
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fvbot'
@@ -87,7 +87,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                         orden_autorizada=1
                     else:
                         orden_autorizada=0
-                        bot.send_message( cid, 'Usuario no autorizado')
+                        bot.send_message( cid, f'Usuario {cid} no autorizado')
                         
                     #bot.send_message( cid, "Orden introducida "+tg_orden)
                     bot.send_chat_action(cid,'typing')
@@ -233,114 +233,9 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                     #------------------ ORDEN INFORMACION -----------------------
                     elif tipo_orden=='I':
                         try:
-                            ee ='i10'
-                            db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                            cursor = db.cursor()
-                            ee ='i20'
-                                    
-                            sql_reles='SELECT * FROM reles'
-                            nreles=cursor.execute(sql_reles)
-                            nreles=int(nreles)  # = numero de reles
-                            TR=cursor.fetchall()
-                            ee ='i30'
-
-                            sql_datos=('SELECT Tiempo,Ibat,Vbat,SOC,Aux1,Whp_bat,Whn_bat,Iplaca,Wh_placa,Temp,PWM'
-                                      ' FROM datos ORDER BY Tiempo DESC LIMIT 1')
-                            #print (sql_datos)
-
-                            ndatos=cursor.execute(sql_datos)
-                            TD=cursor.fetchone()
-                            
-                            ee ='i40'
-
-                            fecha=TD[0]
-                            ibat=TD[1]
-                            vbat=TD[2]
-                            soc=TD[3]
-                            aux1=TD[4]
-                            Whp_bat=TD[5]
-                            Whn_bat=TD[6]
-                            iplaca=TD[7]
-                            Wh_placa=TD[8]
-                            temp=TD[9]
-                            PWM=TD[10]
-                            ee ='i50'
-
-                            L1 = f'SOC={soc:.1f}% --Vbat={vbat:.1f}v -PWM={PWM:.0f}'
-                            print(L1)
-                            L2 = f'Iplaca={iplaca:.0f}A -- Ibat={ibat:.0f}A '
-                            print(L2)
-                            L3 = f'Kwh_placa={Wh_placa/1000:.1f} -- kWh_bat={(Whp_bat-Whn_bat)/1000:.1f}'
-                            print(L3)
-                            ee ='i60'
-                            L4='RELES('
-                       
-                            for I in range(nreles): # Reles wifi
-                                Puerto=(TR[I][0]%10)-1
-                                addr=int((TR[I][0]-Puerto)/10)
-                                if int(addr/10)== 2:
-                                    valor=int(TR[I][3]/10)
-                                    if valor ==10:
-                                        texto='X'
-                                    else:
-                                        texto=str(valor)
-                                    L4=L4+texto
-                            L4=L4+') ('
-                            ee ='i70'
-
-                            for I in range(nreles): # Reles i2C
-                                Puerto=(TR[I][0]%10)-1
-                                addr=int((TR[I][0]-Puerto)/10)
-                                if int(addr/10)== 3:
-                                    valor=int(TR[I][3]/10)
-                                    if valor ==10:
-                                        texto='X'
-                                    else:
-                                        texto=str(valor)
-                                    L4=L4+texto
-                                    
-                            L4 = L4 + ')'
-                            ee ='i80'
-
-                            temp_cpu = subprocess.getoutput('sudo /opt/vc/bin/vcgencmd measure_temp')
-                            temp_cpu=temp_cpu[0:len(temp_cpu)-2]
-                            L5='Temp='+str(round(temp,1))+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
-                            L6=str(fecha)
-                            
-                            ee ='i90'
-                            #### CELDAS
-                            sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
-                            nparametros=cursor.execute(sql)
-                            
-                            columns = [column[0] for column in cursor.description]
-                            TC1 = []
-                            for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
-                            ee ='i92'
-                            L_celdas = ''
-                            if len(TC1) > 0: # Hay datos de celdas
-                                TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
-                                if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = 'ERROR -' # añade ERROR si los datos son mas antiguos de 60sg
-                            
-                                del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
-                                del TC['id_celda']
-                                
-                                Cmax = max(TC, key = TC.get) # clave del valor maximo
-                                Cmin = min(TC, key = TC.get) # clave del valor minimo
-                                
-                                L_celdas += f'\nCmax={Cmax}={TC[Cmax]:.3f}V -- Cmin={Cmin}={TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
-                            
-                            ##### MENSAJE    
-                            ee ='i99'
-                            cursor.close()
-                            db.close()
-                            
-                            msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+L_celdas+'\n'+L6
-                            bot.send_message(cid, msg)
-
+                            exec(open("/home/pi/PVControl+/fvbot_msg.py").read())
                         except:
-                            msg= ee + 'No se puede leer la tabla datos con la orden recibida'
-                            bot.send_message( cid, msg)
-
+                            print ('Error en ejecucion de fvbot_msg.py')
                     #------------------ ORDEN PARAMETROS -----------------------
                     elif tipo_orden=='P':
                         try:
@@ -359,151 +254,63 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             except:
                                 #print('e')
                                 objeto_orden=''   
-                            
-                                                   
-                        #print(objeto_orden,orden)
-
-                        if objeto_orden=='':
+                        try:
                             db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
                             cursor = db.cursor()
+                            sql='SELECT * FROM parametros'
+                            nparametros=cursor.execute(sql)
+                            nparametros=int(nparametros)  # = numero de filas de parametros.---- debe ser 1
+            
+                            columns = [column[0] for column in cursor.description]
+                            TP1 = []
+                            for row in cursor.fetchall(): TP1.append(dict(zip(columns, row)))
+                            TP = TP1[0] # solo la primera fila
+             
+                        except:
+                            bot.send_message( cid, 'Error en lectura tabla parametros')
+                        
 
-                            sql_parametros=('SELECT * FROM parametros LIMIT 1')
-
-                            ndatos=cursor.execute(sql_parametros)
-                            TP=cursor.fetchone()
+                        if objeto_orden=='':
                             cursor.close()
                             db.close()
-                            L1='Tabla de parametros de la BD'
-                            L2='P1='+TP[0]+'..Grabar datos---S/N'#..ejm #P1=S'
-                            L3='P2='+TP[1]+'..Grabar reles---S/N'#..ejm #P2=S'
-                            L4='P3='+str(TP[2])+'..T_muestras en sg'#..ejm #P3=5'
-                            L5='P4='+str(TP[3])+'..N_muestras para grabar'#..ejm #P4=1'
-                            L6='P5='+str(TP[4])+'..Actualizar SOC'#..ejm #P5=95.7'
-                            L7='P6='+str(TP[5])+'..Actualizar Objetivo_PID'#..ejm #P6=28.8'
-                            L8='P7='+TP[6]+'..Actualizar Sensor_PID'#..ejm #P7=Vbat'
-                            L9='P8='+str(TP[7])+'..Actualizar Kp del PID'#..ejm #P8=50'
-                            L10='P9='+str(TP[8])+'..Actualizar Ki del PID'#..ejm #P9=0'
-                            L11='P10='+str(TP[9])+'..Actualizar Kd del PID'#..ejm #P10=25'
                             
-                            """
-                            print(TP)
-                            LP=''
-                            for I in range(8):
-                                LP=LP+str(TP[I])+'-'
-                            print(LP)    
-                            #Objetivo_PID=TP[5]
-                            #Sensor_PID=TP[6]
-                            """
+                            L='Tabla de parametros de la BD\n'
+                            np=0
+                            for p in TP:
+                                np += 1
+                                if columns[np-1] != 'id_parametros':
+                                    L += f'P{np}={TP[p]} -- {columns[np-1]}\n'
                             
-                            msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+'\n'+L6+'\n'+L7+'\n'+L8+'\n'+L9+'\n'+L10+'\n'+L11
-                            bot.send_message( cid, msg)
+                            L += ('\n### Ejemplos de comandos ###\n' +
+                            'P1=S    ..Grabar datos a Si\n' +
+                            'P2=N    ..Grabar reles a No\n' +
+                            'P3=5    ..T_muestras en 5 sg\n' +
+                            'P4=1    ..N_muestras para grabar a 1\n' +
+                            'P5=95.7 ..Actualizar SOC a 95.7%\n' +
+                            'P6=28.8 ..Actualizar Objetivo_PID a 28.8V\n' +
+                            'P7=Vbat ..Actualizar Sensor_PIDa Vbat\n' +
+                            'P8=10   ..Actualizar Kp del PID a 10\n' +
+                            '....\n' +
+                            'P12=28.8..Actualizar Vflot a 28.8V\n' +
+                            '....'
+                            )
                             
-                        # -------- Sub_Orden P5 SOC ---------
-                        elif objeto_orden=='5' and orden_autorizada==1:
-                            try:
-                                if float(orden)>100 or float(orden)<0:
-                                    raise
-                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                                cursor = db.cursor()
-
-                                sql = "UPDATE parametros SET nuevo_soc='"+orden+ "'"
-                                cursor.execute(sql)
-                                db.commit()
-                                msg='SOC puesto a '+ orden
-                                bot.send_message( cid, msg)
-
-                            except:
-                                msg='No se puede actualizar el SOC con la orden recibida   '+sql
-                                bot.send_message( cid, msg)
+                            bot.send_message( cid, L) 
                         
-                            
-                        # -------- Sub_Orden P6 Objetivo PID ---------
-                        elif objeto_orden=='6' and orden_autorizada==1:
+                        elif orden_autorizada==1:
+                            ncolumna= int(objeto_orden)
+                            sql = f"UPDATE parametros SET {columns[ncolumna-1]}='{orden}'"
                             try:
-                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                                cursor = db.cursor()
-
-                                sql = "UPDATE parametros SET objetivo_PID='"+orden+ "'"
                                 cursor.execute(sql)
                                 db.commit()
-                                msg='Objetivo_PID puesto a '+ orden
-                                bot.send_message( cid, msg)
-
+                                bot.send_message( cid, f'{columns[ncolumna-1]} puesto a {orden}')
                             except:
-                                msg='No se puede actualizar el Objetivo_PID con la orden recibida   '+sql
-                                bot.send_message( cid, msg)
-
-                        # -------- Sub_Orden P7 Sensor PID ---------
-                        elif objeto_orden=='7' and orden_autorizada==1:
-                            try:
-                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                                cursor = db.cursor()
-
-                                sql = "UPDATE parametros SET sensor_PID='"+orden+ "'"
-                                cursor.execute(sql)
-                                db.commit()
-                                msg='Sensor_PID puesto a '+ orden
-                                bot.send_message( cid, msg)
-
-                            except:
-                                msg='No se puede actualizar el Sensor_PID con la orden recibida   '+sql
-                                bot.send_message( cid, msg)
-
-                      # -------- Sub_Orden P8 Kp del PID ---------
-                        elif objeto_orden=='8' and orden_autorizada==1:
-                            try:
-                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                                cursor = db.cursor()
-
-                                sql = "UPDATE parametros SET Kp='"+orden+ "'"
-                                print(sql)
-                                cursor.execute(sql)
-                                db.commit()
-                                print('hecho')
-                                
-                                msg='Kp del PID puesto a '+ orden
-                                bot.send_message( cid, msg)
-
-                            except:
-                                msg='No se puede actualizar el Kp del PID con la orden recibida   '+sql
-                                bot.send_message( cid, msg)
-
-                        # -------- Sub_Orden P9 Ki del PID ---------
-                        elif objeto_orden=='9' and orden_autorizada==1:
-                            try:
-                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                                cursor = db.cursor()
-
-                                sql = "UPDATE parametros SET Ki='"+orden+ "'"
-                                cursor.execute(sql)
-                                db.commit()
-                                msg='Ki del PID puesto a '+ orden
-                                bot.send_message( cid, msg)
-
-                            except:
-                                msg='No se puede actualizar el Ki del PID con la orden recibida   '+sql
-                                bot.send_message( cid, msg)
-
-                        # -------- Sub_Orden P10 Kd del PID ---------
-                        elif objeto_orden=='10' and orden_autorizada==1:
-                            try:
-                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                                cursor = db.cursor()
-
-                                sql = "UPDATE parametros SET Kd="+orden#+ "'"
-                                print(sql)
-                                cursor.execute(sql)
-                                db.commit()
-                                print('Hecho Kd')
-                                
-                                msg='Kd del PID puesto a '+ orden
-                                bot.send_message( cid, msg)
-
-                            except:
-                                msg='No se puede actualizar el Kd del PID con la orden recibida   '+sql
-                                bot.send_message( cid, msg)
-
-
+                                bot.send_message( cid, f'Error en ejecucion orden: {sql}')
+                            cursor.close()
+                            db.close()
+                        else:
+                            bot.send_message( cid, msg)    
+                        
                     #------------------ ORDEN AYUDA -----------------------
                     elif tipo_orden=='?':
                         L1='--- ORDENES ACEPTADAS ---'
@@ -704,18 +511,20 @@ def command_teamviewer_r(m):
         Cmin = min(TC, key = TC.get) # clave del valor minimo
         
         
-    for x in TC: Valor_celdas += f'{x}:{TC[x]}--'   
-        
-   
-    #print(Nceldas)    
-    L_celdas += f'\n {Valor_celdas} \nCmax={Cmax}:{TC[Cmax]:.3f}V -- Cmin={Cmin}:{TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
-    
+    for x in TC:
+        l=''
+        if x == Cmax: l=' --MAX'   
+        elif x== Cmin:l=' --min'   
+        Valor_celdas += f'{x:3}:{TC[x]}V{l}\n'
+            
+    L_celdas += (f'\n<code>{Valor_celdas}</code>' + '-'*50+
+                 f'\n <b> Vbat={sum(TC.values()):.2f}V -- Dif= {(TC[Cmax]-TC[Cmin])*1000:.0f}mV </b> ')
     
     ##### MENSAJE    
     tg_msg=L_celdas
     
     #print (tg_msg)
-    bot.send_message(cid, tg_msg)
+    bot.send_message(cid, tg_msg, parse_mode="HTML")
     
     cursor.close()
     db.close()
@@ -725,112 +534,11 @@ def command_teamviewer_r(m):
 #------------- INFORMACION ---------------------------
 @bot.message_handler(commands=['i'])
 def command_i(m):
-    cid = m.chat.id
-
-    bot.send_chat_action(cid,'typing')
-
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
-
-    sql_reles='SELECT * FROM reles'
-    nreles=cursor.execute(sql_reles)
-    nreles=int(nreles)  # = numero de reles
-    TR=cursor.fetchall()
-
-    sql_datos=('SELECT Tiempo,Ibat,Vbat,SOC,Aux1,Whp_bat,Whn_bat,Iplaca,Wh_placa,Temp,PWM'
-              ' FROM datos ORDER BY Tiempo DESC LIMIT 1')
-    #print (sql_datos)
-
-    ndatos=cursor.execute(sql_datos)
-    TD=cursor.fetchone()
-
-    fecha=TD[0]
-    ibat=TD[1]
-    vbat=TD[2]
-    soc=TD[3]
-    aux1=TD[4]
-    Whp_bat=TD[5]
-    Whn_bat=TD[6]
-    iplaca=TD[7]
-    Wh_placa=TD[8]
-    temp=TD[9]
-    PWM=TD[10]
-
-    L1='SOC='+str(round(soc,1))+'% -- Vbat='
-    L1=L1+str(round(vbat,1))+'v -- Exc='
-    L1=L1+str(int(round(PWM,0)))
-
-    L2='Iplaca='+str(round(iplaca,1))+'A -- Ibat='
-    L2=L2+str(round(ibat,1))+'A'
-    
-
-    L3='Kwh_placa='+str(round(Wh_placa/1000,1))+' -- kWh_bat='
-    L3=L3+str(round((Whp_bat-Whn_bat)/1000,1))
-
-
-    L4='RELES('
-   
-    for I in range(nreles): # Reles wifi
-        Puerto=(TR[I][0]%10)-1
-        addr=int((TR[I][0]-Puerto)/10)
-        if int(addr/10)== 2:
-            valor=int(TR[I][3]/10)
-            if valor ==10:
-                texto='X'
-            else:
-                texto=str(valor)
-            L4=L4+texto
-    L4=L4+') ('
-
-    for I in range(nreles): # Reles i2C
-        Puerto=(TR[I][0]%10)-1
-        addr=int((TR[I][0]-Puerto)/10)
-        if int(addr/10)== 3:
-            valor=int(TR[I][3]/10)
-            if valor ==10:
-                texto='X'
-            else:
-                texto=str(valor)
-            L4=L4+texto
-            
-    L4 = L4 + ')'
-
-    temp_cpu = subprocess.getoutput('sudo /opt/vc/bin/vcgencmd measure_temp')
-    
-    temp_cpu=temp_cpu[0:len(temp_cpu)-2]
-    L5='Temp='+str(round(temp,1))+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
-    L6=str(fecha)+"/"+str(cid)
-    
-    #### CELDAS
-    #sql para sacar datos de vceldas 
-    sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
-    TC1 = []
     try:
-        nparametros=cursor.execute(sql)
-        columns = [column[0] for column in cursor.description]      
-        for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
+        exec(open("/home/pi/PVControl+/fvbot_msg.py").read())
     except:
-        pass      
-    L_celdas = ''
-    if len(TC1) > 0: # Hay datos de celdas
-        TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
-        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = '\n Error celdas desactualizadas' # añade ERROR si los datos son mas antiguos de 60sg
-    
-        del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
-        del TC['id_celda']
-        Cmax = max(TC, key = TC.get) # clave del valor maximo
-        Cmin = min(TC, key = TC.get) # clave del valor minimo
-        
-        L_celdas += f'\nCmax={Cmax}:{TC[Cmax]:.3f}V -- Cmin={Cmin}:{TC[Cmin]:.3f}V -- Dif={(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
-    
-    ##### MENSAJE    
-    tg_msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+L_celdas+'\n'+L6
-    
-    #print (tg_msg)
-    bot.send_message(cid, tg_msg)
-    
-    cursor.close()
-    db.close()
+        print ('Error en ejecucion de fvbot_msg.py')
+                            
     
 # -------- Funcion Tabla Parametros BD ------------
 @bot.message_handler(commands=['p'])

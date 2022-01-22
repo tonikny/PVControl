@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# 2021-12-3  Manda un mensaje de informacion FV al Telegram
+# 2022-01-21  Manda un mensaje de informacion FV al Telegram
 #... uso habitual con crontab configurando archivo pvcontrol
 #....el archivo pvcontrol debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
 
 import time, datetime
-import MySQLdb 
+import MySQLdb,json 
 
 import telebot # Librería de la API del bot.
 import requests # consulta ip publica
 #import commands # temperatura Cpu
+# Mensaje por defecto si no se especifoca en Parametros_FV.py
+msg_telegram = ["SOC={d_['FV']['SOC']:.1f}%- Vbat={d_['FV']['Vbat']:.1f}V- PWM={d_['FV']['PWM']:.0f}",
+                 "Iplaca={d_['FV']['Iplaca']:.1f}A - Ibat={d_['FV']['Ibat']:.1f}A - Vpl={d_['FV']['Vplaca']:.0f}",
+                 "Kwh: Placa={d_['FV']['Wh_placa']/1000:.1f} - Bat={d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}={(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}",
+                 "T={d_['FV']['Temp']}//{L_temp}",
+                 "{L_reles}",
+                 "{L_celdas}"
+                ]
 
 from Parametros_FV import *
 
@@ -25,7 +33,16 @@ sensores = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
 bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
 bot.skip_pending=True # Skip the pending messages
 
-cid=Aut[0] # poner el usuario donde queremos mandar el msg 
+try:
+    cid = m.chat.id
+except:
+    cid=Aut[0] # poner el usuario donde queremos mandar el msg 
+
+bot.send_chat_action(cid,'typing')
+ 
+DEBUG= False
+if '-p' in sys.argv: DEBUG= True 
+
 
 # --------------------- DEFINICION DE FUNCIONES --------------
 
@@ -55,39 +72,18 @@ def detect_public_ip(): # cambiar .... parece que ya no funciona
         return answer
 
     
-## RECUPERAR ULTIMO REGISTRO DE LA BD y SITUACION RELES ##
+## RECUPERAR REGISTROS EQUIPOS DE LA BD ##
 
 try:
-
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
-
-   #DATOS FV
-    sql='SELECT Tiempo,SOC,Vbat,Aux1,Ibat,Iplaca,Vplaca,Whp_bat,Whn_bat,Wh_placa,Temp,PWM FROM datos ORDER BY id DESC limit 1'
-    cursor.execute(sql)
-    var=cursor.fetchone()
-    Hora_BD=str(var[0])
-    SOC=float(var[1])
-    Vbat=float(var[2])
-    Aux1=float(var[3])
-    Ibat=float(var[4])
-    Iplaca=float(var[5])
-    Vplaca=float(var[6])
-    Whp_bat=float(var[7])
-    Whn_bat=float(var[8])
-    Wh_placa=float(var[9])
-    Temp=float(var[10])
-    PWM=int(var[11])
     
-   # RELES
-    sql_reles='SELECT * FROM reles ORDER BY id_rele'
-    TR = []
-    try:
-        nparametros=cursor.execute(sql_reles)
-        columns = [column[0] for column in cursor.description]      
-        for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
-    except:
-        pass      
+    d_={}
+    sql = 'SELECT * FROM equipos'
+    nequipos = int(cursor.execute(sql))
+    for row in cursor.fetchall(): 
+        d_[row[0]] = json.loads(row[2])
+        if row[0] == 'FV': fecha = row[1] # fecha del registro FV en BD
     
     ### CELDAS
     sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
@@ -100,66 +96,35 @@ try:
         pass      
     
 except Exception as e:
-    
-    Hora_BD='Error BD'
-    SOC=0
-    Vbat=0
-    Aux1=0
-    Ibat=0
-    Iplaca=0
-    Vplaca=0
-    Whp_bat=0
-    Whn_bat=0
-    Wh_placa=0
-    Temp=0
-    PWM=0
+    pass
 
-    nreles=0
+    
+# ------------------------ LECTURA FECHA / HORA ----------------------
 
 tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+diasemana = time.strftime("%w") 
+hora = time.strftime("%H:%M:%S")
 
-# -------------------------------- BUCLE PRINCIPAL --------------------------------------
+# ----------- Lineas preformateadas ------------------------
 
-salir=False
-N=1
-Nmax=28
-               
-while salir!=True and N<Nmax:
-
-    #print (salir,N)
-    
-    # ------------------------ LECTURA FECHA / HORA ----------------------
-
-    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-    diasemana = time.strftime("%w") 
-    hora = time.strftime("%H:%M:%S")
-    
-    # ----------- MSG TELEGRAM ------------------------
-    
-    if SOC==100: SOC = '100'
-    else: SOC = f'{SOC:.1f}' 
-    
-    L1=f'SOC={SOC}% - Vbat={Vbat:.1f}v -PWM={PWM:.0f}'
-    L2=f'Iplaca={Iplaca:.1f}A - Ibat={Ibat:.1f}A - Vpl={Vplaca:.0f}'
-    L3=f'Kwh: Placa={Wh_placa/1000:.1f} - Bat={Whp_bat/1000:.1f}-{Whn_bat/1000:.1f}={(Whp_bat-Whn_bat)/1000:.1f}'
-            
-    L4='RELES:'
-    
-    # Rele={2:'3X', 3:'XX0X', 7:'4'}
-    Rele = {}
-    for r in TR: # inicializando reles
-        id_rele = r['id_rele']
-        tipo_rele = int(id_rele/100)
+try:
+    # Reles
+    L_reles = 'Reles:'
+    Rele={}
+    for r in d_['RELES']:
+        tipo_rele = int(int(r)/100)
         if tipo_rele not in Rele.keys(): Rele[tipo_rele] = '' # inicializo valor
-        valor = f"{r['estado']/10:1.0f}"
+        valor = f"{d_['RELES'][r]['estado']/10:1.0f}"
         if valor == '10': valor = 'X'
         Rele[tipo_rele] += valor
-        
-    for r in Rele: L4 +=f'{r}({Rele[r]}) '
-    L4 = L4[:-1]
-    
-    
-    Temperaturas = str(round(Temp,1))+'//'
+
+    for r in Rele: L_reles +=f'{r}({Rele[r]}) '
+    L_reles = L_reles[:-1] 
+except:
+    L_reles = 'Error L_reles'
+
+try:
+    Temperaturas = ''
     for sensor in sensores:
       tfile = open(sensor)
       texto = tfile.read()
@@ -169,35 +134,63 @@ while salir!=True and N<Nmax:
       temp_s = float(temp_datos[2:])/1000
       Temperaturas = Temperaturas + str(round(temp_s,1)) + '/'
       #print ("sensor", sensor, "=", temp_s, " grados.")
-    
+
     temp_cpu = subprocess.getoutput('sudo /opt/vc/bin/vcgencmd measure_temp')
     temp_cpu=temp_cpu[0:len(temp_cpu)-2]
-    
-    L5 = 'T='+Temperaturas+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
 
-    #L6 =  'IP = '+ str(detect_public_ip())
-    
+    L_temp = Temperaturas+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
+
+except:
+    L_temp = 'Error L_temp'
+ 
+try:
+    #### IP
+    L_ip = 'IP=' + str(detect_public_ip())
+except:
+    L_ip = 'Error L_ip'
+
+try:
     #### CELDAS
-    
     L_celdas = ''
     if len(TC1) > 0: # Hay datos de celdas
         TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
-        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60: L_celdas = '\n Error celdas desactualizadas' # añade ERROR si los datos son mas antiguos de 60sg
-    
+        if datetime.datetime.timestamp(TC['Tiempo']) < time.time() - 60:
+            L_celdas = '<b><i>**Error celdas desactualizadas**</i></b>\n' # añade ERROR si los datos son mas antiguos de 60sg
+
         del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
         del TC['id_celda']
         
         Cmax = max(TC, key = TC.get) # clave del valor maximo
         Cmin = min(TC, key = TC.get) # clave del valor minimo
         
-        L_celdas += f'\n{Cmax}={TC[Cmax]:.3f}V -- {Cmin}={TC[Cmin]:.3f}V -- {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
-  
-    
-   ###Usando BOT
-    tg_msg = L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5 +L_celdas #+'\n'+L6
+        L_celdas += f'{Cmax}={TC[Cmax]:.3f}V -- {Cmin}={TC[Cmin]:.3f}V -- {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+
+except:
+    L_celdas = 'Error L_celdas'
+
+try:
+    ### Composicion mensaje
+    tg_msg = ''
+    for l in msg_telegram:
+        ee = l
+        if DEBUG:
+            print (f'{l}')
+            print(eval(f'f"{l}"'))
+            print('-' * 50)
+        tg_msg += eval(f'f"{l}"')+ '\n'
+
+except:
+    tg_msg = f'Error en mensaje {ee}'
+# -------------------------------- BUCLE ENVIO MSG --------------------------------------
+
+salir=False
+N=1
+Nmax=28
+
+while salir!=True and N<Nmax:
 
     try:               
-        bot.send_message( cid, tg_msg)
+        bot.send_message( cid, tg_msg, parse_mode="HTML")
         salir=True
     except:
         salir=False
