@@ -940,7 +940,7 @@ try:
             except:
                 pass
                 
-            try:
+            """ try:
                 ee=30.5
                 if usar_srne == 1:
                     d_srne = Srne.get_datos()
@@ -948,7 +948,7 @@ try:
                         logBD('error lectura archivo ram SRNE')
                         continue
             except:
-                pass
+                pass """
                 
             # LECTURA SENSORES EQUIPOS
             ee=34
