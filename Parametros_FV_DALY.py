@@ -123,13 +123,12 @@ direccion_ADS = [72,75]                                              # direccion
 var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
 
 tmuestra_ADS = [0.200,1]                                             # tiempo en sg entre capturas
-rate_ADS = [[250,250,250,250],[250,250,250,250]]                     # datarate de lectura
+rate_ADS = [[250,250,250,250],[64,64,64,64]]                         # datarate de lectura
 bucles_ADS = [[10,5,5,5], [4,2,4,2]]                                 # Numero de bucles de lectura
 
-gain_ADS = [[2,2,2,2], [2,2,2,2]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+gain_ADS = [[2,2,2,2], [16,2,16,2]]                                  # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
 modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
-res_ADS = [[47.46,47.46,47.46,47.46],[100/75,0,100/75,0]]            # ratio lectura ADS - Lectura real
-
+res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]      # ratio: 47,46 * lectura_real / lectura_ADS  # Shunts: Amp / Vol
 # -----------------------------------------------
 #########################
 ###### Multiplexor ######
