@@ -86,7 +86,7 @@ $filas = count($rawdata);
 $(document).ready(function() {
     $('#example').DataTable({
         "order": [[ 0, "asc" ]],
-        "scrollY": "800px",
+        "scrollY": false,
         "scrollCollapse": true,
         "scrollX": true,
         "info":    false,
