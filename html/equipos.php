@@ -7,7 +7,7 @@ $ActualizarDespuesDe = 20;
 header('Refresh: '.$ActualizarDespuesDe);
 
 
-$titulo="Diario";
+$titulo="Equipos";
 include ("cabecera.inc");
 
 require('conexion.php');

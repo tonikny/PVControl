@@ -127,6 +127,7 @@ class Srne:
                                     'Estado':Estado,'SoC':SoC,
                                     'Temp0':Tbat,'Temp1':Treg}
                     datos_equipos = {'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca,
+                                    'Wplaca':Wplaca, 'Ipanel':Ipanel,
                                     'Estado':Estado,'SoC':SoC,
                                     'Temp0':Tbat,'Temp1':Treg}
 
