@@ -25,7 +25,7 @@ for f in glob.glob(carpeta):
 #Paginas web
 print()
 print(Fore.YELLOW+'######## Activando WEB PVControl+ #########')
-res = subprocess.run(['sudo','rm', '/var/www/html'])
+res = subprocess.run(['sudo','rm', '-R','/var/www/html'])
 res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/html','/var/www'])
 print (Fore.GREEN+ '  ---- OK -----')
 #Crontab

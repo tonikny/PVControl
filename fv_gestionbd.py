@@ -23,6 +23,10 @@ from datetime import datetime
 carpeta = '/home/pi/PVControl+/backBD/'
 comodin_borrado = 'PV*.*'
 
+if not os.path.exists(carpeta):
+    os.makedirs(carpeta)
+    print (f'Creada carpeta {carpeta}')    
+
 ####################################################
 #instalar pv (barra progreso) si no esta instalado
 res = subprocess.run('dpkg -s pv', shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
@@ -47,14 +51,20 @@ def borrar_ficheros(carpeta, dias=10): # borra ficheros mas antiguos de X dias e
 
 def vaciar_tablas():
     try: # tuplas de [nombre tabla, dias maximos de antiguedad de registros]
+        # tablas con campo tiempo (fecha/hora)
         tablas=[
                 ['datos_s',10],
                 ['datos',366],
-                ['reles_segundos_on',366],
                 ['reles_grab',366],
                 ['log',30],
                 ['hibrido',366]
                ]
+               
+        # tablas con campo fecha
+        tablas_d=[
+                  ['reles_segundos_on',366],
+                 ]      
+               
         error='conexion BD'
         db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
         cursor = db.cursor()
@@ -67,8 +77,21 @@ def vaciar_tablas():
             except:
                 print(f'Error en borrado de tabla {t}')
             db.commit()
+        
+        for t in tablas_d:
+            error = f'borrando tabla {t[0]}'
+            sql = f"DELETE FROM {t[0]} WHERE fecha < SUBDATE(NOW(),INTERVAL {t[1]} DAY)"
+            try:
+                cursor.execute(sql)
+            except:
+                print(f'Error en borrado de tabla {t}')
+            db.commit()
+            
+            
             #print (error)        
         #print ('vaciado de tablas ejecutado correctamente')
+       
+        
 
     except Exception as e:
         log='Error en limpieza de tablas'+error
