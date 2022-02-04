@@ -134,11 +134,13 @@ try:
       temp_s = float(temp_datos[2:])/1000
       Temperaturas = Temperaturas + str(round(temp_s,1)) + '/'
       #print ("sensor", sensor, "=", temp_s, " grados.")
-
-    temp_cpu = subprocess.getoutput('sudo /opt/vc/bin/vcgencmd measure_temp')
-    temp_cpu=temp_cpu[0:len(temp_cpu)-2]
-
-    L_temp = Temperaturas+'ºC -- CPU='+temp_cpu[5:] +'ºC'   
+    
+    temp_cpu = 0
+    with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+        temp_cpu = float(f.read())/1000
+        
+    L_temp = f'{Temperaturas} -- CPU={temp_cpu:.1f}ºC' 
+      
 
 except:
     L_temp = 'Error L_temp'
