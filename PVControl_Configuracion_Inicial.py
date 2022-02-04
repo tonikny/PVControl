@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-24
+# Versión 2022-02-04
 
 import time,sys,os,glob
 import MySQLdb 
@@ -116,7 +116,18 @@ if s != 99:
     else:
         msg = proceso.stderr
     print (msg)
-
+    
+    
+    try:
+        exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                    
+    except:
+        print (Fore.RED+' Error de sintaxis en el archivo Parametros_FV.py')
+        print('Corrija dicho archivo e inicie de nuevo el programa de configuracion')
+        print ('.... Abortando')
+        sys.exit()
+    
+    
     continuar = click.prompt('pulsa un tecla para seguir una vez finalizada la edicion de Parametros_FV.py.....    ', type=str, default=' ')
 
 # Actualizar enlaces escritorio
@@ -154,8 +165,9 @@ print(Fore.RED+'ES MUY IMPORTANTE DEFINIR LOS CAMPOS DE CONTROL DE EXCEDENTES AC
 print ('LEA EL MANUAL SI TIENE DUDAS DE LO QUE TIENE QUE PONER')
 #print(Fore.YELLOW+' iNTRODMODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de geany para continuar')
 print('#' * 80)
-        
+
 sensor_PID = click.prompt(Fore.YELLOW+'Introduce la variable de control de excedentes ', type=str, default='Vbat')
+
 if sensor_PID == 'Vbat':
     Vabs = 14.4 * vsis
     Vflot = 13.2 * vsis
@@ -167,6 +179,8 @@ if sensor_PID == 'Vbat':
     Vflot = click.prompt('Introduce valor de Vflot.. ', type=float, default=Vflot)
     Vequ = click.prompt('Introduce valor de Vequ.. ', type=float, default=Vequ)
     Tabs = click.prompt('Introduce valor de Tabs.. ', type=float, default=Tabs)
+    Objetivo_PID = click.prompt('Introduce valor de Objetivo_PID.. ', type=float, default=Vabs)
+    
     
 else:
     Vabs = Vflot = Vequ = Objetivo_PID =0
