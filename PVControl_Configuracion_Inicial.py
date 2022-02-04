@@ -99,8 +99,10 @@ if s != 99:
         
     print()
     print('#' * 80)
-    print (Fore.YELLOW+'Como primer paso se abrira en el editor de textos "geany" el archivo Parametros_FV.py.....')
+    print (Fore.YELLOW+'Como primer paso se abrira con "Thonny" el archivo Parametros_FV.py.....')
     print ()
+    print ('.... asegure ejecutando el archivo y que no de error  antes de salir de Thonny')
+        
     print(Fore.RED+'ES MUY IMPORTANTE RELLENAR BIEN ESTE ARCHIVO SIN ERRORES DE SINTAXIS')
     print ('LEA EL MANUAL SI TIENE DUDAS DE COMO RELLENAR EL ARCHIVO')
     print(Fore.YELLOW+' MODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de geany para continuar')
@@ -108,7 +110,7 @@ if s != 99:
 
     continuar = click.prompt('pulsa una tecla para seguir.....    ', type=str, default=' ')
     
-    comando = f"geany {fichero1}"
+    comando = f"thonny {fichero1}"
     print ("Comando: ", comando)
     proceso = subprocess.run(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if proceso.returncode==0:
@@ -121,15 +123,16 @@ if s != 99:
 
 while True:
     try:
-       exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py
+       exec(open(fichero1).read(),globals()) #recargo Parametros_FV.py
        break
                         
     except:
         print (Fore.RED+' Error de sintaxis en el archivo Parametros_FV.py')
-        print ()
+        print ('LEÑE .... asegure ejecutando el archivo y que no de error  antes de salir de Thonny')
+    
         continuar = click.prompt('pulsa un tecla para editar de nuevo Parametros_FV.py.....    ', type=str, default=' ')
         
-        comando = "geany Parametros_FV.py"
+        comando = f"thonny {fichero1}"
         proceso = subprocess.run(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if proceso.returncode==0:
             msg = proceso.stdout

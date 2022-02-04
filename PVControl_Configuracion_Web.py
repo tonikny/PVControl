@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-24
+# Versión 2022-02-04
 
 import time,sys,os
 import MySQLdb 
@@ -56,7 +56,7 @@ else:
     print()
     
     if usar_mux+ usar_daly + usar_diybms > 0:
-        print (Fore.CYAN + 'Se ha dado de alta control de ' + Fore.RED, usar_mux, 'Celdas'+ Fore.CYAN,
+        print (Fore.CYAN + 'Se ha dado de alta control de Celdas'+ Fore.CYAN,
            ' por lo que se configura la WEb como')
         print (Fore.RED+' ------ FV CON BATERIA y CONTROL CELDAS -------')
         version="CC";

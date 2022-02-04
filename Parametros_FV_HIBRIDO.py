@@ -182,12 +182,17 @@ protocolo_hibrido = [30]        # Nº de Protocolo del Hibrido (30 o 18)
 #########################
 ###### DALY ######
 #########################
-usar_daly = 0   # Poner el numero de celdas a monitorizar (0= desactivar)...diccionario = d_['DALY'] / servicio = fv_daly
-t_muestra_daly = 1 # segundos entre capturas para tabla en RAM 
-
-grabar_datos_daly = 1      # 1 = Graba la tabla ... 0 = No graba
-n_muestras_daly = 10        # grabar en BD en tabla permanente cada X capturas 
-dev_daly = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Hibrido
+usar_daly = 0                   # 1 = Se usa 0 = No se usa
+t_muestra_daly = 1              # segundos entre capturas para tabla en RAM 
+grabar_datos_daly = 1           # 1 = Graba la tabla ... 0 = No graba
+leer_soc_daly = 1               # 1 = leer soc ibat vbat .... 0 = NO SE USA
+leer_temp_daly = 0              # 1 = leer la temperaturas ... 0 = NO SE USA 
+leer_ciclos_daly = 1            # 1 = leer los ciclos el numero de celdas y varias cosas mas que no tengo claro = 0 NO SE USA
+leer_V_Max_Min_daly = 1         # 1 = leer el valor max y min de las celdas ... 0 = NO SE USA
+n_muestras_daly = 5             # grabar en BD en tabla permanente cada X capturas 
+Valor_error_max_daly = 4.5      # no grabar si alguna lectura da este valor
+Valor_error_min_daly = 2.8      # no grabar si alguna lectura da este valor
+dev_daly = "/dev/ttyUSB0"       # puerto donde reconoce la RPi al Hibrido
 
 
 # -----------------------------------------------
@@ -380,6 +385,16 @@ Aut = [111111,22222] # Lista de ID de Telegram autorizados
 cid_alarma = 1111111 # # Id Telegram a donde se enviara la foto/video de alarma
 
 msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora -- 0 = No manda mensaje
+
+msg_telegram = ["<b>SOC={d_['FV']['SOC']:.1f}%</b>- Vbat={d_['FV']['Vbat']:.1f}V- PWM={d_['FV']['PWM']:.0f}",
+                "Iplaca={d_['FV']['Iplaca']:.1f}A - Ibat={d_['FV']['Ibat']:.1f}A - Vpl={d_['FV']['Vplaca']:.0f}",
+                "Kwh: Placa={d_['FV']['Wh_placa']/1000:.1f} - Bat={d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}={(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}",
+                "T={d_['FV']['Temp']}//{L_temp}",
+                "{L_reles}",
+                "{L_celdas}",
+                "{L_ip}"
+               ]
+
 # -----------------------------------------------
 
 #########################
