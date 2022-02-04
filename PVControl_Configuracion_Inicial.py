@@ -116,19 +116,28 @@ if s != 99:
     else:
         msg = proceso.stderr
     print (msg)
-    
-    
+        
+    continuar = click.prompt('pulsa un tecla para seguir una vez finalizada la edicion de Parametros_FV.py.....    ', type=str, default=' ')
+
+while True:
     try:
-        exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-                    
+       exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py
+       break
+                        
     except:
         print (Fore.RED+' Error de sintaxis en el archivo Parametros_FV.py')
-        print('Corrija dicho archivo e inicie de nuevo el programa de configuracion')
-        print ('.... Abortando')
-        sys.exit()
-    
-    
-    continuar = click.prompt('pulsa un tecla para seguir una vez finalizada la edicion de Parametros_FV.py.....    ', type=str, default=' ')
+        print ()
+        continuar = click.prompt('pulsa un tecla para editar de nuevo Parametros_FV.py.....    ', type=str, default=' ')
+        
+        comando = "geany Parametros_FV.py"
+        proceso = subprocess.run(comando, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if proceso.returncode==0:
+            msg = proceso.stdout
+        else:
+            msg = proceso.stderr
+        print (msg)
+            
+
 
 # Actualizar enlaces escritorio
 res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Arrancar_Servicios_PVControl+.sh'])
@@ -143,7 +152,7 @@ res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVC
 # ######## ACTUALIZACION BD (CAMPOS,..) 
 try:
     print ()
-    print(' Actualizaciones en BD pendientes desde imagen')
+    print(Fore.GREEN+' Actualizaciones en BD pendientes desde imagen')
     
     import Actualizar_BD # lo pongo en programa aparte para poder ejecutarse por separado
     
