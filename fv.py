@@ -973,13 +973,6 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue
 
-            ee=30.5
-            if usar_srne == 1:
-                d_srne = Srne.get_datos()
-                if d_srne is None:
-                    logBD('error lectura archivo ram SRNE')
-                    continue
-            
             # LECTURA SENSORES EQUIPOS
             ee=34
             for sensor in sensores:

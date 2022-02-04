@@ -5,8 +5,8 @@ import time
 import sys, subprocess
 import logging, traceback
 from Bd import *
-import pickle
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
+import json
 
 from Parametros_FV import *
 
@@ -24,7 +24,6 @@ FREQ_BD = 5 #seg
 # nivel de depuración (logging.CRITICAL, .ERROR, .WARNING, .INFO, .DEBUG)
 DEBUG_LEVEL = logging.WARNING
 
-archivo_ram = '/run/shm/datos_srne.pkl'
 #--------------------------------------------------------------------
 
 ##
@@ -78,16 +77,6 @@ class Srne:
                         }
             return estados[codigo]
 
-    @staticmethod
-    def get_datos():
-        try:
-            with open(archivo_ram, 'rb') as f:
-                datos = pickle.load(f)
-        except:
-            datos = None
-            logging.warning (__class__.__name__ +':Error lectura '+archivo_ram)
-        return datos
-
     ##
     # Guardar datos en archivo ram y base de datos
     def guardarDatosBd (self):
@@ -137,9 +126,25 @@ class Srne:
                                     'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca,
                                     'Estado':Estado,'SoC':SoC,
                                     'Temp0':Tbat,'Temp1':Treg}
-                    # escribir archivo ram
-                    with open(archivo_ram, 'wb') as f:
-                        pickle.dump(self.datos, f)
+                    datos_equipos = {'Vbat':Vbat, 'Vplaca':Vplaca, 'Iplaca':Iplaca,
+                                    'Wplaca':Wplaca, 'Ipanel':Ipanel,
+                                    'Estado':Estado,'SoC':SoC,
+                                    'Temp0':Tbat,'Temp1':Treg}
+
+                    # escribir tabla equipos en Bd
+                    try:
+                        salida = json.dumps(datos_equipos)
+                        sql = (f"SELECT COUNT(*) FROM equipos WHERE id_equipo = 'SRNE'")
+                        self.bd.cursor.execute(sql)
+                        result = self.bd.cursor.fetchone()
+                        if result[0]==0:
+                            sql = (f"INSERT INTO equipos (id_equipo, tiempo, sensores) VALUES ('SRNE', '{tiempo}', '{salida}')")
+                        else:
+                            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'SRNE'") # grabacion en BD RAM
+                        self.bd.cursor.execute(sql)
+                        #db.commit()
+                    except:
+                        print(f'error, Grabacion tabla RAM equipos en SRNE')
                     logging.info ("Datos: %s %s %s %s %s %s %s", str(Vbat), str(Vplaca), str(Iplaca),Estado, str(SoC), str(Tbat), str(Treg))
                     
                     # En la Bd guardamos los estados del protocolo SRNE
