@@ -13,7 +13,6 @@ import pickle,json
 from smbus import SMBus
 
 import telebot # Librería de la API del bot.
-from telebot import types # Tipos para la API del bot.
 import token
 import paho.mqtt.client as mqtt
 

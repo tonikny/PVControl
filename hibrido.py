@@ -9,13 +9,16 @@ import serial
 import subprocess
 import timeout_decorator
 
+# Supresion de warning de crc16, TODO: cambiar la libreria, está obsoleta
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 from crc16 import crc16xmodem
+
 from struct import pack
 from traceback import format_exc
 
 import MySQLdb 
 import telebot # Librería de la API del bot.
-from telebot import types # Tipos para la API del bot.
 import token
 import paho.mqtt.client as mqtt
 
