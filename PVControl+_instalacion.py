@@ -138,7 +138,7 @@ print (Fore.GREEN+ '  ---- OK -----')
 #Escritorio
 print()
 print(Fore.YELLOW+'######## Enlaces en escritorio #########')
-res = subprocess.run(['ln', '-s','/home/pi/PVControl+/PVControl+_instalacion.py','/home/pi/Desktop/PVControl+_instalacion.py'])
+res = subprocess.run(['ln', '-s','/home/pi/PVControl+/PVControl_Configuracion_Inicial.py','/home/pi/Desktop/PVControl_Configuracion_Inicial.py'])
 res = subprocess.run(['ln', '-s','/home/pi/PVControl+/Arrancar_servicios_PVControl+.py','/home/pi/Desktop/Arrancar_servicios_PVControl+.py'])
 res = subprocess.run(['ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVControl+.py','/home/pi/Desktop/Parar_Servicios_PVControl+.py'])
 res = subprocess.run(['ln', '-s','/home/pi/PVControl+/Ver_Programas_en_Ejecucion_PVControl+.sh','/home/pi/Desktop/Ver_Programas_en_Ejecucion_PVControl+.sh'])
