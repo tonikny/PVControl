@@ -61,7 +61,10 @@ except:
 def leer_datos():
 	
 	try:
-		
+		Vred = sb.read_holding_registers(30783, 2)
+		Vred = Vred[1]
+		if Vred == 65535:Vred = 230
+		else: Vred = Vred*0.01
 		P = sb.read_holding_registers(30775, 2)
 		P = P[1]
 		VP1 = sb.read_holding_registers(30771, 2)
@@ -72,15 +75,16 @@ def leer_datos():
 		VP2 = round(VP2[1] * 0.01,2)
 		IP2 = sb.read_holding_registers(30957, 2)
 		IP2 = round(IP2[1] * 0.001,2)
-		
-		
+		Wred1 = sb.read_holding_registers(30865, 2)
+		Wred2 = sb.read_holding_registers(30867, 2)
+		Wred = -Wred1[1] + Wred2[1]
 		datos = {'Iplaca1': IP1,'Vplaca1': VP1,'Iplaca2': IP2,'Vplaca2': VP2,
-			'Wplaca': P}
+			'Wplaca': P,'Wred':Wred,'Vred':Vred}
 		#print(datos)
 
 	except:
 		pass
-		
+		print('err')
 	if datos !=None:
 		return(datos)
 	else:
@@ -120,14 +124,3 @@ while True:
 		pass
 	    
 	time.sleep(5)
-
-	
-	
-	
-        
-        
-	
-	
-	
-	
-
