@@ -431,7 +431,7 @@ def on_message(client, userdata, msg):
                                 del Datos_BD['Bat_Power_Direction']
                                 del Datos_BD['Line_Power_Direction']
                             
-                            print ('Datos_BD=',Datos_BD)
+                            #print ('Datos_BD=',Datos_BD)
                             campos = ",".join(Datos_BD.keys())
                             valores = "','".join(str(v) for v in Datos_BD.values())
                             Sql = f"INSERT INTO hibrido{N_Hibrido} ("+campos+") VALUES ('"+valores+"')"
