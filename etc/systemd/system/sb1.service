@@ -1,0 +1,11 @@
+[Unit]
+Description= PVControl+ - Lectura SB1
+After=mysql.service
+
+[Service]
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/sb.py SB1
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
