@@ -1,0 +1,55 @@
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name command to be executed
+
+###############################################################
+# Procesos BD - Actualizacion tablas diario, soh, datos_c ....
+# ###############            
+32 5    * * *   pi    python3 /home/pi/PVControl+/fv_gestionbd.py -v -c -b
+
+28 *    * * *   root    python3 /home/pi/PVControl+/diario.py
+58 *    * * *   root    python3 /home/pi/PVControl+/diario.py
+10 0    * * *   root    python3 /home/pi/PVControl+/diario_ayer.py
+23 23   * * *   root    python3 /home/pi/PVControl+/diario_ayer.py
+
+03 1    * * *   root    python3 /home/pi/PVControl+/fv_soh.py
+2-59/15 *  * * *   root    python3 /home/pi/PVControl+/fv_comprimir_BD.py
+
+# ##################################################
+# Mandar mensaje periodico Telegram
+# ###############
+00 *    * * *   root    python3 /home/pi/PVControl+/fvbot_msg.py
+
+# ##################################################
+# Mandar informacion a PVOutput.org
+# ###############
+#1-59/5 *  * * *   root    python3 /home/pi/PVControl+/pvoutput_live.py
+
+# ##################################################
+# Reinicio servicios periodicos
+# ###############
+#32 *    * * *   root    systemctl restart fvbot
+33 *    * * *   root    systemctl restart fv_oled
+34 *    * * *   root    systemctl restart fv_temp
+
+# #################################################################################
+# EJEMPLOS de uso de crontab para mandar comandos al Hibrido, actualizar reles etc
+# ###############
+#10 09   * * *   root    python /home/pi/PVControl+/fvbot_msg_hibrido.py PCVV29.2 PCVV29.2 PBFT29.2 >> /home/pi/log/log.txt 2>&1
+#10 13   * * *   root    python /home/pi/PVControl+/fvbot_msg_hibrido.py PBFT26.7 PBFT26.9 PCVV29.2 >> /home/pi/log/log.txt 2>&1
+
+#00 09    * * *   root    python3 /home/pi/PVControl+/python3 fv_cambiar_modo_rele.py 251 ON
+#00 10    * * *   root    python3 /home/pi/PVControl+/python3 fv_cambiar_modo_rele.py 251 PRG
+
+# ############################################
+# Uso para copiar BD a una Rpi "espejo" por vpn
+# #################
+#*/10 *    * * *   root    python3 /home/pi/PVControl+/fv_copiaBD.py
