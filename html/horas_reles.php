@@ -9,7 +9,7 @@ require('conexion.php');
 
 date_default_timezone_set("UTC");
 
-$sql_view = "CREATE VIEW reles_activos_hoy AS SELECT * FROM reles_segundos_on WHERE reles_segundos_on.fecha = CURDATE()";
+$sql_view = "CREATE OR REPLACE VIEW reles_activos_hoy AS SELECT * FROM reles_segundos_on WHERE reles_segundos_on.fecha = CURDATE()";
 
 mysqli_query($link, $sql_view);
 
