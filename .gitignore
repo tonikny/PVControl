@@ -6,10 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+# PVControl
 Parametros_FV.py
 Parametros_FV*.back
 html/Parametros_Web.js
 html/version.inc
+etc/cron.d/pvcontrol
 backBD/
 HA/
 *personal*
