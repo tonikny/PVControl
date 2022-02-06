@@ -69,7 +69,8 @@ lista2 = [# Sistema, Apache & php
          'sudo apt-get install mosquitto mosquitto-clients -y' ,
          'sudo pip3 install paho-mqtt',
          'sudo bash -c \'echo "allow_anonymous false" > /etc/mosquitto/conf.d/default.conf\'',
-         'sudo bash -c \'echo -n "password_file /home/pi/PVControl+/passwd_mosquitto" >> /etc/mosquitto/conf.d/default.conf\'',       
+         'sudo bash -c \'echo "listener 1883" >> /etc/mosquitto/conf.d/default.conf\'',
+         'sudo bash -c \'echo "password_file /home/pi/PVControl+/passwd_mosquitto" >> /etc/mosquitto/conf.d/default.conf\'',       
          'sudo systemctl restart mosquitto',
          
          # Librerias Python3
