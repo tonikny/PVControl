@@ -233,7 +233,7 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                     #------------------ ORDEN INFORMACION -----------------------
                     elif tipo_orden=='I':
                         try:
-                            exec(open("/home/pi/PVControl+/fvbot_msg.py").read())
+                            exec(open("/home/pi/PVControl+/fvbot_msg.py -m").read())
                         except:
                             print ('Error en ejecucion de fvbot_msg.py')
                     #------------------ ORDEN PARAMETROS -----------------------
@@ -535,7 +535,7 @@ def command_teamviewer_r(m):
 @bot.message_handler(commands=['i'])
 def command_i(m):
     try:
-        exec(open("/home/pi/PVControl+/fvbot_msg.py").read())
+        exec(open("/home/pi/PVControl+/fvbot_msg.py -m").read())
     except:
         print ('Error en ejecucion de fvbot_msg.py')
                             

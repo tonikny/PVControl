@@ -5,13 +5,15 @@
 #... uso habitual con crontab configurando archivo pvcontrol
 #....el archivo pvcontrol debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
 
-import time, datetime
+import time, datetime,sys
 import MySQLdb,json 
-
+import subprocess
+import glob
 import telebot # Librería de la API del bot.
 import requests # consulta ip publica
 #import commands # temperatura Cpu
 # Mensaje por defecto si no se especifoca en Parametros_FV.py
+
 msg_telegram = ["SOC={d_['FV']['SOC']:.1f}%- Vbat={d_['FV']['Vbat']:.1f}V- PWM={d_['FV']['PWM']:.0f}",
                  "Iplaca={d_['FV']['Iplaca']:.1f}A - Ibat={d_['FV']['Ibat']:.1f}A - Vpl={d_['FV']['Vplaca']:.0f}",
                  "Kwh: Placa={d_['FV']['Wh_placa']/1000:.1f} - Bat={d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}={(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}",
@@ -22,12 +24,12 @@ msg_telegram = ["SOC={d_['FV']['SOC']:.1f}%- Vbat={d_['FV']['Vbat']:.1f}V- PWM={
 
 from Parametros_FV import *
 
-import sys
-if msg_periodico_telegram == 0:
-    sys.exit()
+DEBUG= False
+if '-p' in sys.argv: DEBUG= True 
+if '-m' in sys.argv: msg_periodico_telegram = 1 
+
+if msg_periodico_telegram == 0: sys.exit()
     
-import subprocess
-import glob
 sensores = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
 
 bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
@@ -40,8 +42,7 @@ except:
 
 bot.send_chat_action(cid,'typing')
  
-DEBUG= False
-if '-p' in sys.argv: DEBUG= True 
+
 
 
 # --------------------- DEFINICION DE FUNCIONES --------------
