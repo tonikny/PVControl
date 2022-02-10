@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-09-24
+# Versión 2022-02-10
 
 import time, glob, sys, subprocess
 import MySQLdb
@@ -28,7 +28,7 @@ try: #inicializamos registros en BD RAM
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
     cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                  ('TEMP','"en espera"'))
+                  ('TEMP','{}'))
     db.commit() 
 except:
     pass # registro ya creado previamente
