@@ -392,6 +392,7 @@ def act_rele(adr,out,tipo) :
                 except:
                     logBD(f'Error TASMOTA AF / SC {adr}={out}') 
     except:
+        cambio = 0
         log = f'Error no reconocido en activacion rele={adr} valor={out}  tipo={tipo}'
         print (log)
         logBD(log)        
@@ -786,14 +787,21 @@ try:
                     PWM_Max = Nreles_Diver * 100  
                 
                 if id_rele in Rele: # mantengo valores que gestiona fv.py
-                    if r['estado'] != Rele[id_rele]:
-                        r['estado'] = Rele[id_rele]
-                        sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
-                        cursor.execute(sql)
+                    try:
+                        if r['estado'] != Rele[id_rele]:
+                            r['estado'] = Rele[id_rele]
+                            sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
+                            cursor.execute(sql)
+                            
+                        r['cambio'] = Rele_Dict[id_rele]['cambio']
+                        r['nconmutaciones'] = Rele_Dict[id_rele]['nconmutaciones']  
+                        r['segundos_on'] = Rele_Dict[id_rele]['segundos_on']  
+                    except:
+                        r['estado'] = 0
+                        r['cambio'] = 0
+                        r['nconmutaciones'] = 0  
+                        r['segundos_on'] = 0 
                         
-                    r['cambio'] = Rele_Dict[id_rele]['cambio']
-                    r['nconmutaciones'] = Rele_Dict[id_rele]['nconmutaciones']  
-                    r['segundos_on'] = Rele_Dict[id_rele]['segundos_on']  
                 else:
                     r['cambio'] = 0 # marca temporal de cambio a 0 
                     r['nconmutaciones'] = 0 # numero de conmutaciones a 0 
@@ -1422,7 +1430,10 @@ try:
             if len(TR_refresco) > 0:
                 id_rele = TR_refresco[0]['id_rele'] 
                 Rele[id_rele], i = act_rele(id_rele, Rele[id_rele],2)
-                Rele_Dict[id_rele]['estado']= Rele[id_rele]
+                try:
+                    Rele_Dict[id_rele]['estado']= Rele[id_rele]
+                except:
+                    pass
                 TR_refresco.pop(0)
             else:
                 TR_refresco = TR[:]
