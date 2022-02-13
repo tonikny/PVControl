@@ -24,22 +24,22 @@ if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
 $rawdata=[];
 $ngraficos=0;
 
-if($result = mysqli_query($link, 'SHOW TABLES LIKE "hibrido"')){
+if($result = mysqli_query($link, 'SHOW TABLES LIKE "hibrido%"')){
     $n = 0;
     while($tabla = mysqli_fetch_array($result)){
         //$sql = "SELECT Tiempo, AVG(Vbus) as Vbus,(AVG(Vbus)/Avg(Vbat))*30 as Vbus_Vbat, (AVG(Ibatp)-AVG(Ibatn)) as Ibat,
         //               AVG(Iplaca) as Iplaca, AVG(Vbat) as Vbat, AVG(Temp) as Temp, AVG(PACW) as PACW, AVG(Flot)*50 as Flot
         //      FROM hibrido".i." WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         //      GROUP BY DAY(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
-        echo $tabla[0];
+        
         $sql = "SELECT  *, UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1,(Ibatp-Ibatn) as Ibat, Flot * 50 as Flot1
                FROM ".$tabla[0]." WHERE Tiempo BETWEEN '" . $fecha1 ." 00:00:00' and '".$fecha2 . " 23:59:59'";
         
-        if($result = mysqli_query($link, $sql)){
+        if($result1 = mysqli_query($link, $sql)){
            $ngraficos++;
            $j=0;
            
-           while($row = mysqli_fetch_assoc($result)) {
+           while($row = mysqli_fetch_assoc($result1)) {
               $rawdata[$n][$j] = $row;
               $j++;
            }
