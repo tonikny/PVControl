@@ -1,38 +1,56 @@
 <?php
-$titulo="Historico 1 Dia";
+$titulo="Historico Fechas";
 include ("cabecera.inc");
 
 require('conexion.php');
 
-//Coger datos grafica historico general
+if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
+   $fecha1 = $_POST["fecha1"];
+   $fecha2 = $_POST["fecha2"];
+   if ( $_POST["nseg_punto"] ) {
+	   $nseg_punto=$_POST["nseg_punto"];   
+   } else {
+	   $nseg_punto=600;
+   }
+   
+ }else{			
+   	 $fecha1= date("Y") . "-" . date("m") . "-" . date("d");
+     $fecha2= date("Y") . "-" . date("m") . "-" . date("d");
+	 $nseg_punto=600;
+    
+ }
+ 
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Temp) as Vflotavg
+        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Vplaca, PWM, Wplaca,Vred, Wred, Temp,
           Wplaca - Vbat*Ibat - Wred as Wconsumo,
           Wh_placa/1000 as Kwh_placa, (Whp_bat-Whn_bat)/1000 as Kwh_bat,(Whp_red-Whn_red)/1000 as Kwh_red,
           (Wh_placa - Whp_bat + Whn_bat - Whp_red + Whn_red)/1000 as Kwh_consumo,
           Mod_bat * 1 as Modo, Aux1, Aux2
-        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 25 HOUR)
+        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         ORDER BY Tiempo";
 
+//echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
+
 if($result = mysqli_query($link, $sql)){
-
-  $i=0;
-  while($row = mysqli_fetch_assoc($result)) {
-        //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
-        $rawdata[$i] = $row;
-        $i++;
-  }
-
-} else{
-
-        echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
-}
+   $i=0;
+   while($row = mysqli_fetch_assoc($result)) {
+      $rawdata[$i] = $row;
+      $i++;
+   }
+   //echo "  N_puntos=",$i;
+ }else{
+   echo "ERROR $sql. " . mysqli_error($link);
+ }
 
 mysqli_close($link);
 
 ?>
 
 
-<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
+<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi
 <script src="js/jquery.js"></script>
 <script src="js/stock/highstock.js"></script>
 <script src="js/highcharts-more.js"></script>
@@ -40,19 +58,22 @@ mysqli_close($link);
 <script src="js/themes/grid.js"></script>
 -->
 
-
-<!-- Importo el archivo Javascript directamente desde la webr -->
-<!---->
-
+<!-- Importo el archivo Javascript directamente desde la web -->
 <script src="https://code.jquery.com/jquery.js"></script>
 <script src="http://code.highcharts.com/stock/highstock.js"></script>
 <script src="http://code.highcharts.com/highcharts-more.js"></script>
-
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 
-<!--
-<div id="container12" style="width: auto; height: 600px; margin-left: 5;margin-right:5"></div>
--->
+<form action = "<?php $_PHP_SELF ?>" method = "POST">
+    Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
+    A: <input type="date" name="fecha2" value=<?php echo $fecha2 ?> />
+	Muestra cada:<input type="number" size="5" name="nseg_punto" min="5" max="3600" step="5" value= <?php echo $nseg_punto ?> > seg__
+    <input type = "submit" value = "Ver" />
+		
+</form>
+
+<p></p>
+
 <div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
 
 <br>
@@ -239,11 +260,11 @@ $(function ()
         },
       },
    
-     {// ########## 5 - Valores eje Wplaca, Wred, Wconsumo #################
+     {// ########## 5 - Valores eje Wplaca ######################
       visible: Eje_Wplaca,
       opposite: true,
-      min: Escala_Wred_min,
-      max: Escala_Wred_max,
+      min: 0,
+      max: Watios_placa_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
@@ -259,12 +280,51 @@ $(function ()
         },
       },
             
+     {// ########## 6 - Valores eje Wred ######################
+      visible: Eje_Wred,
+      opposite: true,
+      min: Watios_red_min,
+      max: Watios_red_max,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      labels: {
+        //align: 'left',
+        y: 5
+        },
+      title: {
+        align: 'high',
+        offset: 0,
+        text: 'Wplaca',
+        rotation: 0,
+        y: -10
+        },
+      },
+                
+     {// ########## 7 - Valores eje Wconsumo ######################
+      visible: Eje_Wconsumo,
+      opposite: true,
+      min: Consumo_watios_min,
+      max: Consumo_watios_max,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      labels: {
+        //align: 'left',
+        y: 5
+        },
+      title: {
+        align: 'high',
+        offset: 0,
+        text: 'Wconsumo',
+        rotation: 0,
+        y: -10
+        },
+      },
      
-     {// ########## 6 - Valores eje Vred ######################
+     {// ########## 8 - Valores eje Vred ######################
       visible: Eje_Vred,
       opposite: true,
-      min: Escala_Vred_min,
-      max: Escala_Vred_max,
+      min: 0,
+      max: Vred_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
@@ -280,7 +340,7 @@ $(function ()
         },
       },
           
-     {// ########## 7 - Valores eje Kwh_placa ######################
+     {// ########## 9 - Valores eje Kwh_placa ######################
       visible: Eje_Kwh_placa,
       opposite: true,
       min: 0,
@@ -300,7 +360,7 @@ $(function ()
         },
       },
   
-     {// ########## 8 - Valores eje Kwh_bat ######################
+     {// ########## 10 - Valores eje Kwh_bat ######################
       visible: Eje_Kwh_bat,
       opposite: true,
       min: Kwh_bat_min,
@@ -320,7 +380,7 @@ $(function ()
         },
       },
             
-     {// ########## 9 - Valores eje Kwh_red ######################
+     {// ########## 11 - Valores eje Kwh_red ######################
       visible: Eje_Kwh_red,
       opposite: true,
       min: Kwh_red_min,
@@ -340,7 +400,7 @@ $(function ()
         },
       },
    
-     {// ########## 10 - Valores eje Kwh_consumo ######################
+     {// ########## 12 - Valores eje Kwh_consumo ######################
       visible: Eje_Kwh_consumo,
       opposite: true,
       min: Kwh_consumo_min,
@@ -360,11 +420,11 @@ $(function ()
         },
       },
      
-     {// ########## 11 - Valores eje Temp ######################
+     {// ########## 13 - Valores eje Temp ######################
       visible: Eje_Temp,
       opposite: true,
-      min: Temp_min,
-      max: Temp_max,
+      min: Temp_bat_min,
+      max: Temp_bat_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
@@ -380,7 +440,7 @@ $(function ()
         },
       },
      
-     {// ########## 12 - Valores eje Modo ######################
+     {// ########## 14 - Valores eje Modo ######################
       visible: Eje_Modo,
       opposite: true,
       min: 2,
@@ -400,7 +460,7 @@ $(function ()
         },
       },
     
-     {// ########## 13 - Valores eje Aux1  ######################
+     {// ########## 15 - Valores eje Aux1  ######################
       visible: Eje_Aux1,
       opposite: true,
       min: Aux1_min,
@@ -417,7 +477,7 @@ $(function ()
         },
       },
     
-     {// ########## 14 - Valores eje Aux2  ######################
+     {// ########## 16 - Valores eje Aux2  ######################
       visible: Eje_Aux2,
       opposite: true,
       min: Aux2_min,
@@ -445,17 +505,17 @@ $(function ()
       },
     rangeSelector: {
       buttons: [{
-        type: 'hour',
-        count: 6,
-        text: '6h'
-       }, {
-        type: 'hour',
-        count: 12,
-        text: '12h'
-       }, {
         type: 'day',
         count: 1,
         text: '1día'
+       }, {
+        type: 'day',
+        count: 7,
+        text: '7días'
+       }, {
+        type: 'day',
+        count: 15,
+        text: '15días'
        }, {
         type: 'all',
         text: 'Todo'
@@ -609,7 +669,7 @@ $(function ()
      {name: 'Wred',
       type: 'spline',
       visible: Wred_visible,
-      yAxis: 5,
+      yAxis: 6,
       color: '#D882C9',
       tooltip: {
         valueSuffix: ' W',
@@ -628,7 +688,7 @@ $(function ()
      {name: 'Wconsumo',
       type: 'spline',
       visible: Wconsumo_visible,
-      yAxis: 5,
+      yAxis: 7,
       color: '#F39610',
       tooltip: {
         valueSuffix: ' W',
@@ -648,7 +708,7 @@ $(function ()
      {name: 'Vred',
       type: 'spline',
       visible: Vred_visible,
-      yAxis: 6,
+      yAxis: 8,
       color: '#C55FE5',
       tooltip: {
         valueSuffix: ' V',
@@ -668,7 +728,7 @@ $(function ()
      {name: 'Kwh_placa',
       type: 'area',
       visible: Kwh_placa_visible,
-      yAxis: 7,
+      yAxis: 9,
       fillOpacity: 0.2,
       color: "#E55FE5",
       tooltip: {
@@ -688,7 +748,7 @@ $(function ()
      {name: 'Kwh_bat',
       type: 'area',
       visible: Kwh_bat_visible,
-      yAxis: 8,
+      yAxis: 10,
       fillOpacity: 0.2,
       color: "#7C75D7",
       tooltip: {
@@ -708,7 +768,7 @@ $(function ()
      {name: 'Kwh_red',
       type: 'area',
       visible: Kwh_red_visible,
-      yAxis: 9,
+      yAxis: 11,
       fillOpacity: 0.2,
       color: "#D882C9",
       tooltip: {
@@ -728,7 +788,7 @@ $(function ()
      {name: 'Kwh_consumo',
       type: 'area',
       visible: Kwh_consumo_visible,
-      yAxis: 10,
+      yAxis: 12,
       fillOpacity: 0.2,
       color: "#F39610",
       tooltip: {
@@ -749,7 +809,7 @@ $(function ()
      {name: 'Temp',
       type: 'spline',
       visible: Wplaca_visible,
-      yAxis: 11,
+      yAxis: 13,
       color: 'black',
       tooltip: {
         valueSuffix: ' ºC',
@@ -769,7 +829,7 @@ $(function ()
      {name: 'Modo',
       type: 'spline',
       visible: Modo_visible,
-      yAxis: 12,
+      yAxis: 14,
       color: '#1604FA',
       tooltip: {
         valueSuffix: ' ',
@@ -789,7 +849,7 @@ $(function ()
      {name: 'Aux1',
       type: 'spline',
       visible: Aux1_visible,
-      yAxis: 13,
+      yAxis: 15,
       color: Highcharts.getOptions().colors[6],
       tooltip: {
         valueSuffix: ' ',
@@ -808,7 +868,7 @@ $(function ()
      {name: 'Aux2',
       type: 'spline',
       visible: Aux2_visible,
-      yAxis: 14,
+      yAxis: 16,
       color: Highcharts.getOptions().colors[8],
       tooltip: {
         valueSuffix: ' ',
