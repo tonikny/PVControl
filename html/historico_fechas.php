@@ -32,6 +32,15 @@ $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, V
         FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         ORDER BY Tiempo";
 
+                                        
+
+       
+                                             
+                                                                                    
+                            
+             
+   
+
 //echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
 
 if($result = mysqli_query($link, $sql)){
@@ -58,10 +67,14 @@ mysqli_close($link);
 <script src="js/themes/grid.js"></script>
 -->
 
+
 <!-- Importo el archivo Javascript directamente desde la web -->
+       
+
 <script src="https://code.jquery.com/jquery.js"></script>
 <script src="http://code.highcharts.com/stock/highstock.js"></script>
 <script src="http://code.highcharts.com/highcharts-more.js"></script>
+
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
@@ -260,11 +273,11 @@ $(function ()
         },
       },
    
-     {// ########## 5 - Valores eje Wplaca ######################
+     {// ########## 5 - Valores eje Wplaca, Wred, Wconsumo #################
       visible: Eje_Wplaca,
       opposite: true,
-      min: 0,
-      max: Watios_placa_max,
+      min: Escala_Wred_min,
+      max: Escala_Wred_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
@@ -280,51 +293,12 @@ $(function ()
         },
       },
             
-     {// ########## 6 - Valores eje Wred ######################
-      visible: Eje_Wred,
-      opposite: true,
-      min: Watios_red_min,
-      max: Watios_red_max,
-      gridLineColor: 'transparent',
-      minorGridLineColor: 'transparent',
-      labels: {
-        //align: 'left',
-        y: 5
-        },
-      title: {
-        align: 'high',
-        offset: 0,
-        text: 'Wplaca',
-        rotation: 0,
-        y: -10
-        },
-      },
-                
-     {// ########## 7 - Valores eje Wconsumo ######################
-      visible: Eje_Wconsumo,
-      opposite: true,
-      min: Consumo_watios_min,
-      max: Consumo_watios_max,
-      gridLineColor: 'transparent',
-      minorGridLineColor: 'transparent',
-      labels: {
-        //align: 'left',
-        y: 5
-        },
-      title: {
-        align: 'high',
-        offset: 0,
-        text: 'Wconsumo',
-        rotation: 0,
-        y: -10
-        },
-      },
      
-     {// ########## 8 - Valores eje Vred ######################
+     {// ########## 6 - Valores eje Vred ######################
       visible: Eje_Vred,
       opposite: true,
-      min: 0,
-      max: Vred_max,
+      min: Escala_Vred_min,
+      max: Escala_Vred_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
@@ -340,7 +314,7 @@ $(function ()
         },
       },
           
-     {// ########## 9 - Valores eje Kwh_placa ######################
+     {// ########## 7 - Valores eje Kwh_placa ######################
       visible: Eje_Kwh_placa,
       opposite: true,
       min: 0,
@@ -360,7 +334,7 @@ $(function ()
         },
       },
   
-     {// ########## 10 - Valores eje Kwh_bat ######################
+     {// ########## 8 - Valores eje Kwh_bat ######################
       visible: Eje_Kwh_bat,
       opposite: true,
       min: Kwh_bat_min,
@@ -380,7 +354,7 @@ $(function ()
         },
       },
             
-     {// ########## 11 - Valores eje Kwh_red ######################
+     {// ########## 9 - Valores eje Kwh_red ######################
       visible: Eje_Kwh_red,
       opposite: true,
       min: Kwh_red_min,
@@ -400,7 +374,7 @@ $(function ()
         },
       },
    
-     {// ########## 12 - Valores eje Kwh_consumo ######################
+     {// ########## 10 - Valores eje Kwh_consumo ######################
       visible: Eje_Kwh_consumo,
       opposite: true,
       min: Kwh_consumo_min,
@@ -420,11 +394,11 @@ $(function ()
         },
       },
      
-     {// ########## 13 - Valores eje Temp ######################
+     {// ########## 11 - Valores eje Temp ######################
       visible: Eje_Temp,
       opposite: true,
-      min: Temp_bat_min,
-      max: Temp_bat_max,
+      min: Temp_min,
+      max: Temp_max,
       gridLineColor: 'transparent',
       minorGridLineColor: 'transparent',
       labels: {
@@ -440,7 +414,7 @@ $(function ()
         },
       },
      
-     {// ########## 14 - Valores eje Modo ######################
+     {// ########## 12 - Valores eje Modo ######################
       visible: Eje_Modo,
       opposite: true,
       min: 2,
@@ -460,7 +434,7 @@ $(function ()
         },
       },
     
-     {// ########## 15 - Valores eje Aux1  ######################
+     {// ########## 13 - Valores eje Aux1  ######################
       visible: Eje_Aux1,
       opposite: true,
       min: Aux1_min,
@@ -477,7 +451,7 @@ $(function ()
         },
       },
     
-     {// ########## 16 - Valores eje Aux2  ######################
+     {// ########## 14 - Valores eje Aux2  ######################
       visible: Eje_Aux2,
       opposite: true,
       min: Aux2_min,
@@ -505,17 +479,17 @@ $(function ()
       },
     rangeSelector: {
       buttons: [{
+        type: 'hour',
+        count: 6,
+        text: '6h'
+       }, {
+        type: 'hour',
+        count: 12,
+        text: '12h'
+       }, {
         type: 'day',
         count: 1,
         text: '1día'
-       }, {
-        type: 'day',
-        count: 7,
-        text: '7días'
-       }, {
-        type: 'day',
-        count: 15,
-        text: '15días'
        }, {
         type: 'all',
         text: 'Todo'
@@ -669,7 +643,7 @@ $(function ()
      {name: 'Wred',
       type: 'spline',
       visible: Wred_visible,
-      yAxis: 6,
+      yAxis: 5,
       color: '#D882C9',
       tooltip: {
         valueSuffix: ' W',
@@ -688,7 +662,7 @@ $(function ()
      {name: 'Wconsumo',
       type: 'spline',
       visible: Wconsumo_visible,
-      yAxis: 7,
+      yAxis: 5,
       color: '#F39610',
       tooltip: {
         valueSuffix: ' W',
@@ -708,7 +682,7 @@ $(function ()
      {name: 'Vred',
       type: 'spline',
       visible: Vred_visible,
-      yAxis: 8,
+      yAxis: 6,
       color: '#C55FE5',
       tooltip: {
         valueSuffix: ' V',
@@ -728,7 +702,7 @@ $(function ()
      {name: 'Kwh_placa',
       type: 'area',
       visible: Kwh_placa_visible,
-      yAxis: 9,
+      yAxis: 7,
       fillOpacity: 0.2,
       color: "#E55FE5",
       tooltip: {
@@ -748,7 +722,7 @@ $(function ()
      {name: 'Kwh_bat',
       type: 'area',
       visible: Kwh_bat_visible,
-      yAxis: 10,
+      yAxis: 8,
       fillOpacity: 0.2,
       color: "#7C75D7",
       tooltip: {
@@ -768,7 +742,7 @@ $(function ()
      {name: 'Kwh_red',
       type: 'area',
       visible: Kwh_red_visible,
-      yAxis: 11,
+      yAxis: 9,
       fillOpacity: 0.2,
       color: "#D882C9",
       tooltip: {
@@ -788,7 +762,7 @@ $(function ()
      {name: 'Kwh_consumo',
       type: 'area',
       visible: Kwh_consumo_visible,
-      yAxis: 12,
+      yAxis: 10,
       fillOpacity: 0.2,
       color: "#F39610",
       tooltip: {
@@ -809,7 +783,7 @@ $(function ()
      {name: 'Temp',
       type: 'spline',
       visible: Wplaca_visible,
-      yAxis: 13,
+      yAxis: 11,
       color: 'black',
       tooltip: {
         valueSuffix: ' ºC',
@@ -829,7 +803,7 @@ $(function ()
      {name: 'Modo',
       type: 'spline',
       visible: Modo_visible,
-      yAxis: 14,
+      yAxis: 12,
       color: '#1604FA',
       tooltip: {
         valueSuffix: ' ',
@@ -849,7 +823,7 @@ $(function ()
      {name: 'Aux1',
       type: 'spline',
       visible: Aux1_visible,
-      yAxis: 15,
+      yAxis: 13,
       color: Highcharts.getOptions().colors[6],
       tooltip: {
         valueSuffix: ' ',
@@ -868,7 +842,7 @@ $(function ()
      {name: 'Aux2',
       type: 'spline',
       visible: Aux2_visible,
-      yAxis: 16,
+      yAxis: 14,
       color: Highcharts.getOptions().colors[8],
       tooltip: {
         valueSuffix: ' ',
