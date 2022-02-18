@@ -939,7 +939,7 @@ $(function () {
         },
         
         tooltip: {
-                  enabled: false
+                  enabled: true
                  },
 
         series: [{
@@ -1586,7 +1586,6 @@ $(function () {
         success: function(data) {
           try {
             //console.log(data)               
-            // tiempo: "%d-%B-%Y -- %H:%M:%S"
             fecha = data['FV']['tiempo'];
             
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
@@ -1696,7 +1695,7 @@ $(function () {
             // Actualizacion reloj Vplaca
             chart_vplaca.series[0].setData([Vplaca]); //Vplaca
             
-            // Actualizacion Grafica a tiempor real
+            // Actualizacion Grafica a tiempo real
             grafica_t_real.setTitle({
               text: 'Fecha: ' + fecha
                 });

@@ -15,7 +15,7 @@ require('conexion.php');
 //ORDER BY Tiempo";
 
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, Wred, Wplaca, Vred, PWM, Vplaca, Wplaca-Wred as Wconsumo, LEAST(Wplaca,Wplaca-Wred) as Wautoconsumo
-FROM datos WHERE DATE(Tiempo) = CURDATE()
+FROM datos_c WHERE DATE(Tiempo) = CURDATE()
 ORDER BY Tiempo";
 
 if($result = mysqli_query($link, $sql)){
@@ -48,6 +48,7 @@ mysqli_close($link);
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
 <div class="divTable" style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">
+
     <div class="divTableBody">
         <div class="divTableRow">
                 <div class="divTableCell">Wh Placa</div>
@@ -78,30 +79,44 @@ mysqli_close($link);
             <div id = "Vred_min" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;Vred máx</div>
+            <div class="divTableCell">&nbsp;Vred_máx</div>
                <div id ="Vred_max" class="divTableCell">&nbsp;</div>
             </div>
-        <div class="divTableRow">
-            <div class="divTableCell"></div>
-            <div class="divTableCell">&nbsp;</div>
-        </div>
         <div class="divTableRow">
             <div class="divTableCell">Estado</div>
             <div id ="Estado" class="divTableCell">&nbsp;</div>
         </div>
-         <div class="divTableRow">
-            <div class="divTableCell">termo</div>
+        
+        <div class="divTableRow">
+            <div id ="Aux1n" class="divTableCell">Aux1</div>
             <div id ="Aux1" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">Aux2</div>
+            <div id ="Aux2n" class="divTableCell">Aux2</div>
             <div id ="Aux2" class="divTableCell">&nbsp;</div>
-          </div>
+        </div>
         <div class="divTableRow">
-            <div class="divTableCell">hola</div>
-            <div id ="hola" class="divTableCell">&nbsp;</div>
-          </div>
-      <!--</div> -->
+            <div id ="Aux3n" class="divTableCell">Aux3</div>
+            <div id ="Aux3" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux4n" class="divTableCell">Aux4</div>
+            <div id ="Aux4" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux5n" class="divTableCell">Aux5</div>
+            <div id ="Aux5" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux6n" class="divTableCell">Aux6</div>
+            <div id ="Aux6" class="divTableCell">&nbsp;</div>
+        </div>
+        <div class="divTableRow">
+            <div id ="Aux7n" class="divTableCell">Aux7</div>
+            <div id ="Aux7" class="divTableCell">&nbsp;</div>
+        </div>
+        
+      
     </div>
 </div>
     
@@ -651,7 +666,7 @@ $(function () {
         pane: [{
             size: '105%',
             startAngle: -150,
-            endAngle: -10,
+            endAngle: 150,
             background: [{
                 backgroundColor: {
                     linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
@@ -682,12 +697,8 @@ $(function () {
                 innerRadius: '103%'
               }]
 
-          }, {
-            size: '105%',
-            startAngle: 10,
-            endAngle: 150,
-            background: []
-          }],
+           }
+          ],
 
         yAxis: [
           { // Wconsumo
@@ -727,42 +738,8 @@ $(function () {
                 to: Consumo_watios_max,
                 color: '#DF5353' // red
               }]
-          },
-          { // Aconsumo
-            reversed: true,
-            min: Consumo_amperios_min,
-            max: Consumo_amperios_max,
-            pane: 1,
-            minorTickInterval: 'auto',
-            minorTickWidth: 1,
-            minorTickLength: 10,
-            minorTickPosition: 'inside',
-            minorTickColor: '#666',
-            tickPixelInterval: 30,
-            tickInterval: Consumo_amperios_max/5,
-            tickWidth: 2,
-            tickPosition: 'inside',
-            tickLength: 10,
-            tickColor: '#666',
-            labels: {
-                allowOverlap:true,
-                step: 1,
-                rotation: 'auto'
-              },
-            plotBands: [{
-                from: Consumo_amperios_min,
-                to: Consumo_amperios_amarillo,
-                color: '#55BF3B' // green
-              }, {
-                from: Consumo_amperios_amarillo,
-                to: Consumo_amperios_rojo,
-                color: '#DDDF0D' // yellow
-              }, {
-                from: Consumo_amperios_rojo,
-                to: Consumo_amperios_max,
-                color: '#DF5353' // red
-              }]
           }
+          
           ],
         
         navigation: {
@@ -771,12 +748,12 @@ $(function () {
               }
           },
         tooltip: {
-            enabled: false
+            enabled: true
           },
         series: [
           { // WConsumo
             yAxis: 0,
-            name: 'Consumo W',
+            name: 'Consumo',
             data: [],
             dataLabels: {
                 allowOverlap:true,
@@ -797,8 +774,8 @@ $(function () {
               },
           },
           { //Aconsumo
-            yAxis: 1,
-            name: '',
+            yAxis: 0,
+            name: 'Autoconsumo',
             data: [],
             dataLabels: {
                 allowOverlap:true,
@@ -811,7 +788,7 @@ $(function () {
                     color : 'red'
                   },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,0) + "A"
+                    return Highcharts.numberFormat(this.y,0) + "W"
                   }
               },
             dial: {
@@ -1366,6 +1343,7 @@ $(function () {
         chart: {
          renderTo: 'grafica_t_real',
          type: 'area',
+         fillOpacity: 0.2,
          backgroundColor: null,//'#ffffff',//'#f2f2f2',
          borderColor: null,
          plotBorderWidth: 1,
@@ -1501,9 +1479,7 @@ $(function () {
         success: function(data) {
           try {
             //console.log(data)               
-            // tiempo: "%d-%B-%Y -- %H:%M:%S"
-            fecha = data['FV']['Tiempo'];
-             hola = data['FV']['hola'];
+            fecha = data['FV']['tiempo'];
              
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
             Vbat = data['FV']['Vbat']; 
@@ -1558,7 +1534,12 @@ $(function () {
             //Aux1,Aux2
             Aux1 = data['FV']['Aux1'];
             Aux2 = data['FV']['Aux2'];
-          
+            Aux3 = data['FV']['Aux3'];
+            Aux4 = data['FV']['Aux4'];
+            Aux5 = data['FV']['Aux5'];
+            Aux6 = data['FV']['Aux6'];
+            Aux7 = data['FV']['Aux7'];
+            
             
             // Actualizacion reloj Vred
             chart_vred.series[0].setData([Vred]);
@@ -1598,7 +1579,7 @@ $(function () {
             
             // Actualizacion reloj Consumo 
             chart_consumo.series[0].setData([Wconsumo]); // Consumo
-            chart_consumo.series[1].setData([Iplaca-Ired]); // Iplaca - Ired
+            chart_consumo.series[1].setData([Wautoconsumo]); // Autoconsumo
             chart_consumo.setSubtitle({
               text: Wh_consumo + ' Wh'
                 });
@@ -1606,8 +1587,10 @@ $(function () {
                        
             // Actualizacion reloj Vplaca
             chart_vplaca.series[0].setData([Vplaca]); //Vplaca
+        
+        
             
-             // Actualizacion Grafica a tiempor real
+             // Actualizacion Grafica a tiempo real
             grafica_t_real.setTitle({
               text: 'Fecha: ' + fecha
                 });
@@ -1632,9 +1615,29 @@ $(function () {
             $("#Vred_min").text(Vred_min + "V");
             $("#Vred_max").text(Vred_max + "V");
             
-            $("#Aux1").text(Aux1 + " ºc");
-            $("#Aux2").text(Aux2);
-            $("#hola").text(hola);
+            
+            $("#Aux1").text(Aux1 + Unidades_Aux1);
+            $("#Aux1n").text(Nombre_Aux1);
+            
+            $("#Aux2").text(Aux2 + Unidades_Aux2);           
+            $("#Aux2n").text(Nombre_Aux2);
+            
+            $("#Aux3").text(Aux3 + Unidades_Aux3);           
+            $("#Aux3n").text(Nombre_Aux3);
+            
+            $("#Aux4").text(Aux4 + Unidades_Aux4);           
+            $("#Aux4n").text(Nombre_Aux4);
+            
+            $("#Aux5").text(Aux5 + Unidades_Aux5);           
+            $("#Aux5n").text(Nombre_Aux5);
+            
+            $("#Aux6").text(Aux6 + Unidades_Aux6);           
+            $("#Aux6n").text(Nombre_Aux6);
+            
+            $("#Aux7").text(Aux7+ Unidades_Aux7);           
+            $("#Aux7n").text(Nombre_Aux7);
+            
+            
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
             if (Wred > 0)  {
                 Estado ="INYECCION";

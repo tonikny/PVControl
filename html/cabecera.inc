@@ -29,11 +29,11 @@ session_start([
     
     $menu["Gráficas"]["KWh"] = ($version!="RD")?["KWh Batería, Producción y Consumo","wh.php"]: ["KWh Red, Producción y Consumo","wh_red.php"];
     $menu["Gráficas"]["Promedios"] = ["Promedios 30 días","prom_30.php"];
-    ($version=="RD")? : $menu["Gráficas"]["Hist_Temp"] = ["Histórico Temp","historico_con_temp.php"];
+    $menu["Gráficas"]["Hist_Fechas"] = ["Histórico Fechas","historico_fechas.php"];
     $menu["Gráficas"]["Hist_8h"] = ["Histórico 8 horas","historico_horas.php"];
-    $menu["Gráficas"]["Hist_1"] = ($version!="RD")? ["Histórico 1 Día","historico1.php"] : ["Histórico 1 Día","historico1_red.php"];
-    $menu["Gráficas"]["Hist_3"] = ($version!="RD")? ["Histórico 3 Días","historico3c.php"] : ["Histórico 3 Días","historico3c_red.php"];
-    $menu["Gráficas"]["Hist_Mes"] = ($version!="RD")? ["Histórico Mes","historico_mes.php"] : ["Histórico Mes","historico_mes.php"];
+    $menu["Gráficas"]["Hist_1"] =  ["Histórico 1 Día","historico1.php"];
+    $menu["Gráficas"]["Hist_3"] =  ["Histórico 3 Días","historico3c.php"];
+    $menu["Gráficas"]["Hist_Mes"] = ["Histórico Mes","historico_mes.php"];
     ($version=="RD")? : $menu["Gráficas"]["Hist_Ciclado"] = ["Histórico Ciclado","historico_soh.php"];
     $menu["Gráficas"]["Extra"] = ["Gráficas Producción y Consumo","grafica_elige.php"];
     $menu["Gráficas"]["Diario"] = ($version!="RD")? ["Tabla resumen diario","diario.php"] :["Tabla resumen diario","diario_red.php"] ;

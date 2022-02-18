@@ -1,38 +1,65 @@
 <?php
-$titulo="Historico 1 Dia";
+$titulo="Historico Fechas";
 include ("cabecera.inc");
 
 require('conexion.php');
 
-//Coger datos grafica historico general
+if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
+   $fecha1 = $_POST["fecha1"];
+   $fecha2 = $_POST["fecha2"];
+   if ( $_POST["nseg_punto"] ) {
+	   $nseg_punto=$_POST["nseg_punto"];   
+   } else {
+	   $nseg_punto=600;
+   }
+   
+ }else{			
+   	 $fecha1= date("Y") . "-" . date("m") . "-" . date("d");
+     $fecha2= date("Y") . "-" . date("m") . "-" . date("d");
+	 $nseg_punto=600;
+    
+ }
+ 
+$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Temp) as Vflotavg
+        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
+        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
+
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Vplaca, PWM, Wplaca,Vred, Wred, Temp,
           Wplaca - Vbat*Ibat - Wred as Wconsumo,
           Wh_placa/1000 as Kwh_placa, (Whp_bat-Whn_bat)/1000 as Kwh_bat,(Whp_red-Whn_red)/1000 as Kwh_red,
           (Wh_placa - Whp_bat + Whn_bat - Whp_red + Whn_red)/1000 as Kwh_consumo,
           Mod_bat * 1 as Modo, Aux1, Aux2
-        FROM datos WHERE Tiempo >= (NOW()- INTERVAL 25 HOUR)
+        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         ORDER BY Tiempo";
 
+                                        
+
+       
+                                             
+                                                                                    
+                            
+             
+   
+
+//echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
+
 if($result = mysqli_query($link, $sql)){
-
-  $i=0;
-  while($row = mysqli_fetch_assoc($result)) {
-        //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
-        $rawdata[$i] = $row;
-        $i++;
-  }
-
-} else{
-
-        echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
-}
+   $i=0;
+   while($row = mysqli_fetch_assoc($result)) {
+      $rawdata[$i] = $row;
+      $i++;
+   }
+   //echo "  N_puntos=",$i;
+ }else{
+   echo "ERROR $sql. " . mysqli_error($link);
+ }
 
 mysqli_close($link);
 
 ?>
 
 
-<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
+<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi
 <script src="js/jquery.js"></script>
 <script src="js/stock/highstock.js"></script>
 <script src="js/highcharts-more.js"></script>
@@ -41,8 +68,8 @@ mysqli_close($link);
 -->
 
 
-<!-- Importo el archivo Javascript directamente desde la webr -->
-<!---->
+<!-- Importo el archivo Javascript directamente desde la web -->
+       
 
 <script src="https://code.jquery.com/jquery.js"></script>
 <script src="http://code.highcharts.com/stock/highstock.js"></script>
@@ -50,9 +77,16 @@ mysqli_close($link);
 
 <script src="http://code.highcharts.com/themes/grid.js"></script>
 
-<!--
-<div id="container12" style="width: auto; height: 600px; margin-left: 5;margin-right:5"></div>
--->
+<form action = "<?php $_PHP_SELF ?>" method = "POST">
+    Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
+    A: <input type="date" name="fecha2" value=<?php echo $fecha2 ?> />
+	Muestra cada:<input type="number" size="5" name="nseg_punto" min="5" max="3600" step="5" value= <?php echo $nseg_punto ?> > seg__
+    <input type = "submit" value = "Ver" />
+		
+</form>
+
+<p></p>
+
 <div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
 
 <br>
