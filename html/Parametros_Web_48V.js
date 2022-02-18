@@ -1,5 +1,5 @@
 // ===========================================================================
-// Pagina inicio.php  Actualizar segun los relojes y graficas que se usen o
+// Pagina inicio.php  Actualizar segun los relojes y graficas que se usen 
 // ===========================================================================
 
   // BAT ==   relojes que estan en opcion baterias
@@ -97,8 +97,8 @@
         Escala_intensidad_min = -140;
         Escala_intensidad_max = 240;
 
-        Escala_Vbat_min = 22;
-        Escala_Vbat_max = 35;
+        Escala_Vbat_min = 44;
+        Escala_Vbat_max = 90;
 
             Vabs = 57.6;  // linea Vabs
             Vflot = 54.4; // Linea Vflot
@@ -194,7 +194,7 @@
     Temp_min = -10;
     Temp_max = 60;
     
-    Modo_max = 10;  // 1= OFF, 2=BULK, 3= FLOT, 4= ABS,  5= EQU, 6= INYEC.RED, 7= CONSUMO RED
+    Modo_max = 20;  // 1= OFF, 2=BULK, 3= FLOT, 4= ABS,  5= EQU, 6= INYEC.RED, 7= CONSUMO RED
     
     Aux1_min = 0;
     Aux1_max = 100;
