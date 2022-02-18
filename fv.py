@@ -1124,6 +1124,7 @@ try:
                     if Iplaca > 0: Tbulk += t_muestra
                     
                     if Vbat >= Vabs:# paso de Bulk a Abs
+                        Mod_bat = 'ABS'
                         cursor.execute("UPDATE parametros SET Mod_bat='ABS'")
                         db.commit()
                         try:
@@ -1146,6 +1147,7 @@ try:
 
                     if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
                         Tflot_bulk = Tabs = flag_Abs= 0
+                        Mod_bat = 'BULK'
                         cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
                         if TP['sensor_PID'] == 'Vbat': # si sensor_PID es Vbat
                             cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
@@ -1163,6 +1165,7 @@ try:
                     if Vbat >= Vabs-0.1:Tabs += t_muestra
                     
                     elif Vbat < Vabs-0.2:# paso de Abs a Bulk
+                        Mod_bat = 'BULK'
                         cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
                         db.commit() 
                     
@@ -1185,6 +1188,7 @@ try:
                         Tequ += t_muestra
                     if Tequ >= Tequ_max:    
                         Tequ=0 
+                        Mod_bat = 'FLOT'
                         cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
                         db.commit() 
                 ee=39

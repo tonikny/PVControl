@@ -19,10 +19,6 @@ if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
 	 $nseg_punto=600;
     
  }
- 
-$sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo1, AVG(SOC) as SOCavg, AVG(Ibat) as Ibatavg, AVG(Iplaca) as Iplacaavg, AVG(Vbat) as Vbatavg, AVG(Temp) as Vflotavg
-        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        GROUP BY DATE(Tiempo),FLOOR(TIME_TO_SEC(TIME(Tiempo))/" . $nseg_punto . " ) ORDER BY Tiempo";
 
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Vplaca, PWM, Wplaca,Vred, Wred, Temp,
           Wplaca - Vbat*Ibat - Wred as Wconsumo,
@@ -32,14 +28,6 @@ $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, V
         FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         ORDER BY Tiempo";
 
-                                        
-
-       
-                                             
-                                                                                    
-                            
-             
-   
 
 //echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
 

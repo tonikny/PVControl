@@ -42,6 +42,10 @@ elif '-p2' in sys.argv: DEBUG= 2
 elif '-p' in sys.argv: DEBUG= 100 
 
 
+if sum(usar_ADS)== 0:
+    print (subprocess.getoutput('sudo systemctl stop fv_ads'))
+    sys.exit()
+
 
 bus = SMBus(1) # Activo Bus I2C para ADS o PCF
 
@@ -193,10 +197,16 @@ def ADS_captura (ADS):  # como entrada solo el indice del ADS de las listas defi
             Ncapturas += 1
             
         except:
-            print(f'Error {ee} en {nombre_ADS[ADS]}')
-            sys.exit()
+            print(f'{tiempo} - Error {ee} en {nombre_ADS[ADS]}')
+            #sys.exit()
         
 if __name__ == '__main__':    
+
+    if '-ADS1' in sys.argv: # fuerzo solo ADS1
+        usar_ADS = [1,0]
+    elif '-ADS4' in sys.argv: # fuerzo solo ADS4
+        usar_ADS = [0,1]
+    
     ADS_activos = [ i for i in range(len(usar_ADS)) if usar_ADS[i] == 1 ] # indices ADS activos
 
 

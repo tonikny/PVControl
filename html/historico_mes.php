@@ -1,5 +1,5 @@
 <?php
-$titulo="Historico 3 Dias";
+$titulo="Historico mes";
 include ("cabecera.inc");
 
 require('conexion.php');
@@ -460,7 +460,7 @@ $(function ()
         type: 'all',
         text: 'Todo'
        }],
-      selected: 2
+      selected: 1
       },
     tooltip: {
       split: true,

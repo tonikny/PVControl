@@ -15,6 +15,7 @@ session_start([
 </head>
 
 <body>
+    <script src="Parametros_Web_DIST.js"></script>
     <script src="Parametros_Web.js"></script>
     <?php
     include_once("version.inc");
