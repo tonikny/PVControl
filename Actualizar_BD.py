@@ -1,5 +1,15 @@
 import MySQLdb
 
+# paramos servicios
+try:
+    print ('Se paran los servicios de PVControl+ para poder actualizar la BD')
+    exec(open("/home/pi/PVControl+/Parar_Servicios_PVControl+.py").read()) 
+except:
+    print ('#' * 60)
+    print ('Error en parada de servicios PVControl')
+    print ('#' * 60)
+    
+
 db = MySQLdb.connect(host = "localhost", user = 'rpi', passwd = 'fv', db = 'control_solar')
 cursor = db.cursor()
 

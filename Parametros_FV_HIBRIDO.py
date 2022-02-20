@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------
-######    PARAMETROS INSTALACION PVControl+  -- version: 2021-12-21
+######    PARAMETROS INSTALACION PVControl+  -- version: 2022-02-20
 # ------------------------------------------------------------------
 
 # ====================================================================
@@ -164,7 +164,7 @@ celdas_log_dif = 0.5 # diferencia entre la celda mas alta y la mas baja para man
 ## Si algun sensor (Vbat, Vplaca,...)  usa el Hibrido o se quiere guardar en BD en la tabla 'Hibrido'
 ## se debe poner usar hibrido = 1
 
-usar_hibrido = [0] #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [1] #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = ["/dev/hidraw0"]  # puerto donde reconoce la RPi al Hibrido
 usar_crc = [1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC

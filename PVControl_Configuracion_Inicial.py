@@ -151,6 +151,9 @@ res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Deshabilitar_Servicios_PVCo
 res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Arrancar_servicios_PVControl+.py','/home/pi/Desktop'])
 res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVControl+.py','/home/pi/Desktop'])
 
+if not os.path.exists('/home/pi/PVControl+/etc/cron.d/pvcontrol'):
+    res = subprocess.run(['sudo','cp', '-n', '/home/pi/PVControl+/etc/cron.d/pvcontrol.DIST','/home/pi/PVControl+/etc/cron.d/pvcontrol'])
+
 
 # ######## ACTUALIZACION BD (CAMPOS,..) 
 try:

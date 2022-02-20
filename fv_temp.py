@@ -48,8 +48,12 @@ while True:
         tfile = open(sensor)
         texto = tfile.read()
         tfile.close()
-        temp_datos = texto.split("\n")[1].split(" ")[9]
-        temp= round(float(temp_datos[2:]) / 1000,2)
+        try:
+            temp_datos = texto.split("\n")[1].split(" ")[9]
+            temp= round(float(temp_datos[2:]) / 1000,2)
+        except:
+            time.sleep(1)
+            continue
         if DEBUG >= 2: print (sensor, temp)
         
         Temp_D['Ds18b20']['Temp'+str(Ctemp)] = temp 
