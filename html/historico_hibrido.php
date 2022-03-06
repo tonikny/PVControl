@@ -134,8 +134,8 @@ $(function () {
             },
             yAxis: [{
 		        opposite: false,
-				min: -80,
-		        max: 80 ,
+				min: Escala_intensidad_min,
+		        max: Escala_intensidad_max ,
 		        labels: {
                     //align: 'left',
                     y: 5
@@ -145,8 +145,8 @@ $(function () {
                 }
              },{
                 opposite: false,
-				min: 24,
-		        max: 36 ,
+				min: Escala_Vbat_min,
+		        max: Escala_Vbat_max ,
 		        labels: {
                     //align: 'left',
                     y: 5
@@ -155,7 +155,7 @@ $(function () {
                     text: null
                 },
 				plotLines: [{
-		            value: 29,
+		            value: Vabs,
 		            width: 2,
 		            color: 'green',
 		            dashStyle: 'shortdash',
@@ -163,7 +163,7 @@ $(function () {
 			            text: 'Vabs'
 		             }
 		            }, {
-		            value: 27.2,
+		            value: Vflot,
 		            width: 2,
 		            color: 'red',
 		            dashStyle: 'shortdash',
@@ -210,8 +210,8 @@ $(function () {
 		          }]
 		       },{
                 opposite: true,
-				min: 0,
-		        max: 5000 ,
+				min: Escala_Wred_min,
+		        max: Escala_Wred_max ,
 		        labels: {
                     //align: 'left',
                     y: 5
@@ -220,12 +220,12 @@ $(function () {
                     text: null
                 },
 				plotLines: [{
-		            value: 4000,
+		            value: 1000,
 		            width: 2,
 		            color: 'red',
 		            dashStyle: 'shortdash',
 		            label: {
-			            text: '4000w'
+			            text: '1000w'
 		                   }
 		          }]
 		
