@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-08
+# Versión 2022-03-24
 
 import time,sys
 import json
-from multiprocessing import Pool
+
+import multiprocessing
 
 import MySQLdb 
 
@@ -18,11 +19,26 @@ colorama.init()
 
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' fv_ads.py') #+Style.RESET_ALL)
 
-#Parametros Instalacion FV
-#from Parametros_FV import *
+
+##### Parametros_FV.py (lo que se indique en el archivo Parametros.py tiene prevalencia sobre lo aqui indicado) ################
+
+usar_ADS = [0,0] # activar o no el ADS
+nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
+direccion_ADS = [72,75]                                              # direccion I2C del ADS
+
+var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
+
+tmuestra_ADS = [5,5]                                                 # tiempo en sg entre capturas
+rate_ADS = [[250,250,250,250],[250,0,250,0]]                         # datarate de lectura
+bucles_ADS = [[10,5,5,5], [4,0,4,0]]                                 # Numero de bucles de lectura
+
+gain_ADS = [[2,2,2,2], [16,0,16,0]]                                  # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
+res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]      # ratio lectura ADS - Lectura real
+######################################################
 
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
-exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+exec(open(parametros_FV).read(),globals()) # carga inicial Parametros_FV.py
                 
 #Comprobacion argumentos en comando
 simular = DEBUG= 0
@@ -197,8 +213,9 @@ def ADS_captura (ADS):  # como entrada solo el indice del ADS de las listas defi
             Ncapturas += 1
             
         except:
-            print(f'{tiempo} - Error {ee} en {nombre_ADS[ADS]}')
-            #sys.exit()
+            tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+            print(f'{tiempo} - Error {ee} en {nombre_ADS[ADS]}....se reinicia el proceso de captura del {nombre_ADS[ADS]}')
+            sys.exit()
         
 if __name__ == '__main__':    
 
@@ -218,6 +235,35 @@ if __name__ == '__main__':
         print()
     print (Fore.RESET+'=' * 50)
     time.sleep(5)
-
-    with Pool(len(ADS_activos)) as p:
-        print(p.map(ADS_captura, ADS_activos))
+    
+    # Arrancando procesos
+    for i in ADS_activos:
+        multiprocessing.Process(target = ADS_captura,args=(i,),name = f'ADS{i}').start()
+    
+    Procesos= multiprocessing.active_children() # lista procesos
+    print ('Procesos activos=',Procesos)
+    
+    # Bucle     
+    while True:
+        try:
+            for p in Procesos:
+                if not p.is_alive():
+                    print (f'Proceso {p} parado',p.name)
+                    time.sleep(3)
+                    i=int(p.name[-1])
+                    multiprocessing.Process(target = ADS_captura,args=(i,),name = f'ADS{i}').start()
+                    Procesos= multiprocessing.active_children()
+                    print (Procesos)
+                    
+            time.sleep(1)
+            
+        except:
+            time.sleep(1)
+            print()
+            print(Fore.RED + '=' * 50)
+            print ('Finalizando fv_ads.py.......')
+            for p in Procesos:
+                print(f'     ....Terminando hilo..{p}')
+                p.terminate()
+                time.sleep(1)
+            sys.exit()
