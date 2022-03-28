@@ -630,6 +630,74 @@ def Hibrido_lectura(NHIBRIDO):
     
 
 
+
+
+# Comprobacion BD
+
+try:
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    for i in range(len(usar_hibrido)):
+        if usar_hibrido[i] == 1:
+            if i==0: N_Hibrido = ""
+            else: N_Hibrido = f"{i}"
+            
+            try: # Borramos la tabla hibridoX si la opcion BORRAR esta activa
+                if BORRAR == 1:
+                    print (Fore.RED + Back.YELLOW+ f'  ATENCION.. SE BORRARAN LOS DATOS DE LA TABLA hibrido{N_Hibrido}')
+                    print()
+                    salir = click.prompt(Fore.CYAN + '  Si no esta seguro pulse 0 para salir o 1 para borrar ', type=str, default='0')
+                    if salir == "1":
+                        cursor.execute('DROP TABLE `hibrido{N_Hibrido}` ')   
+                        db.commit()
+                        print (Fore.CYAN+' Tabla hibrido{N_Hibrido} borrada'+Style.RESET_ALL)
+            except:
+                pass
+            
+            
+            try: #inicializamos registro RAM y tabla si no existe en BD 
+                              
+                Sql = f""" CREATE TABLE IF NOT EXISTS `hibrido{N_Hibrido}` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `Tiempo` datetime NOT NULL,
+                  `Vgen` float NOT NULL DEFAULT 0,
+                  `Fgen` float NOT NULL DEFAULT 0,
+                  `Iplaca` float NOT NULL DEFAULT 0,
+                  `Vplaca` float NOT NULL DEFAULT 0,
+                  `Wplaca` smallint(5) NOT NULL DEFAULT 0,
+                  `Vbat` float NOT NULL DEFAULT 0,
+                  `Vbus` smallint(3) NOT NULL DEFAULT 0,
+                  `Ibatp` float NOT NULL DEFAULT 0,
+                  `Ibatn` float NOT NULL DEFAULT 0,
+                  `temp` float NOT NULL DEFAULT 0,
+                  `PACW` smallint(5) NOT NULL DEFAULT 0,
+                  `PACVA` smallint(5) NOT NULL DEFAULT 0,
+                  `Flot` tinyint(1) NOT NULL DEFAULT 0,
+                  `OnOff` tinyint(1) NOT NULL DEFAULT 0,
+                  PRIMARY KEY (`id`),
+                  KEY `Tiempo` (`Tiempo`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci
+                """                
+                import warnings # quitamos el warning que da si existe la tabla equipos
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    cursor.execute(Sql)   
+                db.commit()
+                
+                cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                              ('HIBRIDO'+ N_Hibrido ,'{}'))   
+                db.commit()
+            except:
+                pass             
+    cursor.close()
+    db.close()            
+                
+except:
+    print (Fore.RED,'ERROR inicializando BD RAM')
+    sys.exit()
+
+
+
 if __name__ == '__main__':  
 
     # Ver numero Hibridos activos
