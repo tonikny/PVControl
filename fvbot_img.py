@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2019-12-22
+# Versión 2022-04-23
 
 import time 
 import telebot # Librería de la API del bot.
@@ -24,8 +24,8 @@ api_key = 'ZZZZZ'   # Key Clarifai
 
 """
 
-from clarifai.rest import ClarifaiApp
-from clarifai.rest import Workflow # si se quiere utilizar algun workflow
+#from clarifai.rest import ClarifaiApp
+#from clarifai.rest import Workflow # si se quiere utilizar algun workflow
 
 if motion_telegram == 0:
     sys.exit()
@@ -33,23 +33,6 @@ if motion_telegram == 0:
 hora_actual = int(time.strftime("%H")) # hora
 dia_sem = int(time.strftime("%u")) # dia de la semana
 
-try:
-    with open('/run/shm/motion.cfg', mode='r') as f:
-        modo_alarma = f.read()
-except:
-    modo_alarma='PRG'
-    with open('/run/shm/motion.cfg', mode='w') as f:
-        f.write('PRG')
-        
-if int(horario_alarma[dia_sem][hora_actual]) == 0 and modo_alarma == 'PRG':
-    print ('fuera de horario de alarma')
-    sys.exit()
-
-bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-bot.skip_pending=True # Skip the pending messages
-
-cid=Aut[0] # poner el usuario donde queremos mandar el msg 
-alarma=0
 
 narg = len(sys.argv)
 #print ('Narg=',narg)
@@ -60,9 +43,32 @@ if narg > 1:
 else:
     imagen = "/home/pi/PVControl+/test.jpg" #imagen de prueba
 
+
+try:
+    with open('/run/shm/motion.cfg', mode='r') as f:
+        modo_alarma = f.read()
+except:
+    modo_alarma='PRG'
+    with open('/run/shm/motion.cfg', mode='w') as f:
+        f.write('PRG')
+        
+if int(horario_alarma[dia_sem][hora_actual]) == 0 and modo_alarma == 'PRG' and 'deteccion' in imagen:
+    print ('fuera de horario de alarma')
+    sys.exit()
+
+bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
+bot.skip_pending=True # Skip the pending messages
+
+cid=Aut[0] # poner el usuario donde queremos mandar el msg 
+alarma=0
+
 # --------Analizar Foto en Clarifai ------------------------------
 try:
     if motion_clarifai == 1:
+        
+        from clarifai.rest import ClarifaiApp
+        from clarifai.rest import Workflow # si se quiere utilizar algun workflow
+
         
         app = ClarifaiApp(api_key=api_key)
         
@@ -112,8 +118,14 @@ while not(salir) and N < Nmax:
         if alarma > 90:
             bot.send_photo(cid_alarma, photo=open(imagen, 'rb'), caption=msg_telegram)
             time.sleep(60)
-            video = max(glob.iglob('/home/pi/motion/videos/*.mp4'), key=os.path.getctime)
-            bot.send_video(cid_alarma, data=open(video, 'rb'), caption=video)
+            
+            ultimo_video = max(glob.iglob('/home/pi/motion/videos/*.mp4'), key=os.path.getctime)
+            video = open(ultimo_video, 'rb')            
+            bot.send_video(cid_alarma, video,caption= video.name)
+            
+            #videonote = open(ultimo_video, 'rb')            
+            #bot.send_video_note(cid_alarma, videonote)
+            
         else:               
             bot.send_photo(cid, photo=open(imagen, 'rb'), caption=msg_telegram)    
         salir = True

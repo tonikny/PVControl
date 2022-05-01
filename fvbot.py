@@ -32,14 +32,11 @@ cid = Aut[0]
 #bot.send_message(cid, 'Arrancando Bot Telegram')
 
 # Control motion Camara -----------------
-def webcontrol(chat_id, type, cmd):
-    req = 'http://localhost:8080/0/'+type+'/'+cmd
+def webcontrol(chat_id, tipo, cmd):
+    req = 'http://localhost:7999/1/'+tipo+'/'+cmd
     res = requests.get(req).text
-    res1 = res.find('</b>')
-    res2 = res.find('</body>')
-    res3 = res[res1+4:res2]
-    
-    bot.send_message(chat_id, res3)
+    if res == '': res = 'OK'
+    bot.send_message(chat_id, f'{req}\n{res}')
 
 # Conexion MQTT -------------------------
 def on_connect(client, userdata, flags, rc):
@@ -956,15 +953,17 @@ def command_motion_foto(m):
     global markup
     cid = m.chat.id
     if cid in Aut:
-        requests.get('http://localhost:8080/0/action/snapshot')
+        requests.get('http://localhost:7999/1/action/snapshot')
 
 @bot.message_handler(commands=['Video']) 
 def command_motion_video(m): 
     global markup
     cid = m.chat.id
     if cid in Aut:
-        video = max(glob.iglob('/home/pi/motion/videos/*.mp4'), key=os.path.getctime)
-        bot.send_video(cid, data=open(video, 'rb'), caption=video)
+        ultimo_video = max(glob.iglob('/home/pi/motioneye/capturas/*.mp4'), key=os.path.getctime)
+        print(cid, ultimo_video)
+        video = open(ultimo_video, 'rb')            
+        bot.send_video(cid, video,caption= video.name)
 
 @bot.message_handler(commands=['Estado']) 
 def command_motion_estado(m): 
@@ -988,7 +987,7 @@ def telegram_polling():
         bot.polling(none_stop=True,interval=5, timeout=60) #constantly get messages from Telegram
     except:
         nfallos=nfallos+1
-        print (time.strftime("%c"), nfallos,' Error polling C')
+        print (time.strftime("%c"), nfallos,' Error polling Telegram')
         bot.stop_polling()
         time.sleep(10)
         telegram_polling()

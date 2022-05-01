@@ -8,6 +8,11 @@ import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
+usar_motioneye=0
+
+from Parametros_FV import *
+
+
 carpeta= '/home/pi/PVControl+/etc/systemd/system/*.*'
 
 print(Fore.YELLOW+'######## Activando Sevicios #########')
@@ -21,6 +26,12 @@ for f in glob.glob(carpeta):
         print (Fore.BLUE,res.stdout[-50:])   
     else:
         print(Fore.RED+f'{f} no es un fichero')
+        
+if usar_motioneye == 0: 
+        res = subprocess.run(['sudo','systemctl', 'stop', 'motioneye'], capture_output=True)
+        res = subprocess.run(['sudo','systemctl', 'disable', 'motioneye'], capture_output=True)
+
+
     
 #Paginas web
 print()
