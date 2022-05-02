@@ -921,7 +921,10 @@ try:
                 if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                 else: Estado['PVControl+'] = 'ERROR'
                 
-                Estado['PVControl+_error'] += f" #### Error lectura tabla equipos clave {d_[row[0]]}"                
+                try:
+                    Estado['PVControl+_error'] += f" #### Error lectura tabla equipos clave {d_[row[0]]}"                
+                except:
+                    Estado['PVControl+_error'] += f" #### Error lectura tabla equipos  clave no reconocida"
                 #print ('Error Lectura Tabla equipos')
                 #logBD('Error lectura Tabla Equipos')    
                 #time.sleep(5)
@@ -938,16 +941,6 @@ try:
                 try:
                     with open(archivo_ram, 'rb') as f:
                         d_victron = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
-            ee=30.3
-            if usar_bmv == 1:
-                archivo_ram='/run/shm/datos_bmv.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_bmv = pickle.load(f)
                 except:
                     logBD('error lectura '+archivo_ram)
                     continue

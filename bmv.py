@@ -1,172 +1,245 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-05-01
+# Versión 2022-05-02
 
-import  sys, time
-#import os
+import sys, time
 import serial
-import pickle
-#from csvFv import CsvFv
+import json
+#import pickle
+
 import subprocess
-from Parametros_FV import *
 import MySQLdb
+
+
+equipo = 'BMV'
+
+
+###### Parametros por defecto .... modificar en fichero Parametros_FV.py #########
+
+usar_bmv = 0              # 1 para leer datos victron ..... 0 para no usar
+dev_bmv = "/dev/serial0"  # puerto donde reconoce la RPi al BMV
+
+grabar_datos_bmv = 1      # 1 = Graba la tabla bmv... 0 = No graba
+
+n_muestra_bmv = 5         # Numero de muestras para guardar en BD tabla bmv
+
+##################################################################################
+
+
+from Parametros_FV import *
 
 if usar_bmv == 0:
     print ('apagando servicio BMV por no configurar equipo')
     print (subprocess.getoutput('sudo systemctl stop bmv')) #python3
     sys.exit()
 
-class bmv:
+import colorama # colores en ventana Terminal
+from colorama import Fore, Back, Style
+colorama.init()
 
-    def __init__(self, serialport):
-        self.serialport = serialport
-        self.ser = serial.Serial(serialport, 19200, timeout=5000)
-        self.crlf = '\r\n'
-        self.tab = '\t'
-        self.key = ''
-        self.value = ''
-        self.dct = {}
-        
-    def read_data_single(self):
-        try:
-            flag_Vbat = 0
-            while True:
-                try:
-                    ee=10
-                    data = self.ser.readline()
-                    ee=20
-                    #print ('data=',data)
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando '+ Fore.GREEN + sys.argv[0]) #+Style.RESET_ALL)
+
+#Comprobacion argumentos en comando
+DEBUG= 0
+narg = len(sys.argv)
+if '-p1' in sys.argv: DEBUG= 1 # para desarrollo permite print en distintos sitios
+elif '-p' in sys.argv: DEBUG= 100 
+
+
+# Comprobacion BD
+
+try:
+    ee = '10'
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+                              
+    Sql = """CREATE TABLE IF NOT EXISTS `bmv` (
+      `id` int(11) NOT NULL,
+      `Tiempo` datetime NOT NULL COMMENT 'Fecha captura',
+      `SOC` float NOT NULL DEFAULT 0 COMMENT 'SOC bateria',
+      `Vbat` float NOT NULL DEFAULT 0 COMMENT 'Voltaje Bateria',
+      `Vm` float NOT NULL DEFAULT 0 COMMENT 'Valor Medio Bateria',
+      `Temp` float NOT NULL DEFAULT 0 COMMENT 'Temperatura',
+      `Ibat` float NOT NULL DEFAULT 0 COMMENT 'Intensidad Bateria',
+      
+      PRIMARY KEY (`id`),
+      KEY `Tiempo` (`Tiempo`)
+      )  ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
+       """
                     
-                    data=data.strip(b'\r\n')
-                    ee=30
-                    data=data.split(b'\t')
-                    #print ('data=',data, len(data))
-                except:
-                    print (time.strftime("%Y-%m-%d %H:%M:%S"),' - error readline ', ee, data)
-                    self.ser.close()
-                    time.sleep(0.2)
-                    return None
-                    
-                try:
-                    if len(data) == 2:
-                        ee = 100
-                        if data[0] == b"V": 
-                            self.dct["Vbat"] = float(data[1]) / 1000         # Vbat
-                            flag_Vbat = 1
-                        elif data[0] == b"VPV": self.dct["Vplaca"] = float(data[1]) / 1000   # Vplaca
-                        elif data[0] == b"PPV": self.dct["Wplaca"] = float(data[1])          # Wplaca
-                        elif data[0] == b"I":   self.dct["Ibat"] = float(data[1]) / 1000     # Ibat
-                        elif data[0] == b"VM":  self.dct["Vm"] = float(data[1]) / 1000       # Vbat en punto medio
-                        elif data[0] == b"T":   self.dct["Temp"] = float(data[1])            # Temperatura
-                        elif data[0] == b"SOC": self.dct["SOC"] = float(data[1]) / 10        # SOC
-                                           
-                        elif data[0].decode(encoding='UTF-8')[0]== "H": 
-                            ee = 200
-                            self.dct[data[0].decode(encoding='UTF-8')] = float(data[1])    ## distintas H*
-                            
-                        elif data[0] == b"CS":
-                            ee = 300
-                            if int(data[1]) == 0: self.dct["CS"] = 'OFF'
-                            elif int(data[1]) == 2: self.dct["CS"] = 'FALLO'
-                            elif int(data[1]) == 3: self.dct["CS"] = 'BULK'
-                            elif int(data[1]) == 4: self.dct["CS"] = 'ABS'
-                            elif int(data[1]) == 5: self.dct["CS"] = 'FLOT'
-                         
-                        elif data[0] == b'Checksum' and flag_Vbat == 1:
-                            ee = 400
-                            flag_Vbat = 0
-                            self.dct['Tiempo_sg'] = time.time()
-                            self.dct['Tiempo'] = time.strftime("%Y-%m-%d %H:%M:%S")
-                            return self.dct
-                            
-                        else:
-                            ee= 900 
-                            self.dct[str(data[0])] = str(data[1])  # resto campos
-                        
-                except:
-                    print('pasa por donde no debe=',ee)
-                    time.sleep(0.2)
-                    pass 
-                
-        except:
-            print ("Error recolectando datos bmv", ee, ' data=',data, len(data))
-            #self.ser.close()
-            time.sleep(0.5)
-            #self.ser = serial.Serial(serialport, 19200, timeout=5000)
+    import warnings # quitamos el warning que da si existe la tabla
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        cursor.execute(Sql)   
+        db.commit()
+    
+    
+    ee = '10b'
+    try: #inicializamos registro en BD RAM
+        cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)",
+                      (equipo,'"{}"'))
+        db.commit()
+    except:
+        pass    
+    
+                                
+except:
+    print (Fore.RED,f'ERROR {ee} - inicializando BD RAM')
+    sys.exit()
 
 
-if __name__ == '__main__':
-    #c = CsvFv('/run/shm/datos_bmv.csv')
-    archivo_ram = '/run/shm/datos_bmv.pkl'
+archivo_ram = '/run/shm/datos_bmv.pkl'
     
-    nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
-    datosBD = {}
-    grabar_BD = grabar_datos_bmv
-    n_grabar_BD = n_grabar_BD_cont = 5
+nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
+datosBD = {}
+grabar_BD = grabar_datos_bmv
+n_grabar_BD = n_grabar_BD_cont = n_muestra_bmv
+
+ser = serial.Serial(dev_bmv, 19200, timeout=5000)
+crlf = '\r\n'
+tab = '\t'
+key = ''
+value = ''
+dct = {} 
     
-    while True:
+flag_Vbat = 0
+    
+while True:
+    try:
+        # Leer una linea
         try:
             ee=10
-            ve = bmv(dev_bmv)
+            data = ''
+            data = ser.readline()
             ee=20
-            datos = ve.read_data_single()
+            #print ('data=',data)
+            
+            data=data.strip(b'\r\n')
             ee=30
-            if datos != None :
-                with open(archivo_ram, 'wb') as f:
-                    pickle.dump(datos, f)
-                
-                #c.escribirCsv(datos)
-                #print (datos) #descomenta esta linea para ver la salida completa de datos en el terminal
-                #print ('--------------')
-                
-                try:
-                    #print (datos['Tiempo'],' - Vbat=',datos['Vbat'],' - Ibat=',datos['Ibat'])
-                    
-                    n_grabar_BD_cont -= 1
-                    #print ('------------ ',n_grabar_BD_cont,' ---------')
-                    if grabar_BD == 1 and n_grabar_BD_cont == 0:
-                        n_grabar_BD_cont = n_grabar_BD
-                        
-                        # Adapto nombres de campos para BD
-                        for i,j in zip (nombresBD.keys(),nombresBD.values()):
-                            try:
-                                #print (i,j)
-                                datosBD[i]= datos[j]
-                            except:
-                                datosBD[i] = 0
-                                
-                        #del dict['Tiempo_sg']
-                        #print ('-------------------BD---------------------------')
-                        #print (datosBD)
-                        #print ('-------------')
-                    
-                        
-                        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                        cursor = db.cursor()
-                        n_campos = ', '.join(['%s'] * len(datosBD))
-                        campos = ', '.join(datosBD.keys())
-                        sql = "INSERT INTO bmv ( %s ) VALUES ( %s )" % (campos, n_campos)
-                        #print (sql,list(datosBD.values()))
-                        cursor.execute(sql, list(datosBD.values()))
-
-                        db.commit()
-                        cursor.close()
-                        db.close()
-
-                except:
-                    print ('error grabacion BD')
-                    pass
-            else:
-                print('no hay datos',ee)
-            #print ('..........')
-            time.sleep(0.2)
-        except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
-            break
+            data=data.split(b'\t')
+            #print ('data=',data, len(data))
         except:
-            print("error no conocido", ee)
-            #sys.exit()
+            if DEBUG ==1: print (Fore.CYAN + time.strftime("%Y-%m-%d %H:%M:%S"),' - error readline ', ee, data)
+            time.sleep(0.2)
+            continue
+
+        # Interpretar dato leido
+        try:
+            ee = 100
+            if len(data) == 2:
+                ee = 110
+                if data[0] == b"V": 
+                    dct["Vbat"] = float(data[1]) / 1000         # Vbat
+                    flag_Vbat = 1
+                elif data[0] == b"VPV": dct["Vplaca"] = float(data[1]) / 1000   # Vplaca
+                elif data[0] == b"PPV": dct["Wplaca"] = float(data[1])          # Wplaca
+                elif data[0] == b"I":   dct["Ibat"] = float(data[1]) / 1000     # Ibat
+                elif data[0] == b"VM":  dct["Vm"] = float(data[1]) / 1000       # Vbat en punto medio
+                elif data[0] == b"T":   dct["Temp"] = float(data[1])            # Temperatura
+                elif data[0] == b"SOC": dct["SOC"] = float(data[1]) / 10        # SOC
+                                   
+                elif data[0].decode(encoding='UTF-8')[0]== "H": 
+                    ee = 120
+                    dct[data[0].decode(encoding='UTF-8')] = float(data[1])    ## distintas H*
+                    
+                elif data[0] == b"CS":
+                    ee = 130
+                    if int(data[1]) == 0: dct["CS"] = 'OFF'
+                    elif int(data[1]) == 2: dct["CS"] = 'FALLO'
+                    elif int(data[1]) == 3: dct["CS"] = 'BULK'
+                    elif int(data[1]) == 4: dct["CS"] = 'ABS'
+                    elif int(data[1]) == 5: dct["CS"] = 'FLOT'
+                 
+                    
+                else:
+                    ee= 190
+                    if data[0] != b"Checksum":
+                        dct[data[0].decode(encoding='UTF-8')] = data[1].decode(encoding='UTF-8')
+                    
+        except:
+            print(Fore.RED+'pasa por donde no debe=',ee, '-- data=',data)
+            time.sleep(0.2)
+             
+        # Grabar en BD
+        ee = 200
+        if flag_Vbat ==1:
+            flag_Vbat = 0
+       
+            try:####  ARCHIVOS RAM en BD ############ 
+                ee = 210
+                #dct['Tiempo_sg'] = time.time()
+                
+                tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+                dct['Tiempo'] = tiempo
+                
+                salida = json.dumps(dct)
+                sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{equipo.upper()}'") # grabacion en BD RAM
+                #print (Fore.BLUE+sql)
+                cursor.execute(sql)
+                
+            except:
+                print(Fore.RED+f'error {ee}, Grabacion tabla RAM equipos en {equipo.upper()}')
+                print (salida)
+            
+            """    
+            # guardar el fichero RAM (se eliminara en versiones posteriores
+            ee = 220
+            with open(archivo_ram, 'wb') as f:
+                pickle.dump(dct, f)
+            """
+            
+            
+            # Salida DEBUG
+            try:
+                if DEBUG == 1:
+                    print (Fore.RESET+f" {time.strftime('%H:%M:%S')} : Vbat= {dct['Vbat']:.3f}V - Ibat= {dct['Ibat']:.3f}A - SOC= {dct['SOC']:.2f}%")
+                
+                elif DEBUG ==100:
+                    print(Fore.RESET+'=' * 50)
+                    print (Fore.YELLOW+time.strftime("%H:%M:%S"), end='')
+                    print (Fore.CYAN+ '--', dct) 
+            except:
+                pass
+            
+            ee = 230
+            try:
+                n_grabar_BD_cont -= 1
+                #print ('------------ ',n_grabar_BD_cont,' ---------')
+                if grabar_BD == 1 and n_grabar_BD_cont == 0:
+                    n_grabar_BD_cont = n_grabar_BD
+                    
+                    # Adapto nombres de campos para BD
+                    for i,j in zip (nombresBD.keys(),nombresBD.values()):
+                        try:
+                            #print (i,j)
+                            datosBD[i]= dct[j]
+                        except:
+                            datosBD[i] = 0
+                            
+                    n_campos = ', '.join(['%s'] * len(datosBD))
+                    campos = ', '.join(datosBD.keys())
+                    sql = "INSERT INTO bmv ( %s ) VALUES ( %s )" % (campos, n_campos)
+                    #print (sql,list(datosBD.values()))
+                    cursor.execute(sql, list(datosBD.values()))
+
+            except:
+                print ('error grabacion BD', ee)
+                
+            db.commit()
+            
+            time.sleep(0.2)
         
+    except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
+        ser.close()
+        cursor.close()
+        db.close()
+        break
+    except:
+        print("error no conocido", ee)
+        time.sleep(1)
+        #sys.exit()
+    
 """
     units[V]="mV";            descr[V]="Voltage" # descr[V]="Main (battery) voltage"
     units[VS]="mV";           descr[VS]="Auxiliary (starter) voltage"
