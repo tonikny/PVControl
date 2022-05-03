@@ -15,12 +15,12 @@ import MySQLdb
 equipo = 'BMV'
 
 
-###### Parametros por defecto .... modificar en fichero Parametros_FV.py #########
+###### Parametros por defecto .... NO CAMBIAR ....... modificar en fichero Parametros_FV.py #########
 
 usar_bmv = 0              # 1 para leer datos victron ..... 0 para no usar
 dev_bmv = "/dev/serial0"  # puerto donde reconoce la RPi al BMV
 
-grabar_datos_bmv = 1      # 1 = Graba la tabla bmv... 0 = No graba
+grabar_datos_bmv = 0      # 1 = Graba la tabla bmv... 0 = No graba
 
 n_muestra_bmv = 5         # Numero de muestras para guardar en BD tabla bmv
 

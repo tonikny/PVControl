@@ -248,7 +248,7 @@ usar_bmv = 0              # 1 para leer datos victron ..... 0 para no usar
 dev_bmv = "/dev/serial0"  # puerto donde reconoce la RPi al BMV
 
 grabar_datos_bmv = 0      # 1 = Graba la tabla bmv... 0 = No graba
-t_muestra_bmv = 5         # Tiempo en segundos entre muestras
+n_muestra_bmv = 5         # # Numero de muestras para guardar en BD tabla bmv
 
 # -----------------------------------------------
 #################
@@ -410,7 +410,10 @@ pvoutput_id = "1233455"
 ###### Vigilancia por Camara con Motion y Clarifai ######
 #########################################################
 
+usar_motioneye = 0 # activa servicio motioneye
+
 motion_telegram = 0 # 1 = Envia foto deteccion a Telegram
+
 motion_clarifai = 0 # activa reconocimiento por Clarifai
 api_key = 'xxxxxxxxxxxx' # Key Clarifai
 workflow_id = 'yyyyyyyy' # Nombre del Workflow creado en Clarifai

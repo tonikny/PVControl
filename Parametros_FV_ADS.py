@@ -126,7 +126,7 @@ bucles_ADS = [[10,5,5,5], [5,0,5,0]]                                 # Numero de
 
 gain_ADS = [[2,2,2,2], [16,0,16,0]]                                    # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
 modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
-res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,100/0.075]]            # ratio lectura ADS - Lectura real
+res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]            # ratio lectura ADS - Lectura real
 
 # -----------------------------------------------
 #########################
@@ -246,7 +246,8 @@ usar_bmv = 0              # 1 para leer datos victron ..... 0 para no usar
 dev_bmv = "/dev/serial0"  # puerto donde reconoce la RPi al BMV
 
 grabar_datos_bmv = 0      # 1 = Graba la tabla bmv... 0 = No graba
-t_muestra_bmv = 5         # Tiempo en segundos entre muestras
+
+n_muestra_bmv = 5         # # Numero de muestras para guardar en BD tabla bmv
 
 # -----------------------------------------------
 #################
@@ -395,7 +396,11 @@ pvoutput_id = "1233455"
 ###### Vigilancia por Camara con Motion y Clarifai ######
 #########################################################
 
+
+usar_motioneye = 0 # activa servicio motioneye
+
 motion_telegram = 0 # 1 = Envia foto deteccion a Telegram
+
 motion_clarifai = 0 # activa reconocimiento por Clarifai
 api_key = 'xxxxxxxxxxxx' # Key Clarifai
 workflow_id = 'yyyyyyyy' # Nombre del Workflow creado en Clarifai

@@ -1,7 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-02-01
+# Versión 2022-05-01
+
+
+# Programa de Instalacion del PVControl+
+#
+# Ejecutar desde /home/pi con el siguiente comando
+
+#    sudo python3 PVControl+_Intalacion.py opciones
+
+#       opciones posibles:  
+#          -c  implica clonar repositorio git
+#          -d  instala docker y Home Assistant   
+#          -m  instala motionEye   
+
+
+# Si ya esta clonado el repositario git y solo se quiere reinstalar....
+#    sudo python3 PVControl+_Intalacion.py
+
 
 import os
 import time
@@ -21,6 +38,7 @@ time.sleep(1)
 
 lista1 = [#clonacion PVControl+
          'git clone https://git.code.sf.net/p/pvcontrol/code PVControl+',
+   
            ]
 
 
@@ -33,10 +51,6 @@ lista2 = [# Sistema, Apache & php
          'sudo apt update',
          'sudo apt install php8.1 php8.1-cli php8.1-common php8.1-curl php8.1-gd php8.1-intl php8.1-mbstring php8.1-mysql php8.1-opcache php8.1-readline php8.1-xml php8.1-xsl php8.1-zip php8.1-bz2 libapache2-mod-php8.1 -y',
          
-         # Docker
-         'sudo apt install raspberrypi-kernel raspberrypi-kernel-headers',
-         'curl -sSL https://get.docker.com | sh',
-         'sudo usermod -aG docker pi',
          
          # MariaDB
          'sudo apt install mariadb-server mariadb-client -y',
@@ -53,7 +67,7 @@ lista2 = [# Sistema, Apache & php
          'rm phpmyadmin.zip',
          'sudo mv phpMyAdmin-*-all-languages /usr/share/phpmyadmin',
          'sudo chmod -R 0755 /usr/share/phpmyadmin',
-         'wget pvcontrol.adnsolar.eu/phpmyadmin.conf','sudo mv phpmyadmin.conf /etc/apache2/conf-available/phpmyadmin.conf',
+         'sudo cp /home/pi/PVControl+/util/phpmyadmin.conf /etc/apache2/conf-available/phpmyadmin.conf',
          'sudo a2enconf phpmyadmin',
          'sudo systemctl reload apache2',
          'sudo mkdir /usr/share/phpmyadmin/tmp/',
@@ -85,20 +99,47 @@ lista2 = [# Sistema, Apache & php
          'sudo pip3 install timeout_decorator',
          'sudo pip3 install crc16',
          'sudo pip3 install clarifai',
+         'sudo pip3 install clarifai-grpc',
          
          # Varios
-         'sudo apt-get install motion',    
+         # motionEye
+         #### ver .....https://github.com/motioneye-project/motioneye/wiki/Installation
          
          ]
 
-lista1 = [#clonacion PVControl+
-         'git clone https://git.code.sf.net/p/pvcontrol/code PVControl+',
+
+lista3 = [# docker y HA
+         
+         # Docker
+         'sudo apt install raspberrypi-kernel raspberrypi-kernel-headers',
+         'curl -sSL https://get.docker.com | sh',
+         'sudo usermod -aG docker pi',
+   
+         # Home Assistant
+         'docker run -d --name homeassistant --privileged --restart=unless-stopped -e TZ=Europe/Madrid -v /home/pi/PVControl+/HA:/config --network=host  ghcr.io/home-assistant/home-assistant:stable',
            ]
+
+
+
+lista4 = [# motionEye
+         
+          #### ver .....https://github.com/motioneye-project/motioneye/wiki/Installation
+         
+           ]
+
 
 if '-c' in sys.argv:
     lista = lista1 + lista2
 else:
     lista = lista2
+
+if '-d' in sys.argv:
+   lista += lista3
+   
+if '-m' in sys.argv:
+   lista += lista4
+
+
 
 
 for i in lista:
@@ -144,6 +185,7 @@ res = subprocess.run(['ln', '-s','/home/pi/PVControl+/PVControl_Configuracion_In
 res = subprocess.run(['ln', '-s','/home/pi/PVControl+/Arrancar_servicios_PVControl+.py','/home/pi/Desktop/Arrancar_servicios_PVControl+.py'])
 res = subprocess.run(['ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVControl+.py','/home/pi/Desktop/Parar_Servicios_PVControl+.py'])
 res = subprocess.run(['ln', '-s','/home/pi/PVControl+/Ver_Programas_en_Ejecucion_PVControl+.sh','/home/pi/Desktop/Ver_Programas_en_Ejecucion_PVControl+.sh'])
+res = subprocess.run(['ln', '-s','/home/pi/PVControl+/PVControl+/PVControl_Instalacion_HomeAssistant.py','/home/pi/Desktop/PVControl_Instalacion_HomeAssistant.py'])
 
 print (Fore.GREEN+ '  ---- OK -----')
 
