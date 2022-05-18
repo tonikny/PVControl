@@ -13,6 +13,10 @@ from Parametros_FV import *
 
 basepath = '/home/pi/PVControl+/'
 
+RES0 = RES1 = RES2 = RES3 = 1
+RES0_gain = RES1_gain = RES2_gain = RES3_gain = 1
+SHUNT1 = SHUNT2 = 1
+
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()

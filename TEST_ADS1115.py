@@ -27,7 +27,7 @@ SHUNT2 = 100.0/75 #Shunt Iplaca A/mV
 I_gain = 16 # Fondo escala 1=4,096 - 2=2,048 - 4=1,024 - 8=0,512   - 16=0,256
 
 #Vbat
-RES0 = (68+1.5)/1.5 * 12.63/12.33     # Divisor tension Vbat
+RES0 = (68+3.3)/3.3             # Divisor tension Vbat
 RES0_gain = 2                   # Fondo escala 1=4,096 - 2=2.048
 #Vaux
 RES1 = (68+1.5)/1.5 * 12/12     # Divisor tension Vaux
