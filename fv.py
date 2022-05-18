@@ -26,10 +26,14 @@ Style: DIM, NORMAL, BRIGHT, RESET_ALL
 """
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
 
-import RPi.GPIO as GPIO # reles 4XX via GPIO
-GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
-#GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
-GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
+try:
+    import RPi.GPIO as GPIO # reles 4XX via GPIO
+    GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
+    #GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
+    GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
+
+except:
+    print (Fore.RED + 'No se cargan gestion de puertos GPIO..... asegure que esta usando una plataforma distinta a Raspberry Pi')
 
 import locale
 locale.setlocale(locale.LC_ALL, ("es_ES", "UTF-8")) #nombre mes en Castellano
@@ -40,10 +44,14 @@ import click # para DEBUG parando ejecucion donde se quiera
 basepath = '/home/pi/PVControl+/'
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
 
+usar_mqtt_publicaciones = [] # para evitar errores si no esta definida la variable en Parametros_FV.py
+usar_mqtt_subcripciones = [] # para evitar errores si no esta definida la variable en Parametros_FV.py
+
 try:
     #Parametros Instalacion FV
-    from Parametros_FV import *
-
+    #from Parametros_FV import *
+    exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                    
     from Srne import Srne # Libreria reguladores SRNE
 
     #aseguro que los valores introducidos en Parametros_FV.py son float
@@ -234,7 +242,6 @@ def on_disconnect(cli, userdata, rc):
         cli.disconnect()
 
 def on_message(client, userdata, msg):
-    global pub_time
     
     #print(msg.topic+" "+str(msg.payload))
     if msg.topic== "PVControl/Log":
@@ -250,15 +257,7 @@ def on_message(client, userdata, msg):
             db1.close()
         except:
             pass
-    elif msg.topic== "PVControl/Opcion":
-        pub_orden=str(msg.payload)
-        print (pub_orden)
-        
-        if pub_orden == "PUB_TIME_ON":
-            pub_time=1
-        elif pub_orden == "PUB_TIME_OFF":
-            pub_time=0
-
+    
              
 client = mqtt.Client("fv") #crear nueva instancia
 client.on_connect = on_connect
@@ -859,7 +858,6 @@ try:
         log = f'{t_muestra_1:.0f}/{t_muestra_2:.0f}/{t_muestra_3:.0f}/{t_muestra_4:.0f}/{t_muestra_5:.0f}/{t_muestra_6:.0f}/{t_muestra_7:.0f}/{t_muestra_8:.0f}'
         if t_muestra > t_muestra_max: logBD('TmuestraX='+ log)
         if DEBUG >= 2: print(Style.BRIGHT + Fore.YELLOW+ f'T={log:<26}',Fore.RESET,end='')
-        if pub_time == 1: client.publish("PVControl/Opcion/Time", log)
             
         if simular == 1:
             Ibat = random.choice([0,12,22,33,46,56,65,78,101,-10,-20,-30,-40,-50,-60,-70,-80,-90])
@@ -1538,37 +1536,37 @@ try:
             print(Fore.GREEN+'datos_FV  =',datos_FV)
             print(Fore.CYAN +'Reles_Dict=',Rele_Dict)
         
-        
-        ###### PUBLICACION MQTT ##########      
-        if Grabar == 1: #publico MQTT cada t_muestra*N_muestras
-            client.publish("PVControl/DatosFV/Iplaca",Iplaca)
-            client.publish("PVControl/DatosFV/Vplaca",Vplaca)
-            client.publish("PVControl/DatosFV/Wplaca",Wplaca)
-            client.publish("PVControl/DatosFV/Aux1",Aux1)
-            client.publish("PVControl/DatosFV/Aux2",Aux2)
-            client.publish("PVControl/Reles/PWM", PWM)  
-            if Vbat > 0 :
-                client.publish("PVControl/DatosFV/Ibat",Ibat)
-                client.publish("PVControl/DatosFV/Vbat",Vbat)
-                client.publish("PVControl/DatosFV/SOC",SOC)
-            if Vred > 0:
-                client.publish("PVControl/DatosFV/Ired",Ired)
-                client.publish("PVControl/DatosFV/Vred",Vred)
-                client.publish("PVControl/DatosFV/EFF",EFF)
-    
-            if usar_mqtt_homeassistant == 1: #publica en topic PVControl/DatosFV para poder ser usado por Home Assistant
-                client.publish("PVControl/DatosFV",salida_FV)
-                client.publish("PVControl/DatosFV/RELES",salida_RELES)
                     
         Grabar += 1
         if Grabar >= TP['n_muestras_grab'] + 1: Grabar = 1
 
+        ###### PUBLICACION MQTT ##########
+        ee = 340.0
+        try:
+            tm1= tiempo_sg
+            if usar_mqtt_publicaciones == 1:
+                ee = 340.1
+                for tm in mqtt_publicaciones:
+                    ee = 340.2
+                    if len(tm) == 3: tm2 =tm[2]
+                    else: tm2 = TP['t_muestra'] * TP['n_muestras_grab']
+                    ee = 340.3
+                    
+                    if tm2 != 0:
+                        if tm1 % tm2 < TP['t_muestra']:
+                            ee = 340.4
+                            if DEBUG == 100:print(Fore.CYAN+f' MQTT:{tm[0]}={eval(tm[1])}'+Fore.RESET,end='')
+                            client.publish(f'{mqtt_topic_raiz}{tm[0]}',f'{eval(tm[1])}')
+        except:
+            print (f'Error {ee} en Publicacion MQTT')
+            
+        
         ###### ajuste fino tiempo bucle
         T_ejecucion = round(time.time() - hora1,2)
 
         if T_ejecucion_max < T_ejecucion: T_ejecucion_max = T_ejecucion
         
-        ee=320.0
+        ee=400.0
         if DEBUG >= 1:
             #print (tiempo,'-',end='')
             print(f"{int(T_ejecucion*1000):4}ms-Sensor={TP['sensor_PID']}={TP['objetivo_PID']:.2f}",end='')

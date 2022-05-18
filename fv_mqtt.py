@@ -5,7 +5,7 @@
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fv_mqtt'
-control = 'usar_mqtt'
+control = 'usar_mqtt_suscripciones'
 exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
 # ########################################################################################
 

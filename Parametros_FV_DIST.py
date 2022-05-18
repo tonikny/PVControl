@@ -83,15 +83,24 @@ mqtt_puerto  = 1883
 mqtt_usuario = "rpi"
 mqtt_clave   = "fv"
 
-pub_diver = 0  # publica datos ejecucion diver en "PVControl/Opcion/Diver"
-pub_time  = 0  # publica datos de tiempo de ejecucion en "PVControl/Opcion/Time"
 
-usar_mqtt = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
-               # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt
-                
+##### Subcripciones #####
+usar_mqtt_subcripciones = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
+               # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt                
+
 mqtt_suscripciones=[] #  lista de topics a los que se suscribe fv_mqtt.py para guardar en tabla equipos.. diccionario=d_['MQTT']
 
-usar_mqtt_homeassistant = 0   # publica diccionario d_[FV] en topic PVControl/DatosFV para poder ser usado por Home Assistant
+
+##### Publicaciones #####
+usar_mqtt_publicaciones =  0    # 1 = Publica por MQTT los topic definidos en mqtt_publicaciones...... 0= No publica por MQTT  
+mqtt_topic_raiz = "PVControl/"  # Raiz del topic a publicar
+
+#  Tuplas [Nombre Topic, Variable, frecuencia en sg (0 deshabilita, por defecto = Tmuestra * Nmuestra)]
+mqtt_publicaciones = [["Wplaca","Wplaca"],
+                      ["Vbat","Vbat"],
+                      ["Ibat","Ibat",10],
+                      ["SOC","SOC",15],
+                      ["DatosFV","d_['FV']",0]]
 
 # -----------------------------------------------
 
@@ -259,7 +268,6 @@ n_muestra_bmv = 5         # # Numero de muestras para guardar en BD tabla bmv
 ## Si algun sensor (Iplaca, Vplaca,...)  usa el SMA o se quiere guardar en BD en la tabla 'sma'
 ## se debe poner usar sma = 1
 
-usar_sma = 0              # 1 para leer datos del sma ..... 0 para no usar
 usar_si = 0               # 1 para leer datos del SI ..... 0 para no usar
 usar_sb1 = 0              # 1 para leer datos del SB1 ..... 0 para no usar
 usar_sb2 = 0              # 1 para leer datos del SB2 ..... 0 para no usar
@@ -267,8 +275,6 @@ usar_smameter = 0        # 1 para leer datos del meter SMA ..... 0 para no usar
 IP_SI = "192.168.0.24"    # IP del SI
 IP_SB1 = "192.168.0.253"  # IP del SB1
 IP_SB2 = "192.168.0.252"  # IP del SB2
-
-grabar_datos_sma = 0      # 1 = Graba la tabla sma... 0 = No graba
 
 # -----------------------------------------------
 #################
