@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-05-02
+# Versión 2022-05-20
 
 import sys, time
 import serial
@@ -14,8 +14,7 @@ import MySQLdb
 
 equipo = 'BMV'
 
-
-###### Parametros por defecto .... NO CAMBIAR ----  modificar en fichero Parametros_FV.py #########
+###### Parametros por defecto .... NO CAMBIAR ....... modificar en fichero Parametros_FV.py #########
 
 usar_bmv = 0              # 1 para leer datos victron ..... 0 para no usar
 dev_bmv = "/dev/serial0"  # puerto donde reconoce la RPi al BMV

@@ -181,7 +181,6 @@ try:
         dia_anterior = dia
         dia = time.strftime("%Y-%m-%d")
         
-        DatosMux['Tiempo'] = tiempo # asignamos fecha/hora
         ee='10'
         if dia_anterior != dia: #cambio de dia
             Vcelda_max = [0.0] * usar_mux 
@@ -228,7 +227,7 @@ try:
                 Suma = sum(lecturas)
                 Max = max(lecturas)
                 Min = min(lecturas)
-                lectura_ADS = Suma/len(lecturas)
+                lectura_ADS = round(Suma/len(lecturas),2)
                 if DEBUG >= 100:
                     print (Fore.GREEN+'Lecturas Celda',K,'=', lecturas, lectura_ADS,Max, Min)        
             except:

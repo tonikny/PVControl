@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-03-24
+# Versión 2022-05-06
+
+# #################### Control Ejecucion Servicio ########################################
+servicio = 'fv_ads'
+control = 'sum(usar_ADS)'
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
+# ########################################################################################
 
 import time,sys
 import json
-
 import multiprocessing
-
 import MySQLdb 
 
 from smbus import SMBus
@@ -56,12 +60,6 @@ if '-s' in sys.argv: simular= 1 # para desarrollo permite simular respuesta
 if '-p1' in sys.argv: DEBUG= 1 
 elif '-p2' in sys.argv: DEBUG= 2 
 elif '-p' in sys.argv: DEBUG= 100 
-
-
-if sum(usar_ADS)== 0:
-    print (subprocess.getoutput('sudo systemctl stop fv_ads'))
-    sys.exit()
-
 
 bus = SMBus(1) # Activo Bus I2C para ADS o PCF
 
