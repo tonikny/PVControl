@@ -15,12 +15,12 @@ import MySQLdb
 equipo = 'BMV'
 
 
-###### Parametros por defecto .... modificar en fichero Parametros_FV.py #########
+###### Parametros por defecto .... NO CAMBIAR ----  modificar en fichero Parametros_FV.py #########
 
 usar_bmv = 0              # 1 para leer datos victron ..... 0 para no usar
 dev_bmv = "/dev/serial0"  # puerto donde reconoce la RPi al BMV
 
-grabar_datos_bmv = 1      # 1 = Graba la tabla bmv... 0 = No graba
+grabar_datos_bmv = 0      # 1 = Graba la tabla bmv... 0 = No graba
 
 n_muestra_bmv = 5         # Numero de muestras para guardar en BD tabla bmv
 
@@ -89,7 +89,7 @@ except:
     sys.exit()
 
 
-archivo_ram = '/run/shm/datos_bmv.pkl'
+#archivo_ram = '/run/shm/datos_bmv.pkl'
     
 nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
 datosBD = {}
@@ -104,9 +104,16 @@ value = ''
 dct = {} 
     
 flag_Vbat = 0
+dia = time.strftime("%Y-%m-%d")
     
 while True:
     try:
+        dia_anterior = dia
+        dia = time.strftime("%Y-%m-%d")
+
+        if dia_anterior != dia: #cambio de dia
+            dct = {} # borrar claves creadas por errores de transmision cada dia
+            
         # Leer una linea
         try:
             ee=10
@@ -171,7 +178,7 @@ while True:
                 #dct['Tiempo_sg'] = time.time()
                 
                 tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-                dct['Tiempo'] = tiempo
+                #dct['Tiempo'] = tiempo
                 
                 salida = json.dumps(dct)
                 sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{equipo.upper()}'") # grabacion en BD RAM
@@ -228,7 +235,7 @@ while True:
                 
             db.commit()
             
-            time.sleep(0.2)
+            #time.sleep(0.2)
         
     except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
         ser.close()
