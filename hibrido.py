@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-03-24
+# Versión 2022-05-25
 
 import os, sys, time
 import serial
@@ -252,6 +252,7 @@ def Hibrido_lectura(NHIBRIDO):
                  
                 if cmd == b'QPIGSBD' and len(r) >= 24:
                 
+                    
                     if protocolo_hibrido[I_Hibrido]==30:
                         ee = '10e'
                         if DEBUG == 100: print('Hibrido con protocolo 30')
@@ -305,7 +306,7 @@ def Hibrido_lectura(NHIBRIDO):
                         Datos['Carga_SCC'] = int(r[19][6]) # estado carga SCC
                         Datos['Carga_AC'] = int(r[19][7]) # estado carga AC
                         
-                        
+                
                     elif protocolo_hibrido[I_Hibrido]==18:
                         ee = '10f'
                         Vgrid = float(r[3])/10
@@ -373,6 +374,144 @@ def Hibrido_lectura(NHIBRIDO):
                                      'Line_Power_Direction':Line_Power_Direction}
 
                         Datos_BD = Datos.copy()
+                    
+                    
+                    elif protocolo_hibrido[I_Hibrido] == 16:  # mapeo protocolo 16
+                        ee = '10g'
+                        if DEBUG == 100: print('Hibrido con protocolo 16')
+                    
+                        ##########################################################################
+                        #            CAMBIAR INDICES  DE r[] DEPENDIENDO DEL MODELO DE HIBRIDO
+                        ##########################################################################
+                        #print ('Respuesta Hibrido=',r)
+                        
+                        Datos = {} # inicializo diccionario
+                        ee = '20g' # Datos Entrada AC
+                        try:
+                            Datos['Vred'] = float(r[3]) # Voltaje AC entrada Linea
+                            
+                            if r[4][0] == '1': signo = -1
+                            else: signo = 1
+                                
+                            Datos['Wred'] = signo * float(r[4][1:]) # Watios AC entrada Linea
+                            Datos['Fred'] = float(r[5]) # Frecuencia AC entrada Linea
+                            Datos['Ired'] = signo * float(r[6]) # Intensidad AC entrada Linea
+                            
+                        except:
+                            Datos['Vgrid'] = 0.01
+                            Datos['Wgrid'] = 0.01
+                            Datos['Fgrid'] = 0.01
+                            Datos['Igrid'] = 0.01
+                            
+                        ee = '21g' # Datos Salida AC
+                        try:
+                            Datos['Vacout'] = float(r[7]) # Voltaje AC salida
+                            Datos['PACW'] = float(r[8]) # Watios AC salida
+                            Datos['Facout'] = float(r[9]) # Frecuencia AC salida
+                            Datos['Iacout'] = float(r[10]) # Intensidad AC salida
+                            Datos['PACVA'] = round(Datos['Vacout'] * Datos['Iacout'],2)# Consumo aparente AC 
+                            
+                        except:
+                            Datos['Vacout'] = 0.01
+                            Datos['PACW'] = 0.01
+                            Datos['Facout'] = 0.01
+                            Datos['Iacout'] = 0.01
+                            Datos['PACVA'] = 0.01
+                        
+                        
+                        ee = '22g' # Datos de bus 
+                        try:
+                            Datos['Outputload'] = float(r[11]) # % carga AC salida
+                            Datos['Vpbus'] = float(r[12]) # Voltaje P BUS
+                            Datos['Vsbus'] = float(r[13]) # Voltaje S BUS
+                        
+                        except:
+                            Datos['Outputload'] =  0.01
+                            Datos['Vpbus'] = 0.01
+                            Datos['Vsbus'] = 0.01
+                        
+                        ee = '23g' # datos bateria
+                        try:
+                            Datos['Vbat'] = float(r[14]) # Voltaje bateria
+                            Datos['Vbat_n'] = r[15]      # Voltaje bateria n ?? (pte actualizar)
+                            Datos['SOC'] = float(r[16])  # Capacidad Bateria
+                        except:
+                            Datos['Vbat'] = 0.01
+                            Datos['Vbat_n'] = ''
+                            Datos['SOC'] = 0.01
+                            
+                        ee = '24g'  # Datos de placas
+                        try:
+                            Datos['Wplaca1'] = float(r[17]) # Wplaca string 1
+                            try:
+                                Datos['Wplaca2'] = float(r[18]) # Wplaca string 2
+                            except: 
+                                Datos['Wplaca2'] = 0.0
+                            
+                            try:
+                                Datos['Wplaca3'] = float(r[19]) # Wplaca string 3
+                            except: 
+                                Datos['Wplaca3'] = 0.0
+                            
+                            Datos['Wplaca'] = Datos['Wplaca1'] + Datos['Wplaca2'] + Datos['Wplaca3']
+                            
+                            Datos['Vplaca1'] = Datos['Vplaca'] = float(r[20]) # Vplaca string 1
+                            
+                            try:
+                                Datos['Vplaca2'] = float(r[21]) # Vplaca string 2
+                                Datos['Vplaca'] = (Datos['Vplaca1'] + Datos['Vplaca2']) / 2 # saco la media
+                            except:
+                                Datos['Vplaca2'] = 0.0
+                                
+                            try:
+                                Datos['Vplaca3'] = float(r[22]) # Vplaca string 3
+                                Datos['Vplaca'] = (Datos['Vplaca1'] + Datos['Vplaca2'] + Datos['Vplaca3']) / 3 # saco la media
+                            except:
+                                Datos['Vplaca3'] = 0.0
+                            
+                        except:
+                            Datos['Wplaca'] = 0.01
+                            Datos['Vplaca'] = 0.01
+                        
+                        Datos['Iplaca'] = round(float(Datos['Wplaca'])/float(Datos['Vbat']),1)  # Intensidad producida por placas en relacion a Vbat
+                        
+                            
+                        ee = '24g' # dato temperatura 
+                        try:
+                            Datos['Temp'] = float(r[23]) # Temperatura
+                        except:
+                            Datos['Temp'] = 0.01
+                            
+                        ee = '25g' # dato status 
+                        try:
+                            Datos['Status'] = r[24] # status
+                            Datos['Load'] = r[24][4] # load on/off
+                            Datos['Carga'] = r[24][5:6] # estado carga bateria...  00= Nada / 01= Carga / 10= Descarga 
+                            Datos['Inv_direction'] = r[24][7] # Sentido Inversor....  0=DC-AC / 1= AC-DC
+                            Datos['Lin_direction'] = r[24][8:9] # sentido linea ...  00= Nada / 01= Consumo / 10= Inyeccion 
+                            
+                        except:
+                            Datos['Status'] = ''
+                        
+                        
+                        #Iplaca = r[15]
+                        ee = '26g'                
+                        #Datos['Ibatn'] = float(r[16])  # A descarga bateria
+                        ee = '24c'
+                       # Datos['Flot'] = int(r[23][0]) # estado bit flotacion
+                       # Datos['OnOff'] = int(r[23][1]) # estado pulsador OnOff Hibrido
+                        
+                       # Datos['Ibat']  = round(float(Datos['Ibatp']) - float(Datos['Ibatn']),2) # Intensidad de bateria             
+                        
+                        ee = '28'
+                        """
+                        Datos = {'Vbat': Vbat,'Ibat':Ibat,'Ibatp':Ibatp,'Ibatn':Ibatn,'Iplaca': Iplaca,
+                                     'Vplaca': Vplaca,'Wplaca': Wplaca,'Vbus':Vbus,'PACW':PACW,'PACVA':PACVA,
+                                     'Temp':Temp,'Flot':Flot,'OnOff':OnOff }
+                        """
+                        Datos_BD = Datos.copy()
+                        
+                        
                         
                     if DEBUG == 100: print(Fore.GREEN+'Datos=',Datos,Fore.RESET)
                     
@@ -485,9 +624,9 @@ def Hibrido_lectura(NHIBRIDO):
                     time.sleep(1)
 
             if cmd1 == b'QPIGSBD':
-                if protocolo_hibrido[I_Hibrido]==30: cmd1 = b'QPIGS'
-                elif protocolo_hibrido[I_Hibrido]==18: cmd1 = b'^P005GS'
-                
+                if protocolo_hibrido[I_Hibrido] == 30: cmd1 = b'QPIGS'
+                elif protocolo_hibrido[I_Hibrido] == 18: cmd1 = b'^P005GS'
+                elif protocolo_hibrido[I_Hibrido] == 16: cmd1 = b'QPIGS'
 
             #print('cmd1==',cmd1)
             
@@ -562,6 +701,13 @@ def Hibrido_lectura(NHIBRIDO):
                     err=50
                     s[3]=s[3][5:] #quito la D106 inicial de la respuesta
 
+                elif protocolo_hibrido[I_Hibrido] == 16:            
+                    r = time.strftime("%Y-%m-%d %H:%M:%S").encode()+ b" " + cmd1 + b" " + r 
+                    # Creo lista separando por espacio
+                    s = r.split(b" ")
+                    
+                    err=50
+                    s[3]=s[3][1:] #quito el parentesis inicial de la respuesta
                 
                 
             else:
@@ -612,6 +758,9 @@ def Hibrido_lectura(NHIBRIDO):
                         nbucle += 1
                         
                         client.publish(f'PVControl/Hibrido{N_Hibrido}',"QPIGSBD")
+                        #client.publish(f'PVControl/Hibrido{N_Hibrido}',"QPI")
+                        #client.publish(f'PVControl/Hibrido{N_Hibrido}',"QMD")
+                        
                         if DEBUG == 100:
                             print (Fore.RESET,time.strftime("%Y-%m-%d %H:%M:%S"),f'-- Publico PVControl/Hibrido{N_Hibrido} QPIGSBD')
             
