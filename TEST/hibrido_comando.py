@@ -10,7 +10,7 @@ from traceback import format_exc
 
 ################################################################
 dev_hibrido ='/dev/hidraw0'   # dipositivo donde reconoce al hibrido enla carpeta /dev
-usar_crc = 0                  # El protocolo usa CRC o no
+usar_crc = 1                  # El protocolo usa CRC o no
 
 grabar_fichero_log = 0        # Se guardan las repuestas del hibrido en un archivo de log
 log = '/home/pi/'             # path al archivo de log (debe existir la carpeta)
@@ -20,15 +20,14 @@ DEBUG = False                 # saca mas informacion por pantalla
 
 ################## Ejemplos de uso #########################################################
 
-#  sudo voltron_t_p3 QPIGS       manda el comando QPIGS una unica vez y finaliza
+#  sudo python3 hibrido_comando.py QPIGS           manda el comando QPIGS una unica vez y finaliza
 
-#  sudo voltron_t_p3 QPIGS -R    manda el comando QPIGS cada 5 sg
+#  sudo python3 hibrido_comando.py QPIGS -R        manda el comando QPIGS cada 5 sg
 
-#  sudo voltron_t_p3 QPIGS QMD      manda los comandos QPIGS y QMD una unica vez y finaliza
+#  sudo python3 hibrido_comando.py QPIGS QMD       manda los comandos QPIGS y QMD una unica vez y finaliza
 
-#  sudo voltron_t_p3 QPIGS QMD -R     manda los comandos QPIGS y QMD cada 5 sg
+#  sudo python3 hibrido_comando.py QPIGS QMD -R    manda los comandos QPIGS y QMD cada 5 sg
 ################################################################################################
-
 
 
 
