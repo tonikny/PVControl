@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-30
+# Versión 2022-08-05
 
 import time,sys
 import traceback
@@ -952,15 +952,6 @@ try:
                 except:
                     logBD('error lectura '+archivo_ram)
                     continue
-            
-            if usar_goodwe == 1:
-                archivo_ram='/run/shm/datos_goodwe.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_goodwe = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue 
                           
             ee=30.43             
             if usar_must == 1:
