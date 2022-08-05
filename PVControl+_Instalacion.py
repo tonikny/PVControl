@@ -100,6 +100,8 @@ lista2 = [# Sistema, Apache & php
          'sudo pip3 install crc16',
          'sudo pip3 install clarifai',
          'sudo pip3 install clarifai-grpc',
+         'sudo pip3 install goodwe',
+         
          
          # Varios
          # motionEye
