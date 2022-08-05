@@ -952,6 +952,7 @@ $(function () {
                 y: 0,
                 style: {
                     fontSize: '14px',
+                    //color: '#D71B20'
                     color: 'red'
                     },
                 formatter: function() {
@@ -968,10 +969,12 @@ $(function () {
                 allowOverlap:true,
                 enabled: true,
                 borderWidth: 0,
-                y: 12,
+                y: 18,
                 style: {
                     fontSize: '14px',
-                    color: 'green'
+                    color: '#18F905'
+                    //color: '#3BC130'
+                    //color: 'green'
                     },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,1) + " A"
