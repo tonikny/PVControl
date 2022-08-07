@@ -411,7 +411,7 @@ $(function ()
       title: {
         align: 'high',
         offset: 0,
-        text: 'Aux1',
+        text: Nombre_Aux1,
         rotation: 0,
         y: -5
         },
@@ -428,7 +428,7 @@ $(function ()
       title: {
         align: 'high',
         offset: 0,
-        text: 'Aux2',
+        text: Nombre_Aux2,
         rotation: 0,
         y: -5
         },
@@ -786,13 +786,13 @@ $(function ()
         })()
       },
        
-     {name: 'Aux1',
+     {name: Nombre_Aux1,
       type: 'spline',
       visible: Aux1_visible,
       yAxis: 13,
       color: Highcharts.getOptions().colors[6],
       tooltip: {
-        valueSuffix: ' ',
+        valueSuffix: Unidades_Aux1,
         valueDecimals: 2,
         },
       data: (function() {
@@ -805,13 +805,13 @@ $(function ()
         return data;
         })()
       },     
-     {name: 'Aux2',
+     {name: Nombre_Aux2,
       type: 'spline',
       visible: Aux2_visible,
       yAxis: 14,
       color: Highcharts.getOptions().colors[8],
       tooltip: {
-        valueSuffix: ' ',
+        valueSuffix: Unidades_Aux2,
         valueDecimals: 2,
         },
       data: (function() {

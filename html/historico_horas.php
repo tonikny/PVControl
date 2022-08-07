@@ -118,7 +118,7 @@ $(function () {
       enabled: false
       },
     yAxis: [
-     {// ########## Valores eje Intensidad ######################
+     {// ########## 0 - Valores eje Intensidad ######################
       opposite: false,     
       min: Escala_intensidad_min,
       max: Escala_intensidad_max,
@@ -143,7 +143,7 @@ $(function () {
         dashStyle: 'shortdash'
         }]
      },
-     {// ########## Valores eje Vbat ######################
+     {// ########## 1 - Valores eje Vbat ######################
       opposite: false,
       min: Escala_Vbat_min,
       max: Escala_Vbat_max,
@@ -183,7 +183,7 @@ $(function () {
           }
        }]
      },
-     {// ########## Valores eje SOC ######################
+     {// ########## 2 - Valores eje SOC ######################
       opposite: true,
       min: 20,
       max: 100 ,
@@ -219,7 +219,7 @@ $(function () {
           }
        }]
      },
-     {// ########## Valores eje PWM ######################
+     {// ########## 3 - Valores eje PWM ######################
       opposite: true,
       min: -50,
       max: Escala_PWM_max,
@@ -258,7 +258,7 @@ $(function () {
       */
 
      },
-     {// ########## Valores eje WPlaca ######################
+     {// ########## 4 - Valores eje WPlaca ######################
       opposite: true,
       min: 0,
       max: Watios_placa_max ,
@@ -276,7 +276,23 @@ $(function () {
         y: -5
         },
       
-     }
+     },
+     {// ########## 5 - Valores eje Aux1  ######################
+      visible: Eje_Aux1,
+      opposite: true,
+      min: Aux1_min,
+      max: Aux1_max,
+      tickInterval: 1,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      title: {
+        align: 'high',
+        offset: 0,
+        text: Nombre_Aux1, 
+        rotation: 0,
+        y: -5
+        },
+      },
      ],
 
     xAxis: {
@@ -405,13 +421,13 @@ $(function () {
         return data;
         })()
      },
-     {name: 'Aux1',
-      visible: false,
+     {name: Nombre_Aux1,
+      visible: Aux1_visible, 
       type: 'spline',
-      yAxis: 0,
+      yAxis: 5,
       color: Highcharts.getOptions().colors[4],
       tooltip: {
-        valueSuffix: ' ',
+        valueSuffix: Unidades_Aux1,
         valueDecimals: 0,
         },
       data: (function() {
