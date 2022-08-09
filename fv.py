@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-21
+# Versión 2022-08-22
 
 import time,sys
 import traceback
@@ -365,7 +365,7 @@ def act_rele(adr,out,tipo) :
             try:
                 if out == 100: out1 = "ON"
                 else:          out1 = "OFF"
-                client.publish("cmnd/PVControl/Reles/{adr}/POWER",str(out1))  # via MQTT
+                client.publish(f"cmnd/PVControl/Reles/{adr}/POWER",str(out1))  # via MQTT
             except:
                 logBD(f'Error TASMOTA ON/OFF {adr}={out} - ´{out1}')
         
