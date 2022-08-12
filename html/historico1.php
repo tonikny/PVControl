@@ -748,7 +748,7 @@ $(function ()
   
      {name: 'Temp',
       type: 'spline',
-      visible: Wplaca_visible,
+      visible: Temp_visible,
       yAxis: 11,
       color: 'black',
       tooltip: {
