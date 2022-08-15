@@ -324,6 +324,16 @@ if($result = mysqli_query($link, $sql)){
         	<button type="submit" name="modo" value="OFF" style="border: 0; background: transparent">
 			<img src="img/pulrojot.png" width="30" alt="submit" />
 		</button>
+		
+		<button type="submit" name="modo" value="M_ON" style="border: 1; background: transparent">
+			<img src="img/pulverdet.png" width="30" alt="submit" />
+		</button>
+		
+		<button type="submit" name="modo" value="M_OFF" style="border: 1; background: transparent">
+			<img src="img/pulrojot.png" width="30" alt="submit" />
+		</button>
+		
+		
 	</form></td>
 	
 	<td width="10px"><form action="d_rele.php" method="post">
@@ -364,6 +374,8 @@ Añadir relé
                 <option value="PRG" selected="selected">PRG</option>
                 <option value="ON">ON</option>
                 <option value="OFF">OFF</option>
+		<option value="MAN">MAN</option>
+		
 	</select></td>
         <td><select name="grabacion">
                 <option value="N" selected="selected">No</option>

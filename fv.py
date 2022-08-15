@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-08-05
+# Versión 2022-08-12
 
 import time,sys
 import traceback
@@ -788,9 +788,16 @@ try:
                 if id_rele in Rele: # mantengo valores que gestiona fv.py
                     try:
                         if r['estado'] != Rele[id_rele]:
-                            r['estado'] = Rele[id_rele]
-                            sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
-                            cursor.execute(sql)
+                            
+                            if r['modo'] != 'MAN':
+                                sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
+                                cursor.execute(sql)
+                                r['estado'] = Rele[id_rele]
+                            else:
+                                Rele[id_rele] = r['estado']
+                                act_rele(id_rele,Rele[id_rele],1) # activo una unica vez el rele manual
+                                Rele_Dict[id_rele]['cambio'] = round(time.time(),1)
+                        
                             
                         r['cambio'] = Rele_Dict[id_rele]['cambio']
                         r['nconmutaciones'] = Rele_Dict[id_rele]['nconmutaciones']  
@@ -1316,36 +1323,39 @@ try:
         Flag_Rele_Encendido = 0
         for r in TR:
             id_rele = r['id_rele']
-            tipo_act_rele = 0
             
-            ### forzado ON/OFF
-            if r['modo'] == 'ON' :
-                Rele[id_rele] = 100
-                tipo_act_rele = 1
+            if r['modo'] != 'MAN' :
+                tipo_act_rele = 0
                 
-            elif r['modo'] == 'OFF' :
-                Rele[id_rele] = 0
-                tipo_act_rele = 1
-                   
-            ### dejar rele como esta     
-            if Rele[id_rele] == 100 and Rele_Ant[id_rele] < 100 and Flag_Rele_Encendido == 1 : 
-                #print ('Dejo el rele ', id_rele, ' para encender en otro ciclo por flag ', Rele[id_rele] ,'/', Rele_Ant[id_rele] )
-                Rele[id_rele] = Rele_Ant[id_rele]      #dejar rele en el estado anterior
+                ### forzado ON/OFF
+                if r['modo'] == 'ON' :
+                    Rele[id_rele] = 100
+                    tipo_act_rele = 1
+                    
+                elif r['modo'] == 'OFF' :
+                    Rele[id_rele] = 0
+                    tipo_act_rele = 1
+                       
+                ### dejar rele como esta     
+                if Rele[id_rele] == 100 and Rele_Ant[id_rele] < 100 and Flag_Rele_Encendido == 1 : 
+                    #print ('Dejo el rele ', id_rele, ' para encender en otro ciclo por flag ', Rele[id_rele] ,'/', Rele_Ant[id_rele] )
+                    Rele[id_rele] = Rele_Ant[id_rele]      #dejar rele en el estado anterior
+                    
+                ### encender rele
+                if Rele[id_rele] == 100 and Flag_Rele_Encendido == 0 and Rele_Ant[id_rele] < 100 :
+                    #print (tiempo,' - Enciendo rele ',id_rele)
+                    Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,100,tipo_act_rele)
+                    if r['prioridad'] == 0 and Rele[id_rele] == 100: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
                 
-            ### encender rele
-            if Rele[id_rele] == 100 and Flag_Rele_Encendido == 0 and Rele_Ant[id_rele] < 100 :
-                #print (tiempo,' - Enciendo rele ',id_rele)
-                Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,100,tipo_act_rele)
-                if r['prioridad'] == 0 and Rele[id_rele] == 100: Flag_Rele_Encendido = 1 # activo flag solo para reles que no son de excedentes
+                ### apagar rele
+                if Rele[id_rele] == 0 and Rele_Ant[id_rele]>0: # and r['prioridad']== 0:
+                    #print (tiempo,' - Apago rele ',id_rele)
+                    Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,0, tipo_act_rele) #apagar rele
+                
+                Rele_Dict[id_rele]['estado']= Rele[id_rele]
             
-            ### apagar rele
-            if Rele[id_rele] == 0 and Rele_Ant[id_rele]>0: # and r['prioridad']== 0:
-                #print (tiempo,' - Apago rele ',id_rele)
-                Rele[id_rele], Rele_Dict[id_rele]['cambio'] = act_rele(id_rele,0, tipo_act_rele) #apagar rele
-            
-            Rele_Dict[id_rele]['estado']= Rele[id_rele]
             Rele_Dict[id_rele]['espera']=  max(0,int(Rele_Dict[id_rele]['cambio'] +  Rele_Dict[id_rele]['retardo'] - time.time())) # sg hasta permitir cambio
-            
+                
             
         #print('tras activacion=',Rele)
         #print ('C.excedentes=', Rele_H)
@@ -1415,11 +1425,12 @@ try:
             t_refresco_rele = time.time()
             if len(TR_refresco) > 0:
                 id_rele = TR_refresco[0]['id_rele'] 
-                Rele[id_rele], i = act_rele(id_rele, Rele[id_rele],2)
-                try:
-                    Rele_Dict[id_rele]['estado']= Rele[id_rele]
-                except:
-                    pass
+                if TR_refresco[0]['modo'] != 'MAN': 
+                    Rele[id_rele], i = act_rele(id_rele, Rele[id_rele],2)
+                    try:
+                        Rele_Dict[id_rele]['estado']= Rele[id_rele]
+                    except:
+                        pass
                 TR_refresco.pop(0)
             else:
                 TR_refresco = TR[:]
@@ -1431,10 +1442,15 @@ try:
             if Grabar == 1: # actualizo BD cada N bucles
                 # Actualizacion estado Tabla reles
                 if Rele[id_rele] != TR[I]['estado']:
-                    sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
-                    cursor.execute(sql)
-                    TR[I]['estado'] = Rele[id_rele]
-                
+                    if TR[I]['modo'] != 'MAN':
+                        sql = f"UPDATE reles SET estado ={Rele[id_rele]} WHERE id_rele = {id_rele}"
+                        cursor.execute(sql)
+                        TR[I]['estado'] = Rele[id_rele]
+                    else:
+                        Rele[id_rele] = TR[I]['estado']
+                        act_rele(id_rele,Rele[id_rele],1) # activo una unica vez el rele manual
+                        Rele_Dict[id_rele]['cambio'] = round(time.time(),1)
+                        
                 # Actualizacion Tabla reles_segundos_on               
                 if TP['grabar_reles'] == "S":
                     try: # actualizo registro

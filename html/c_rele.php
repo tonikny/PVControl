@@ -9,10 +9,17 @@ $nueva_prio = mysqli_real_escape_string($link, $_POST['nueva_prio']);
 
 if ($modo=="ON" or $modo=="OFF" or $modo=="PRG") {
 	$sql = "UPDATE reles SET modo='$modo' WHERE id_rele=$id_rele";
-} elseif ($nueva_prio=="+1" or ($nueva_prio=="-1" and $prio>0)) {
+
+} elseif ($modo=="M_ON") {
+	$sql = "UPDATE reles SET modo='MAN', estado=100 WHERE id_rele=$id_rele";
 	
+} elseif ($modo=="M_OFF") {
+	$sql = "UPDATE reles SET modo='MAN', estado=0 WHERE id_rele=$id_rele";
+
+} elseif ($nueva_prio=="+1" or ($nueva_prio=="-1" and $prio>0)) {	
 	$sql = "UPDATE reles SET prioridad=$prio$nueva_prio WHERE id_rele=$id_rele";
-	print ($sql);
+	//print ($sql);
+	
 } else {
 	header("Location: reles.php");
 }

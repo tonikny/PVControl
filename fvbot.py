@@ -117,10 +117,10 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             orden2=''   
 
                         # -------- Sub_Orden ON/OFF/PRG ---------    
-                        if (orden=='ON' or orden=='OFF' or orden=='PRG'):
+                        if orden in ('PRG','ON', 'OFF'):
                             if orden_autorizada==1:
                                 try:
-                                    sql = "UPDATE reles SET modo='"+orden+ "' WHERE id_rele="+objeto_orden
+                                    sql = f"UPDATE reles SET modo='{orden}' WHERE id_rele={objeto_orden}"
                                     cursor.execute(sql)
                                     db.commit()
                                                                         
@@ -134,8 +134,24 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
                             else:
                                 msg=tg_from+' NO tiene permiso para esta orden'
                                 bot.send_message( cid, msg)
-                                
-                                
+                        
+                        # -------- Sub_Orden Modo Manual (ejem sintaxis #r611M30  pone en modo manual al 30% el rele 611 ---------
+                        elif orden1=='M':
+                            if orden_autorizada==1:
+                              try:
+                                  orden='MAN'
+                                  sql = f"UPDATE reles SET modo='{orden}', estado={orden2} WHERE id_rele={objeto_orden}"
+                                  cursor.execute(sql)
+                                  db.commit()
+                                  
+                                  msg=f"Rele Nº {objeto_orden} puesto a modo={orden} y estado={orden2} por {tg_to_u}"
+                                  bot.send_message( cid, msg)
+                              except:
+                                    msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
+                                    bot.send_message( cid, msg)    
+                                  
+                                  
+                                  
                         # -------- Sub_Orden Cambio Nombre Rele ---------    
                         elif orden1=='N':
                             if orden_autorizada==1:
