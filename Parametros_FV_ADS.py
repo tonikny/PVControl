@@ -84,7 +84,7 @@ mqtt_clave   = "fv"
 
 
 ##### Subcripciones #####
-usar_mqtt_subcripciones = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
+usar_mqtt_suscripciones = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
                # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt                
 
 mqtt_suscripciones=[] #  lista de topics a los que se suscribe fv_mqtt.py para guardar en tabla equipos.. diccionario=d_['MQTT']
@@ -99,7 +99,7 @@ mqtt_publicaciones = [["Wplaca","Wplaca"],
                       ["Vbat","Vbat"],
                       ["Ibat","Ibat",10],
                       ["SOC","SOC",15],
-                      ["DatosFV","d_['FV']",0]]
+                      ["DatosFV","d_['FV']",0]] # publica diccionario d_[FV] en topic PVControl/DatosFV para poder ser usado por Home Assistant
 
 # -----------------------------------------------
 

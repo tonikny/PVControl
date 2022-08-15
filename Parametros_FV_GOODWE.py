@@ -83,15 +83,23 @@ mqtt_puerto  = 1883
 mqtt_usuario = "rpi"
 mqtt_clave   = "fv"
 
-pub_diver = 0  # publica datos ejecucion diver en "PVControl/Opcion/Diver"
-pub_time  = 0  # publica datos de tiempo de ejecucion en "PVControl/Opcion/Time"
+##### Subcripciones #####
+usar_mqtt_suscripciones = 0  # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
+               # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt                
 
-usar_mqtt = 0 # activa servicio fv_mqtt.py que se suscribe a los topics que se especifiquen en mqtt_suscripciones  
-               # guarda lo capturado en la tabla ram 'equipos' ... diccionario=d_['MQTT'] / servicio = fv_mqtt
-                
 mqtt_suscripciones=[] #  lista de topics a los que se suscribe fv_mqtt.py para guardar en tabla equipos.. diccionario=d_['MQTT']
 
-usar_mqtt_homeassistant = 0   # publica diccionario d_[FV] en topic PVControl/DatosFV para poder ser usado por Home Assistant
+
+##### Publicaciones #####
+usar_mqtt_publicaciones = 0     # 1 = Publica por MQTT los topic definidos en mqtt_publicaciones...... 0= No publica por MQTT  
+mqtt_topic_raiz = "PVControl/"  # Raiz del topic a publicar
+
+#  Tuplas [Nombre Topic, Variable, frecuencia en sg (0 deshabilita, por defecto = Tmuestra * Nmuestra)]
+mqtt_publicaciones = [["Wplaca","Wplaca"],
+                      ["Vbat","Vbat"],
+                      ["Ibat","Ibat",10],
+                      ["SOC","SOC",15],
+                      ["DatosFV","d_['FV']",0]] # publica diccionario d_[FV] en topic PVControl/DatosFV para poder ser usado por Home Assistant
 
 # -----------------------------------------------
 
