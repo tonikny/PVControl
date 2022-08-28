@@ -1,0 +1,12 @@
+[Unit]
+Description=FV lectura DEYE
+After= fv.service
+
+[Service]
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_deye.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

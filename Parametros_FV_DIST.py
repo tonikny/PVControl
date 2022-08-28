@@ -356,6 +356,22 @@ usar_eastron = 0       # 1 para leer datos ..... 0 para no usar
 dev_eastron = ""       # /dev/ttyUSB0" # USB  
 
 # -----------------------------------------------
+######################################
+###### DEYE, TURBO ENERGY,...   ######
+######################################
+
+usar_deye = [1] 
+dev_deye = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
+t_muestra_deye = [1]         # Tiempo en segundos entre muestras
+con_bateria_deye = [0]       # Inversor con bateria = 1 , sin bateria = 0
+
+grabar_datos_deye = [0]      # 1 = Graba la tabla deye.. 0 = No graba .... NO IMPLEMENTADO AUN
+n_muestras_deye = [5]        # grabar en BD cada nmuestras .... NO IMPLEMENTADO AUN
+
+usar_telegram_deye = [1]          # Manda un mensaje por Telegram cuando cambia de estado el equipo
+
+
+# -----------------------------------------------
 ##################
 ### BROADLINK ####
 ##################
