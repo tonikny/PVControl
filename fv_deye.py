@@ -21,7 +21,7 @@ print (Style.BRIGHT + Fore.YELLOW + 'Arrancando '+ Fore.GREEN + sys.argv[0]) #+S
 
 
 #### Parametros_FV.py ##########
-usar_deye = [1] 
+usar_deye = [0]              # Poner a 1 si se quiere activar  (lo indicado en Parametros_FV.py prevalece sobre estos valores)
 dev_deye = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
 t_muestra_deye = [1]         # Tiempo en segundos entre muestras
 con_bateria_deye = [0]            # Inversor con bateria = 1 , sin bateria = 0

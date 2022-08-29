@@ -360,7 +360,7 @@ dev_eastron = ""       # /dev/ttyUSB0" # USB
 ###### DEYE, TURBO ENERGY,...   ######
 ######################################
 
-usar_deye = [1] 
+usar_deye = [0] 
 dev_deye = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
 t_muestra_deye = [1]         # Tiempo en segundos entre muestras
 con_bateria_deye = [0]       # Inversor con bateria = 1 , sin bateria = 0
