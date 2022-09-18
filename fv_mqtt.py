@@ -32,8 +32,24 @@ else:
     DEBUG = 0
 print (Fore.RED + 'DEBUG=',DEBUG)
 
+# Comprobacion que la tabla en BD tiene los campos necesarios
+try:
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    
+    try: #inicializamos registro en BD RAM
+        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                      ('MQTT','{}'))
+        db.commit()
+    except:
+        pass
+except:
+    print (Fore.RED,'ERROR inicializando BD')
+    sys.exit()
+
 # -----------------------MQTT MOSQUITTO ------------------------
 Nmensajes= 0
+DATOS_MQTT = {} # Diccionario de los datos recibidos por MQTT
 
 def on_connect(client, userdata, flags, rc):
     for i in mqtt_suscripciones:
@@ -63,7 +79,7 @@ def on_message(client, userdata, msg):
     
     if DEBUG == 100:
         print (Fore.RESET + '=' * 80 )
-        print (Fore.YELLOW + 'Nuevo Mensaje en Topic'+Fore.RED+f' {msg.topic} ' + Fore.YELLOW + '..... DATOS_MQTT=')
+        print (time.strftime("%Y-%m-%d %H:%M:%S")+ Fore.YELLOW +' - Nuevo Mensaje en Topic'+Fore.RED+f' {msg.topic} ' + Fore.YELLOW + '..... DATOS_MQTT=')
         for mq in DATOS_MQTT:
             if msg.topic == mq:
                 print (Fore.CYAN+mq+':',Fore.RESET,DATOS_MQTT[mq])
@@ -122,9 +138,7 @@ def on_message(client, userdata, msg):
         pass 
         
     db.commit()
-    
-    
-    
+        
 client = mqtt.Client("fv_mqtt") #crear nueva instancia
 client.on_connect = on_connect
 client.on_disconnect = on_disconnect
@@ -139,23 +153,7 @@ time.sleep(.2)
 client.loop_start()
 
 
-DATOS_MQTT = {} # Diccionario de los datos recibidos por MQTT
 dia = time.strftime("%Y-%m-%d")
-
-# Comprobacion que la tabla en BD tiene los campos necesarios
-try:
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
-    
-    try: #inicializamos registro en BD RAM
-        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                      ('MQTT','{}'))
-        db.commit()
-    except:
-        pass
-except:
-    print (Fore.RED,'ERROR inicializando BD')
-    sys.exit()
 
 # ==========================================================
 #----------------- BUCLE -----------------------------------
@@ -173,9 +171,12 @@ while True:
     
     
     ####### LECTURA TABLA RELES ##############
-    nreles=cursor.execute('SELECT * FROM reles')
-    columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
-    Rele_Dict={} 
-    for row in cursor.fetchall(): Rele_Dict[row[0]] = dict(zip(columns, row))
+    try:
+        Rele_Dict={} 
+        nreles=cursor.execute('SELECT * FROM reles')
+        columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
+        for row in cursor.fetchall(): Rele_Dict[row[0]] = dict(zip(columns, row))
+    except:
+        print (Fore.RED + 'Error lectura tabla reles')
     
     time.sleep(60)  
