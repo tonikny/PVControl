@@ -45,7 +45,6 @@ basepath = '/home/pi/PVControl+/'
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
 
 usar_mqtt_publicaciones = [] # para evitar errores si no esta definida la variable en Parametros_FV.py
-usar_mqtt_subcripciones = [] # para evitar errores si no esta definida la variable en Parametros_FV.py
 
 try:
     #Parametros Instalacion FV
@@ -93,6 +92,7 @@ print (Fore.RED + f'DEBUG={DEBUG} - DEBUG1={DEBUG1}')
 NDIA = {'0':'D','1':'L','2':'M','3':'X','4':'J','5':'V','6':'S'} # Condiciones de dia de la semana
 
 Grabar = 1 # Contador ciclo grabacion en BD
+Grafica_Aux_grabar = 0 # Contador ciclo grabacion datos_aux
 
 hora_m = time.time() #para calcular tiempo entre muestras real
 dia = time.strftime("%Y-%m-%d") # para cambio de dia y reinicializar Wh
@@ -170,13 +170,13 @@ PWM = IPWM_P = IPWM_I = IPWM_D = PWM_ant = 0.0
 
 
 #########################################################################################
-# Creacion tabla RAM equipos en BD si no existe
+# Creacion tabla RAM equipos y datos_aux en BD si no existe
 #########################################################################################
 try:
     db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
     cursor = db.cursor()
     
-    # Comprobacion si tabla equipos existe y si no se crea
+    # Comprobacion si tabla equipos y datos_aux existe y si no se crea
     sql_create = """ CREATE TABLE IF NOT EXISTS `equipos` (
                   `id_equipo` varchar(50) COLLATE latin1_spanish_ci NOT NULL,
                   `tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha Actualizacion',
@@ -184,11 +184,20 @@ try:
                    PRIMARY KEY (`id_equipo`)
                  ) ENGINE=MEMORY DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;"""
 
+    sql_create1 = """ CREATE TABLE IF NOT EXISTS `datos_aux` (
+                  `Tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha datos',
+                  `datos` varchar(5000) COLLATE latin1_spanish_ci NOT NULL,
+                   PRIMARY KEY (`tiempo`)
+                 );"""
+
     import warnings # quitamos el warning que da si existe la tabla equipos
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         cursor.execute(sql_create)
+        cursor.execute(sql_create1)
         
+    
+    
     try: #inicializamos registros en BD RAM
         cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
                       ('FV','{}'))
@@ -572,10 +581,26 @@ while True:
                 
                 elif type(sensores[sensor]) in (int,float,str):
                     try:
-                        exec (f'{sensor}= {sensores[sensor]}')
+                        if sensores[sensor] != '':
+                            y = exec (f'{sensores[sensor]}')
+                            exec (f'{sensor}= {y}')
+                                
+                        else: exec (f'{sensor}= 0.0')
                     except:
                         exec (f'{sensor}= 0.0')
-                    
+                        if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
+                        else: Estado['PVControl+'] = 'ERROR'
+                           
+                        Estado['PVControl+_error'] += f' # Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
+                        
+                    """
+                    try:
+                        i = exec(f'{sensores[sensor]}') # se permiten condiciones tipo .... 1 if X>y else 2
+                        
+                        exec (f'{sensor}= {i}')
+                    except:
+                        exec (f'{sensor}= 0.0')
+                    """
                     
             except:
                 print('Error no conocido en sensores')
@@ -593,7 +618,22 @@ while True:
         if salir == 0: break
         else: exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
 
-        
+
+try:
+    Grafica_Aux_dict = {} # generamos diccionario de la grafica auxiliar
+    
+    if 'Grafica_Aux' not in locals():
+        Grafica_Aux_dict['Activo'] = 0
+    else:
+        Grafica_Aux_Nombres = list(sensores['Grafica_Aux'])[0][1:-1].split(',')
+
+        Grafica_Aux_Nombres[0] = 'Activo'
+        Grafica_Aux_Nombres[1] = 'Nmuestras'
+
+        for i in range(len(Grafica_Aux)): Grafica_Aux_dict[Grafica_Aux_Nombres[i]] = Grafica_Aux[i]
+except:
+    print ('Error en la definicion de la grafica auxiliar')
+            
 print()
 
 ##  ------ inicializamos reles ------------------------
@@ -1010,7 +1050,10 @@ try:
                             
                     elif type(sensores[sensor]) in (int,float,str):
                         try:
-                            if sensores[sensor] != '': exec (f'{sensor}= {sensores[sensor]}')
+                            if sensores[sensor] != '':
+                                y = exec (f'{sensores[sensor]}')
+                                exec (f'{sensor}= {y}')
+                                
                             else: exec (f'{sensor}= 0.0')
                         except:
                             exec (f'{sensor}= 0.0')
@@ -1027,6 +1070,24 @@ try:
                 
                     Estado['PVControl+_error'] += f' ##### Except ... Corrija en Parametros_FV.py definicion sensor {sensor}'
                     
+            
+            # Crear diccionaro de Grafica Auxiliar
+            try:
+                Grafica_Aux_dict = {} # generamos diccionario de la grafica auxiliar
+    
+                if 'Grafica_Aux' not in locals():
+                    Grafica_Aux_dict['Activo'] = 0
+                else:
+                    Grafica_Aux_Nombres = list(sensores['Grafica_Aux'])[0][1:-1].split(',')
+
+                    Grafica_Aux_Nombres[0] = 'Activo'
+                    Grafica_Aux_Nombres[1] = 'Nmuestras'
+
+                    for i in range(len(Grafica_Aux)): Grafica_Aux_dict[Grafica_Aux_Nombres[i]] = Grafica_Aux[i]
+            except:
+                print ('Error en la definicion de la grafica auxiliar')
+
+            
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
                     if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
@@ -1547,6 +1608,38 @@ try:
         Grabar += 1
         if Grabar >= TP['n_muestras_grab'] + 1: Grabar = 1
 
+
+        ee=330.0
+        # ----------------- Guardamos tabla personalizada en Equipos si se ha definido en Parametros_FV ------
+        if Grafica_Aux_dict['Activo'] == 1:
+            salida_Aux = json.dumps(Grafica_Aux_dict)
+            try:
+                sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_Aux}' WHERE id_equipo = 'AUX'") # grabacion en BD RAM
+                y= d_['AUX'] # da error si no exite la clave AUX creada en equipos
+                cursor.execute(sql)
+            except:
+                cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)", ('AUX','{}'))
+                cursor.execute(sql)
+                db.commit()
+                
+            ee=332.0
+
+            # ----------------- Guardamos tabla historica en datos_aux si se ha definido en Parametros_FV ------
+            try:
+                if 'Nmuestras' in Grafica_Aux_dict:
+                    if Grafica_Aux_dict['Nmuestras'] > 0:
+                        Grafica_Aux_grabar += 1
+                        if Grafica_Aux_grabar >= Grafica_Aux_dict['Nmuestras']:
+                            Grafica_Aux_grabar = 0
+                            del Grafica_Aux_dict['Activo']
+                            del Grafica_Aux_dict['Nmuestras']
+                            
+                            salida_Aux = json.dumps(list(Grafica_Aux_dict.values()))[1:-1]
+                            cursor.execute("INSERT INTO datos_aux (Tiempo,datos) VALUES (%s,%s)", (tiempo,salida_Aux))
+                            
+            except:
+                print('Error grabacion datos_aux.....')
+                
         ###### PUBLICACION MQTT ##########
         ee = 340.0
         try:

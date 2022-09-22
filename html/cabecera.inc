@@ -35,6 +35,8 @@ session_start([
     $menu["Gráficas"]["Hist_1"] =  ["Histórico 1 Día","historico1.php"];
     $menu["Gráficas"]["Hist_3"] =  ["Histórico 3 Días","historico3c.php"];
     $menu["Gráficas"]["Hist_Mes"] = ["Histórico Mes","historico_mes.php"];
+    $menu["Gráficas"]["Hist_Personal"] = ["Histórico Personal","historico_aux.php"];
+    
     ($version=="RD")? : $menu["Gráficas"]["Hist_Ciclado"] = ["Histórico Ciclado","historico_soh.php"];
     $menu["Gráficas"]["Extra"] = ["Gráficas Producción y Consumo","grafica_elige.php"];
     $menu["Gráficas"]["Diario"] = ($version!="RD")? ["Tabla resumen diario","diario.php"] :["Tabla resumen diario","diario_red.php"] ;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-10-24
+# Versión 2022-09-22
 
 import time,sys,os,glob
 import MySQLdb 
@@ -57,7 +57,8 @@ def vaciar_tablas():
                 ['datos',366],
                 ['reles_grab',366],
                 ['log',30],
-                ['hibrido',366]
+                ['hibrido',366],
+                ['datos_aux',366]
                ]
                
         # tablas con campo fecha

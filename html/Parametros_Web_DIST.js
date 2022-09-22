@@ -1,3 +1,6 @@
+
+//  ====================== Version 2022-09-22 ===========================
+
 // ===========================================================================
 // Pagina inicio.php  Actualizar segun los relojes y graficas que se usen o
 // ===========================================================================
@@ -249,4 +252,61 @@
     
     Aux1_visible = false;
     Aux2_visible = false;
+
     
+
+// Grafica Auxiliar Personalizada
+  
+  // Titulo principal
+    G_titulo = 'Grafica Aux';
+    G_subtitulo = 'Personalizada';
+    
+  // Definicion de Ejes
+    
+      Eje1_visible = true;
+      Eje1_opposite = false;
+      Eje1_min = 0;
+      Eje1_max = 100;
+      Eje1_tickInterval = 1;
+      Eje1_titulo = 'Titulo Eje 1';
+      
+      Eje2_visible = true;
+      Eje2_opposite = true;
+      Eje2_min = 0;
+      Eje2_max = 100;
+      Eje2_tickInterval = 1;
+      Eje2_titulo = 'Titulo Eje 2';
+      
+   // Definicion de series de datos (poner tantos bloques como variables se esten guardando)
+  
+      G1_nombre = 'Valor 1';
+      G1_tipo_grafico = 'spline';  //spline, area,
+      G1_yAxis = 1;  //numero de eje al que se asigna
+      G1_visible = true;
+      G1_color = '#19ce88';
+      G1_unidades = 'ºC';
+      G1_decimales = 2;
+      
+      G2_nombre = 'Valor 2';
+      G2_tipo_grafico = 'area';
+      G2_yAxis = 2;  //numero de eje al que se asigna
+      G2_visible = true;
+      G2_color = '#F76354';
+      G2_unidades = 'V';
+      G2_decimales = 2;
+      
+      G3_nombre = 'Valor 3';
+      G3_tipo_grafico = 'area';
+      G3_yAxis = 1;  //numero de eje al que se asigna
+      G3_visible = true;
+      G3_color = '#FFF354';
+      G3_unidades = 'A';
+      G3_decimales = 2;
+      
+      G4_nombre = 'Iplaca';
+      G4_tipo_grafico = 'spline';
+      G4_yAxis = 1;  //numero de eje al que se asigna
+      G4_visible = true;
+      G4_color = '#FFF354';
+      G4_unidades = 'A';
+      G4_decimales = 2;

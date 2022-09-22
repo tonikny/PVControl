@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------
-######    PARAMETROS INSTALACION PVControl+  -- version: 2022-01-22
+######    PARAMETROS INSTALACION PVControl+  -- version: 2022-09-22
 # ------------------------------------------------------------------
 
 # ====================================================================
@@ -55,7 +55,10 @@ sensores ={
 'Wred' : {'Equipo': "Ired * Vred"},     #  Potencia de/a red
 'Wconsumo': {'Equipo': "d_['HIBRIDO']['PACW']"}, # Consumo
 
-'Temp': {'Equipo':"Temp_Bat"}  #  Temperatura que se guarda en BD y muestra en reloj Web
+'Temp': {'Equipo':"Temp_Bat"},  #  Temperatura que se guarda en BD y muestra en reloj Web
+
+
+'Grafica_Aux'  : {"[0,1,Vbat,Iplaca,Ibat]"},  # [Activar, Nmuestras, lista variables....]
 
 }
 
