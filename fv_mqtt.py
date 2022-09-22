@@ -94,8 +94,8 @@ def on_message(client, userdata, msg):
         
                   
     except:
-        print(Fore.RED+'error, Grabacion tabla RAM equipos')
- 
+        print(Fore.RED+f'error, Grabacion tabla RAM equipos -- {DATOS_MQTT}')
+        sys.exit()
     try:
     
       if 'POWER' in DATOS_MQTT[msg.topic] and msg.topic[-5:] =='STATE':
@@ -138,6 +138,7 @@ def on_message(client, userdata, msg):
         pass 
         
     db.commit()
+    time.sleep(1)
         
 client = mqtt.Client("fv_mqtt") #crear nueva instancia
 client.on_connect = on_connect
@@ -165,18 +166,26 @@ while True:
     print (Fore.GREEN,time.strftime("%Y-%m-%d %H:%M:%S"), ' - Mensajes=',Nmensajes)
 
     exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-    for i in mqtt_suscripciones:
-        #print ('Topic =',i)
-        client.subscribe(i)
-    
     
     ####### LECTURA TABLA RELES ##############
     try:
         Rele_Dict={} 
+        ee = 10
         nreles=cursor.execute('SELECT * FROM reles')
+        ee = 20
         columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
-        for row in cursor.fetchall(): Rele_Dict[row[0]] = dict(zip(columns, row))
+        ee = 30
+        for row in cursor.fetchall():
+            if DEBUG == 100: print (f"Rele {row}")
+            Rele_Dict[row[0]] = dict(zip(columns, row))
+            
     except:
-        print (Fore.RED + 'Error lectura tabla reles')
+        print (Fore.RED + f'Error {ee} - lectura tabla reles {Rele_Dict}')
+        sys.exit()
+        
+    ####### Renuevo suscripciones ################    
+    for i in mqtt_suscripciones:
+        #print ('Topic =',i)
+        client.subscribe(i)
     
     time.sleep(60)  
