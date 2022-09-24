@@ -132,7 +132,10 @@ mysqli_close($link);
 $(function () {
     
     recibirDatosFV(); 
-
+    
+    
+    if (typeof color_rotulos == 'undefined') { color_rotulos = '#18F905'}; // Verde claro 
+    
     
     Highcharts.setOptions({
         
@@ -303,7 +306,8 @@ $(function () {
                 borderWidth: 0,
                 y: 0,
                 style: {
-                   fontSize: '18px'
+                   fontSize: '18px',
+                   color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,2) + " V"
@@ -419,7 +423,7 @@ $(function () {
             dataLabels: {
                 y:-35,
                 format: '<div style="text-align:center"><span style="font-size:25px;color:' +
-                  ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span>' +
+                  ((Highcharts.theme && Highcharts.theme.contrastTextColor) || color_rotulos) + '">{y}</span>' +
                        '<span style="font-size:15px;color:silver">%</span></div>'
               },
           }]
@@ -589,7 +593,8 @@ $(function () {
                 y: -35, //-35,
                 x: 0,
                 style: {
-                    fontSize: '15px'
+                    fontSize: '15px',
+                    color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,1) + "ºC Bat"
@@ -786,7 +791,8 @@ $(function () {
                 y: -35,
                 x: 0,
                 style: {
-                    fontSize: '15px'
+                    fontSize: '15px',
+                    color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "W"
@@ -956,7 +962,7 @@ $(function () {
                     color: 'red'
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " A"
+                    return Highcharts.numberFormat(this.y,1) + " A Bat"
                     },
                 },
             dial: {
@@ -972,12 +978,10 @@ $(function () {
                 y: 18,
                 style: {
                     fontSize: '14px',
-                    color: '#18F905'
-                    //color: '#3BC130'
-                    //color: 'green'
+                    color: color_rotulos
                     },
                 formatter: function() {
-                    return Highcharts.numberFormat(this.y,1) + " A"
+                    return Highcharts.numberFormat(this.y,1) + " A Placa"
                     },
                 },
             dial: {
@@ -1106,7 +1110,8 @@ $(function () {
                 borderWidth: 0,
                 y: 10,                   
                 style: {
-                    fontSize: '20px'                        
+                    fontSize: '20px',
+                    color: color_rotulos                    
                     },
                 formatter: function() {
                      return Highcharts.numberFormat(this.y,0) + " W"
@@ -1248,7 +1253,8 @@ $(function () {
                 borderWidth: 0,
                 y: 10,
                 style: {
-                   fontSize: '20px'
+                   fontSize: '20px',
+                   color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,1) + " V"
@@ -1598,14 +1604,14 @@ $(function () {
             Whp_bat = data['FV']['Whp_bat'];
             Whn_bat = data['FV']['Whn_bat'];
             Wh_bat = Whp_bat -Whn_bat;
-            Vbat_min = data['FV']['Vbat_min'];
-            Vbat_max = data['FV']['Vbat_max'];
+            Vbat_min_dia = data['FV']['Vbat_min'];
+            Vbat_max_dia = data['FV']['Vbat_max'];
             
             //DS,SOC,SOC_min,SOC_max
             DS = data['FV']['DS'];
             SOC = data['FV']['SOC'];
-            SOC_min = data['FV']['SOC_min'];
-            SOC_max = data['FV']['SOC_max'];
+            SOC_min_dia = data['FV']['SOC_min'];
+            SOC_max_dia = data['FV']['SOC_max'];
             
             //Mod_bat,Tabs,Tflot,Tflot_bulk
             Mod_bat = data['FV']['Mod_bat'];
@@ -1625,11 +1631,11 @@ $(function () {
             Whp_red = data['FV']['Whp_red'];
             Whn_red = data['FV']['Whn_red'];
             Wh_red = Whp_red -Whn_red;
-            Vred_min = data['FV']['Vred_min'];
-            Vred_max = data['FV']['Vred_max'];
+            Vred_min_dia = data['FV']['Vred_min'];
+            Vred_max_dia = data['FV']['Vred_max'];
             EFF = data['FV']['EFF'];
-            EFF_min = data['FV']['EFF_min'];
-            EFF_max = data['FV']['EFF_max'];
+            EFF_min_dia = data['FV']['EFF_min'];
+            EFF_max_dia = data['FV']['EFF_max'];
             Ired = Wred / Vred
             
             //Wconsumo, Wh_consumo
@@ -1652,10 +1658,21 @@ $(function () {
             
             
             // Actualizacion reloj Vbat 
-            chart_vbat.series[0].setData([Vbat]);
+            if (Vbat <= Vbat_bajo_amarillo)  {color = 'red';}
+            else if (Vbat < Vbat_verde)  {color = 'orange';}
+            else if (Vbat < Vbat_alto_amarillo)  {color = '#18F905';} // Verde claro
+            else if (Vbat < Vbat_alto_rojo)  {color = 'orange';}
+            else  {color = 'red';};
+                 
+            chart_vbat.series[0].update({
+                data: [Vbat],
+                dataLabels:{style: {color: color},}
+                });
+                
             chart_vbat.yAxis[0].setTitle({
               text: Wh_bat + ' Wh' 
                 });
+                
             chart_vbat.setSubtitle({
               text: Whp_bat + '/' + Whn_bat + ' Wh'
                 });
@@ -1663,41 +1680,118 @@ $(function () {
             chart_vbat.caption.update({
                 text: Vbat_min +'/'+ Vbat_max+ ' V'
                 });
-                
+             
+             
             // Actualizacion reloj Ibat/Iplaca
-            chart_ibat.series[0].setData([Ibat]); 
-            chart_ibat.series[1].setData([Iplaca]); 
+            if (Ibat <= Intensidad_descarga_amarillo)  {color = 'red';}
+            else if (Ibat < 0)  {color = 'orange';}
+            else if (Ibat < Intensidad_carga_rojo)  {color = '#18F905';}
+            else  {color = 'red';};
+            
+            chart_ibat.series[0].update({
+                data: [Ibat],
+                dataLabels:{style: {color: color},}
+                });
+                
+            if (Iplaca <= Intensidad_descarga_amarillo)  {color = 'red';}
+            else if (Iplaca < 0)  {color = 'orange';}
+            else if (Iplaca < Intensidad_carga_rojo)  {color = '#18F905';}
+            else  {color = 'red';};
+            
+            chart_ibat.series[1].update({
+                data: [Iplaca],
+                dataLabels:{style: {color: color},}
+                });
             
             // Actualizacion SOC   
-            chart_soc.series[0].setData([SOC]);
+            if (SOC >= 98)  {color = '#18F905';}
+            else if (SOC > (SOC_min +20))  {color = 'black';}
+            else if (SOC > (SOC_min + 10))  {color = 'orange';}
+            else  {color = 'red';};
+            
+            chart_soc.series[0].update({
+                data: [SOC],
+                dataLabels:{format: '<div style="text-align:center"><span style="font-size:25px;color:' +
+                  ((Highcharts.theme && Highcharts.theme.contrastTextColor) || color) + '">{y}</span>' +
+                       '<span style="font-size:15px;color:silver">%</span></div>'},
+                });                       
+            
             chart_soc.yAxis[0].setTitle({
               text: 'Tabs='+Tabs +'sg - Tflot='+ Tflot + 'sg' // Tabs /Tflot
                 });
                 
             // Actualizacion reloj Temp
-            chart_temp.series[0].setData([Temp]);    //Temp 
-            chart_temp.series[1].setData([data['TEMP']['Temp_cpu']]); //CPU
+            if (Temp <= Temp_bat_baja)  {color = 'red';}
+            else if (Temp < Temp_bat_normal)  {color = 'orange';}
+            else if (Temp < Temp_bat_alta)  {color = '#18F905';} // Verde claro
+            else  {color = 'red';};
+            
+            chart_temp.series[0].update({
+                data: [Temp],
+                dataLabels:{style: {color: color},}
+                });
+            
+            if ([data['TEMP']['Temp_cpu']] <= 10)  {color = 'red';}
+            else if ([data['TEMP']['Temp_cpu']] < Temp_rpi_normal)  {color = '#18F905';}
+            else if ([data['TEMP']['Temp_cpu']] < Temp_rpi_alta)  {color = 'orange';} // Verde claro
+            else  {color = 'red';};
 
+            chart_temp.series[1].update({
+                data: [data['TEMP']['Temp_cpu']],
+                dataLabels:{style: {color: color},}
+                });
+            
              // Actualizacion reloj Wplaca 
-            chart_wplaca.series[0].setData([Wplaca]); 
-            //chart_wplaca.setTitle({
-            //  text: data[0][12] // ejem de cambio de titulo
-            //   });
+            if (Wplaca <= Watios_placa_baja_rojo)  {color = 'red';}
+            else if (Wplaca < Watios_placa_verde)  {color = '#18F905';}
+            else if (Wplaca < Watios_placa_alta_amarillo)  {color = 'orange';} 
+            else  {color = 'red';};
+ 
+            chart_wplaca.series[0].update({
+                data: [Wplaca],
+                dataLabels:{style: {color: color},}
+                });           
+            
             chart_wplaca.yAxis[0].setTitle({
               text: Wh_placa + ' Wh'
                 });
             
-            // Actualizacion reloj Consumo            
-            chart_consumo.series[0].setData([Wconsumo]); // Consumo
-            chart_consumo.series[1].setData([Iplaca-Ibat]); // Iplaca - Ibat
+            // Actualizacion reloj Consumo
+            if (Wconsumo <= Consumo_watios_amarillo)  {color = '#18F905';}
+            else if (Wplaca < Consumo_watios_rojo)  {color = 'orange';}
+            else  {color = 'red';};
+  
+            chart_consumo.series[0].update({
+                data: [Wconsumo],
+                dataLabels:{style: {color: color},}
+                });    
+            
+            if (Iplaca-Ibat <= Consumo_amperios_amarillo)  {color = '#18F905';}
+            else if (Iplaca-Ibat < Consumo_amperios_rojo)  {color = 'orange';}
+            else  {color = 'red';};
+  
+            chart_consumo.series[1].update({
+                data: [Iplaca-Ibat],
+                dataLabels:{style: {color: color},}
+                });    
+            
             chart_consumo.setSubtitle({
               text: Wh_consumo + ' Wh'
                 });
                 
             
             // Actualizacion reloj Vplaca
-            chart_vplaca.series[0].setData([Vplaca]); //Vplaca
+            if (Vplaca <= Vplaca_baja_amarillo)  {color = 'orange';}
+            else if (Vplaca < Vplaca_baja_verde)  {color = '#18F905';}
+            else if (Vplaca < Vplaca_verde)  {color = '#17E206';} 
+            else if (Vplaca < Vplaca_alta_amarillo)  {color = 'orange';} 
+            else  {color = 'red';};
             
+            chart_vplaca.series[0].update({
+                data: [Vplaca],
+                dataLabels:{style: {color: color},}
+                });   
+             
             // Actualizacion Grafica a tiempo real
             grafica_t_real.setTitle({
               text: 'Fecha: ' + fecha
@@ -1720,10 +1814,10 @@ $(function () {
             $("#Wh_cons").text(Wh_consumo +" Wh")
             $("#Whp_bat").text(Whp_bat + " Wh");
             $("#Whn_bat").text(Whn_bat + " Wh");
-            $("#SOC_min").text(SOC_min + "%");
-            $("#SOC_max").text(SOC_max + "%");
-            $("#Vbat_min").text(Vbat_min + "V");
-            $("#Vbat_max").text(Vbat_max + "V");
+            $("#SOC_min").text(SOC_min_dia + "%");
+            $("#SOC_max").text(SOC_max_dia + "%");
+            $("#Vbat_min").text(Vbat_min_dia + "V");
+            $("#Vbat_max").text(Vbat_max_dia + "V");
             
             $("#Mod_bat").text(Mod_bat);
             
@@ -1759,38 +1853,38 @@ $(function () {
             else if (Mod_bat == "EQU")  {
                 document.getElementById("Mod_bat").className = "EQU";};
                 
-            //SOC_min
-            if (SOC_min <= SOC_min_rojo)  {
+            //SOC_min_dia
+            if (SOC_min_dia <= SOC_min_rojo)  {
                 document.getElementById("SOC_min").className = "rojo";}
-            else if (SOC_min < SOC_min_naranja)  {
+            else if (SOC_min_dia < SOC_min_naranja)  {
                 document.getElementById("SOC_min").className = "naranja";}
             else  {
                 document.getElementById("SOC_min").className = "verde";};
              
-            //SOC_max
-            if (SOC_max <= SOC_max_rojo)  {
+            //SOC_max_dia
+            if (SOC_max_dia <= SOC_max_rojo)  {
                 document.getElementById("SOC_max").className = "rojo";}
-            else if (SOC_max < SOC_max_naranja)  {
+            else if (SOC_max_dia < SOC_max_naranja)  {
                 document.getElementById("SOC_max").className = "naranja";}
             else  {
                 document.getElementById("SOC_max").className = "verde";};
             
-            //Vbat_min
-            if (Vbat_min <= Vbat_min_rojo)  {
+            //Vbat_min_dia
+            if (Vbat_min_dia <= Vbat_min_rojo)  {
                 document.getElementById("Vbat_min").className = "rojo";}
-            else if (Vbat_min < Vbat_min_naranja)  {
+            else if (Vbat_min_dia < Vbat_min_naranja)  {
                 document.getElementById("Vbat_min").className = "naranja";}
             else  {
                 document.getElementById("Vbat_min").className = "verde";};
             
-            //Vbat_max
-            if (Vbat_max >= Vbat_max_alta_rojo)  {
+            //Vbat_max_dia
+            if (Vbat_max_dia >= Vbat_max_alta_rojo)  {
                 document.getElementById("Vbat_max").className = "rojo";}
-            else if (Vbat_max >= Vbat_max_alta_naranja)  {
+            else if (Vbat_max_dia >= Vbat_max_alta_naranja)  {
                 document.getElementById("Vbat_max").className = "naranja";}
-            else if (Vbat_max <= Vbat_max_baja_rojo)  {
+            else if (Vbat_max_dia <= Vbat_max_baja_rojo)  {
                 document.getElementById("Vbat_max").className = "rojo";}
-            else if (Vbat_max <= Vbat_max_baja_naranja)  {
+            else if (Vbat_max_dia <= Vbat_max_baja_naranja)  {
                 document.getElementById("Vbat_max").className = "naranja";}                
             else  {
                 document.getElementById("Vbat_max").className = "verde";};
