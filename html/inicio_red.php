@@ -148,6 +148,10 @@ $(function () {
     recibirDatosFV(); 
 
     
+    if (typeof color_rotulos == 'undefined') { color_rotulos = '#18F905'}; // Verde claro 
+    
+    
+    
     Highcharts.setOptions({
         
         global: {
@@ -317,7 +321,8 @@ $(function () {
                 borderWidth: 0,
                 y: 0,
                 style: {
-                   fontSize: '18px'
+                   fontSize: '18px',
+                   color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + " V"
@@ -433,7 +438,7 @@ $(function () {
             dataLabels: {
                 y:-35,
                 format: '<div style="text-align:center"><span style="font-size:25px;color:' +
-                  ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black') + '">{y}</span>' +
+                  ((Highcharts.theme && Highcharts.theme.contrastTextColor) || color_rotulos) + '">{y}</span>' +
                        '<span style="font-size:15px;color:silver">%</span></div>'
               },
           }]
@@ -498,7 +503,6 @@ $(function () {
             endAngle: 150,
             background: []
           }],
-            // the value axis
         yAxis: [{
             min: Temp_bat_min,
             max: Temp_bat_max,
@@ -603,7 +607,8 @@ $(function () {
                 y: -35, //-35,
                 x: 0,
                 style: {
-                    fontSize: '15px'
+                    fontSize: '15px',
+                    color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,1) + "ºC Inv"
@@ -762,7 +767,8 @@ $(function () {
                 y: -35,
                 x: 0,
                 style: {
-                    fontSize: '15px'
+                    fontSize: '15px',
+                    color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "W"
@@ -785,7 +791,7 @@ $(function () {
                 x: 0,
                 style: {
                     fontSize: '15px',
-                    color : 'red'
+                    color : 'blue'
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + "W"
@@ -1083,7 +1089,8 @@ $(function () {
                 borderWidth: 0,
                 y: 10,                   
                 style: {
-                    fontSize: '20px'                        
+                    fontSize: '20px',
+                    color: color_rotulos
                     },
                 formatter: function() {
                      return Highcharts.numberFormat(this.y,0) + " W"
@@ -1225,7 +1232,8 @@ $(function () {
                 borderWidth: 0,
                 y: 10,
                 style: {
-                   fontSize: '20px'
+                   fontSize: '20px',
+                   color: color_rotulos
                   },
                 formatter: function() {
                     return Highcharts.numberFormat(this.y,0) + " V"
@@ -1488,14 +1496,14 @@ $(function () {
             Whp_bat = data['FV']['Whp_bat'];
             Whn_bat = data['FV']['Whn_bat'];
             Wh_bat = Whp_bat -Whn_bat;
-            Vbat_min = data['FV']['Vbat_min'];
-            Vbat_max = data['FV']['Vbat_max'];
+            Vbat_min_dia = data['FV']['Vbat_min'];
+            Vbat_max_dia = data['FV']['Vbat_max'];
             
             //DS,SOC,SOC_min,SOC_max
             DS = data['FV']['DS'];
             SOC = data['FV']['SOC'];
-            SOC_min = data['FV']['SOC_min'];
-            SOC_max = data['FV']['SOC_max'];
+            SOC_min_dia = data['FV']['SOC_min'];
+            SOC_max_dia = data['FV']['SOC_max'];
             
             //Mod_bat,Tabs,Tflot,Tflot_bulk
             Mod_bat = data['FV']['Mod_bat'];
@@ -1515,12 +1523,13 @@ $(function () {
             Whp_red = data['FV']['Whp_red'];
             Whn_red = data['FV']['Whn_red'];
             Wh_red = Whp_red -Whn_red;
-            Vred_min = data['FV']['Vred_min'];
-            Vred_max = data['FV']['Vred_max'];
+            Vred_min_dia = data['FV']['Vred_min'];
+            Vred_max_dia = data['FV']['Vred_max'];
             EFF = data['FV']['EFF'];
-            EFF_min = data['FV']['EFF_min'];
-            EFF_max = data['FV']['EFF_max'];
-            Ired = Wred / Vred
+            EFF_min_dia = data['FV']['EFF_min'];
+            EFF_max_dia = data['FV']['EFF_max'];
+            if (Vred == 0)  {Ired = 0;}
+            else {Ired = Wred / Vred;};
             
             //Wconsumo, Wh_consumo
             Wconsumo = data['FV']['Wconsumo'];
@@ -1542,7 +1551,18 @@ $(function () {
             
             
             // Actualizacion reloj Vred
-            chart_vred.series[0].setData([Vred]);
+            if (Vred <= Vred_bajo_amarillo)  {color = 'red';}
+            else if (Vred < Vred_verde)  {color = 'orange';}
+            else if (Vred < Vred_alto_amarillo)  {color = '#18F905';} // Verde claro
+            else if (Vred < Vred_alto_rojo)  {color = 'orange';}
+            else  {color = 'red';};
+            
+            chart_vred.series[0].update({
+                data: [Vred],
+                dataLabels:{style: {color: color},}
+                });
+            
+            
             chart_vred.yAxis[0].setTitle({
               text: Wh_red + ' Wh' 
                 });
@@ -1555,9 +1575,30 @@ $(function () {
                 });
                 
             // Actualizacion reloj Wred/Wplaca
-            chart_wred.series[0].setData([Wred]); 
-            chart_wred.series[1].setData([Wplaca]);
-                      
+            if (Wred <= Wred_negativo_rojo)  {color = 'red';}
+            else if (Wred < Wred_negativo_amarillo)  {color = 'orange';}
+            else if (Wred < Wred_positivo_amarillo)  {color = '#18F905';}
+            else if (Wred < Wred_positivo_rojo)  {color = 'orange';}
+            else  {color = 'red';};
+            
+            chart_wred.series[0].update({
+                data: [Wred],
+                dataLabels:{style: {color: color},}
+                });
+                
+            
+            if (Wplaca <= Watios_placa_baja_rojo)  {color = 'red';}
+            else if (Wplaca < Watios_placa_verde)  {color = '#18F905';}
+            else if (Wplaca < Watios_placa_alta_amarillo)  {color = 'orange';}
+            else  {color = 'red';};
+            
+            chart_wred.series[1].update({
+                data: [Wplaca],
+                dataLabels:{style: {color: color},}
+                });
+            
+            
+            
             // Actualizacion EFF
             chart_eff.series[0].setData([EFF]);
             chart_eff.yAxis[0].setTitle({
@@ -1569,28 +1610,53 @@ $(function () {
             chart_temp.series[1].setData([data['TEMP']['Temp_cpu']]); //CPU
 
             // Actualizacion reloj Wplaca 
-            chart_wplaca.series[0].setData([Wplaca]); 
-            //chart_wplaca.setTitle({
-            //  text: data[0][12] // ejem de cambio de titulo
-            //   });
+            if (Wplaca <= Watios_placa_baja_rojo)  {color = 'red';}
+            else if (Wplaca < Watios_placa_verde)  {color = '#18F905';}
+            else if (Wplaca < Watios_placa_alta_amarillo)  {color = 'orange';} 
+            else  {color = 'red';};
+ 
+            chart_wplaca.series[0].update({
+                data: [Wplaca],
+                dataLabels:{style: {color: color},}
+                });           
+            
             chart_wplaca.yAxis[0].setTitle({
-              text: Wh_placa+" Wh "
+              text: Wh_placa + ' Wh'
                 });
             
+
             // Actualizacion reloj Consumo 
-            chart_consumo.series[0].setData([Wconsumo]); // Consumo
+            if (Wconsumo <= Consumo_watios_amarillo)  {color = '#18F905';}
+            else if (Wplaca < Consumo_watios_rojo)  {color = 'orange';}
+            else  {color = 'red';};
+  
+            chart_consumo.series[0].update({
+                data: [Wconsumo],
+                dataLabels:{style: {color: color},}
+                });    
+            
+            
             chart_consumo.series[1].setData([Wautoconsumo]); // Autoconsumo
+            
+            
             chart_consumo.setSubtitle({
               text: Wh_consumo + ' Wh'
                 });
                 
                        
             // Actualizacion reloj Vplaca
-            chart_vplaca.series[0].setData([Vplaca]); //Vplaca
-        
-        
+            if (Vplaca <= Vplaca_baja_amarillo)  {color = 'orange';}
+            else if (Vplaca < Vplaca_baja_verde)  {color = '#18F905';}
+            else if (Vplaca < Vplaca_verde)  {color = '#17E206';} 
+            else if (Vplaca < Vplaca_alta_amarillo)  {color = 'orange';} 
+            else  {color = 'red';};
             
-             // Actualizacion Grafica a tiempo real
+            chart_vplaca.series[0].update({
+                data: [Vplaca],
+                dataLabels:{style: {color: color},}
+                });   
+             
+            // Actualizacion Grafica a tiempo real
             grafica_t_real.setTitle({
               text: 'Fecha: ' + fecha
                 });
@@ -1607,13 +1673,13 @@ $(function () {
             
             //Valores de la tabla
             $("#Wh_placa").text(Wh_placa + " Wh");
-            $("#Wh_cons").text(Wh_consumo +' Wh')
+            $("#Wh_cons").text(Wh_consumo +" Wh")
             $("#Whp_red").text(Whp_red + " Wh");
             $("#Whn_red").text(Whn_red + " Wh");
-            $("#EFF_min").text(EFF_min + "%");
-            $("#EFF_max").text(EFF_max + "%");
-            $("#Vred_min").text(Vred_min + "V");
-            $("#Vred_max").text(Vred_max + "V");
+            $("#EFF_min").text(EFF_min_dia + "%");
+            $("#EFF_max").text(EFF_max_dia + "%");
+            $("#Vred_min").text(Vred_min_dia + "V");
+            $("#Vred_max").text(Vred_max_dia + "V");
             
             
             $("#Aux1").text(Aux1 + Unidades_Aux1);
@@ -1666,22 +1732,22 @@ $(function () {
             else  {
                 document.getElementById("EFF_max").className = "verde";};
             
-            //Vred_min
-            if (Vred <= Vred_min_rojo)  {
+            //Vred_min_dia
+            if (Vred_min_dia <= Vred_min_rojo)  {
                 document.getElementById("Vred_min").className = "rojo";}
-            else if (Vred < Vred_min_naranja)  {
+            else if (Vred_min_dia < Vred_min_naranja)  {
                 document.getElementById("Vred_min").className = "naranja";}
             else  {
                 document.getElementById("Vred_min").className = "verde";};
             
-            //Vred_max
-            if (Vred >= Vred_max_alta_rojo)  {
+            //Vred_max_dia
+            if (Vred_max_dia >= Vred_max_alta_rojo)  {
                 document.getElementById("Vred_max").className = "rojo";}
-            else if (Vred >= Vred_max_alta_naranja)  {
+            else if (Vred_max_dia >= Vred_max_alta_naranja)  {
                 document.getElementById("Vred_max").className = "naranja";}
-            else if (Vred <= Vred_max_baja_rojo)  {
+            else if (Vred_max_dia <= Vred_max_baja_rojo)  {
                 document.getElementById("Vred_max").className = "rojo";}
-            else if (Vred <= Vred_max_baja_naranja)  {
+            else if (Vred_max_dia <= Vred_max_baja_naranja)  {
                 document.getElementById("Vred_max").className = "naranja";}
                                                                           
                 

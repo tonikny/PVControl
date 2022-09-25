@@ -54,7 +54,7 @@ mysqli_close($link);
             <div id= "Whn_bat" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
-            <div class="divTableCell">&nbsp;SOC máx</div>
+            <div class="divTableCell">SOC máx</div>
             <div id = "SOC_max" class="divTableCell">&nbsp;</div>
         </div>
         <div class="divTableRow">
@@ -103,7 +103,6 @@ mysqli_close($link);
             <div id ="Aux7n" class="divTableCell">Aux7</div>
             <div id ="Aux7" class="divTableCell">&nbsp;</div>
         </div>
-        
     </div>
 </div>
 
@@ -121,6 +120,7 @@ mysqli_close($link);
 <div id="container_reles" style="width: 80%; height: 160px; margin-left: 1%;float: left"></div>                                                                                              
 <div id="grafica_t_real" style="width: 100%; height: 280px; margin-left: 0%; margin-bottom: 0% ;float: left"></div>
 
+                                                                                                
 
 <br>
 <br style="clear:both;"/>
@@ -1111,7 +1111,7 @@ $(function () {
                 y: 10,                   
                 style: {
                     fontSize: '20px',
-                    color: color_rotulos                    
+                    color: color_rotulos
                     },
                 formatter: function() {
                      return Highcharts.numberFormat(this.y,0) + " W"
@@ -1311,7 +1311,7 @@ $(function () {
               y: 10, 
               align: 'right',
               reserveSpace: true,
-            },        
+            },
             categories: [] //Nombre_Reles()
                },
         yAxis: {
@@ -1594,7 +1594,7 @@ $(function () {
         url: 'datos_fv.php',
         success: function(data) {
           try {
-            //console.log(data)               
+            //console.log(data)
             fecha = data['FV']['tiempo'];
             
             //Vbat,Ibat,Wbat,Whp_bat,Whn_bat,Vbat_min,Vbat_max
@@ -1636,12 +1636,13 @@ $(function () {
             EFF = data['FV']['EFF'];
             EFF_min_dia = data['FV']['EFF_min'];
             EFF_max_dia = data['FV']['EFF_max'];
-            Ired = Wred / Vred
+            
+            if (Vred == 0)  {Ired = 0;}
+            else {Ired = Wred / Vred;};
             
             //Wconsumo, Wh_consumo
             Wconsumo = data['FV']['Wconsumo'];
             Wh_consumo = data['FV']['Wh_consumo'];
-            
             
             //Temp,int(PWM)
             Temp = data['FV']['Temp'];
@@ -1656,23 +1657,22 @@ $(function () {
             Aux6 = data['FV']['Aux6'];
             Aux7 = data['FV']['Aux7'];
             
-            
             // Actualizacion reloj Vbat 
             if (Vbat <= Vbat_bajo_amarillo)  {color = 'red';}
             else if (Vbat < Vbat_verde)  {color = 'orange';}
             else if (Vbat < Vbat_alto_amarillo)  {color = '#18F905';} // Verde claro
             else if (Vbat < Vbat_alto_rojo)  {color = 'orange';}
             else  {color = 'red';};
-                 
+            
             chart_vbat.series[0].update({
                 data: [Vbat],
                 dataLabels:{style: {color: color},}
                 });
-                
+            
             chart_vbat.yAxis[0].setTitle({
               text: Wh_bat + ' Wh' 
                 });
-                
+            
             chart_vbat.setSubtitle({
               text: Whp_bat + '/' + Whn_bat + ' Wh'
                 });
@@ -1680,8 +1680,7 @@ $(function () {
             chart_vbat.caption.update({
                 text: Vbat_min +'/'+ Vbat_max+ ' V'
                 });
-             
-             
+            
             // Actualizacion reloj Ibat/Iplaca
             if (Ibat <= Intensidad_descarga_amarillo)  {color = 'red';}
             else if (Ibat < 0)  {color = 'orange';}
@@ -1779,7 +1778,6 @@ $(function () {
               text: Wh_consumo + ' Wh'
                 });
                 
-            
             // Actualizacion reloj Vplaca
             if (Vplaca <= Vplaca_baja_amarillo)  {color = 'orange';}
             else if (Vplaca < Vplaca_baja_verde)  {color = '#18F905';}
@@ -1841,7 +1839,6 @@ $(function () {
             
             $("#Aux7").text(Aux7+ Unidades_Aux7);           
             $("#Aux7n").text(Nombre_Aux7);
-            
             
             //Evaluacion del color de la celda segun la variable ... (Colores definidos en inicio.css)
             if (Mod_bat == "ABS")  {
@@ -1906,16 +1903,18 @@ $(function () {
             }
             
             chart_reles.xAxis[0].setCategories(tCategories);
-                                                    
+            
             
             //console.log(data)
            
           }
-           
+          
           catch (e) {
             var d = new Date();
             s = d.getSeconds()
             t = d.getHours() + ':' + d.getMinutes() + ':' + s;
+            
+            console.log(data)
                 
             chart_vplaca.series[0].setData([s]); //Vplaca
             chart_temp.series[0].setData([s]);    //Temp 
