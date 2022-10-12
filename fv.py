@@ -909,7 +909,8 @@ try:
         if simular == 1:
             Ibat = random.choice([0,12,22,33,46,56,65,78,101,-10,-20,-30,-40,-50,-60,-70,-80,-90])
             Iplaca = random.choice([0,10,20,30,45,57,67,77,88,99,102,110])
-            Vbat = random.choice([22.5,23.7,24.0,24.4,25.5,26.3,27,27.5,28.2,29.1])
+            Vbat = random.choice([22,23.7,24.0,24.4,25.5,26.3,27,27.5,28.2,29.1])
+            Vbat = float(Vbat) / 2 * vsis
             Vplaca = random.choice([60,59.4,61,59.9,52,60.1,61.6,58.7,62,57.3])
             Wplaca = random.choice([600,590,40,610,590,520,600.10,610.60,580.70,620,570])
             Temp = random.choice([10,12,14,16,18,20,22,24,26,28,30,32,34])
@@ -924,6 +925,8 @@ try:
             Wred = Vred * Ired
             Wconsumo = Wplaca - Wbat - Wred
             
+            Grafica_Aux_dict['Activo'] = 0
+            """
             CD1 += 1
             if DEBUG1 == 'RELES' : 
                 print(Fore.GREEN+'datos_FV  =',datos_FV)
@@ -948,6 +951,7 @@ try:
             else:
                 #sys.exit()
                 CD1 = 0
+            """
             d_={}
             sql = 'SELECT * FROM equipos'
             nequipos = int(cursor.execute(sql))
