@@ -169,19 +169,26 @@ while True:
     
     ####### LECTURA TABLA RELES ##############
     try:
-        Rele_Dict={} 
         ee = 10
         nreles=cursor.execute('SELECT * FROM reles')
         ee = 20
         columns = [column[0] for column in cursor.description] # creacion diccionario Tabla Reles
         ee = 30
+        Rele_Dict={}
         for row in cursor.fetchall():
             if DEBUG == 100: print (f"Rele {row}")
             Rele_Dict[row[0]] = dict(zip(columns, row))
             
     except:
-        print (Fore.RED + f'Error {ee} - lectura tabla reles {Rele_Dict}')
-        sys.exit()
+        print (Fore.RED +time.strftime("%Y-%m-%d %H:%M:%S") + f' Error {ee} - lectura tabla reles')
+        time.sleep(1)
+        cursor.close()
+        db.close()
+        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+        cursor = db.cursor()
+    
+        continue
+        #sys.exit()
         
     ####### Renuevo suscripciones ################    
     for i in mqtt_suscripciones:
