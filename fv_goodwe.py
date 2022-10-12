@@ -18,9 +18,9 @@ elif '-p2' in sys.argv: DEBUG = 2  # ...  print tiempo captura
 elif '-p' in sys.argv: DEBUG = 100 # ...  print detalle de cada campo de captura
 
 from Parametros_FV import *
-#if usar_goodwe == 0:
-#    print (subprocess.getoutput('sudo systemctl stop goodwe'))
-#    sys.exit()
+if usar_goodwe == 0:
+    print (subprocess.getoutput('sudo systemctl stop goodwe'))
+    sys.exit()
 
 
 import colorama # colores en ventana Terminal
