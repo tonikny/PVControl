@@ -27,6 +27,8 @@ session_start([
     $menu["Utilidades"]["Meteo"] = ["Meteorología","meteogram.php"];
     ($version=="RD")? : $menu["Utilidades"]["SOC"] = ["SOC","actualizar_soc.php"];
     $menu["Utilidades"]["Log"] = ["Log","log.php"];
+    $menu["Utilidades"]["Parametros"] = ["Parametros","parametros.php"];
+    
     
     $menu["Gráficas"]["KWh"] = ($version!="RD")?["KWh Batería, Producción y Consumo","wh.php"]: ["KWh Red, Producción y Consumo","wh_red.php"];
     $menu["Gráficas"]["Promedios"] = ["Promedios 30 días","prom_30.php"];
