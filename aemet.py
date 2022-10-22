@@ -69,9 +69,12 @@ for k in dp['dia']:
                 d[dia]['temperatura']['maxima'] = d[dia]['temperatura']['minima'] = 0.01
             
             for k1 in k['temperatura']['dato']:
-                if DEBUG: print (k1,k1['@hora'],k1['#text'])
-                d[dia]['temperatura'][k1['@hora']] = float(k1['#text'])
-        
+                try:
+                    if DEBUG: print (k1,k1['@hora'],k1['#text'])
+                    d[dia]['temperatura'][k1['@hora']] = float(k1['#text'])
+                except:
+                    d[dia]['temperatura'][k1['@hora']] = 0.01
+                    
         if 'l' in sel:
             d[dia]['lluvia'] = {}
             if DEBUG: print (dia,'lluvia:',k['prob_precipitacion'])
