@@ -411,14 +411,30 @@ cid_alarma = 1111111 # # Id Telegram a donde se enviara la foto/video de alarma
 
 msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora -- 0 = No manda mensaje
 
-msg_telegram = ["<b>SOC={d_['FV']['SOC']:.1f}%</b>- Vbat={d_['FV']['Vbat']:.1f}V- PWM={d_['FV']['PWM']:.0f}",
-                "Iplaca={d_['FV']['Iplaca']:.1f}A - Ibat={d_['FV']['Ibat']:.1f}A - Vpl={d_['FV']['Vplaca']:.0f}",
-                "Kwh: Placa={d_['FV']['Wh_placa']/1000:.1f} - Bat={d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}={(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}",
-                "T={d_['FV']['Temp']}//{L_temp}",
-                "{L_reles}",
-                "{L_celdas}",
-                "{L_ip}"
-               ]
+msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
+				"     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
+				#"     \U0001F4CA {L_celdas}",
+
+                "\U0001F31E <b><u>Placas</u></b>:",
+                "     \U000024C5 <b>{d_['FV']['Wplaca']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vplaca']:.0f}</b>V",
+
+                "\U0001F4A1 <b><u>Consumo</u></b>:",
+                "     \U000024C5 <b>{d_['FV']['Wconsumo']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']-d_['FV']['Ibat']:.1f}</b>A     PWM: <b>{d_['FV']['PWM']:.0f}</b>",
+                "     Relés: <b>{L_reles}</b>",
+
+                #"\U0001F50C <b><u>Red</u></b>:",
+                #"     \U000024C5 <b>{d_['FV']['Wred']:.0f}</b>W     \U000024BE <b>{d_['FV']['Ired']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vred']:.0f}</b>V",
+
+                "\U0001F4C6 <b><u>Diario (KWh)</u></b>:",
+                "     \U0001F31E <b>{d_['FV']['Wh_placa']/1000:.1f}</b> \U0001F50B <i>{d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}</i> = <b>{(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}</b> \U0001F4A1 <b>{(d_['FV']['Wh_consumo'])/1000:.1f}</b>",
+                #"     \U0001F50C <b>{(d_['FV']['Wh_red'])/1000:.1f}</b>",
+
+                "\U0001F321 <b><u>Temperaturas (ºC)</u></b>:",
+                "     Bat: <b>{d_['FV']['Temp']}</b> / CPU: <b>{d_['TEMP']['Temp_cpu']:.1f}</b>",
+
+                "\U0001F4BB <b><u>Conexión (IP)</u></b>:",
+                "     \U0001F3E0 {L_ip_local}  \U0001F30D <span class='tg-spoiler'>{L_ip}</span>",
+                ]
 
 # -----------------------------------------------
 
