@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-#Version 31/Mayb/22
+#Version 30/Oct/22
 #
 
 import requests
@@ -33,7 +33,11 @@ def equipo_lectura (indice):  # como entrada solo el indice del Fronius de las l
 
     print ('')
     print(Fore.BLUE+'=' *40,f'Proceso {equipo}{indice}  IP= {IP_FRONIUS[indice]}', '=' *40) 
-    time.sleep(20)
+    if indice == 0: N_equipo = ""
+    else: N_equipo = f"{indice}"
+    print(Fore.CYAN + f'Clave en tabla equipos.... {equipo}{N_equipo}') 
+    
+    time.sleep(20) # le damos un tiempo inicial para establecer comunicacion antes de lectura
     
 
     class fronius:
@@ -157,17 +161,23 @@ def equipo_lectura (indice):  # como entrada solo el indice del Fronius de las l
             datos['Tiempo'] = tiempo
             datos['Tiempo_sg'] = tiempo_sg
             
-            #print(datos)
+            print('datos=',datos)
             """
             
             if datos != None :
                 try:####  ARCHIVOS RAM en BD ############ 
                     salida = json.dumps(datos)
-                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{equipo}{indice}'") # grabacion en BD RAM
+                    
+                    if DEBUG:
+                        print()
+                        print (f'id_equipo = {equipo}{N_equipo} -- salida=',salida)
+                        print()
+                    
+                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{equipo}{N_equipo}'") # grabacion en BD RAM
                     cursor.execute(sql)
                     db.commit()
                 except:
-                    print(Fore.RED+f'error, Grabacion tabla RAM equipos en {equipo}{indice}')
+                    print(Fore.RED+f'error, Grabacion tabla RAM equipos en {equipo}{N_equipo}')
                  
             
             time.sleep(max (t_muestra_fronius[indice]-(time.time()-t1),0))
@@ -246,7 +256,7 @@ if __name__ == '__main__':
     
     # Bucle     
     while True:
-        print ('Bucle Main')
+        if DEBUG: print ('Bucle Main')
         time.sleep(10)
     
     sys.exit()

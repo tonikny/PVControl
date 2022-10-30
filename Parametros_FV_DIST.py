@@ -284,13 +284,17 @@ IP_SB2 = "192.168.0.252"  # IP del SB2
 #### FRONIUS ####
 #################
 
+## Se admiten varios equipos fronius... incluir separado por comas los distintos parametros....
+## por ejemplo para 2 equipos....
+##    usar_fronius = [1,1]....IP_FRONIUS = ["192.168.1.101","192.168.1.102"] ...etc
+ 
 ## ATENCION ser congruente con lo que se ha puesto en el apartado de sensores
-## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar fronius = 1
+## Si algun sensor (Iplaca, Vplaca,...)  usa fronius se debe poner usar fronius = [1]
 
-usar_fronius = 0          	# 1 para leer datos del fronius..... 0 para no usar
-usar_meter_fronius = 0      # 1 para activar lectura de contador de Fronius
-IP_FRONIUS = "192.168.0.24"    # IP del FRONIUS
-t_muestra_fronius = 5
+usar_fronius = [0]          	 # 1 para leer datos del fronius..... 0 para no usar
+usar_meter_fronius = [0]         # 1 para activar lectura de contador de Fronius
+IP_FRONIUS = ["192.168.0.24"]    # IP del FRONIUS
+t_muestra_fronius = [5]          # Tiempo en segundos entre capturas 
 # -----------------------------------------------
 #################
 ####  HUAWEI ####
