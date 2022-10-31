@@ -263,6 +263,15 @@ $(function () {
 
 <?php // --------------------- TABLA RELES -----------------------------------------------?>
 <script>
+	function highlightFor(id,color,seconds){
+    var element = document.getElementById(id)
+    var origcolor = element.style.backgroundColor
+    element.style.backgroundColor = color;
+    var t = setTimeout(function(){
+			element.style.transition = "all 2s";
+      element.style.backgroundColor = origcolor;
+    },(seconds*1000));
+	}
   function edicion(id) {
 		document.getElementById('id_rele').value = document.getElementById(id).children[0].innerText;
 		document.getElementById("id_rele").readOnly = true;
@@ -276,6 +285,7 @@ $(function () {
 		document.getElementById('rele_submit').value = "Editar";
 		document.getElementById('nuevo').value = "false";
 		document.getElementById("rele_form").scrollIntoView({behavior: 'smooth', block: 'center'});
+		highlightFor('rele_form','gray',1);
 	}
 	function anadir() {
 		document.getElementById('rele_submit').value = 'Añadir';
