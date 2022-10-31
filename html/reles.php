@@ -55,7 +55,7 @@ if ((!isset($_POST['password']) or (md5($_POST['password'])) != $password) && !i
 }
 ?>
 
-<div id="container_reles" style="width: 80%; height: 160px; margin-left: 1%;"></div>
+<div id="container_reles" style="width: 90%; height: 160px; margin-left: 1%;"></div>
 <script>
 $(function () {
 	recibirDatosFV(); 
@@ -259,8 +259,23 @@ $(function () {
 }
 </style>
 
+
+
+<?php // --------------------- TABLA RELES -----------------------------------------------?>
+<script>
+  function myFunction(id) {
+		// console.log(id);
+		document.getElementById('id_rele').value = document.getElementById(id).children[0].innerText;
+		document.getElementById('nombre').value = document.getElementById(id).children[1].innerText;
+		document.getElementById('modo').value = document.getElementById(id).children[2].innerText;
+		document.getElementById('grabacion').value = document.getElementById(id).children[3].innerText;
+		document.getElementById('salto').value = document.getElementById(id).children[4].innerText;
+		document.getElementById('prioridad').value = document.getElementById(id).children[5].innerText;
+		document.getElementById('rele_submit').value = "Editar"
+		document.getElementById('rele_form').action = "c_rele.php"
+	}
+</script>
 <?php
-// --------------------- TABLA RELES -----------------------------------------------
 echo '<strong>RELES</strong>';
 
 require('conexion.php');
@@ -282,7 +297,7 @@ if($result = mysqli_query($link, $sql)){
 		$i++;
 	}
 
-	echo '<table width="80%" border="1" style="text-align:center;">';
+	echo '<table width="90%" border="1" style="text-align:center;">';
 	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 
@@ -293,11 +308,13 @@ if($result = mysqli_query($link, $sql)){
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);
 	}
+	echo "<th><b>modos</b></th>";
+	echo "<th colspan='2'><b>acciones</b></th>";
 	echo "</tr>";
 
 	for($i=0;$i<$filas;$i++){
 
-		echo "<tr>";
+		echo "<tr id=\"".$rawdata[$i][0]."\">";
 		for($j=0;$j<$columnas-1;$j++){
 			echo "<td>".$rawdata[$i][$j]."</td>";
 		}
@@ -312,33 +329,38 @@ if($result = mysqli_query($link, $sql)){
 		</form>
 		<?php }?>
 	</span></td>
-		<?php if (isset($_SESSION['logged'])){ ?>						
-	<td><form action="c_rele.php" method="post">
-        	<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
-		<button type="submit" name="modo" value="PRG" style="border: 0; background: transparent">
-			<img src="img/pulazult.png" width="30" alt="submit" />
+		<?php if (isset($_SESSION['logged'])){ ?>
+	<td>
+		<form action="c_rele.php" method="post">
+			<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
+			<button type="submit" name="modo" value="PRG" style="border: 0; background: transparent">
+				<img src="img/pulazult.png" width="30" alt="submit" />
+			</button>
+						<button type="submit" name="modo" value="ON" style="border: 0; background: transparent">
+				<img src="img/pulverdet.png" width="30" alt="submit" />
+			</button>
+						<button type="submit" name="modo" value="OFF" style="border: 0; background: transparent">
+				<img src="img/pulrojot.png" width="30" alt="submit" />
+			</button>
+			
+			<button type="submit" name="modo" value="M_ON" style="border: 1; background: transparent">
+				<img src="img/pulverdetman.png" width="30" alt="submit" />
+			</button>
+			
+			<button type="submit" name="modo" value="M_OFF" style="border: 1; background: transparent">
+				<img src="img/pulrojotman.png" width="30" alt="submit" />
+			</button>
+		</form>
+	</td>
+
+	<td>
+		<button name="edit" value="EDIT" style="border: 0; background: solid" title="Editar Relé" onclick="myFunction(<?php echo $rele[$i][0]; ?>)">
+			<img src="img/edit2.png" width="30" alt="submit" />
 		</button>
-        	<button type="submit" name="modo" value="ON" style="border: 0; background: transparent">
-			<img src="img/pulverdet.png" width="30" alt="submit" />
-		</button>
-        	<button type="submit" name="modo" value="OFF" style="border: 0; background: transparent">
-			<img src="img/pulrojot.png" width="30" alt="submit" />
-		</button>
-		
-		<button type="submit" name="modo" value="M_ON" style="border: 1; background: transparent">
-			<img src="img/pulverdet.png" width="30" alt="submit" />
-		</button>
-		
-		<button type="submit" name="modo" value="M_OFF" style="border: 1; background: transparent">
-			<img src="img/pulrojot.png" width="30" alt="submit" />
-		</button>
-		
-		
-	</form></td>
+	</td>
 	
 	<td width="10px"><form action="d_rele.php" method="post">
-        	<input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
-
+    <input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
 		<button type="submit" style="border: 0; background: transparent" title="Eliminar Relé" onclick="return confirm('Estás seguro de eliminar relé de todas las tablas?')">
 			<img src="img/delete.png" width="30" alt="submit" />
 		</button>
@@ -356,8 +378,8 @@ if($result = mysqli_query($link, $sql)){
 if (isset($_SESSION['logged'])){
 ?>
 Añadir relé
-<div style="border:1px solid; width:80%">
-<form action="add_rele.php" method="post">
+<div style="border:1px solid; width:90%">
+<form action="add_rele.php" method="post" id="rele_form">
     <table style="border-spacing:5px;">
 	<tr>
 	<th><label for="id_rele">id_rele</label></th>
@@ -368,28 +390,27 @@ Añadir relé
 	<th><label for="prioridad">Prioridad</label></th>
 	<th></th>
 	</tr><tr>
-        <td><input type="text" name="id_rele" id="id_rele" size="15"></td>
-        <td><input type="text" name="nombre" id="nombre"></td>
-        <td><select name="modo">
-                <option value="PRG" selected="selected">PRG</option>
-                <option value="ON">ON</option>
-                <option value="OFF">OFF</option>
-		<option value="MAN">MAN</option>
-		
-	</select></td>
-        <td><select name="grabacion">
-                <option value="N" selected="selected">No</option>
-                <option value="S">Sí</option>
-        </select></td>
-        <td><input type="text" name="salto" id="salto" size="15" title="Relés normales = 100, Relés PWM = % de salto"></td>
-        <td><input type="text" name="prioridad" id="prioridad" size="15" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
-	<td><input type="submit" value="Añadir"></td>
+		<td><input type="text" name="id_rele" id="id_rele" size="5"></td>
+		<td><input type="text" name="nombre" id="nombre"></td>
+		<td><select name="modo" id="modo">
+			<option value="PRG" selected="selected">PRG</option>
+			<option value="ON">ON</option>
+			<option value="OFF">OFF</option>
+			<option value="MAN">MAN</option>
+		</select></td>
+		<td><select name="grabacion" id="grabacion">
+			<option value="N" selected="selected">No</option>
+			<option value="S">Sí</option>
+		</select></td>
+		<td><input type="text" name="salto" id="salto" size="5" title="Relés normales = 100, Relés PWM = % de salto"></td>
+		<td><input type="text" name="prioridad" id="prioridad" size="5" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
+	<td><input type="submit" id="rele_submit" value="Añadir"></td>
+	<td><input type="reset" value="Limpiar" onClick="document.getElementById('rele_submit').value = 'Añadir'"></td>
 	</tr>
     </table>
 </form>
 </div>
 <br />
-
 
 <?php
 }
@@ -414,7 +435,7 @@ if($result = mysqli_query($link, $sql)){
 
 	echo "<br \>";
 
-	echo '<table width="80%" border="1" style="text-align:center;">';
+	echo '<table width="90%" border="1" style="text-align:center;">';
 	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 
@@ -455,7 +476,7 @@ if($result = mysqli_query($link, $sql)){
 if (isset($_SESSION['logged'])){
 ?>
 Añadir condiciones FV para relé
-<div style="border:1px solid; width:80%;">
+<div style="border:1px solid; width:90%;">
 <form action="add_relec.php" method="post">
     <table style="border-spacing:5px;">
 	<tr>
@@ -538,7 +559,7 @@ if($result = mysqli_query($link, $sql)){
 
 
 	echo "<br \>";
-	echo '<table width="80%" border="1" style="text-align:center;">';
+	echo '<table width="90%" border="1" style="text-align:center;">';
 	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 	//Añadimos los titulos
@@ -580,7 +601,7 @@ if (isset($_SESSION['logged'])){
 ?>
 
 Añadir horario para relé
-<div style="border:1px solid; width:80%">
+<div style="border:1px solid; width:90%">
 <form action="add_releh.php" method="post">
     <table style="border-spacing:5px;">
 	<tr>
@@ -641,7 +662,7 @@ if($result = mysqli_query($link, $sql)){
 
 	echo "<br \>";
 
-	echo '<table width="80%" border="1" style="text-align:center;">';
+	echo '<table width="90%" border="1" style="text-align:center;">';
 	$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
 	$filas = count($rawdata);
 
