@@ -275,6 +275,7 @@ $(function () {
 		document.getElementById('prioridad').value = document.getElementById(id).children[7].children[0].innerText;
 		document.getElementById('rele_submit').value = "Editar";
 		document.getElementById('nuevo').value = "false";
+		document.getElementById("rele_form").scrollIntoView({behavior: 'smooth', block: 'center'});
 	}
 	function anadir() {
 		document.getElementById('rele_submit').value = 'Añadir';
