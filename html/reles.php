@@ -381,7 +381,7 @@ if($result = mysqli_query($link, $sql)){
 
 if (isset($_SESSION['logged'])){
 ?>
-Añadir relé
+Añadir/Editar relé
 <div style="border:1px solid; width:90%">
 <form action="add_rele.php" method="post" id="rele_form">
     <table style="border-spacing:5px;">
