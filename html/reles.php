@@ -265,14 +265,18 @@ $(function () {
 <script>
   function myFunction(id) {
 		// console.log(id);
+		console.log(document.getElementById(id).children[7]);
 		document.getElementById('id_rele').value = document.getElementById(id).children[0].innerText;
+		document.getElementById("id_rele").disabled = true; 
 		document.getElementById('nombre').value = document.getElementById(id).children[1].innerText;
 		document.getElementById('modo').value = document.getElementById(id).children[2].innerText;
 		document.getElementById('grabacion').value = document.getElementById(id).children[3].innerText;
 		document.getElementById('salto').value = document.getElementById(id).children[4].innerText;
-		document.getElementById('prioridad').value = document.getElementById(id).children[5].innerText;
-		document.getElementById('rele_submit').value = "Editar"
-		document.getElementById('rele_form').action = "c_rele.php"
+		document.getElementById('potencia').value = document.getElementById(id).children[5].innerText;
+		document.getElementById('retardo').value = document.getElementById(id).children[6].innerText;
+		document.getElementById('prioridad').value = document.getElementById(id).children[7].children[0].innerText;
+		document.getElementById('rele_submit').value = "Editar";
+		document.getElementById('nuevo').value = "false";
 	}
 </script>
 <?php
@@ -355,7 +359,7 @@ if($result = mysqli_query($link, $sql)){
 
 	<td>
 		<button name="edit" value="EDIT" style="border: 0; background: solid" title="Editar Relé" onclick="myFunction(<?php echo $rele[$i][0]; ?>)">
-			<img src="img/edit2.png" width="30" alt="submit" />
+			<img src="img/edit.png" width="30" alt="submit" />
 		</button>
 	</td>
 	
@@ -385,11 +389,14 @@ Añadir relé
 	<th><label for="id_rele">id_rele</label></th>
 	<th><label for="nombre">Nombre</label></th>
 	<th><label for="modo">Modo</label></th>
-	<th><label for="grabacion" title="Relés normales = 0, Relés PWM = 1,2,...">Grabación</label></th>
+	<th><label for="grabacion" title="Relés normales = 0, Relés PWM = 1,2,...">Grab</label></th>
 	<th><label for="salto" title="Relés normales = 100, Relés PWM = % de salto">Salto</label></th>
+	<th><label for="potencia">Potencia</label></th>
+	<th><label for="retardo">Retardo</label></th>
 	<th><label for="prioridad">Prioridad</label></th>
 	<th></th>
 	</tr><tr>
+		<input type="hidden" name="nuevo" id="nuevo" value="true" >
 		<td><input type="text" name="id_rele" id="id_rele" size="5"></td>
 		<td><input type="text" name="nombre" id="nombre"></td>
 		<td><select name="modo" id="modo">
@@ -402,10 +409,14 @@ Añadir relé
 			<option value="N" selected="selected">No</option>
 			<option value="S">Sí</option>
 		</select></td>
-		<td><input type="text" name="salto" id="salto" size="5" title="Relés normales = 100, Relés PWM = % de salto"></td>
-		<td><input type="text" name="prioridad" id="prioridad" size="5" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
+		<td><input type="text" name="salto" id="salto" size="5" value="0" title="Relés normales = 100, Relés PWM = % de salto"></td>
+		<td><input type="text" name="potencia" id="potencia" size="5" value="0"></td>
+		<td><input type="text" name="retardo" id="retardo" size="5" value="0"></td>
+		<td><input type="text" name="prioridad" id="prioridad" size="5" value="0" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
 	<td><input type="submit" id="rele_submit" value="Añadir"></td>
-	<td><input type="reset" value="Limpiar" onClick="document.getElementById('rele_submit').value = 'Añadir'"></td>
+	<td><input type="reset" value="Limpiar" 
+			onClick="document.getElementById('rele_submit').value = 'Añadir'; document.getElementById('id_rele').disabled = false">
+	</td>
 	</tr>
     </table>
 </form>
@@ -495,33 +506,33 @@ Añadir condiciones FV para relé
 	}
 ?>
 	</select></td>
-        <td><select name="parametro">
-                <option value="SOC" selected="selected">SOC</option>
-                <option value="Vbat">Vbat</option>
-                <option value="Ibat">Ibat</option>
-                <option value="Iplaca">Iplaca</option>
-                <option value="Vplaca">Vplaca</option>
-                <option value="Wplaca">Wplaca</option>
-                <option value="PWM">PWM</option>
-                <option value="Temp">Temp</option>
-                <option value="Wconsumo">Wconsumo</option>
-                <option value="Whn_bat">Whn_bat</option>
-                <option value="Whp_bat">Whp_bat</option>
-                <option value="Wh_bat">Wh_bat</option>
-                <option value="Wbat">Wbat</option>
-                <option value="Vred">Vred</option>
-                <option value="Ired">Ired</option>
-                <option value="EFF">EFF</option>
-                <option value="Whn_red">Whn_red</option>
-                <option value="Whp_red">Whp_red</option>
-                <option value="Wh_red">Wh_red</option>
-                <option value="Wred">Wred</option>
-                <option value="Aux1">Aux1</option>
-                <option value="Aux2">Aux2</option>
-        </select></td>
-        <td><select name="operacion">
-                <option value="ON" selected="selected">ON</option>
-                <option value="OFF">OFF</option>
+	<td><select name="parametro">
+					<option value="SOC" selected="selected">SOC</option>
+					<option value="Vbat">Vbat</option>
+					<option value="Ibat">Ibat</option>
+					<option value="Iplaca">Iplaca</option>
+					<option value="Vplaca">Vplaca</option>
+					<option value="Wplaca">Wplaca</option>
+					<option value="PWM">PWM</option>
+					<option value="Temp">Temp</option>
+					<option value="Wconsumo">Wconsumo</option>
+					<option value="Whn_bat">Whn_bat</option>
+					<option value="Whp_bat">Whp_bat</option>
+					<option value="Wh_bat">Wh_bat</option>
+					<option value="Wbat">Wbat</option>
+					<option value="Vred">Vred</option>
+					<option value="Ired">Ired</option>
+					<option value="EFF">EFF</option>
+					<option value="Whn_red">Whn_red</option>
+					<option value="Whp_red">Whp_red</option>
+					<option value="Wh_red">Wh_red</option>
+					<option value="Wred">Wred</option>
+					<option value="Aux1">Aux1</option>
+					<option value="Aux2">Aux2</option>
+	</select></td>
+	<td><select name="operacion">
+					<option value="ON" selected="selected">ON</option>
+					<option value="OFF">OFF</option>
 	</select></td>
         <td><select name="condicion">
                 <option value=">" selected="selected">&gt;</option>
