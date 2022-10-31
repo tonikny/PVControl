@@ -267,7 +267,7 @@ $(function () {
 		// console.log(id);
 		console.log(document.getElementById(id).children[7]);
 		document.getElementById('id_rele').value = document.getElementById(id).children[0].innerText;
-		document.getElementById("id_rele").disabled = true; 
+		document.getElementById("id_rele").readOnly = true;
 		document.getElementById('nombre').value = document.getElementById(id).children[1].innerText;
 		document.getElementById('modo').value = document.getElementById(id).children[2].innerText;
 		document.getElementById('grabacion').value = document.getElementById(id).children[3].innerText;
@@ -312,10 +312,11 @@ if($result = mysqli_query($link, $sql)){
 		echo "<th><b>".key($rawdata[0])."</b></th>";
 		next($rawdata[0]);
 	}
-	echo "<th><b>modos</b></th>";
-	echo "<th colspan='2'><b>acciones</b></th>";
-	echo "</tr>";
-
+	if (isset($_SESSION['logged'])){
+		echo "<th><b>modos</b></th>";
+		echo "<th colspan='2'><b>acciones</b></th>";
+		echo "</tr>";
+	}
 	for($i=0;$i<$filas;$i++){
 
 		echo "<tr id=\"".$rawdata[$i][0]."\">";
@@ -415,7 +416,7 @@ Añadir/Editar relé
 		<td><input type="text" name="prioridad" id="prioridad" size="5" value="0" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
 	<td><input type="submit" id="rele_submit" value="Añadir"></td>
 	<td><input type="reset" value="Limpiar" 
-			onClick="document.getElementById('rele_submit').value = 'Añadir'; document.getElementById('id_rele').disabled = false">
+			onClick="document.getElementById('rele_submit').value = 'Añadir'; document.getElementById('id_rele').readOnly = false">
 	</td>
 	</tr>
     </table>
