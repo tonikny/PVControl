@@ -263,9 +263,7 @@ $(function () {
 
 <?php // --------------------- TABLA RELES -----------------------------------------------?>
 <script>
-  function myFunction(id) {
-		// console.log(id);
-		console.log(document.getElementById(id).children[7]);
+  function edicion(id) {
 		document.getElementById('id_rele').value = document.getElementById(id).children[0].innerText;
 		document.getElementById("id_rele").readOnly = true;
 		document.getElementById('nombre').value = document.getElementById(id).children[1].innerText;
@@ -277,6 +275,10 @@ $(function () {
 		document.getElementById('prioridad').value = document.getElementById(id).children[7].children[0].innerText;
 		document.getElementById('rele_submit').value = "Editar";
 		document.getElementById('nuevo').value = "false";
+	}
+	function anadir() {
+		document.getElementById('rele_submit').value = 'Añadir';
+		document.getElementById('id_rele').readOnly = false
 	}
 </script>
 <?php
@@ -295,9 +297,7 @@ if($result = mysqli_query($link, $sql)){
 
 	while ($row = mysqli_fetch_array($result)){
 		$rawdata[$i]=$row;
-
 		$rele[$i]=$row;  //Pasar contenido a rele[$i]
-
 		$i++;
 	}
 
@@ -341,17 +341,15 @@ if($result = mysqli_query($link, $sql)){
 			<button type="submit" name="modo" value="PRG" style="border: 0; background: transparent">
 				<img src="img/pulazult.png" width="30" alt="submit" />
 			</button>
-						<button type="submit" name="modo" value="ON" style="border: 0; background: transparent">
+			<button type="submit" name="modo" value="ON" style="border: 0; background: transparent">
 				<img src="img/pulverdet.png" width="30" alt="submit" />
 			</button>
-						<button type="submit" name="modo" value="OFF" style="border: 0; background: transparent">
+			<button type="submit" name="modo" value="OFF" style="border: 0; background: transparent">
 				<img src="img/pulrojot.png" width="30" alt="submit" />
 			</button>
-			
 			<button type="submit" name="modo" value="M_ON" style="border: 1; background: transparent">
 				<img src="img/pulverdetman.png" width="30" alt="submit" />
 			</button>
-			
 			<button type="submit" name="modo" value="M_OFF" style="border: 1; background: transparent">
 				<img src="img/pulrojotman.png" width="30" alt="submit" />
 			</button>
@@ -359,14 +357,15 @@ if($result = mysqli_query($link, $sql)){
 	</td>
 
 	<td>
-		<button name="edit" value="EDIT" style="border: 0; background: solid" title="Editar Relé" onclick="myFunction(<?php echo $rele[$i][0]; ?>)">
+		<button name="edit" value="EDIT" style="border: 0; background: solid" title="Editar Relé" onclick="edicion(<?php echo $rele[$i][0]; ?>)">
 			<img src="img/edit.png" width="30" alt="submit" />
 		</button>
 	</td>
 	
 	<td width="10px"><form action="d_rele.php" method="post">
     <input type="hidden" name="id_rele" value="<?php echo $rele[$i][0]; ?>" >
-		<button type="submit" style="border: 0; background: transparent" title="Eliminar Relé" onclick="return confirm('Estás seguro de eliminar relé de todas las tablas?')">
+		<button type="submit" style="border: 0; background: transparent" title="Eliminar Relé"
+			onclick="return confirm('Estás seguro de eliminar relé de todas las tablas?')">
 			<img src="img/delete.png" width="30" alt="submit" />
 		</button>
 	</form></td>
@@ -385,41 +384,40 @@ if (isset($_SESSION['logged'])){
 Añadir/Editar relé
 <div style="border:1px solid; width:90%">
 <form action="add_rele.php" method="post" id="rele_form">
-    <table style="border-spacing:5px;">
-	<tr>
-	<th><label for="id_rele">id_rele</label></th>
-	<th><label for="nombre">Nombre</label></th>
-	<th><label for="modo">Modo</label></th>
-	<th><label for="grabacion" title="Relés normales = 0, Relés PWM = 1,2,...">Grab</label></th>
-	<th><label for="salto" title="Relés normales = 100, Relés PWM = % de salto">Salto</label></th>
-	<th><label for="potencia">Potencia</label></th>
-	<th><label for="retardo">Retardo</label></th>
-	<th><label for="prioridad">Prioridad</label></th>
-	<th></th>
-	</tr><tr>
-		<input type="hidden" name="nuevo" id="nuevo" value="true" >
-		<td><input type="text" name="id_rele" id="id_rele" size="5"></td>
-		<td><input type="text" name="nombre" id="nombre"></td>
-		<td><select name="modo" id="modo">
-			<option value="PRG" selected="selected">PRG</option>
-			<option value="ON">ON</option>
-			<option value="OFF">OFF</option>
-			<option value="MAN">MAN</option>
-		</select></td>
-		<td><select name="grabacion" id="grabacion">
-			<option value="N" selected="selected">No</option>
-			<option value="S">Sí</option>
-		</select></td>
-		<td><input type="text" name="salto" id="salto" size="5" value="0" title="Relés normales = 100, Relés PWM = % de salto"></td>
-		<td><input type="text" name="potencia" id="potencia" size="5" value="0"></td>
-		<td><input type="text" name="retardo" id="retardo" size="5" value="0"></td>
-		<td><input type="text" name="prioridad" id="prioridad" size="5" value="0" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
-	<td><input type="submit" id="rele_submit" value="Añadir"></td>
-	<td><input type="reset" value="Limpiar" 
-			onClick="document.getElementById('rele_submit').value = 'Añadir'; document.getElementById('id_rele').readOnly = false">
-	</td>
-	</tr>
-    </table>
+  <table style="border-spacing:5px;">
+		<tr>
+			<th><label for="id_rele">id_rele</label></th>
+			<th><label for="nombre">Nombre</label></th>
+			<th><label for="modo">Modo</label></th>
+			<th><label for="grabacion" title="Relés normales = 0, Relés PWM = 1,2,...">Grab</label></th>
+			<th><label for="salto" title="Relés normales = 100, Relés PWM = % de salto">Salto</label></th>
+			<th><label for="potencia">Potencia</label></th>
+			<th><label for="retardo">Retardo</label></th>
+			<th><label for="prioridad">Prioridad</label></th>
+			<th></th>
+		</tr>
+		<tr>
+			<input type="hidden" name="nuevo" id="nuevo" value="true" >
+			<td><input type="text" name="id_rele" id="id_rele" size="5"></td>
+			<td><input type="text" name="nombre" id="nombre"></td>
+			<td><select name="modo" id="modo">
+				<option value="PRG" selected="selected">PRG</option>
+				<option value="ON">ON</option>
+				<option value="OFF">OFF</option>
+				<option value="MAN">MAN</option>
+			</select></td>
+			<td><select name="grabacion" id="grabacion">
+				<option value="N" selected="selected">No</option>
+				<option value="S">Sí</option>
+			</select></td>
+			<td><input type="text" name="salto" id="salto" size="5" value="0" title="Relés normales = 100, Relés PWM = % de salto"></td>
+			<td><input type="text" name="potencia" id="potencia" size="5" value="0"></td>
+			<td><input type="text" name="retardo" id="retardo" size="5" value="0"></td>
+			<td><input type="text" name="prioridad" id="prioridad" size="5" value="0" title="Relés normales = 0, Relés PWM = 1,2,..."></td>
+			<td><input type="submit" id="rele_submit" value="Añadir"></td>
+			<td><input type="reset" value="Limpiar" onClick="anadir()"></td>
+		</tr>
+  </table>
 </form>
 </div>
 <br />
