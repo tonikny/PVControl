@@ -415,6 +415,20 @@ cid_alarma = 1111111 # # Id Telegram a donde se enviara la foto/video de alarma
 
 msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora -- 0 = No manda mensaje
 
+# Configuracion mensaje Telegram
+#   Se puede incluir...  {cualquier campo de la tabla equipos}, texto, unicodes,....
+#   Tambien existen algunas variables propias definidas 
+#      {L_celdas}         Linea con valor max y min de las celdas
+#      {L_reles}          Una unica linea con informacion resumida de los reles
+#      {L_reles_unicode}  Una linea por cada rele
+#      {L_temp}           Una linea con temperaturas CPU y DS18b20 
+#      {temperaturas}     Una linea con temperaturas DS18b20 
+#      {L_ip_local}       IP LAN local
+#      {L_ip}             IP WAN
+
+#unicodes para categorizar reles  ....primera dupla= ('texto que no exista en reles', 'unicode por defecto')
+unicode_reles_telegram = [('ñññ###','\U0001F6A6'),('luz','\U0001F526'),('cale','\U0001F525')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
+
 msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
 				"     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
 				#"     \U0001F4CA {L_celdas}",
@@ -424,8 +438,10 @@ msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}
 
                 "\U0001F4A1 <b><u>Consumo</u></b>:",
                 "     \U000024C5 <b>{d_['FV']['Wconsumo']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']-d_['FV']['Ibat']:.1f}</b>A     PWM: <b>{d_['FV']['PWM']:.0f}</b>",
-                "     Relés: <b>{L_reles}</b>",
-
+                
+                "\U00002753 <b><u>Relés</u></b>:",
+                "<b>{L_reles_unicode}</b>",
+                
                 #"\U0001F50C <b><u>Red</u></b>:",
                 #"     \U000024C5 <b>{d_['FV']['Wred']:.0f}</b>W     \U000024BE <b>{d_['FV']['Ired']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vred']:.0f}</b>V",
 

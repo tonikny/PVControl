@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# 2022-01-21  Manda un mensaje de informacion FV al Telegram
+# 2022-11-01  Manda un mensaje de informacion FV al Telegram
 #... uso habitual con crontab configurando archivo pvcontrol
 #....el archivo pvcontrol debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
 
@@ -12,19 +12,21 @@ import glob
 import telebot # Librería de la API del bot.
 import requests # consulta ip publica
 #import commands # temperatura Cpu
-# Mensaje por defecto si no se especifoca en Parametros_FV.py
 
+# Mensaje por defecto si no se especifoca en Parametros_FV.py
 msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
-				"     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
-				#"     \U0001F4CA {L_celdas}",
+                "     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
+                #"     \U0001F4CA {L_celdas}",
 
                 "\U0001F31E <b><u>Placas</u></b>:",
                 "     \U000024C5 <b>{d_['FV']['Wplaca']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vplaca']:.0f}</b>V",
 
                 "\U0001F4A1 <b><u>Consumo</u></b>:",
                 "     \U000024C5 <b>{d_['FV']['Wconsumo']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']-d_['FV']['Ibat']:.1f}</b>A     PWM: <b>{d_['FV']['PWM']:.0f}</b>",
-                "     Relés: <b>{L_reles}</b>",
-
+                
+                "\U00002753 <b><u>Relés</u></b>:",
+                "<b>{L_reles_unicode}</b>",
+                
                 #"\U0001F50C <b><u>Red</u></b>:",
                 #"     \U000024C5 <b>{d_['FV']['Wred']:.0f}</b>W     \U000024BE <b>{d_['FV']['Ired']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vred']:.0f}</b>V",
 
@@ -39,6 +41,10 @@ msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}
                 "     \U0001F3E0 {L_ip_local}  \U0001F30D <span class='tg-spoiler'>{L_ip}</span>",
                 ]
 
+#unicodes para categorizar reles si no estan definidos en Parametros_FV.py
+# primera dupla....unicode por defecto
+unicode_reles_telegram = [('ñññ###','\U0001F6A6'),('luz','\U0001F526'),('termo','\U0001F525')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
+
 from Parametros_FV import *
 
 DEBUG= False
@@ -47,7 +53,7 @@ if '-m' in sys.argv: msg_periodico_telegram = 1
 
 if msg_periodico_telegram == 0: sys.exit()
     
-sensores = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
+sensores_temp = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
 
 bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
 bot.skip_pending=True # Skip the pending messages
@@ -126,7 +132,7 @@ hora = time.strftime("%H:%M:%S")
 # ----------- Lineas preformateadas ------------------------
 
 try:
-    # Reles
+    # Reles formato compacto
     L_reles = ''
     Rele={}
     for r in d_['RELES']:
@@ -142,18 +148,68 @@ except:
     L_reles = 'Error L_reles'
 
 try:
+    # Reles formato unicodes
+    Rele={}
+    L_reles_unicode = ''
+    for r in d_['RELES']:
+        L_reles_unicode += '    '
+        
+        #simbolo inicial rele
+        simbolo = ''
+        for s in unicode_reles_telegram:
+            if s[0].upper() in r+' '+d_['RELES'][r]['nombre'].upper():
+                simbolo += s[1]
+        if simbolo == '': simbolo = unicode_reles_telegram[0][1] # simbolo por defecto
+        L_reles_unicode += simbolo        
+        
+        #id_rele
+        L_reles_unicode += r # Id rele
+        
+        #Estado
+        valor = f"{d_['RELES'][r]['estado']/10:1.0f}"
+        if valor == '10': L_reles_unicode += '\U0001F4AF' # 100%
+        elif valor == '0': L_reles_unicode += '\U0001F518' # 0%
+        elif valor == '1': L_reles_unicode += '\U00000031\U0000FE0F\U000020E3' # 10-20%%
+        elif valor == '2': L_reles_unicode += '\U00000032\U0000FE0F\U000020E3' # 20-30%%
+        elif valor == '3': L_reles_unicode += '\U00000033\U0000FE0F\U000020E3' # 30-40%%
+        elif valor == '4': L_reles_unicode += '\U00000034\U0000FE0F\U000020E3' # 40-50%%
+        elif valor == '5': L_reles_unicode += '\U00000035\U0000FE0F\U000020E3' # 50-60%%
+        elif valor == '6': L_reles_unicode += '\U00000036\U0000FE0F\U000020E3' # 60-70%%
+        elif valor == '7': L_reles_unicode += '\U00000037\U0000FE0F\U000020E3' # 70-80%%
+        elif valor == '8': L_reles_unicode += '\U00000038\U0000FE0F\U000020E3' # 80-90%%
+        elif valor == '9': L_reles_unicode += '\U00000039\U0000FE0F\U000020E3' # 90-100%%
+        
+        #nombre
+        nombre = d_['RELES'][r]['nombre']+' '+ '.' * (15 -len(d_['RELES'][r]['nombre']))
+        L_reles_unicode += f"<code>{nombre} </code>"
+                
+        #modo 
+        if d_['RELES'][r]['modo'] == 'PRG': L_reles_unicode += '<code>PRG</code>\U0001F17F' # PRG
+        elif d_['RELES'][r]['modo'] == 'ON': L_reles_unicode += '<code>ON </code>\U0001F17E' # ON
+        elif d_['RELES'][r]['modo'] == 'OFF': L_reles_unicode += '<code>OFF</code>\U000023FA' # OFF
+        elif d_['RELES'][r]['modo'] == 'MAN': L_reles_unicode += '<code>MAN</code>\U000024C2' # MAN
+        
+        #Prioridad
+        L_reles_unicode += f"P{d_['RELES'][r]['prioridad']}"
+        
+        L_reles_unicode += '\n' 
+     
+except:
+    L_reles_unicode = 'Error L_reles_unicode'
+
+try:
     Temperaturas = ''
-    for sensor in sensores:
-      tfile = open(sensor)
-      texto = tfile.read()
-      tfile.close()
-      segundalinea = texto.split("\n")[1]
-      temp_datos = segundalinea.split(" ")[9]
-      temp_s = float(temp_datos[2:])/1000
-      Temperaturas = Temperaturas + str(round(temp_s,1)) + '/'
-      #print ("sensor", sensor, "=", temp_s, " grados.")
+    for sensor in sensores_temp:
+        tfile = open(sensor)
+        texto = tfile.read()
+        tfile.close()
+        segundalinea = texto.split("\n")[1]
+        temp_datos = segundalinea.split(" ")[9]
+        temp_s = float(temp_datos[2:])/1000
+        Temperaturas = Temperaturas + str(round(temp_s,1)) + '/'
+        #print ("sensor", sensor, "=", temp_s, " grados.")
     
-    temp_cpu = 0
+    temp_cpu = 0.0
     with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
         temp_cpu = float(f.read())/1000
         
@@ -173,7 +229,7 @@ try:
     ip_local = subprocess.getoutput('hostname -I')
     L_ip_local = ip_local.split(' ')[0]
 except Exception as e:
-	L_ip_local = 'Error L_ip_local'
+    L_ip_local = 'Error L_ip_local'
 
 try:
     #### CELDAS
