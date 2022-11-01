@@ -416,6 +416,11 @@ cid_alarma = 1111111 # # Id Telegram a donde se enviara la foto/video de alarma
 msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora -- 0 = No manda mensaje
 
 # Configuracion mensaje Telegram
+
+#  --- IMAGEN ---
+region_captura_pantalla = (0, 0, 0, 0) #(X, Y, Ancho, Alto) manda la captura de la region de pantalla
+
+#  --- TEXTO ----
 #   Se puede incluir...  {cualquier campo de la tabla equipos}, texto, unicodes,....
 #   Tambien existen algunas variables propias definidas 
 #      {L_celdas}         Linea con valor max y min de las celdas

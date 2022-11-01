@@ -13,6 +13,17 @@ import telebot # Librería de la API del bot.
 import requests # consulta ip publica
 #import commands # temperatura Cpu
 
+
+try:
+    import pyautogui
+except:
+    res = subprocess.run('sudo pip3 install pyautogui' , shell=True)
+    if res.returncode == 0:
+        import pyautogui
+    else:
+        print ('Error en instalacion libreria pyautogui')
+        sys.exit()
+        
 # Mensaje por defecto si no se especifoca en Parametros_FV.py
 msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
                 "     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
@@ -44,6 +55,8 @@ msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}
 #unicodes para categorizar reles si no estan definidos en Parametros_FV.py
 # primera dupla....unicode por defecto
 unicode_reles_telegram = [('ñññ###','\U0001F6A6'),('luz','\U0001F526'),('termo','\U0001F525')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
+
+region_captura_pantalla = (0, 0, 0, 0) #(X, Y, Ancho, Alto)
 
 from Parametros_FV import *
 
@@ -264,6 +277,8 @@ try:
 
 except:
     tg_msg = f'Error en mensaje {ee}'
+
+
 # -------------------------------- BUCLE ENVIO MSG --------------------------------------
 
 salir=False
@@ -273,7 +288,34 @@ Nmax=28
 while salir!=True and N<Nmax:
 
     try:               
-        bot.send_message( cid, tg_msg, parse_mode="HTML")
+        # All send_xyz functions which can take a file as an argument, can also take a file_id instead of a file.
+        # sendPhoto
+        #photo = open('/home/pi/PVControl+/captura_region.png', 'rb')
+        #bot.send_photo(cid,caption='pp', photo)
+        if sum (region_captura_pantalla) > 0:
+            # -------------------------------- CAPTURA PANTALLA RPI --------------------------------------
+            captura_region = pyautogui.screenshot(region=region_captura_pantalla)
+            bot.send_photo(
+                cid, 
+                photo=captura_region, 
+                caption=tg_msg,
+                parse_mode="HTML"
+            )
+        
+            """
+            captura_region.save('captura_personal.png')
+            with open('captura_personal.png', 'rb') as picture:
+                bot.send_photo(
+                    cid, 
+                    photo=picture, 
+                    caption=tg_msg,
+                    parse_mode="HTML"
+                )
+            """
+            
+        else:
+            bot.send_message( cid, tg_msg, parse_mode="HTML")
+        
         salir=True
     except:
         salir=False
