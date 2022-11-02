@@ -1,6 +1,8 @@
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
+DISPLAY=:0
+
 # Example of job definition:
 # .---------------- minute (0 - 59)
 # |  .------------- hour (0 - 23)
@@ -26,7 +28,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 # ##################################################
 # Mandar mensaje periodico Telegram
 # ###############
-00 *    * * *   root    python3 /home/pi/PVControl+/fvbot_msg.py
+00 *    * * *   pi    python3 /home/pi/PVControl+/fvbot_msg.py
 
 # ##################################################
 # Mandar informacion a PVOutput.org

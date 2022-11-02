@@ -418,7 +418,7 @@ msg_periodico_telegram = 0 # 1 = Manda un mensaje resumen por Telegram cada Hora
 # Configuracion mensaje Telegram
 
 #  --- IMAGEN ---
-region_captura_pantalla = (0, 0, 0, 0) #(X, Y, Ancho, Alto) manda la captura de la region de pantalla
+region_captura_pantalla = (0, 0, 0, 0, 0) #(Activar envio imagen, X, Y, Ancho, Alto) manda la captura de la region de pantalla
 
 #  --- TEXTO ----
 #   Se puede incluir...  {cualquier campo de la tabla equipos}, texto, unicodes,....
