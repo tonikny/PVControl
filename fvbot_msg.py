@@ -193,7 +193,7 @@ try:
         elif valor == '9': L_reles_unicode += '\U00000039\U0000FE0F\U000020E3' # 90-100%%
         
         #nombre
-        nombre = d_['RELES'][r]['nombre']+' '+ '.' * (15 -len(d_['RELES'][r]['nombre']))
+        nombre = d_['RELES'][r]['nombre']+ '.' * (12 -len(d_['RELES'][r]['nombre']))
         L_reles_unicode += f"<code>{nombre} </code>"
                 
         #modo 
@@ -258,7 +258,7 @@ try:
         Cmax = max(TC, key = TC.get) # clave del valor maximo
         Cmin = min(TC, key = TC.get) # clave del valor minimo
         
-        L_celdas += f'{Cmax}={TC[Cmax]:.3f}V -- {Cmin}={TC[Cmin]:.3f}V -- {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
+        L_celdas += f'{Cmax}={TC[Cmax]:.3f}V-{Cmin}={TC[Cmin]:.3f}V - {(TC[Cmax]-TC[Cmin])*1000:.0f}mV'
 
 except:
     L_celdas = 'Error L_celdas'
