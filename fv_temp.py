@@ -39,9 +39,10 @@ finally:
     
 while True:
     Temp_D= {}
-    Temp_D['Ds18b20']= {}
     
+    ## Ds18b20
     sensores = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
+    if sensores: Temp_D['Ds18b20']= {}
     Ctemp = 0       # Contador del numero de sensores
     
     for sensor in sensores:
@@ -60,6 +61,7 @@ while True:
         Ctemp += 1
         time.sleep(1)
 
+    ## RPI CPU
     try:
         with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
             temp_cpu = float(f.read())/1000
