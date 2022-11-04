@@ -6,4 +6,4 @@ Descipción
 
 Características
 
-[Manual](Manual.md)
+[Manual](manual/Manual.md)
