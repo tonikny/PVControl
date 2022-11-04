@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# 2022-11-02  Manda un mensaje de informacion FV al Telegram
-#... uso habitual con crontab configurando archivo pvcontrol
-#....el archivo pvcontrol debe ser root luego editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
+# 2022-11-02  Manda un mensaje de informacion al Telegram
+#... uso habitual con crontab configurando el archivo..... /home/pi/PVControl+/etc/cron.d/pvcontrol
+#....el archivo pvcontrol debe ser root luego hay que editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
 
 # python3 fvbot_msg.py <opciones>
 #     opciones:
+#        -m (fuerza envio mensaje aunque la variable msg_periodico_telegram = 0  este definida en Parametros_FV.py
 #        -no_imagen (fuerza no enviar imagen)
 #        -imagen (fuerza enviar imagen)
-      
+#        -coordenadas  (Activa ayuda para definir zona a capturar de la pantalla
+#                      indica el valor a definir en Parameros_FV.py en la variable ...region_captura_pantalla)       
 
 import time, datetime,sys
 import MySQLdb,json 
@@ -17,11 +19,9 @@ import subprocess
 import glob
 import telebot # Librería de la API del bot.
 import requests # consulta ip publica
-#import commands # temperatura Cpu
-
 
 try:
-    import pyautogui
+    import pyautogui # captura zona pantalla
 except:
     res = subprocess.run('sudo pip3 install pyautogui' , shell=True)
     if res.returncode == 0:
@@ -30,7 +30,7 @@ except:
         print ('Error en instalacion libreria pyautogui')
         sys.exit()
 
-# Mensaje por defecto si no se especifoca en Parametros_FV.py
+# Mensaje por defecto si no se especifica en Parametros_FV.py
 msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
                 "     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
                 #"     \U0001F4CA {L_celdas}",
@@ -62,7 +62,8 @@ msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}
 # primera dupla....unicode por defecto
 unicode_reles_telegram = [('ñññ###','\U0001F6A6'),('luz','\U0001F526'),('termo','\U0001F525')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
 
-region_captura_pantalla = (0, 0, 0, 0) #(X, Y, Ancho, Alto)
+# zona de pantalla a capturar por defecto si no se define en en Parametros_FV.py
+region_captura_pantalla = (0, 0, 0, 0, 0) #(Activar, X, Y, Ancho, Alto)
 
 from Parametros_FV import *
 
@@ -73,6 +74,45 @@ if '-m' in sys.argv: msg_periodico_telegram = 1
 if '-no_imagen' in sys.argv: imagen = False
 if '-imagen' in sys.argv: region_captura_pantalla[0] = 1
 
+if '-coordenadas' in sys.argv: # ayuda definicion zona a capturar
+    try:
+        import pynput # gestion click raton
+    except:
+        res = subprocess.run('sudo pip3 install pynput' , shell=True)
+        if res.returncode == 0:
+            import pynput
+        else:
+            print ('Error en instalacion libreria pynput')
+            sys.exit()
+    
+    from pynput.mouse import Listener
+    
+    def on_click(x, y, button, pressed):
+        global nc, x1, y1
+        if pressed:
+            if nc == 0:
+                nc += 1
+                print(f'Coordenadas iniciales = ({x},{y})')
+                x1 = x
+                y1 = y
+                print ('-' * 30)
+                print('Pulsa click en el punto final de la ventana a capturar.....')
+            else:
+                nc = 0
+                print(f'Coordenadas finales = ({x},{y})')
+                print(f'Tamaño ventana = ({x-x1},{y-y1})')
+                print ('='*80)
+                print (f'Valor region_captura_pantalla = (1, {x1}, {y1}, {x-x1}, {y-y1})')
+                print ('='*80)                
+                listener.stop()
+    
+    nc = x1 = y1 = 0
+    print('Pulsa click en el punto inicial de la ventana a capturar.....')
+    with Listener(on_click=on_click) as listener:
+        listener.join()
+
+    sys.exit()
+
 if msg_periodico_telegram == 0: sys.exit()
     
 sensores_temp = glob.glob("/sys/bus/w1/devices/28*/w1_slave")
@@ -81,14 +121,12 @@ bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
 bot.skip_pending=True # Skip the pending messages
 
 try:
-    cid = m.chat.id
+    cid = m.chat.id #variable m si viene desde fvbot.py
 except:
-    cid=Aut[0] # poner el usuario donde queremos mandar el msg 
+    cid=Aut[0] # pone el primer usuario donde queremos mandar el msg definido en Parametros_FV.py
 
 bot.send_chat_action(cid,'typing')
  
-
-
 
 # --------------------- DEFINICION DE FUNCIONES --------------
 
@@ -103,7 +141,7 @@ def logBD(msg) : # Incluir en tabla de Log
     return
 
 
-def detect_public_ip(): # cambiar .... parece que ya no funciona
+def detect_public_ip(): # 
     try:
         # Use a get request for api.duckduckgo.com
         raw = requests.get('https://api.duckduckgo.com/?q=ip&format=json')
@@ -297,12 +335,8 @@ Nmax=28
 while salir!=True and N<Nmax:
 
     try:               
-        # All send_xyz functions which can take a file as an argument, can also take a file_id instead of a file.
-        # sendPhoto
-        #photo = open('/home/pi/PVControl+/captura_region.png', 'rb')
-        #bot.send_photo(cid,caption='pp', photo)
         if region_captura_pantalla[0] == 1 and imagen:
-            # -------------------------------- CAPTURA PANTALLA RPI --------------------------------------
+            # -------------------------------- CAPTURA PANTALLA RPi --------------------------------------
             try:
                 captura_region = pyautogui.screenshot(region=region_captura_pantalla[1:])
                 bot.send_photo(
