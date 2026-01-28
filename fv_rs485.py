@@ -14,8 +14,8 @@ EQUIPO = eval(NEQUIPO)
 try: 
     if orden_bytes == 1: orden_bytes = 1 #en hibrido Powmr inverten el ordes de los bytes 
 except:
-	orden_bytes = 0 
-	
+    orden_bytes = 0 
+    
 try:
     comandos = EQUIPO['COMANDOS']
     del EQUIPO['COMANDOS']
@@ -31,6 +31,12 @@ import telebot # Librería de la API del bot.
 import timeout_decorator
 
 import minimalmodbus
+
+# Import new helper modules
+from modbus_utils import convert_u16, convert_s16, convert_u32, apply_byte_order
+from db_manager import DatabaseManager
+from mqtt_handler import MQTTHandler
+from telegram_notifier import TelegramNotifier
     
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
@@ -44,30 +50,66 @@ narg = len(sys.argv)
 if '-p' in sys.argv: DEBUG = 1 # para desarrollo permite print en distintos sitios
 if '-s' in sys.argv: simular_datos = 1 # para desarrollo permite print en distintos sitios
 
-comando_mqtt = {} # 'equipo', 'comando'   para uso de comandos Telegram o MQTT
+comando_mqtt = {} # 'equipo', 'comando'   para uso de comandos Telegram o MQTT (legacy, replaced by mqtt_handler)
 if DEBUG > 0:
     print()
     print (Fore.CYAN+ '------- Parametros -------')
     print(EQUIPO)
     print('-' * 40)
 
-@timeout_decorator.timeout(20, use_signals=False)
-def bot_enviar_mensaje(cid, msg):
-    bot.send_message(cid, msg, parse_mode="HTML")
-
+# Initialize Telegram notifier (auto-imports from Parametros_FV.py globals)
+telegram_notifier = None
+cid = None  # Initialize cid for backward compatibility
 if usar_telegram == 1:
     try:
-        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-        bot.skip_pending = True # Skip the pending messages
-        cid = Aut[0]
-        bot_enviar_mensaje(cid, f'Arrancando Programa Control {NEQUIPO}')
-    except:
-        print ('Error en envio de mensaje Telegram')
+        cid = Aut[0]  # Set cid from Aut list
+        # Parameters auto-imported from globals (TOKEN, Aut, usar_telegram)
+        telegram_notifier = TelegramNotifier()
+        telegram_notifier.send_startup_message(NEQUIPO)
+    except Exception as e:
+        print(f'Error inicializando Telegram notifier: {e}')
+        telegram_notifier = None
+        cid = None
+
+# Legacy bot_enviar_mensaje function for backward compatibility
+@timeout_decorator.timeout(20, use_signals=False)
+def bot_enviar_mensaje(cid, msg):
+    if telegram_notifier and telegram_notifier.is_enabled():
+        telegram_notifier.send_message(msg, chat_id=cid)
+    else:
+        print(f'[Telegram disabled] Would send: {msg}')
 
 
  ##### MQTT ###########################################
-def on_connect(client, userdata, flags, rc):
+# MQTT message callback for legacy compatibility
+def on_message_received(equipo, comando):
+    global comando_mqtt
+    if DEBUG == 1:
+        print(Fore.CYAN + f'MQTT .... Comando {comando} en equipo {equipo} recibido')
+    comando_mqtt = {'equipo': equipo, 'comando': comando}
 
+# Initialize MQTT handler (auto-imports from Parametros_FV.py globals)
+mqtt_handler = None
+try:
+    # Parameters auto-imported from globals (mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave)
+    mqtt_handler = MQTTHandler(
+        on_message_callback=on_message_received,
+        debug=(DEBUG > 0)
+    )
+    
+    # Subscribe to equipment topics
+    equipos_list = [e for e in EQUIPO if e != 'COMANDOS']
+    mqtt_handler.subscribe_equipment(equipos_list)
+    
+    # Connect to broker
+    mqtt_handler.connect()
+    
+except Exception as e:
+    print(f'Error inicializando MQTT handler: {e}')
+    mqtt_handler = None
+
+# Legacy MQTT client callbacks (kept for reference, but not used with mqtt_handler)
+def on_connect(client, userdata, flags, rc):
     for e in EQUIPO:
         client.subscribe(f"PVControl/{e}")
         if DEBUG > 0: print(f'{e}....MQTT Conectado.... Topic =  PVControl/{e}')
@@ -80,19 +122,12 @@ def on_disconnect(client, userdata, rc):
         client.disconnect()
 
 def on_message(client, userdata, msg):
-    global comando_mqtt #flag_lectura , 
-    
-    ee = 10
-    topic = msg.topic.upper()[10:] # quito PVControl/
+    global comando_mqtt
+    topic = msg.topic.upper()[10:]
     mensaje = msg.payload.decode().strip()
-    
-    #flag_lectura[topic] = 1
-    ee = 20
     if DEBUG == 1:
         print (Fore.CYAN + f'MQTT .... Comando {mensaje} en equipo {topic} recibido')
-    
     comando_mqtt = {'equipo': topic, 'comando': mensaje}
-    
     return
 
 def listar_parametros(equipo):
@@ -220,21 +255,20 @@ def escribir_registro(equipo, mensaje):
         print(f'Error {ee} en comando MQTT')
     
     #flag_lectura[topic] = 0
-    
-        
-client = mqtt.Client(f"{NEQUIPO}")
-client.on_connect = on_connect
-client.on_disconnect = on_disconnect
-client.on_message = on_message
-client.reconnect_delay_set(3,15)
-client.username_pw_set(mqtt_usuario, password=mqtt_clave)
-try:
-    client.connect(mqtt_broker, mqtt_puerto) #conectar al broker: url, puerto
-except:
-    print(f'Error de conexion al servidor MQTT en {NEQUIPO}')
-time.sleep(.2)
 
-client.loop_start()  
+# Legacy MQTT client initialization (commented out, replaced by mqtt_handler)
+# client = mqtt.Client(f"{NEQUIPO}")
+# client.on_connect = on_connect
+# client.on_disconnect = on_disconnect
+# client.on_message = on_message
+# client.reconnect_delay_set(3,15)
+# client.username_pw_set(mqtt_usuario, password=mqtt_clave)
+# try:
+#     client.connect(mqtt_broker, mqtt_puerto)
+# except:
+#     print(f'Error de conexion al servidor MQTT en {NEQUIPO}')
+# time.sleep(.2)
+# client.loop_start()
 #######################################################
 
 def leer_registros(equipo):
@@ -283,25 +317,23 @@ def leer_registros(equipo):
             try:
                 # Manejo de orden de bytes
                 if orden_bytes == 1:
-                    valor = int.from_bytes(valor.to_bytes(2, 'little'))
+                    valor = apply_byte_order(valor, orden_bytes)
 
                 tipo = params['tipo']
                 dec = params['dec']
                 offset = params['offset']
 
                 if tipo == 'u16':
-                    d = round(valor * 10 ** -dec, dec)
+                    d = convert_u16(valor, dec, offset)
                 elif tipo == 's16':
-                    d = valor if valor < 32768 else valor - 65536
-                    d = round(d * 10 ** -dec, dec)
+                    d = convert_s16(valor, dec, offset)
                 elif tipo == 'u32':
                     valor_alto = lectura.get(reg + 1, 0)
-                    d = round((valor_alto * 65536 + valor) * 10 ** -dec, dec)
+                    d = convert_u32(valor, valor_alto, dec, offset)
                 elif tipo == 'adaptar' and params['adaptar']:
                     ee = 1050
                     d = valor
-                    ejecutar = '\n'.join(params['adaptar'])                        ee = 1060
-
+                    ejecutar = '\n'.join(params['adaptar'])
                     ee = 1060
                     exec(ejecutar)
                     # 'adaptar' commands usually write directly to datos inside exec
@@ -309,7 +341,8 @@ def leer_registros(equipo):
                 else:
                     ee = 1070
                     d = -9999
-                    datos[comando] = d + offset
+
+                datos[comando] = d
 
             except Exception as e:
                 print(f"Error {ee} en leer_registros({equipo}) comando={comando} -> {type(e).__name__}: {e}")
@@ -348,16 +381,15 @@ def leer_registro(equipo, comando, datos=None):
         # Interpretación según tipo
         if tipo == 'u16':
             if orden_bytes == 1:
-                d = int.from_bytes(d.to_bytes(2, 'little'))
-            d = round(d * 10 ** -dec, dec) + offset
+                d = apply_byte_order(d, orden_bytes)
+            d = convert_u16(d, dec, offset)
 
-        elif tipo == 's16': # pendiente tema de powmr de orden de bytes
-            if d >= 32768: d -= 65536
-            d = round(d * 10 ** -dec, dec) + offset
+        elif tipo == 's16':
+            d = convert_s16(d, dec, offset)
 
-        elif tipo == 'u32': # pendiente tema de powmr de orden de bytes
+        elif tipo == 'u32':
             valor_alto = modbus[equipo].read_register(reg + 1, 0, fc)
-            d = round((valor_alto * 65536 + d) * 10 ** -dec, dec) + offset
+            d = convert_u32(d, valor_alto, dec, offset)
 
         elif tipo == 'adaptar' and params.get('adaptar'):
             ee = 110
@@ -438,9 +470,8 @@ def leer_equipo(equipo):
             datos['Nfallos'] = n_fallos_captura[equipo]
             salida = json.dumps(datos)
             ee = 304
-            sql = f"UPDATE equipos SET `tiempo`='{tiempo}', sensores='{salida}' WHERE id_equipo='{nombre_equipo}'"
-            cursor.execute(sql)
-            db.commit()
+            # Use parameterized query via db_manager to prevent SQL injection
+            db_manager.save_equipment_data(nombre_equipo, tiempo, salida)
             if DEBUG == 100: print(f"{nombre_equipo} - Guardado: {salida} 👌")
             if DEBUG == 0:
                 print(f"{nombre_equipo[-1]}", end="", flush=True)
@@ -467,6 +498,19 @@ def get_command_params(c):
         'adaptar': cmd.get('adaptar', None)
     }
 
+def build_reg_to_comando_map():
+    """Build mapping from register number to command name."""
+    reg_map = {}
+    for cmd_name in comandos:
+        if cmd_name in ('ayuda', 'lectura_multiple'):
+            continue
+        if 'reg' in comandos[cmd_name]:
+            reg_map[comandos[cmd_name]['reg']] = cmd_name
+    return reg_map
+
+# Build the register to command mapping
+reg_to_comando = build_reg_to_comando_map()
+
 def _log_debug(equipo, datos):
     if DEBUG:
         color = {
@@ -483,9 +527,8 @@ def _grabar_en_bd(equipo, datos, error):
         if not error:
             datos['Nfallos'] = n_fallos_captura[equipo]
             salida = json.dumps(datos)
-            sql = f"UPDATE equipos SET `tiempo`='{tiempo}', sensores='{salida}' WHERE id_equipo='{equipo.upper()}'"
-            cursor.execute(sql)
-            db.commit()
+            # Use parameterized query via db_manager to prevent SQL injection
+            db_manager.save_equipment_data(equipo.upper(), tiempo, salida)
             if DEBUG == 0: print(f'{equipo[-1]}', end='', flush=True)
         else:
             print(f'{tiempo} - Error en captura equipo {equipo.upper()}')
@@ -504,13 +547,18 @@ wh_placa = {}     # sin uso actualmente
 wh_consumo = {}   # sin uso actualmente
 flag_lectura = {} # Flag de lectura para evitar conflicto con lectura desde Telegram
 
-# Conexion BD
+# Conexion BD (auto-imports from Parametros_FV.py globals)
 try:
     ee = '1'
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()  
-except:
-    print (Fore.RED,f'ERROR - inicializando BD RAM ')
+    # Initialize DatabaseManager with parameterized queries
+    # Parameters auto-imported from globals (servidor, usuario, clave, basedatos)
+    db_manager = DatabaseManager()
+    
+    # Keep legacy db and cursor for backward compatibility with existing code
+    db = db_manager.connection
+    cursor = db_manager.cursor
+except Exception as e:
+    print(Fore.RED, f'ERROR - inicializando BD RAM: {e}')
     sys.exit()
 
 
@@ -596,9 +644,8 @@ while True:
                         ee = '10h'
                         nombre_equipo = e.upper()
                         
-                        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                                      (nombre_equipo,'{}'))   
-                        db.commit()
+                        # Use db_manager to insert equipment if missing
+                        db_manager.insert_equipment_if_missing(nombre_equipo)
                     except:
                         pass    
                    
