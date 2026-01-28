@@ -25,7 +25,7 @@ n_muestra_bmv = 5         # Numero de muestras para guardar en BD tabla bmv
 
 ##################################################################################
 
-
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 if usar_bmv == 0:
@@ -77,7 +77,7 @@ try:
     ee = '10b'
     try: #inicializamos registro en BD RAM
         cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)",
-                      (equipo,'"{}"'))
+                      (equipo,'{}'))
         db.commit()
     except:
         pass    

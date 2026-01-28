@@ -1,9 +1,18 @@
 
-//  ====================== Version 2022-09-22 ===========================
+//  ====================== Version 2024-01-11 ===========================
 
 // ===========================================================================
-// Pagina inicio.php  Actualizar segun los relojes y graficas que se usen o
+//                              ZONA HORARIA
 // ===========================================================================
+
+    zona_horaria = 'Europe/Madrid';
+
+// ===========================================================================
+// Pagina inicio.php  Actualizar segun los relojes y graficas que se usen
+// ===========================================================================
+
+   
+   t_refresco = 5000; // tiempo en milisegundos de refresco de la pagina de inicio
 
   // BAT ==   relojes que estan en opcion baterias
   // RED ==   relojes que estan en opcion RED
@@ -26,11 +35,11 @@
 	Vred_max = 270; 
 
     // BAT - SOC
-    SOC_min=60;
+    SOC_min=20;
     SOC_max=100;
     
     // RED - AC/DC EFICIENCIA
-	EFF_min = 60;
+	EFF_min = 20;
 	EFF_max = 100;
 
 
@@ -87,39 +96,48 @@
     Vplaca_max = 80;
 
   // ==== GRAFICO CELDAS ====
-    // BAT - Voltaje_celdas
-    Vcelda_min = 1.7;
-    Vcelda_max = 2.6;
+    // Voltaje_celdas
+    Vcelda_min = [2.8, 2.8, 2.8, 2.8];
+    Vcelda_max = [3.6, 3.6, 3.6, 3.6];
 
-    Vcelda_franja_min = 1.8;
-    Vcelda_franja_max = 2.5;
+    Vcelda_franja_min = [3.0, 3.0, 3.0, 3.0];
+    Vcelda_franja_max = [3.5, 3.5, 3.5, 3.5];
+    
+    Color_valores = ['rgba(43,41,245,1)','rgba(43,41,145,1)','rgba(43,41,45,1)','rgba(43,41,45,1)'];
+    Color_celda_alta = ['rgba(243,41,245,1)','rgba(243,41,245,1)','rgba(243,41,245,1)','rgba(243,41,245,1)'];
+    Color_celda_baja = ['rgba(43,241,245,1)','rgba(43,241,245,1)','rgba(43,241,245,1)','rgba(43,241,245,1)'];
+    
+    Color_valores_max = ['rgba(243,41,45,0.5)','rgba(243,41,45,0.5)','rgba(243,41,45,0.5)','rgba(243,41,45,0.5)'];
+    Color_valores_min = ['rgba(243,240,41,0.8)','rgba(243,240,41,0.8)','rgba(243,240,41,0.8)','rgba(243,240,41,0.8)'];
+    
+    Escala_AH_BMS = [200, 200, 200, 200];
+    Escala_intensidad_min_BMS = [-100,-100,-100,-100]
+    Escala_intensidad_max_BMS = [100, 100, 100, 100]
+    
     
     
   // === Grafico Tiempo Real en inicio.php ====
-        // BAT 
-        Escala_intensidad_min = -140;
-        Escala_intensidad_max = 240;
+    Escala_intensidad_min = -140;
+    Escala_intensidad_max = 240;
 
-        Escala_Vbat_min = 22;
-        Escala_Vbat_max = 35;
+    Escala_Vbat_min = 22;
+    Escala_Vbat_max = 35;
 
-            Vabs = 28.8;  // linea Vabs
-            Vflot = 27.2; // Linea Vflot
-        
-        
-        
-        // Watios RED , CONSUMO, PLACA
-        Escala_Wred_min = -5000;
-        Escala_Wred_max = 6000;
+        Vabs = 28.8;  // linea Vabs
+        Vflot = 27.2; // Linea Vflot
+    
+    // Watios RED , CONSUMO, PLACA
+    Escala_Wred_min = -5000;
+    Escala_Wred_max = 6000;
 
 
-        // COMUN
-        Escala_Vplaca_max = 200;
-        Escala_PWM_max = 2000; 
-        
+    // COMUN
+    Escala_Vplaca_max = 200;
+    Escala_PWM_max = 2000; 
+    
 
 
-    // BAT - Tabla Colores Bateria
+    // Colores Tabla valores
     SOC_max_rojo = 70;
     SOC_max_naranja = 80;
 
@@ -133,6 +151,76 @@
 
     Vbat_min_rojo = 22;
     Vbat_min_naranja = 23;
+
+    Nombre_Aux1 = 'Aux1';
+    Unidades_Aux1 = '';
+    Usar_color_Aux1 = 0;
+    //R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1 2 3 4
+    Aux1_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux1_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux1_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux1_punto4 = 0;    //Por encima de este valor, rojo
+	
+    Nombre_Aux2 = 'Aux2';
+    Unidades_Aux2 = '';
+    Usar_color_Aux2 = 0;
+    //   R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1   2   3   4
+    Aux2_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux2_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux2_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux2_punto4 = 0;    //Por encima de este valor, rojo
+
+    Nombre_Aux3 = 'Aux3';
+    Unidades_Aux3 = '';
+    Usar_color_Aux3 = 0;
+    //R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1 2 3 4
+    Aux3_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux3_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux3_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux3_punto4 = 0;    //Por encima de este valor, rojo
+
+    Nombre_Aux4 = 'Aux4';
+    Unidades_Aux4 = '';
+    Usar_color_Aux4 = 0;
+    //R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1 2 3 4
+    Aux4_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux4_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux4_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux4_punto4 = 0;    //Por encima de este valor, rojo
+	
+    Nombre_Aux5 = 'Aux5';
+    Unidades_Aux5 = '';
+    Usar_color_Aux5 = 0;
+    //R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1 2 3 4
+    Aux5_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux5_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux5_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux5_punto4 = 0;    //Por encima de este valor, rojo
+	
+    Nombre_Aux6 = 'Aux6';
+    Unidades_Aux6 = '';
+    Usar_color_Aux6 = 0;
+    //R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1 2 3 4
+    Aux6_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux6_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux6_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux6_punto4 = 0;    //Por encima de este valor, rojo
+	
+    Nombre_Aux7 = 'Aux7';
+    Unidades_Aux7 = '';
+    Usar_color_Aux7 = 0;
+    //R-A-V-A-R   (Definir los 4 puntos de intersección para color)
+    // 1 2 3 4
+    Aux7_punto1 = 0;    //Por debajo de este valor, rojo
+    Aux7_punto2 = 0;    // Entre este valor y el punto3, verde
+    Aux7_punto3 = 0;    // Ambar entre 3-4 o 1-2
+    Aux7_punto4 = 0;    //Por encima de este valor, rojo
     
     
     // RED - Tabla Colores  RED
@@ -254,59 +342,185 @@
     Aux2_visible = false;
 
     
-
-// Grafica Auxiliar Personalizada
-  
-  // Titulo principal
-    G_titulo = 'Grafica Aux';
-    G_subtitulo = 'Personalizada';
+// Definicion de los graficos personalizados
+Grafica_Aux = {
+    'TABLA_EJEMPLO' :{
+            
+    'Subtitulo' : 'Prueba---',
     
-  // Definicion de Ejes
+    'Ejes': [
+             {// ########## 0 - Valores eje 0 ######################
+              visible: true,
+              opposite: true,
+              min: 0,
+              max: 200,
+              tickInterval: 20,
+              gridLineColor: 'transparent',
+              minorGridLineColor: 'transparent',
+              labels: {
+                y: 5
+                },
+              title: {
+                align: 'high',
+                offset: -15,
+                text: 'Texto en eje 0',
+                rotation: 0,
+                y: -5
+                },
+              plotLines: [{
+                value: 0,
+                width: 2,
+                color: 'black',
+                dashStyle: 'shortdash'
+                }]
+             },
+             
+             {// ########## 1 - Valores Intensidad ######################
+              visible: true,
+              opposite: false,
+              min: -80,
+              max: 80,
+              tickInterval: 10,
+              gridLineColor: 'transparent',
+              minorGridLineColor: 'transparent',
+              labels: {
+                y: 5
+                },
+              title: {
+                align: 'high',
+                offset: 0,
+                text: 'Texto en eje 1',
+                rotation: 0,
+                y: -10
+                },
+              },
+              
+             {// ########## 2 - Eje autoajuste ######################
+              visible: false,
+              opposite: true,
+              
+             },
+            ],
     
-      Eje1_visible = true;
-      Eje1_opposite = false;
-      Eje1_min = 0;
-      Eje1_max = 100;
-      Eje1_tickInterval = 1;
-      Eje1_titulo = 'Titulo Eje 1';
-      
-      Eje2_visible = true;
-      Eje2_opposite = true;
-      Eje2_min = 0;
-      Eje2_max = 100;
-      Eje2_tickInterval = 1;
-      Eje2_titulo = 'Titulo Eje 2';
-      
-   // Definicion de series de datos (poner tantos bloques como variables se esten guardando)
-  
-      G1_nombre = 'Valor 1';
-      G1_tipo_grafico = 'spline';  //spline, area,
-      G1_yAxis = 1;  //numero de eje al que se asigna
-      G1_visible = true;
-      G1_color = '#19ce88';
-      G1_unidades = 'ºC';
-      G1_decimales = 2;
-      
-      G2_nombre = 'Valor 2';
-      G2_tipo_grafico = 'area';
-      G2_yAxis = 2;  //numero de eje al que se asigna
-      G2_visible = true;
-      G2_color = '#F76354';
-      G2_unidades = 'V';
-      G2_decimales = 2;
-      
-      G3_nombre = 'Valor 3';
-      G3_tipo_grafico = 'area';
-      G3_yAxis = 1;  //numero de eje al que se asigna
-      G3_visible = true;
-      G3_color = '#FFF354';
-      G3_unidades = 'A';
-      G3_decimales = 2;
-      
-      G4_nombre = 'Iplaca';
-      G4_tipo_grafico = 'spline';
-      G4_yAxis = 1;  //numero de eje al que se asigna
-      G4_visible = true;
-      G4_color = '#FFF354';
-      G4_unidades = 'A';
-      G4_decimales = 2;
+    'Series': {
+        'Variable1': {'eje':1, 'color':'#19ce88', 'tooltip': {valueDecimals: 1, valueSuffix: ' A'}},
+        'Variable2': {'eje':1, 'color':'#F76354', 'tooltip': {valueDecimals: 1, valueSuffix: ' A'}},
+        'Variable3': {'eje':1, 'color':'#0FF354', 'visible': false , 'tooltip': {valueDecimals: 1, valueSuffix: ' A'}},
+        
+        'Variable4': {'tipo':'area', 'color':'rgba(255, 183, 51,0.5)' , 'tooltip': {valueDecimals: 1, valueSuffix: ' AH'}},
+        'Variable5': {'tipo':'area', 'color':'rgba(51, 242, 255 ,0.2)', 'tooltip': {valueDecimals: 1, valueSuffix: ' AH'}},
+        
+        
+        'Variable6': {'eje':2, 'color':'rgba(255, 183, 51, 1)', 'tooltip': {valueDecimals: 1, valueSuffix: ' WH'}},
+        'Variable7': {'eje':2, 'color':'rgba(51, 242, 255 ,0.2', 'tooltip': {valueDecimals: 1, valueSuffix: ' WH'}},
+        
+    },
+    
+	},
+	
+	'TABLA_IRRADIACION':{
+        
+        'Subtitulo' : 'PREVISION IRRADACION - REALIDAD',
+        
+        'Ejes': [
+                 {// ########## 0 - Valores eje Wh ######################
+                  visible: true,
+                  opposite: true,
+                  //min: 0,
+                  //max: 200,
+                  //tickInterval: 20,
+                  gridLineColor: 'transparent',
+                  minorGridLineColor: 'transparent',
+                  labels: {
+                    //align: 'left',
+                    y: 5
+                    },
+                  title: {
+                    align: 'high',
+                    offset: -15,
+                    text: 'Wh',
+                    rotation: 0,
+                    y: -5
+                    },
+                  
+                 },
+                 
+                 {// ########## 1 - Watios ######################
+                  visible: true,
+                  opposite: false,
+                  //min: -80,
+                  //max: 80,
+                  //tickInterval: 10,
+                  //gridLineColor: 'transparent',
+                  minorGridLineColor: 'transparent',
+                  labels: {
+                    //align: 'left',
+                    y: 5
+                    },
+                  title: {
+                    align: 'high',
+                    offset: 0,
+                    text: 'W',
+                    rotation: 0,
+                    y: -10
+                    },
+                  plotLines: [{
+                    value: 500,
+                    width: 2,
+                    color: 'red',
+                    dashStyle: 'shortdash',
+                    label: {
+                       text: '500W'
+                    }
+                    
+                    }]
+                  },
+                 
+                 {// ########## 2 - SOC - Temp... ######################
+                  visible: false,
+                  opposite: false,
+                  minorGridLineColor: 'transparent',
+                  labels: {
+                    //align: 'left',
+                    y: 5
+                    },
+                  title: {
+                    align: 'high',
+                    offset: 0,
+                    text: 'W',
+                    rotation: 0,
+                    y: -10
+                    },
+                  plotLines: [{
+                    value: 70,
+                    width: 2,
+                    color: 'red',
+                    dashStyle: 'shortdash',
+                    label: {
+                      text: '70%'
+                    }
+                    
+                  }]
+                  },
+                  
+            ],
+        
+        'Series': {
+            'Wh_placa': {'eje':0, 'tooltip': {valueDecimals: 1, valueSuffix: ' Wh'}, 'visible':true},
+            'Wh_bat': {'eje':0, 'tooltip': {valueDecimals: 1, valueSuffix: ' Wh'}, 'visible':false},
+            'Wh_red': {'eje':0, 'tooltip': {valueDecimals: 1, valueSuffix: ' Wh'}, 'visible':false},
+            'Wh_consumo': {'eje':0, 'tooltip': {valueDecimals: 1, valueSuffix: ' Wh'}, 'visible':false},
+            
+            
+            
+            'Wirradiacion': {'eje':1, 'tooltip': {valueDecimals: 1, valueSuffix: ' W'}, 'visible':true},
+            
+            'Excedente': {'eje':2, 'tooltip': {valueDecimals: 1, valueSuffix: ' Wnor'}, 'visible':false},
+            'SOC': {'eje':2, 'tooltip': {valueDecimals: 1, valueSuffix: ' %'}, 'visible':false},
+            'Temperatura': {'eje':2, 'tooltip': {valueDecimals: 1, valueSuffix: ' ºC'}, 'visible':false},
+            
+            
+        },  
+    },
+ 
+};

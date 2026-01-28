@@ -1,0 +1,2002 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.5">
+    <link href="/img/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+
+    
+    <title>PVControl+</title>
+    <style id="dynamicStyles">
+        /* CSS para cuerpo */
+        body {
+            /*display: flex;*/
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Estilos de la barra de navegación */
+        .navbar {
+            background-color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            flex-wrap: wrap; /* Permite que los elementos del menú se envuelvan a la siguiente línea si es necesario */
+        }
+
+        /* Estilos de los enlaces dentro de la barra de navegación */
+        .navbar a {
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 0px 0px;
+            text-decoration: none;
+        }
+
+        /* Estilos para el dropdown */
+        .dropdown {
+            position: relative;
+        }
+
+        /* Botón para abrir el dropdown */
+        .dropdown .dropbtn {
+            font-size: 16px;
+            border: none;
+            outline: none;
+            color: white;
+            padding: 14px 20px;
+            background-color: inherit;
+            font-family: inherit;
+            margin: 0;
+        }
+
+        /* Estilo de enlace cuando se pasa el cursor por encima */
+        .navbar a:hover, .dropdown:hover .dropbtn {
+            background-color: red;
+        }
+
+        /* Contenido del dropdown oculto inicialmente */
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            max-height: none; /* Sin límite de altura para permitir el despliegue completo */
+            overflow-y: visible; /* No cortar el contenido verticalmente */
+        }
+
+        /* Mostrar el dropdown al pasar el cursor */
+        .dropdown:hover .dropdown-content {
+            display: block;
+            overflow-y: auto; /* Desplazamiento solo si es necesario */
+            max-height: 700px; /* Límite de altura para scroll si el menú es muy largo */
+        }
+
+        /* Estilos para los enlaces dentro del dropdown */
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+        }
+
+        /* Cambiar color de fondo al pasar el cursor sobre los enlaces del dropdown */
+        .dropdown-content a:hover {
+            background-color: #ddd;
+        }
+
+        /* Estilos responsivos para pantallas pequeñas */
+        @media screen and (max-width: 600px) {
+            /* Ocultar enlaces excepto el primero y el ícono de menú */
+            .navbar a:not(:first-child), .dropdown .dropbtn {
+                display: none;
+            }
+
+            /* Mostrar el ícono de menú en pantallas pequeñas */
+            .navbar a.icon {
+                float: right;
+                display: block;
+            }
+
+            /* Estilos cuando el menú se vuelve responsivo */
+            .navbar.responsive {
+                position: relative;
+                flex-direction: column; 
+            }
+
+            .navbar.responsive .icon {
+                position: absolute;
+                right: 0;
+                top: 0;
+            }
+
+            /* Mostrar todos los enlaces en bloques en el modo responsivo */
+            .navbar.responsive a {
+                float: none;
+                display: block;
+                text-align: left;
+            }
+
+            /* Ajustar el dropdown al modo responsivo */
+            .navbar.responsive .dropdown {
+                float: none;
+            }
+
+            .navbar.responsive .dropdown-content {
+                position: relative;
+                max-height: none; /* Sin límite de altura en pantallas pequeñas */
+            }
+
+            .navbar.responsive .dropdown .dropbtn {
+                display: block;
+                width: 100%;
+                text-align: left;
+            }
+        }
+
+    
+        /* CSS para archivo*/
+        
+        #grafico{
+            flex-grow: 1;
+            display: flex;
+            
+        }
+        .sideBlock {
+            background-color: rgba(208, 208, 208, 0.5);
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+        }
+        #central {
+            background-color: rgba(251, 251, 244, 0.5);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            position: relative;
+        }
+        #svgLines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            stroke-dasharray: 5, 5; 
+        }
+        
+        .line {
+            animation: dash 10s linear infinite;
+        }
+
+        .line_inactive {
+            stroke: gray;
+            stroke-width: 2;
+            animation: none; /* Desactivar animación */
+        }
+        
+        @keyframes dash_normal {
+            from {stroke-dashoffset: 30%;}
+            to {stroke-dashoffset: 5%;}
+        }
+
+        @keyframes dash_inverso {
+            from {stroke-dashoffset: 5%;}
+            to {stroke-dashoffset: 30%;}
+        }
+
+        .row {
+            display: flex;
+            /*gap: 1px;  espacio entre columnas de una filas */
+            
+        }
+        .block {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: transparent;
+            margin: 20px 45px; /*espacio entre bloques */;
+            
+        }
+        
+        .element {
+            display: flex;
+            justify-content: center;
+            /*flex-wrap: wrap;*/
+            /*margin: 20px 45px;  margin for space between elements */
+        }
+        .side-element {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 5px; /* margin for space between elements */
+        }
+        .value {
+            
+            align-items: center;
+            /*margin: 5px;  margin for space between values */
+        }
+        
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .warning-icon.blink {
+            display: block;
+            animation: blink 1s infinite;
+        }
+
+        /* CSS para graficas adicionales */
+
+        .chart-grid {
+            display: grid;
+            grid-gap: 10px;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: auto;
+        }
+
+        iframe.chart {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+
+        /* Ventanas modales */
+        .modal {
+            /*display: flex;*/
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: yellow;
+            /*background-color = rgba(100, 100, 0, 0.5);*/
+            padding: 10px;
+            border: 1px solid black;
+            z-index: 1000;
+            /* width: 300px; Define un ancho fijo si deseas que siempre tenga ese tamaño */
+            max-width: 40vw; /* Limita el ancho máximo al X% del ancho de la ventana */
+        }
+        
+        .modal-header {
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            /* cursor: move; Indicador de arrastre */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            color: yellow;
+            transition: color 0.2s ease; 
+            z-index: 1005; /* Asegúrar de que esté encima de otros elementos */
+        }
+        
+        
+        .modal-close:hover {
+            color: #ccc; /* Cambiar color al pasar el cursor sobre el botón */
+        }
+
+        
+        #configOptionsContainer {
+            margin-top: 10px; /* Espacio entre el botón y las opciones */
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Botones normales */
+        .boton-normal {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 10px 20px;
+            cursor: pointer;
+          }
+
+        /* Botones que requieren clave */
+        .boton-con-clave {
+            background-color: #ffcccb;  /* Fondo rojo claro para indicar que requiere clave */
+            border: 2px solid #ff6666;  /* Borde más intenso */
+            color: #333;
+            padding: 10px 20px;
+            cursor: pointer;
+          }
+
+        /* Definir la clase para las filas de botones dentro del modal */
+        .modal_row {
+            display: flex;
+            flex-wrap: wrap; /* Permitir que los botones se ajusten si es necesario */
+            justify-content: flex-start; /* Alinear los botones a la izquierda */
+            gap: 0px; /* Espacio entre los botones */
+            margin-bottom: 0px; /* Separación entre las filas */
+        }
+   
+
+        /* Ventanas modal MQTT */
+        .modal-web {
+            position: fixed;
+            top: 1%;
+            left: 3%;
+            transform: translate(-0%, -0%);
+            background-color: white;
+            border: 1px solid #ccc;
+            z-index: 1000;
+            width: 80%; /* Ancho de la ventana modal */
+            max-width: 300px; /* Ancho máximo de la ventana modal */
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+            
+        .modal-header-web {
+            padding: 15px; 
+            background-color: #feda38;
+            border-bottom: 1px solid #ccc; 
+            padding: 10px;
+            display: flex;
+            border-bottom: 1px solid #ccc;
+            justify-content: space-between; 
+            align-items: center;
+            border-top-left-radius: 12px;  
+        }
+        
+        
+        /* Título de la ventana modal */
+        .modal-title-web {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .modal-close-web {
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            color: red;
+            transition: color 0.2s ease;          
+            z-index: 1001; /* Asegúrar de que esté encima de otros elementos */
+        }
+
+        .modal-close-web:hover {
+            color: #ccc; /* Cambiar color al pasar el cursor sobre el botón */
+        }
+        
+        .modal-content-web {
+            max-height: 300px; /* Altura máxima del contenido */
+            overflow-y: auto; /* Barra de desplazamiento vertical */
+            padding: 15px;
+            background-color: #f9f9f9;
+            color: #333;
+            line-height: 1.6;
+        }
+        /* Pie de la ventana modal */
+        .modal-footer-web {
+            padding: 10px;
+            text-align: right;
+            border-top: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        /* Botón de borrar texto en la ventana modal */
+        .modal-clear-btn-web {
+            background-color: #f44336; /* Color de fondo del botón */
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-clear-btn-web:hover {
+            background-color: #d32f2f; /* Cambiar color al pasar el cursor */
+        }
+
+        
+        /* Estilos para los botones en general */
+        .btn {
+            width: 90px;
+            height: 40px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 3px; /* Añadido para espaciado entre botones */
+        }
+        /* Botón cuando está conectado (verde) */
+        .btn.connected {
+            background-color: green;
+        }
+        /* Botón cuando está desconectado (rojo) */
+        .btn.disconnected {
+            background-color: red;
+        }
+        /* Otros estilos para diferentes botones de acción */
+        .btn.primary {
+            background-color: blue;
+        }
+        .btn.secondary {
+            background-color: gray;
+        }
+        .btn.warning {
+            background-color: orange;
+        }
+        .btn.danger {
+            background-color: darkred;
+        }
+        
+        
+    </style>
+
+    
+    <script>
+    
+        const activeModals = {}; // Objeto para mantener el seguimiento de las ventanas emergentes activas
+        let currentLineState = {};// Mantener el estado actual de las líneas para determinar si se necesita redibujar
+
+        function fetchActiveConfig() {
+            const url = `configuracion_activa.txt?t=${new Date().getTime()}`; // Añadir un timestamp para evitar caché
+            console.log('Fetching config from URL:', url); // Depuración para ver la URL completa
+            return fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(file => {
+                    const trimmedFile = file.trim();
+                    console.log('Contenido de file después de trim:', trimmedFile); // Verificar contenido después de trim
+                    return trimmedFile;
+                })
+                .catch(error => {
+                    console.error('Error fetching configuration:', error); // Capturar errores de red o de fetch
+                    throw error; // Re-lanzar el error para manejarlo en la llamada
+                });
+        }
+        
+        function loadConfigFile(file) {
+            // Eliminar cualquier script antiguo
+            document.querySelectorAll('script[data-config]').forEach(script => script.remove());
+
+            // Cargar el nuevo script de configuración
+            const newScript = document.createElement("script");
+            newScript.src = `configuraciones/${file}`;
+            newScript.setAttribute('data-config', file);
+            newScript.onload = () => {
+                initializeApp();
+            };
+            document.head.appendChild(newScript);
+
+            console.log(`Cargado archivo de configuración: ${file}`);
+        }
+
+        function initializeApp() {
+            // reinicializo aplicación con la nueva configuración
+            console.log('Aplicación inicializada con la nueva configuración');
+            // Llama a tus funciones de inicialización aquí
+            
+
+            init();
+            //console.log("CONFIG:",config);
+            
+            initMQTT(); // Inicializo conexion MQTT
+
+            // Cargar las gráficas usando la configuración
+            if (typeof config !== 'undefined' && config.graficas) {
+                loadCharts(config.graficas);
+            } else {
+                console.error('Configuración de gráficas no encontrada.');
+            }
+            
+            //createAndPositionLines();
+
+            generateMenu(config.menu_web);
+
+            const blockMargin = config.blockMargin || '20px 20px';
+            const styleSheet = document.getElementById('dynamicStyles').sheet;
+
+            styleSheet.insertRule(`.block { margin: ${blockMargin}; }`, styleSheet.cssRules.length);
+        }
+
+        function NuevaConfiguracion(button) {
+            // Desactivar el botón para evitar múltiples clics
+            button.disabled = true;
+
+            fetchActiveConfig().then(activeFile => {
+                fetch('configuraciones/')
+                    .then(response => response.text())
+                    .then(data => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(data, "text/html");
+                        const links = doc.querySelectorAll('a');
+                        const configFiles = Array.from(links).map(link => link.getAttribute('href')).filter(file => file.endsWith('.js'));
+
+                        displayConfigOptions(configFiles, activeFile, button); // Pasar el archivo activo y el botón a la función
+                    });
+            });
+        }
+
+        function displayConfigOptions(configFiles, activeFile, button) {
+            let existingContainer = document.getElementById('configOptionsContainer');
+            if (existingContainer) {
+                existingContainer.remove();
+            }
+
+            const container = document.createElement("div");
+            container.id = "configOptionsContainer";
+
+            configFiles.forEach(file => {
+                const optionButton = document.createElement("button");
+
+                // Resaltar el archivo de configuración activo
+                if (file === activeFile) {
+                    optionButton.textContent = `${file} (Activo)`;
+                    optionButton.style.fontWeight = "bold";
+                    optionButton.style.backgroundColor = "#cae8cf"; // Fondo más claro
+                    optionButton.style.color = "#000"; // Texto negro
+                } else {
+                    optionButton.textContent = file;
+                }
+
+                optionButton.onclick = () => {
+                    updateActiveConfigFile(file);
+                    button.disabled = false; 
+                    container.remove();
+                };
+
+                container.appendChild(optionButton);
+            });
+
+            // Añadir botón para mantener la configuración actual
+            const keepCurrentButton = document.createElement("button");
+            keepCurrentButton.textContent = `Mantener ${activeFile}`;
+            keepCurrentButton.style.fontWeight = "bold";
+            keepCurrentButton.style.backgroundColor = "#d9edf7"; // Color de fondo para diferenciar
+            keepCurrentButton.style.color = "#31708f"; // Color de texto
+            keepCurrentButton.onclick = () => {
+                button.disabled = false;
+                container.remove();
+            };
+
+            container.appendChild(keepCurrentButton);
+
+            // Insertar el contenedor justo después del botón "Cambiar Configuración"
+            button.parentNode.insertBefore(container, button.nextSibling);
+        }
+
+
+        function updateActiveConfigFile(file) {
+            console.log('Intentando grabar archivo', file);
+
+            fetch('configuracion_actualizacion.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ file })
+            })
+            .then(response => {
+                console.log(response);
+
+                if (response.ok) {
+                    console.log('grabado archivo', file);
+                    
+                    // Agregar un retraso antes de recargar
+                    setTimeout(() => {
+                        window.location.href = window.location.href.split('?')[0];
+                    }, 50); // retraso de X milisegundos
+                } else {
+                    console.error('Error al actualizar el archivo de configuración');
+                }
+            });
+        }
+
+
+        document.addEventListener("DOMContentLoaded", function() {
+            
+            // Crear el botón de conexión MQTT
+            const connectBtn = document.createElement("button");
+            connectBtn.id = "connectBtn";
+            connectBtn.className = "btn disconnected";
+            connectBtn.innerHTML = "MQTT Conectado";
+
+            // Agregar un evento onclick al botón para iniciar la conexión MQTT
+            connectBtn.onclick = function() {
+                initMQTT();  // Intenta conectarse o reconectarse
+            };
+
+            // Añadir el botón al cuerpo del documento
+            document.body.appendChild(connectBtn);
+            
+            
+            const configBtn = document.createElement("button");
+            configBtn.id = "configBtn";
+            configBtn.className = "btn connected";
+            configBtn.innerHTML = "Cambiar Configuracion";
+
+            //button.textContent = "Cambiar Configuración";
+            configBtn.onclick = () => NuevaConfiguracion(configBtn);
+            document.body.appendChild(configBtn);
+         
+            fetchActiveConfig()
+                .then(file => {
+                    console.log('Configuración activa obtenida:', file); // Confirmar el valor recibido de file
+                    loadConfigFile(file);
+                })
+                .catch(error => {
+                    console.error('Error al cargar la configuración activa:', error); // Manejo de errores
+                });
+                
+            crearModalWeb(); // Crear la modal
+               
+        });
+
+
+        // Función para hacer una ventana modal arrastrable
+        function makeDraggable(element) {
+            var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            var header = element.querySelector(".modal-header");
+
+            // Selecciona el botón de cierre
+            var closeButton = element.querySelector('.modal-close-web');
+
+            // Asignamos el arrastre solo si el clic o toque no es en el botón de cierre
+            if (header) {
+                header.onmousedown = function(e) {
+                    if (!e.target.classList.contains('modal-close-web')) {
+                        dragMouseDown(e);
+                    }
+                };
+                header.ontouchstart = function(e) {
+                    if (!e.target.classList.contains('modal-close-web')) {
+                        dragTouchStart(e);
+                    }
+                };
+            } else {
+                element.onmousedown = function(e) {
+                    if (!e.target.classList.contains('modal-close-web')) {
+                        dragMouseDown(e);
+                    }
+                };
+                element.ontouchstart = function(e) {
+                    if (!e.target.classList.contains('modal-close-web')) {
+                        dragTouchStart(e);
+                    }
+                };
+            }
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function dragTouchStart(e) {
+                e.preventDefault();
+                pos3 = e.touches[0].clientX;
+                pos4 = e.touches[0].clientY;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementTouchDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                element.style.top = (element.offsetTop - pos2) + "px";
+                element.style.left = (element.offsetLeft - pos1) + "px";
+            }
+
+            function elementTouchDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.touches[0].clientX;
+                pos2 = pos4 - e.touches[0].clientY;
+                pos3 = e.touches[0].clientX;
+                pos4 = e.touches[0].clientY;
+                element.style.top = (element.offsetTop - pos2) + "px";
+                element.style.left = (element.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+            }
+        }
+
+
+
+        // Función para generar el menú
+        function generateMenu(menuConfig) {
+            const navbar = document.getElementById('navbar');
+            Object.keys(menuConfig).forEach(menuItem => {
+                if (typeof menuConfig[menuItem] === 'string') {
+                    const link = document.createElement('a');
+                    link.href = menuConfig[menuItem];
+                    link.textContent = menuItem;
+                    navbar.appendChild(link);
+                } else {
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'dropdown';
+                    const dropbtn = document.createElement('button');
+                    dropbtn.className = 'dropbtn';
+                    dropbtn.textContent = menuItem;
+                    dropdown.appendChild(dropbtn);
+                    const dropdownContent = document.createElement('div');
+                    dropdownContent.className = 'dropdown-content';
+                    Object.keys(menuConfig[menuItem]).forEach(subMenuItem => {
+                        const subLink = document.createElement('a');
+                        subLink.href = menuConfig[menuItem][subMenuItem];
+                        subLink.textContent = subMenuItem;
+                        dropdownContent.appendChild(subLink);
+                    });
+                    dropdown.appendChild(dropdownContent);
+                    navbar.appendChild(dropdown);
+                }
+            });
+        }
+
+        // Función para alternar el menú en móviles
+        function toggleMenu() {
+            console.log('Pulsado ToggleMenu()');
+            const navbar = document.getElementById("navbar");
+            if (navbar.className === "navbar") {
+                navbar.className += " responsive";
+            } else {
+                navbar.className = "navbar";
+            }
+        }
+
+        function toggleMenu0() {
+            const navbar = document.getElementById("navbar");
+            navbar.classList.toggle("responsive");
+        }
+
+        function createElement(elementConfig, blockId, elementId) {
+            if (elementConfig.visualizacion === 'nunca' || elementConfig.visualizacion === 'modal') return;
+
+            const elementDiv = document.createElement('div');
+            elementDiv.className = 'element';
+            elementDiv.id = `${blockId}-${elementId}`;
+
+            // Verificar y asignar valores por defecto
+            if (!elementConfig.position) elementConfig.position = { x: 0, y: 0 };
+            
+            if (!elementConfig.value) elementConfig.value = 0;
+            if (!elementConfig.unit) elementConfig.unit = '';
+            if (!elementConfig.background) elementConfig.background = 'transparent';
+            
+            if (elementConfig.bold) {
+                elementDiv.style.fontWeight = 'bold';
+            } else {
+                elementDiv.style.fontWeight = 'normal';
+            }
+            
+            
+            elementDiv.style.position = 'absolute';
+            elementDiv.style.left = `${elementConfig.position.x}px`;
+            elementDiv.style.top = `${elementConfig.position.y}px`;
+            elementDiv.style.width = `${elementConfig.width}px`;
+            elementDiv.style.backgroundColor = elementConfig.backgroundColor;
+            elementDiv.style.color = elementConfig.valueColor;
+            elementDiv.style.fontSize = elementConfig.size;
+            
+            
+            // Verificar el atributo showTitle y mostrar el título si corresponde
+            if (elementConfig.showTitle !== false) {
+                const title = document.createElement('div');
+                title.innerText = elementId + ': ';
+                title.style.color = elementConfig.titleColor;
+                elementDiv.appendChild(title);
+            }
+            
+            const value = document.createElement('div');
+            value.className = 'value';
+
+            // Verificar si el valor es un número y formatearlo con separador de miles ,comas y maximo 3 decimales
+            let displayValue = elementConfig.value;
+            if (typeof displayValue === 'number') {
+                displayValue = displayValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 3 });                        
+            }
+
+            value.innerText = displayValue + ' ' + elementConfig.unit;
+            value.style.color = elementConfig.valueColor;
+            elementDiv.appendChild(value);
+
+            const blockDiv = document.getElementById(blockId);
+            blockDiv.appendChild(elementDiv);
+                        
+        }
+        
+        function createBlock(blockConfig, blockId, rowDiv) {
+            const blockDiv = document.createElement('div');
+            blockDiv.id = blockId;
+            blockDiv.className = 'block';
+            
+            if (!blockConfig.size) blockConfig.size ={ width: 0, height: 0 };
+            
+            blockDiv.style.width = `${blockConfig.size.width}px`;
+            blockDiv.style.height = `${blockConfig.size.height}px`;
+            blockDiv.style.position = 'relative';
+            blockDiv.style.backgroundColor = 'transparent'; // Fondo transparente por defecto
+            
+            // Aplicar el margen personalizado si está definido, sino usar el margen por defecto
+            const separacion = blockConfig.blockMargin || config.blockMargin;
+            blockDiv.style.margin = separacion;
+            console.log(blockId,separacion);
+
+            // Crear una capa para la imagen
+            const imgDiv = document.createElement('div');
+
+            imgDiv.className = 'block-image'; // Añadir clase para referencia
+            imgDiv.style.backgroundImage = `url(/img/equipos/${blockConfig.image})`;
+            imgDiv.style.backgroundSize = 'cover';
+            imgDiv.style.position = 'absolute';
+            imgDiv.style.top = '5%';
+            imgDiv.style.left = '5%';
+            imgDiv.style.width = '90%';
+            imgDiv.style.height = '90%';
+            imgDiv.style.opacity = '0.99'; // Ajustar opacidad para ver el fondo
+            imgDiv.style.pointerEvents = 'none'; // Para que los eventos de clic pasen a través de la imagen
+
+            blockDiv.appendChild(imgDiv);
+
+            // Crear imagen de advertencia oculta inicialmente
+            const warningImg = document.createElement('img');
+            warningImg.src = '/img/equipos/aviso.png'; // Ruta de la imagen de advertencia
+            warningImg.className = 'warning-icon blink';
+            warningImg.style.display = 'none'; // Oculto por defecto
+            
+            warningImg.style.position = 'absolute';
+            warningImg.style.top = '0px';
+            warningImg.style.right = '0px';
+            warningImg.style.width = '40px';
+            warningImg.style.height = '40px';
+            
+            blockDiv.appendChild(warningImg);
+
+            blockDiv.addEventListener('click', () => showModal(blockConfig, blockId));
+
+            rowDiv.appendChild(blockDiv);
+
+            
+            try {
+                // Si no existen elementos saltar este bloque
+                if (!blockConfig.elements) return;
+
+                Object.keys(blockConfig.elements).forEach(elementId => {
+                    createElement(blockConfig.elements[elementId], blockId, elementId);
+                });
+             } catch (error) {
+                
+                console.error('No existe elements en la definicion del bloque ',blockId);
+                console.error ('  -> Error creacion Elementos ', error);
+                
+            }
+        }
+
+        function createAndPositionLines() {
+            const svg = document.getElementById('svgLines');
+
+            // Crear un mapa de líneas actuales
+            const existingLines = new Map();
+            svg.querySelectorAll('line').forEach(line => {
+                const id = line.getAttribute('id');
+                existingLines.set(id, line);
+            });
+
+            Object.keys(config.filas).forEach(rowId => {
+                const rowConfig = config.filas[rowId];
+                Object.keys(rowConfig).forEach(blockId => {
+                    const blockConfig = rowConfig[blockId];
+
+                    if (!blockConfig.connectTo) {
+                        // Si no existe connectTo, saltar este bloque
+                        return;
+                    }
+
+                    // Función para procesar cada conexión
+                    const processConnection = (connection, key) => {
+                        try {
+                            // Verificar y asignar valores por defecto
+                            if (!connection.from) connection.from = 'bottom';
+                            if (!connection.to) connection.to = 'top';
+                            if (!connection.colorLineaPositiva) connection.colorLineaPositiva = 'black';
+                            if (!connection.colorLineaNegativa) connection.colorLineaNegativa = 'red';
+                            if (!connection.flujoLinea) connection.flujoLinea = 'normal';
+
+                            const fromBlock = document.getElementById(blockId);
+                            const toBlock = document.getElementById(connection.id);
+
+                            if (fromBlock && toBlock) {
+                                let fromX, fromY, toX, toY;
+                                if (connection.flujoLinea === 'normal') {
+                                    ({ x: fromX, y: fromY } = calculateConnectionCoords(fromBlock, connection.from));
+                                    ({ x: toX, y: toY } = calculateConnectionCoords(toBlock, connection.to));
+                                } else if (connection.flujoLinea === 'inverso') {
+                                    ({ x: fromX, y: fromY } = calculateConnectionCoords(toBlock, connection.to));
+                                    ({ x: toX, y: toY } = calculateConnectionCoords(fromBlock, connection.from));
+                                }
+
+                                try {
+                                    const lineKey = `${blockId}-${connection.id}`;
+                                    const valor = blockConfig.elements[connection.control].value;
+                                    const controlValue = Math.abs(valor);
+
+                                    const newCoords = { fromX, fromY, toX, toY };
+                                    const strokeWidth = Math.max(2, Math.min(15, (controlValue - connection.min) / (connection.max - connection.min) * 13 + 2));
+
+                                    // Verificar si las coordenadas o el valor de control han cambiado
+                                    const currentState = currentLineState[lineKey] || {};
+                                    if (!currentState.coords || !currentState.controlValue ||
+                                        currentState.coords.fromX !== fromX || currentState.coords.fromY !== fromY ||
+                                        currentState.coords.toX !== toX || currentState.coords.toY !== toY ||
+                                        currentState.valor !== valor) {//currentState.controlValue !== controlValue) {
+
+                                        //currentLineState[lineKey] = { coords: newCoords, controlValue };
+                                        currentLineState[lineKey] = { coords: newCoords, valor };
+
+                                        let line = existingLines.get(lineKey);
+                                        if (!line) {
+                                            line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                                            line.setAttribute('id', lineKey);
+                                            svg.appendChild(line);
+                                        }
+
+                                        line.setAttribute('x1', fromX);
+                                        line.setAttribute('y1', fromY);
+                                        line.setAttribute('x2', toX);
+                                        line.setAttribute('y2', toY);
+                                        line.setAttribute('stroke-width', strokeWidth);
+
+                                        // Check if value is 0 and apply the appropriate class
+                                        if (valor === 0) {
+                                            line.setAttribute('class', 'line_inactive');
+                                            line.removeAttribute('style');
+                                        } else {
+                                            const color = valor >= 0 ? connection.colorLineaPositiva : connection.colorLineaNegativa;
+                                            const animation = valor >= 0 ? 'dash_normal' : 'dash_inverso';
+                                            line.setAttribute('class', 'line');
+                                            line.setAttribute('style', `stroke: ${color}; animation-name: ${animation};`);
+                                        }
+                                    }
+
+                                    // Eliminar de existingLines ya procesados
+                                    existingLines.delete(lineKey);
+                                } catch (error) {
+                                    console.error('Conexion ', blockId, connection.id);
+                                    console.error('Variable control:', connection.control, ' =', blockConfig.elements[connection.control]);
+                                    console.error('Comprueba que los bloques existen y la variable de control esta bien definida');
+                                    console.error('  -> Error creacion Linea ', error);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Conexion ', blockId, 'Revisar parametros creacion linea a', connection);
+                            console.error('  -> Error creacion Linea ', error);
+                        }
+                    };
+
+                    // Detectar si connectTo es un solo objeto (antiguo formato) o un objeto con múltiples conexiones (nuevo formato)
+                    if (blockConfig.connectTo.id) {
+                        // Formato antiguo (única línea)
+                        processConnection(blockConfig.connectTo, 'single');
+                    } else {
+                        // Formato nuevo (múltiples líneas)
+                        Object.keys(blockConfig.connectTo).forEach(key => {
+                            processConnection(blockConfig.connectTo[key], key);
+                        });
+                    }
+                });
+            });
+
+            // Remover las líneas que ya no son necesarias
+            existingLines.forEach(line => {
+                svg.removeChild(line);
+            });
+        }
+
+        function calculateConnectionCoords(block, position) {
+            const rect = block.getBoundingClientRect();
+            const svgRect = document.getElementById('svgLines').getBoundingClientRect();
+
+            let x, y;
+
+            switch (position) {
+                case 'top':
+                    x = rect.left + (rect.width / 2) - svgRect.left;
+                    y = rect.top - svgRect.top;
+                    break;
+                case 'bottom':
+                    x = rect.left + (rect.width / 2) - svgRect.left;
+                    y = rect.bottom - svgRect.top;
+                    break;
+                case 'left':
+                    x = rect.left - svgRect.left;
+                    y = rect.top + (rect.height / 2) - svgRect.top;
+                    break;
+                case 'right':
+                    x = rect.right - svgRect.left;
+                    y = rect.top + (rect.height / 2) - svgRect.top;
+                    break;
+                default:
+                    x = rect.left + (rect.width / 2) - svgRect.left;
+                    y = rect.top + (rect.height / 2) - svgRect.top;
+                    break;
+            }
+
+            return { x, y };
+        }
+
+        // Función para cargar gráficas según la configuración
+        function loadCharts(chartConfig) {
+            const gridContainer = document.createElement('div');
+            gridContainer.classList.add('chart-grid');
+
+            console.log('chartConfig',chartConfig);
+
+            // Utiliza el valor de columnas del archivo de configuración o establece un valor predeterminado
+            const columnas = chartConfig.columnas || 2; 
+            gridContainer.style.gridTemplateColumns = `repeat(${columnas}, 1fr)`;
+
+            // Iterar sobre las claves que están dentro de chartConfig.archivos
+            Object.keys(chartConfig.archivos).forEach(graficaKey => {
+                console.log('key:', graficaKey);
+                console.log('grafica:', chartConfig.archivos[graficaKey]);
+                
+                const grafica = chartConfig.archivos[graficaKey];
+
+                // Crear un iframe para cada gráfica
+                const iframe = document.createElement('iframe');
+                iframe.src = grafica.archivo;
+                iframe.style.width = grafica.width;
+                iframe.style.height = grafica.height;
+                iframe.style.border = grafica.border;
+
+                // Aplicar la configuración de gridArea si está definida
+                if (grafica.gridArea) {
+                    iframe.style.gridArea = grafica.gridArea;
+                }
+
+                // Añadir el iframe al contenedor de la cuadrícula
+                gridContainer.appendChild(iframe);
+            });
+
+            // Añadir el contenedor de la cuadrícula al cuerpo del documento
+            document.body.appendChild(gridContainer);
+        }
+
+        function init() {
+            const central = document.getElementById('central');
+
+            Object.keys(config.filas).forEach(rowId => {
+                const rowConfig = config.filas[rowId];
+                const rowDiv = document.createElement('div');
+                rowDiv.id = rowId;
+                rowDiv.className = 'row';
+                central.appendChild(rowDiv);
+
+                Object.keys(rowConfig).forEach(blockId => {
+                    createBlock(rowConfig[blockId], blockId, rowDiv);
+                });
+            });
+
+            if (config.laterales.izquierdo) {
+                const bloqueIzquierdo = document.getElementById('izquierdo');
+                Object.keys(config.laterales.izquierdo.elements).forEach(elementId => {
+                    createSideBlockElement(bloqueIzquierdo, config.laterales.izquierdo.elements[elementId], elementId, 'izquierdo');
+                });
+            }
+
+            if (config.laterales.derecho) {
+                const bloqueDerecho = document.getElementById('derecho');
+                Object.keys(config.laterales.derecho.elements).forEach(elementId => {
+                    createSideBlockElement(bloqueDerecho, config.laterales.derecho.elements[elementId], elementId, 'derecho');
+                });
+            }
+            
+
+            fetchAndUpdateData();
+
+            
+            setInterval(fetchAndUpdateData, 5000);
+        }
+
+        async function fetchAndUpdateData() {
+            let data = '';
+            try {
+                const response = await fetch('d_fv.php');
+                data = await response.json();
+                data["conexion"]= 'OK';
+                
+                //console.log(data);
+                
+                updateValues(data);
+                createAndPositionLines();
+            } catch (error) {
+                
+                console.error('Error actualizacion datos:', error);
+                
+            }
+        }
+
+        function updateValues(data) {
+            const d_ = Object.assign({}, data);
+            
+            const now = new Date(); // Hora actual
+            //console.log(now, 'data', data);
+            //console.log('d_', d_);
+            
+            Object.keys(config.filas).forEach(rowId => {
+                const rowConfig = config.filas[rowId];
+                Object.keys(rowConfig).forEach(blockId => {
+                    const blockConfig = rowConfig[blockId];
+                    
+                    //console.log('BLOQUE: ', blockId );
+                    
+                    // Verificar avisos bloque y actualizar fondo, logo y imagen
+                    let avisoActivado = false;
+                    if (blockConfig.avisos) {
+                        const blockDiv = document.getElementById(blockId);
+                        let warningImg = blockDiv.querySelector('.warning-icon');
+                        let blockImgDiv = blockDiv.querySelector('.block-image');
+                        
+                        //console.log(blockId, blockImgDiv);
+                        
+                        
+                        Object.keys(blockConfig.avisos).forEach(key => {
+                            const aviso = blockConfig.avisos[key];
+                            const condicion = new Function('d_', 'now',  `return ${aviso.condicion};`);
+                            
+                            try {
+                                if (condicion(d_, now)) {
+                                    if (aviso.color) blockDiv.style.backgroundColor = aviso.color;
+                                    if (aviso.image) blockImgDiv.style.backgroundImage = `url(/img/equipos/${aviso.image})`;
+                                    if (aviso.size) {
+                                        blockDiv.style.width = `${aviso.size.width}px`;
+                                        blockDiv.style.height = `${aviso.size.height}px`;
+                                    }
+                                    if (aviso.verAviso !== false) {
+                                        avisoActivado = true;
+                                        if (!warningImg) {
+                                            console.log('creando imagen aviso');//no deberia ejecutarse nunca
+                                            warningImg = document.createElement('img');
+                                            warningImg.src = 'aviso.png';
+                                            warningImg.className = 'warning-icon blink'; // Agregar la clase blink
+                                            blockDiv.appendChild(warningImg);
+                                        }
+                                        warningImg.style.display = 'block'; // Corregir a style.display
+                                    } else {
+                                        warningImg.style.display = 'none';
+                                    }
+                                    
+                                    if (aviso.visualizacion) blockDiv.style.backgroundColor = aviso.visualizacion;
+                                }
+                            } catch (error) {
+                
+                                console.error('Error en condicion del Bloque:',blockId,' ->', aviso.condicion);
+                
+                            }
+                        });
+
+                        if (!avisoActivado && warningImg) {
+                            warningImg.style.display = 'none';
+                            blockDiv.style.backgroundColor = 'transparent'; // Restaurar el fondo a transparente
+                        }
+                    }
+                            
+                    
+                    try {
+                        // Si no existen elementos saltar este bloque
+                        if (!blockConfig.elements) return;
+                        
+                        Object.keys(blockConfig.elements).forEach(elementId => {
+                            const elementConfig = blockConfig.elements[elementId];
+                            
+                            //console.log('    - Elem.', elementId );
+                            if (elementConfig.visualizacion === 'nunca' || elementConfig.visualizacion === 'modal') return;
+
+                            try{
+                                let value = null;
+                                if (elementConfig.sensor) value =  eval(elementConfig.sensor);
+                                else if (elementConfig.campoBD) value =  getValueFromData(data, elementConfig.campoBD);
+                                
+                                //console.log(' ->',elementId,': ', value );
+                                
+                                if (value !== null) {
+                                                                
+                                    let value_adap = value;
+                                    
+                                    elementConfig.value = value;
+                                    const elementDiv = document.getElementById(`${blockId}-${elementId}`);
+                                    // Comprobar avisos a nivel elemento
+                                    let existeAviso = false;
+                                    
+                                    if (elementConfig.avisos) {
+                                        Object.keys(elementConfig.avisos).forEach(key => {                                 
+                                            const aviso = elementConfig.avisos[key];
+                                            
+                                            const condicion = new Function('value', 'd_', 'now',  `return ${aviso.condicion};`);
+                                            if (condicion(value, data, now)) {
+                                                existeAviso = true;
+                                                
+                                                if (aviso.color) {
+                                                    elementDiv.style.backgroundColor = aviso.color; //por compatibilidad
+                                                } else {
+                                                     if (aviso.backgroundColor) {
+                                                         elementDiv.style.backgroundColor = aviso.backgroundColor;
+                                                     } else {
+                                                         elementDiv.style.backgroundColor = elementConfig.backgroundColor;
+                                                     }
+                                                }
+                                                
+                                                if (aviso.position) {
+                                                    elementDiv.style.left = `${aviso.position.x}px`;
+                                                    elementDiv.style.top = `${aviso.position.y}px`;
+                                                } else {
+                                                    elementDiv.style.left = `${elementConfig.position.x}px`;
+                                                    elementDiv.style.top = `${elementConfig.position.y}px`;
+                                                }
+                                                
+                                                if (aviso.size) {
+                                                    elementDiv.style.fontSize = aviso.size;
+                                                } else {
+                                                    elementDiv.style.fontSize = elementConfig.size;
+                                                }
+                                                
+                                                if (aviso.bold) {
+                                                    elementDiv.style.fontWeight = 'bold';
+                                                } else {
+                                                    if (elementConfig.bold) {
+                                                        elementDiv.style.fontWeight = 'bold';
+                                                    } else {
+                                                        elementDiv.style.fontWeight = 'normal';
+                                                    }
+                                                }
+                                                
+                                                if (aviso.width) {
+                                                    elementDiv.style.width = `${aviso.width}px`;
+                                                } else {
+                                                    elementDiv.style.width = `${elementConfig.width}px`;
+                                                }
+
+                                                if (aviso.valueColor){  //Color texto
+                                                    const valueDiv = elementDiv.querySelector('.value');
+                                                    if (valueDiv) valueDiv.style.color = aviso.valueColor; // Cambiar el color del valor
+                                                    //return true;
+                                                } else {
+                                                    const valueDiv = elementDiv.querySelector('.value');
+                                                    if (valueDiv) valueDiv.style.color = elementConfig.valueColor; // valor por defecto
+                                                }
+                                                
+                                                if (aviso.visualizacion) {
+                                                    //console.log(' ->',elementId,'- aviso.visualizacion: ', aviso.visualizacion  );
+                                                    
+                                                    if (aviso.visualizacion === 'nunca' || aviso.visualizacion === 'modal') {
+                                                        elementDiv.style.display = 'none';
+                                                    }
+
+                                                }                                                 
+                                                //return true;
+                                            }
+                                            //return false; // Continuar si no se cumple la condición
+                                        });
+                                        
+                                        if (!existeAviso) {
+                                            //console.log(blockId,elementId, 'div_bc',elementDiv.style.backgroundColor,'conf_bc',elementConfig.backgroundColor);
+                                            
+                                            elementDiv.style.backgroundColor = elementConfig.backgroundColor;
+                                            elementDiv.style.left = `${elementConfig.position.x}px`;
+                                            elementDiv.style.top = `${elementConfig.position.y}px`;
+                                            const valueDiv = elementDiv.querySelector('.value');
+                                            valueDiv.style.color = elementConfig.valueColor;
+                                            elementDiv.style.display = '';
+                                        }
+                                    }
+
+                                    if (elementDiv) {
+                                        const valueDiv = elementDiv.querySelector('.value');
+                                        if (valueDiv) {
+                                            if (typeof value === 'number') {
+                                                value_adap = value.toLocaleString('de-DE', {
+                                                    minimumFractionDigits: 0,
+                                                    maximumFractionDigits: 3
+                                                });
+                                            }
+                                            valueDiv.innerHTML = value_adap + ' ' + elementConfig.unit;
+                                        }
+                                    }
+                                }
+                            }   catch (error) {
+                                console.error(`Error al evaluar sensor ${elementConfig.sensor} en el elemento ${elementId}:`, );
+                            }
+                        });
+
+                    } catch (error) {
+
+                        console.error('Error actualizacion elementos en bloque :',blockId, error);
+                
+                    }
+                });
+            });
+
+            // Actualizar las ventanas modales activas
+            updateModalValues(data);
+
+            function updateSideBlock(sideBlock, side) {
+                
+                //console.log('sideblock', side);
+                //console.log('side data', d_);
+                
+                Object.keys(sideBlock.elements).forEach(elementId => {
+                    const elementConfig = sideBlock.elements[elementId];
+                    
+                    if(!elementConfig.campoBD) elementConfig.campoBD = '';
+                    
+                    let value = null;
+                    if (elementConfig.campoBD != ''){
+                        value = getValueFromData(data, elementConfig.campoBD);
+                    }else{
+                        value = elementConfig.value;
+                    }
+                    
+                    if (value !== null) {
+                        
+                        elementConfig.value = value;
+                        const elementDiv = document.getElementById(`${side}-${elementId}`);
+                        if (elementDiv) {
+                            const valueDiv = elementDiv.querySelector('.value');
+                            if (valueDiv) {
+                                valueDiv.innerHTML = value + ' ' + elementConfig.unit;
+                            }
+                            
+                            // comprobar condiciones en sideBlock
+                            if (elementConfig.avisos) {
+                                //console.log('Aviso.side',elementConfig.avisos);
+                                Object.keys(elementConfig.avisos).forEach(key => {
+                                        const aviso = elementConfig.avisos[key];
+                                        
+                                        const condicion = new Function('value', 'data', 'now',  `return ${aviso.condicion};`);
+                                        
+                                        //console.log(key,' -Evaluando condicion', aviso.condicion);
+                                        if (condicion(value, data, now)) {
+                                            if (aviso.color) elementDiv.style.backgroundColor = aviso.color; //por compatibilidad
+                                            if (aviso.backgroundColor) elementDiv.style.backgroundColor = aviso.backgroundColor;
+                                            if (aviso.size) elementDiv.style.fontSize = aviso.size;
+                                            if (aviso.bold) elementDiv.style.fontWeight = aviso.bold;
+                                            if (aviso.width) elementDiv.style.width = `${aviso.width}px`;
+                                            if (aviso.valueColor){ //Color texto
+                                                const valueDiv = elementDiv.querySelector('.value');
+                                                if (valueDiv) valueDiv.style.color = aviso.valueColor; // Cambiar el color del valor
+                                            }
+                                        
+                                        }
+                                });
+
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (config.laterales.izquierdo) {
+                updateSideBlock(config.laterales.izquierdo, 'izquierdo');
+            }
+
+            if (config.laterales.derecho) {
+                updateSideBlock(config.laterales.derecho, 'derecho');
+            }
+        }
+
+        function createSideBlockElement(container, elementConfig, elementId, side) {
+            const elementDiv = document.createElement('div');
+            
+            elementDiv.id = `${side}-${elementId}`;
+                    
+            elementDiv.className = 'side-element';
+            
+            elementDiv.style.position = 'relative';
+            elementDiv.style.width = `${elementConfig.width}px`;
+            elementDiv.style.backgroundColor = elementConfig.backgroundColor;
+            elementDiv.style.color = elementConfig.valueColor;
+            elementDiv.style.fontSize = elementConfig.size;
+            
+            // Valores por defecto
+            if (elementConfig.bold) elementDiv.style.fontWeight = 'bold';
+            
+            const title = document.createElement('div');
+            
+            // Verificar el atributo showTitle y mostrar el título si corresponde
+            if (elementConfig.showTitle !== false) {
+                const title = document.createElement('div');
+                title.innerText = elementId + ': ';
+                title.style.color = elementConfig.titleColor;
+                elementDiv.appendChild(title);
+            }
+            
+            
+            const value = document.createElement('div');
+            value.className = 'value';
+            
+            if(!elementConfig.unit) elementConfig.unit = '';
+            
+            value.innerText = elementConfig.value + ' ' + elementConfig.unit;
+            //value.style.fontSize = elementConfig.size;
+            //value.style.color = elementConfig.valueColor;
+            elementDiv.appendChild(value);
+
+            container.appendChild(elementDiv);
+        }
+        
+        function getValueFromData(data, campoBD) {
+                const keys = campoBD.split('.');
+                let value = data;
+                for (let key of keys) {
+                    if (value[key] !== undefined) {
+                        value = value[key];
+                    } else {
+                        return null;
+                    }
+                }
+                return value;
+            }
+
+        function showModal(blockConfig, blockId) {
+            if (activeModals[blockId]) return;
+            
+            const modalDiv = document.createElement('div');
+            modalDiv.className = 'modal';
+
+            // Obtener el bloque y sus coordenadas
+            const blockDiv = document.getElementById(blockId);
+            const rect = blockDiv.getBoundingClientRect();
+            
+            document.body.appendChild(modalDiv);
+
+            // Crear el encabezado del modal para arrastrar
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'modal-header';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.innerHTML = `&nbsp;${blockId}&nbsp;`;
+            titleSpan.className = 'modal-title';
+
+            const closeButton = document.createElement('div');
+            closeButton.innerHTML = `&nbsp;X&nbsp;`;
+            closeButton.className = 'modal-close-web';
+            
+            closeButton.addEventListener('click', () => {
+                document.body.removeChild(modalDiv);
+                delete activeModals[blockId]; // Eliminar de las ventanas activas al cerrar
+            });
+            
+            headerDiv.appendChild(titleSpan);
+            headerDiv.appendChild(closeButton);
+            modalDiv.appendChild(headerDiv);
+
+            // Parte de Avisos a nivel Bloque
+            const modalavisoDiv = document.createElement('div');
+            modalavisoDiv.id = `MA-${blockId}`;
+            modalavisoDiv.innerText = '';
+            modalDiv.appendChild(modalavisoDiv);
+            
+            // Generar botones de comandos si existen
+            if (blockConfig.comandos) {
+                const filas = {}; // Agrupar comandos por filas
+                
+                Object.keys(blockConfig.comandos).forEach(comandoId => {
+                    const comandoConfig = blockConfig.comandos[comandoId];
+                    console.log('comandoConfig', comandoConfig);
+                    
+                    const fila = comandoConfig.fila || 1; // Por defecto, fila 1 si no se especifica
+                    console.log('fila',fila); 
+                     
+                    console.log(`Comando: ${comandoId}, fila: ${fila}`); // Agrega esto para ver la fila
+
+                    if (!filas[fila]) {
+                        console.log('Creando viv de fila', fila );
+                        // Crear un contenedor de fila si no existe
+                        filas[fila] = document.createElement('div');
+                        filas[fila].className = 'modal_row';
+                        filas[fila].style.display = 'flex'; // Alinear los botones en fila
+                        filas[fila].style.gap = '10px'; // Separación entre botones
+                        modalDiv.appendChild(filas[fila]);
+                    }
+                    
+                    // Crear el botón
+                    const button = document.createElement('button');
+                    button.innerHTML = comandoConfig.texto;
+                    button.className = 'boton-normal';
+                    button.style.margin = '5px';
+                    
+                    if (comandoConfig.requiereClave) {
+                        button.classList.add('boton-con-clave');
+                    }
+
+                    // Evento para enviar el comando MQTT
+                    button.addEventListener('click', () => {
+                        if (comandoConfig.requiereClave) {
+                            const clave = sessionStorage.getItem('userClave');
+                            if (!clave) {
+                                solicitarClave().then((userClave) => {
+                                    sessionStorage.setItem('userClave', userClave);
+                                    enviarComandoMQTT(comandoConfig, userClave);
+                                }).catch(() => {
+                                    alert('Clave incorrecta o cancelada');
+                                });
+                            } else {
+                                enviarComandoMQTT(comandoConfig, clave);
+                            }
+                        } else {
+                            enviarComandoMQTT(comandoConfig);
+                        }
+                    });
+
+                    // Añadir el botón a la fila correspondiente
+                    filas[fila].appendChild(button);
+                });
+            }
+
+            Object.keys(blockConfig.elements).forEach(elementId => {
+                const elementConfig = blockConfig.elements[elementId];
+                if (elementConfig.visualizacion != 'nunca') {
+                    const elementDiv = document.createElement('div');
+                    elementDiv.id = `M-${blockId}-${elementId}`;
+                    
+                    let value = elementConfig.value;
+                    
+                    if (typeof value === 'number') {
+                        value = value.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+                    }   
+                    
+                    let salida =  `<span style="color: red">${elementId}:</span> <span style="color: black">${value} ${elementConfig.unit}</span>`;
+                    
+                    elementDiv.innerHTML = salida;
+                    
+                    modalDiv.appendChild(elementDiv);
+                }
+            });
+
+            const offset = 10; // Desplazamiento a la derecha
+            const modalHeight = modalDiv.offsetHeight; // Obtener la altura del modal
+            const modalWidth = modalDiv.offsetWidth;
+            
+            console.log('modalHeight:', modalHeight );
+            console.log('scrollY:', window.scrollY );
+
+            // Posicionar el modal a la derecha del bloque y a la misma altura
+            const topPosition = rect.top + window.scrollY;
+            const leftPosition = rect.left + window.scrollX + blockDiv.offsetWidth + offset;
+
+            // Ajustar la posición teniendo en cuenta el `transform: translate(-50%, -50%)`
+            modalDiv.style.top = `${topPosition + modalHeight / 2 + 50}px`;
+            modalDiv.style.left = `${leftPosition - modalWidth / 2}px`;
+            
+            // Registrar la ventana modal activa
+            activeModals[blockId] = {
+                modalContainer: modalDiv,
+                blockConfig: blockConfig
+            };
+
+            // Hacer la ventana modal arrastrable
+            makeDraggable(modalDiv);
+
+            fetchAndUpdateData();
+        }
+
+        function updateModalValues(data) {
+            const d_ = Object.assign({}, data);
+            
+            //console.log('d_ en updateModal', d_);
+            
+            const now = new Date(); // Hora actual
+            Object.keys(activeModals).forEach(blockId => {
+                const modal = activeModals[blockId];
+                const blockConfig = modal.blockConfig;
+                
+                //console.log('Moda_blockId', blockId);
+                
+                // Avisos de bloque
+                if (blockConfig.avisos) {
+                    //console.log('Avisos Bloque',blockId, blockConfig.avisos);
+                    
+                    const elementDiv = document.getElementById(`MA-${blockId}`);
+                    
+                    let salida ='';
+                    Object.keys(blockConfig.avisos).forEach(key => {
+                    
+                        const aviso = blockConfig.avisos[key];
+                        
+                        const condicion = new Function( 'd_', 'now',  `return ${aviso.condicion};`);
+                        //console.log('Condicion', aviso);
+                        //console.log(condicion(data, now));
+                        
+                        if (condicion(data, now)) {
+                            salida += `<br><span style="color: brown">&emsp;- AVISO BLOQUE ${key}- </span>`;
+                            salida += `<span style="color: blue">${aviso.condicion}</span>`;
+                        }
+                    });
+                    if (salida != '') salida += `<br><span style="color: black">===============</span><br>`;
+                    
+                    elementDiv.innerHTML = salida;
+                }
+                
+                Object.keys(blockConfig.elements).forEach(elementId => {
+                    const elementConfig = blockConfig.elements[elementId];
+                    if (elementConfig.visualizacion != 'nunca') {
+                                                
+                        let value = null;
+                        if (elementConfig.sensor) value =  eval(elementConfig.sensor);
+                        else if (elementConfig.campoBD) value =  getValueFromData(data, elementConfig.campoBD);
+                        
+                        //console.log('elementId:',elementId,' - value', value);
+                            
+                        const elementDiv = document.getElementById(`M-${blockId}-${elementId}`);
+                        if (elementDiv && value != null) {
+                            if (!elementConfig.unit) elementConfig.unit = '';
+                            
+                            let value_adap = value; 
+                            if (typeof value === 'number') {
+                                    value_adap = value.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+                            }       
+                                
+                            let salida =  `<span style="color: red">${elementId}:</span> <span style="color: black">${value_adap} ${elementConfig.unit}</span>`;
+                                
+                            // Verificar avisos y mostrar condicion de aviso
+                            if (elementConfig.avisos) {
+                                const blockDiv = document.getElementById(blockId);
+                                
+                                Object.keys(elementConfig.avisos).forEach(key => {
+                                    const aviso = elementConfig.avisos[key];
+                                    const condicion = new Function('value', 'd_', 'now',  `return ${aviso.condicion};`);
+                                    
+                                    if (condicion(value, data, now)) {
+                                        salida += `<br><span style="color: magenta">&emsp;${key}-> </span>`;
+                                        salida += `<span style="color: blue">${aviso.condicion}</span>`;    
+                                    }
+                                });
+                            }
+                    
+                            elementDiv.innerHTML = salida;
+                            
+                        }
+                        
+                    }
+                
+                });
+            });
+        }
+ 
+        function solicitarClave() {
+            return new Promise((resolve, reject) => {
+                const claveIngresada = prompt('Por favor, introduce la clave:');
+                if (claveIngresada === config.MQTT.clave_web) {  // Compara con la clave_web del archivo de configuración
+                    resolve(claveIngresada);
+                } else {
+                    reject('Clave incorrecta');
+                }
+            });
+        }
+
+        let mensajeHistorial = ''; // Variable global para acumular el historial de mensajes
+        let modalDiv; // Variable para la modal
+        
+        // Crear la modal una sola vez
+        function crearModalWeb() {
+            modalDiv = document.createElement('div');
+            modalDiv.className = 'modal-web';
+            document.body.appendChild(modalDiv);
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'modal-header-web';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'modal-title-web';
+
+            const closeButton = document.createElement('div');
+            closeButton.innerHTML = `&nbsp;X&nbsp;`;
+            closeButton.className = 'modal-close-web';
+            closeButton.style.cursor = 'pointer';
+
+            closeButton.addEventListener('click', () => {
+                modalDiv.style.display = 'none'; // Ocultar la modal en lugar de eliminarla
+            });
+
+            // Añadir evento para cerrar con doble clic en cualquier parte del modal
+            modalDiv.addEventListener('dblclick', () => {
+                modalDiv.style.display = 'none';
+            });
+
+            headerDiv.appendChild(titleSpan);
+            headerDiv.appendChild(closeButton);
+            modalDiv.appendChild(headerDiv);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'modal-content-web'; // Clase CSS para contenido
+            modalDiv.appendChild(contentDiv);
+
+            // Botón para borrar el texto
+            const clearButton = document.createElement('button');
+            clearButton.innerHTML = "Borrar texto";
+            clearButton.className = 'modal-clear-btn-web';
+            
+            
+            clearButton.onclick = () => {
+                mensajeHistorial = ""; // Borrar el historial
+                contentDiv.innerHTML = ""; // Borrar el contenido
+            };
+
+            modalDiv.appendChild(clearButton);
+            modalDiv.style.display = 'none'; // Inicialmente ocultar la modal
+            
+            // Hacer la ventana modal arrastrable
+            makeDraggable(modalDiv);
+        }
+
+        // Función para mostrar la ventana modal "modal-web"
+        function mostrarModalWeb(titulo, contenido, tiempo = null) {
+            const header = modalDiv.querySelector('.modal-title-web');
+            const contentDiv = modalDiv.querySelector('.modal-content-web');
+
+            header.innerHTML = `&nbsp;${titulo}&nbsp;`;
+            mensajeHistorial = `${contenido}<br>`;
+            
+            // Limitar el historial a 3000 caracteres
+            // (mensajeHistorial.length > 3000) {
+                //nsajeHistorial = mensajeHistorial.substring(mensajeHistorial.length - 3000); // Mantener los últimos 3000 caracteres
+            //
+
+            contentDiv.innerHTML = mensajeHistorial; // Mostrar todo el historial de mensajes
+
+            modalDiv.style.display = 'block'; // Mostrar la modal
+
+            // Si se especifica un tiempo, cerrar automáticamente después de 10 segundos
+            if (tiempo) {
+                setTimeout(() => {
+                    modalDiv.style.display = 'none'; // Ocultar la modal
+                }, tiempo);
+            }
+
+            // Desplazar hacia abajo el contenido para mostrar los últimos mensajes
+            contentDiv.scrollTop = contentDiv.scrollHeight;
+        }
+        
+        function enviarComandoMQTT(comandoConfig, clave = null) {
+            if (!mqttClient || !mqttClient.isConnected()) {
+                console.error('MQTT no está conectado');
+                mostrarModalWeb("Error de conexión", "No se pudo conectar con el broker MQTT.");
+                return;
+            }
+
+            const topic = comandoConfig.topic;
+            const comando = comandoConfig.comando;
+
+            const message = new Paho.MQTT.Message(comando);
+            message.destinationName = topic;
+            mqttClient.send(message);
+            
+            // Mostrar información en la ventana modal
+            const fechaHora = new Date().toLocaleString(); // Obtener fecha y hora actual
+            const infoMensaje = `Fecha y Hora: ${fechaHora}<br>Topic: ${topic}<br>Payload: ${comando}`;
+            mostrarModalWeb("Comando MQTT enviado", infoMensaje, 10000);
+
+            console.log(`MQTT enviado: ${comando} al topic: ${topic}`);
+        }
+
+        let mqttClient;
+        let isConnected = false;
+
+        function initMQTT() {
+            try {
+                console.log('Inicio conexion MQTT....');
+                if (!config.MQTT) {
+                    console.log('No esta configurado MQTT');
+                    return;
+                }
+                const {servidor, puerto, usuario, clave} = config.MQTT;
+                
+                console.log('servidor: ',servidor);
+                
+                // Verificar si alguna propiedad no está definida o es nula
+                if (!servidor || !puerto || !usuario || !clave) {
+                    console.error('Error: Uno o más campos de la configuración MQTT no están definidos. -- MQTT no se usará');
+                    return; // Salir de la función si falta algún valor
+                }
+
+
+                // chequear de que servidor es un objeto con varias IPs o una unica IP
+                const servidores = typeof servidor === 'object' ? Object.values(servidor) : [servidor];
+
+                console.log('servidores: ',servidores);
+                
+
+                // Función auxiliar para intentar la conexión
+                function intentarConexion(index) {
+                    if (index >= servidores.length) {
+                        console.error('Error: No se pudo establecer conexión con ninguno de los servidores MQTT');
+                        return;
+                    }
+
+                    const servidorActivo = servidores[index];
+                    console.log('Activo: ',servidorActivo);
+                
+                    const clienteUnicoId = "clientId_" + new Date().getTime();
+                    mqttClient = new Paho.MQTT.Client(servidorActivo, Number(puerto), '/mqtt', clienteUnicoId);
+
+                    const options = {
+                        userName: usuario,
+                        password: clave,
+                        onSuccess: () => {
+                            onConnect();
+                            mqttClient.onConnectionLost = onFailure;  // Reasigna onFailure para futuras pérdidas de conexión
+                            
+                            // Actualizar el estado del botón
+                            updateButtonState();
+                            checkMQTTConnection();
+                        
+                        },
+                        onFailure: () => {
+                            console.warn(`Fallo en la conexión a ${servidorActivo}, intentando siguiente...`);
+                            intentarConexion(index + 1); // Intentar con el siguiente servidor
+                        }
+                    };
+
+                    console.log(`Intentando conectar a ${servidorActivo}...`);
+                    mqttClient.connect(options);
+                }
+
+                // Iniciar el proceso de conexión
+                intentarConexion(0);
+                
+                mqttClient.onMessageArrived = function (message) {
+                    console.log("MQTT recibido:", message.payloadString);
+                    const fechaHora = new Date().toLocaleString(); // Obtener fecha y hora actual
+                    const infoMensaje = `Fecha y Hora: ${fechaHora}<br>Topic: ${message.destinationName}<br>Payload: ${message.payloadString}`;
+
+                    // Acumular mensajes en el historial
+                    mensajeHistorial += `${infoMensaje}<br>`;
+                    // Limitar el historial a 3000 caracteres
+                    if (mensajeHistorial.length > 3000) {
+                        mensajeHistorial = mensajeHistorial.substring(mensajeHistorial.length - 3000); // Mantener los últimos 3000 caracteres
+                    }
+
+                    // Mostrar el historial en la ventana modal
+                    mostrarModalWeb("Mensajes recibidos", mensajeHistorial, null); // No ocultar automáticamente
+                };
+            
+                console.log('..... Fin initMQTT()');
+                
+            } catch (error) {
+                // Capturar cualquier error y mostrarlo en la consola
+                console.error("Error en la inicialización de MQTT:", error.message);
+                return; // Salir de la función en caso de error
+            }
+        }
+
+        function onConnect() {
+            console.log("Conectado a MQTT");
+            isConnected = true;
+            updateButtonState(); // Cambia el estado del botón a verde
+            
+            mqttClient.subscribe('PVControl/WEB', (err) => {
+                if (err) {
+                    mostrarModalWeb("Error de suscripción", "No se pudo suscribir al topic PVControl/WEB.");
+                }
+            });
+        }
+
+        function onFailure(error) {
+            console.error("Error al conectar a MQTT:", error);
+            isConnected = false;
+            updateButtonState(); // Cambia el estado del botón a rojo       
+            mostrarModalWeb("Error de conexión", "No se pudo conectar al broker MQTT.", 10000);
+        }
+        
+        // Función que actualiza el color del botón MQTT
+        function updateButtonState() {
+            const connectBtn = document.getElementById("connectBtn");
+            if (isConnected) {
+                connectBtn.classList.remove("disconnected");
+                connectBtn.classList.add("connected");
+                connectBtn.innerHTML = "Conectado MQTT";
+            } else {
+                connectBtn.classList.remove("connected");
+                connectBtn.classList.add("disconnected");
+                connectBtn.innerHTML = "Reconectar MQTT";
+            }
+        }
+        
+        function checkMQTTConnection() {
+            // Verificar cada X segundos si el cliente sigue conectado
+            setInterval(function() {
+                if (mqttClient.isConnected()) {
+                    console.log("Conexión MQTT activa...");
+                    // Aquí se podría actualizar visualmente un botón o mostrar un mensaje
+                } else {
+                    console.log("Conexión MQTT perdida. Intentando reconectar...");
+                    // Intentar reconectar si no está conectado
+                    reconnectMQTT();
+                }
+            }, 20000);  // 20000 ms = 20 segundos
+        }
+
+        function reconnectMQTT() {
+            const options = {
+                userName: config.MQTT.usuario,
+                password: config.MQTT.clave,
+                onSuccess: onConnect,
+                onFailure: onFailure
+            };
+
+            if (!mqttClient.isConnected()) {
+                mqttClient.connect(options);
+            }
+        }
+
+
+    </script>
+
+</head>
+
+<body>
+     
+    <div class="navbar" id="navbar">
+        <img src="/img/fvcontrol.png" alt="PVControl+" style="width:200px;height:60px;" />
+        <a href="javascript:void(0);" class="menu-icon" onclick="toggleMenu()">&#9776;</a>
+        <div class="menu-items" id="menuItems"></div>
+    </div>
+
+    
+    <div id="grafico">
+        <div id="mqtt-notification" style="display: none; position: fixed; top: 500px; left: 10%; transform: translateX(-50%); background-color: #333; color: white; padding: 10px; border-radius: 5px; z-index: 1000;"></div>
+
+        <div id="izquierdo" class="sideBlock"></div>
+        <div id="central">
+            <svg id="svgLines"></svg>
+        </div>
+        <div id="derecho" class="sideBlock"></div>
+    </div>
+    
+    
+</body>
+</html>

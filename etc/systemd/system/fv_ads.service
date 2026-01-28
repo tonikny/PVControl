@@ -3,8 +3,11 @@ Description=FV lectura ADS
 After=mysql.service
 
 [Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
 ExecStartPre=/bin/sleep 1
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_ads.py
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_ads.py
 Restart=always
 RestartSec=60
 

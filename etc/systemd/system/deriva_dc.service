@@ -1,0 +1,16 @@
+[Unit]
+Description= PVControl+ - Derivacion de excedentes desde placas
+After=mysql.service
+
+[Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/deriva_dc.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+

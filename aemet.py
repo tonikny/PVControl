@@ -1,29 +1,42 @@
-#####  EJECUCION .... python3 aemet.py <opciones>
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# Versión 2023-02-18
+
+#####  EJECUCION .... 
+  # OPCION 1 como programa solo................................. python3 aemet.py <opciones>
+  # OPCION 2 con Parametros definidos en Parametros_FV.py .....  python3 aemet.py
 
 ###### OPCIONES DE USO
-# -localidad_XXXXX   se debe incuir el id de localidad de Aemet para el municipio  (  ejemplos 28147:Titulcia, 14021:Cordoba,....)
+# -localidad_XXXXX   se debe incluir el id de localidad de Aemet para el municipio  (  ejemplos 28147:Titulcia, 14021:Cordoba,....)
 # -l  lluvia
 # -t  temperatura
 # -c  cielo
+# -f  guarda el historico de previsiones en un fichero de texto (aemet_log_personal.txt)
 
 ##### EJEMPLOS
 ##  python3 /home/pi/PVControl+/aemet.py -localidad_14021 -c      Descarga la prevision de cielo para Cordoba
 ##  python3 /home/pi/PVControl+/aemet.py -localidad_14021 -c -t   Descarga la prevision de cielo  y temperatura para Cordoba
 
+
 import requests,sys,time,MySQLdb,json,subprocess
+from Parametros_FV_DIST import *
 from Parametros_FV import *
+
+#print(len(sys.argv),sys.argv)
+#if usar_aemet == 0 and len(sys.argv)<3: sys.exit()
 
 try:
     import xmltodict
 except:
-    res = subprocess.run('sudo pip3 install xmltodict' , shell=True)
+    res = subprocess.run('pip3 install xmltodict' , shell=True)
     if res.returncode == 0:
         import xmltodict
     else:
         print ('Error en instalacion libreria xmltodict')
         sys.exit()
         
-sel = ''
+sel = variables
 DEBUG = False
 if '-l' in sys.argv: sel += 'l' 
 if '-t' in sys.argv: sel += 't'
@@ -33,9 +46,10 @@ if '-p' in sys.argv: DEBUG= True
 for i in sys.argv:
     if '-localidad_' in i[:11]:
         print(sel,i[11:])
+        localidad = i[11:]
         break
 
-URL = f"https://www.aemet.es/xml/municipios/localidad_{i[11:]}.xml"
+URL = f"https://www.aemet.es/xml/municipios/localidad_{localidad}.xml"
 
 response = requests.get(URL)
 
@@ -68,13 +82,16 @@ for k in dp['dia']:
             except:
                 d[dia]['temperatura']['maxima'] = d[dia]['temperatura']['minima'] = 0.01
             
-            for k1 in k['temperatura']['dato']:
-                try:
-                    if DEBUG: print (k1,k1['@hora'],k1['#text'])
-                    d[dia]['temperatura'][k1['@hora']] = float(k1['#text'])
-                except:
-                    d[dia]['temperatura'][k1['@hora']] = 0.01
-                    
+            try:
+                for k1 in k['temperatura']['dato']:
+                    try:
+                        if DEBUG: print (k1,k1['@hora'],k1['#text'])
+                        d[dia]['temperatura'][k1['@hora']] = float(k1['#text'])
+                    except:
+                        d[dia]['temperatura'][k1['@hora']] = 0.01
+            except:
+                pass
+                
         if 'l' in sel:
             d[dia]['lluvia'] = {}
             if DEBUG: print (dia,'lluvia:',k['prob_precipitacion'])
@@ -87,7 +104,42 @@ for k in dp['dia']:
             
         if DEBUG: print('-' *80)
 
-print (f'd= {d}')
+# Calculo de estimacion de Kwh en funcion de prevision cielo
+
+for dia in (0,1): #Estimacion para hoy y mañana
+    Est_dia = 0
+    d[dia]['Kwh']={}
+    try:
+        for t in ('06-12','12-18','18-24'):
+            try:
+                prevision = d[dia]['cielo'][t]
+                if prevision == '' : prevision = 'Sin prevision'
+            except:
+                prevision = 'Sin prevision'
+                
+            if DEBUG: print(t, prevision,end='....')
+            
+            for e in Cielo_Kwh.keys():
+                try:
+                     if e in prevision:
+                         try:
+                             d[dia]['Kwh'][t] = Cielo_Kwh[e][t]
+                             Est_dia += Cielo_Kwh[e][t]
+                             if DEBUG: print (f'añado {Cielo_Kwh[e][t]} Kwh  Subtotal= ',end='')
+                         except:
+                             d[dia]['Kwh'][t] = 0
+                except:
+                    print ('ERROR')
+                
+            if DEBUG: print(f'dia= {dia} -- Estimacion ={Est_dia} Kwh')
+
+    except:
+        Est_dia = -1
+
+    d[dia]['Kwh']['dia']=  Est_dia
+
+
+if DEBUG: print (f'd= {d}')
 
 # Comprobacion que la tabla en BD tiene los campos necesarios
 try:
@@ -101,7 +153,7 @@ try:
     except:
         pass
 except:
-    print (Fore.RED,'ERROR inicializando BD')
+    print ('ERROR inicializando BD')
     sys.exit()
 
 ####  ARCHIVOS RAM en BD ############ 
@@ -118,3 +170,7 @@ except:
 cursor.close()
 db.close()
 
+
+if 'f' in sel:
+    with open("/home/pi/PVControl+/aemet_log_personal.txt","a") as file:
+        file.write(f" {tiempo} - {salida}\n")

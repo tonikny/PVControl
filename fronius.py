@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 #
-#Version 30/Oct/22
+#Version 29/Sep/24
 #
+# #################### Control Ejecucion Servicio ########################################
+equipo = 'fronius'
+servicio = 'fronius'
+control = 'sum(usar_fronius)'
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
+# ########################################################################################
 
 import requests
 from requests.exceptions import HTTPError
@@ -11,15 +17,9 @@ import subprocess, sys
 import MySQLdb 
 import multiprocessing
 
-from Parametros_FV import *
-
 DEBUG = False
 #Comprobacion argumentos en comando
 if '-p' in sys.argv: DEBUG = True # para test .... realiza print en distintos sitios
-
-if sum (usar_fronius) == 0:
-    print (subprocess.getoutput('sudo systemctl stop fronius'))
-    sys.exit()
 
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
@@ -55,20 +55,22 @@ def equipo_lectura (indice):  # como entrada solo el indice del Fronius de las l
                 response = requests.get(self.cmd_meter)
                 meter = json.loads(response.content)
                 Meter_location = str(meter['Body']['Data']['Site']['Meter_Location']) # respuestas posibles "load", "grid", "unknown"
-                Wred = round((-1)*float((meter['Body']['Data']['Site']['P_Grid'])),2)
-                Consumo = round((-1)*float((meter['Body']['Data']['Site']['P_Load'])),2)
+                Wred = round((-1)*float((meter['Body']['Data']['Site']['P_Grid'])),1)
+                Consumo = round((-1)*float((meter['Body']['Data']['Site']['P_Load'])),1)
+                Wh_dia = float((meter['Body']['Data']['Site']['E_Day']))
                 if Meter_location == "load":    
                     Wred = Consumo
                 try:
-                    Wplaca = round(float((meter['Body']['Data']['Site']['P_PV'])),2)
+                    Wplaca = round(float((meter['Body']['Data']['Site']['P_PV'])),1) #null por la noche
                 except:
                     Wplaca = 0
-                if DEBUG: print(Fore.GREEN+f'/ METER: Wred={Wred:>6.1f}-Consumo={Consumo:>6.1f}-Wplaca={Wplaca:>6.1f}-Meter_loc={Meter_location}')
+                if DEBUG: print(Fore.GREEN+f'/ METER: Wred={Wred:>6.1f}-Consumo={Consumo:>6.1f}-Wplaca={Wplaca:>6.1f}-Meter_loc={Meter_location}-Wh_dia={Wh_dia:>6.1f}')
                 
                 self.dct['Wred'] = Wred
                 self.dct['Consumo'] = Consumo
                 self.dct['Wplaca'] = Wplaca
                 self.dct['Meter_location'] = Meter_location 
+                self.dct['Wh_dia'] = Wh_dia
                 return self.dct
                 
             except:
@@ -90,15 +92,26 @@ def equipo_lectura (indice):  # como entrada solo el indice del Fronius de las l
                     
                 
                 ee=30
-                Vred = round(float((inverter['Body']['Data']['UAC']['Value'])),2)
+                try:
+                    Vred = round(float((inverter['Body']['Data']['UAC']['Value'])),2) # desaparece el dato denoche
+                except:
+                    Vred=230
                 ee=40
-                Ired = round(float((inverter['Body']['Data']['IAC']['Value'])),2)
+                try:
+                    Ired = round(float((inverter['Body']['Data']['IAC']['Value'])),2) # desaparece
+                except:
+                    Ired=0
                 ee=50
-                Vplaca = round(float((inverter['Body']['Data']['UDC']['Value'])),2)
+                try:
+                    Vplaca = round(float((inverter['Body']['Data']['UDC']['Value'])),1)
+                except:
+                    Vplaca=0
                 ee=60
-                Fred = round(float((inverter['Body']['Data']['FAC']['Value'])),2)    
-                #EFF = Pout(AC)/Pin(DC) * 100
-                #Pin = Vi * Ii
+                try:
+                    Fred = round(float((inverter['Body']['Data']['FAC']['Value'])),2)  # desaparece   
+                except:
+                    Fred=0
+                
                 ee=70
                 if Vplaca == None: Vplaca=0
                 Pin = Vplaca * float((inverter['Body']['Data']['IDC']['Value']))
@@ -106,22 +119,23 @@ def equipo_lectura (indice):  # como entrada solo el indice del Fronius de las l
                     EFF = round(((float((inverter['Body']['Data']['PAC']['Value'])) / Pin) * 100),2)
                 except:
                     EFF=100
-                    pass
                 ee=80
                 
                 self.dct['Vred'] = Vred
                 self.dct['Ired'] = Ired
                 self.dct['Vplaca'] = Vplaca
                 self.dct['EFF'] = EFF
-                self.dct['Fred'] = Fred 
+                self.dct['Fred'] = Fred
+                
                 
             except:
                 
                 if DEBUG: print(Fore.RED+f'Error lectura inverter{indice} - {ee}')
                 self.dct['Vred'] = Vred = 230
+                self.dct['Ired'] = 0
                 self.dct['Vplaca'] = Vplaca = 0
                 self.dct['EFF'] = EFF = 100
-                self.dct['Fred'] = Fred = 0  
+                self.dct['Fred'] = Fred = 0
                 
             if DEBUG:
                     print(Fore.CYAN+time.strftime("%Y-%m-%d %H:%M:%S")+f': INV{indice}: Vred={Vred:>5.1f}-Vplaca={Vplaca:>5.1f}-Fred={Fred:>5.1f}', end='') 

@@ -7,7 +7,13 @@ import time, glob, sys, subprocess
 import MySQLdb
 
 # Librerias y Parametros PVControl+
-from Parametros_FV import *
+basepath = '/home/pi/PVControl+/'
+parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
+parametros_FV_DIST = "/home/pi/PVControl+/Parametros_FV_DIST.py"
+
+exec(open(parametros_FV_DIST).read(),globals()) #cargo Parametros_FV_DIST.py por si hay variables no definidas en Parametros_FV.py
+exec(open(parametros_FV).read(),globals()) #cargo Parametros_FV.py
+
 import json
 
 #Comprobacion argumentos en comando de fv.py
@@ -83,7 +89,7 @@ while True:
         cursor.close()
         db.close()
         
-        
-        time.sleep(10)
     except:
         print ('Error grabacion BD tabla equipos')
+
+    time.sleep(10)

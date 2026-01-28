@@ -7,10 +7,10 @@ include ("cabecera.inc");
 <script src="https://code.jquery.com/jquery.js"></script>
 
 <script src="https://code.highcharts.com/highcharts.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
 <script src="https://code.highcharts.com/highcharts-3d.js"></script>
 
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
 <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
 
 <div class="divTable" style="color:black; width: 10%; height: 350px; margin-left: 1%; margin-right:2%;margin-top: -1%; margin-bottom: 0%; float: left">

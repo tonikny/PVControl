@@ -2,9 +2,13 @@
 $titulo="Historico 1 Dia";
 include ("cabecera.inc");
 
+
+
+// Conexión a la base de datos
 require('conexion.php');
 
-//Coger datos grafica historico general
+// Consulta SQL para capturar los datos de 3 día
+
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Vplaca, PWM, Wplaca,Vred, Wred, Temp,
           Wplaca - Vbat*Ibat - Wred as Wconsumo,
           Wh_placa/1000 as Kwh_placa, (Whp_bat-Whn_bat)/1000 as Kwh_bat,(Whp_red-Whn_red)/1000 as Kwh_red,
@@ -13,59 +17,305 @@ $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, V
         FROM datos WHERE Tiempo >= (NOW()- INTERVAL 25 HOUR)
         ORDER BY Tiempo";
 
-if($result = mysqli_query($link, $sql)){
 
-  $i=0;
-  while($row = mysqli_fetch_assoc($result)) {
-        //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
-        $rawdata[$i] = $row;
-        $i++;
-  }
+$result = $link->query($sql);
 
-} else{
+// Preparar arrays para los datos
+$campos = ['Tiempo', 'SOC', 'Ibat', 'Iplaca', 'Vbat', 'Vplaca', 'PWM', 'Wplaca', 'Vred', 'Wred',
+           'Temp', 'Wconsumo', 'Kwh_placa', 'Kwh_bat', 'Kwh_red', 'Kwh_consumo', 'Modo', 'Aux1', 'Aux2'];
 
-        echo "ERROR: Could not able to execute $sql. " . mysqli_error($link);
+$d_ = array_fill_keys($campos, []); // Inicializa los arrays vacíos
+
+if ($result->num_rows > 0) {
+	
+    while ($row = $result->fetch_assoc()) {
+		foreach ($campos as $campo) {
+			if ($campo === 'Tiempo') {
+				$d_[$campo][] = (int)$row[$campo];
+			} elseif ($campo === 'Vplaca') {
+				$d_[$campo][] = (int)$row[$campo]; 
+			} elseif ($campo === 'Wplaca') {
+				$d_[$campo][] = (int)$row[$campo]; 	
+			} elseif ($campo === 'Wred') {
+				$d_[$campo][] = (int)$row[$campo]; 
+			} elseif ($campo === 'Vred') {
+				$d_[$campo][] = (int)$row[$campo]; 
+			} elseif ($campo === 'Wconsumo') {
+				$d_[$campo][] = (int)$row[$campo];
+			} elseif ($campo === 'Kwh_placa') {
+				$d_[$campo][] = round((float)$row[$campo], 1); 
+			} elseif ($campo === 'Kwh_bat') {
+				$d_[$campo][] = round((float)$row[$campo], 1); 
+			} elseif ($campo === 'Kwh_consumo') {
+				$d_[$campo][] = round((float)$row[$campo], 1); 
+			} elseif ($campo === 'Kwh_red') {
+				$d_[$campo][] = round((float)$row[$campo], 1); 
+			} 
+			else {
+				$d_[$campo][] = (float)$row[$campo];
+			}
+        }
+    }
+	// Mostrar los datos capturados
+    //echo '<pre>';
+    //print_r($d_);
+    //echo '</pre>';
+} else {
+    echo "0 resultados";
 }
-
-mysqli_close($link);
-
+$link->close();
 ?>
 
-
-<!-- Importo el archivo Javascript de Highcharts directamente desde la RPi 
-<script src="js/jquery.js"></script>
-<script src="js/stock/highstock.js"></script>
-<script src="js/highcharts-more.js"></script>
-
-<script src="js/themes/grid.js"></script>
--->
-
-
-<!-- Importo el archivo Javascript directamente desde la webr -->
-<!---->
-
-<script src="https://code.jquery.com/jquery.js"></script>
-<script src="http://code.highcharts.com/stock/highstock.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
-
-<script src="http://code.highcharts.com/themes/grid.js"></script>
-
-<!--
-<div id="container12" style="width: auto; height: 600px; margin-left: 5;margin-right:5"></div>
--->
-<div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
-
-<br>
-
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico 1 día</title>
+	
+	<script src="/Parametros_Web_DIST.js"></script>
+    <script src="/Parametros_Web.js"></script>
+	
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+	<script src="https://code.highcharts.com/themes/grid.js"></script>
+</head>
+<body>
+<div id="container" style="width:100%; height:500px; margin-left: 5; float: left"></div>
 
 <script>
-$(function () 
- {
+// Datos del servidor en formato JSON
+const campos = <?php echo json_encode($campos); ?>; // Aquí se pasan los nombres de los campos
+const d_ = <?php echo json_encode($d_); ?>; // Datos capturados
 
-  Highcharts.setOptions({
+
+// Crear las series dinámicamente con configuraciones personalizadas
+const series = [
+    {name: 'Ibat',
+      type: 'spline',
+      visible: Ibat_visible,
+      color: Highcharts.getOptions().colors[2],
+      tooltip: {
+        valueSuffix: ' A',
+        valueDecimals: 1,
+        },
+      data: d_['Ibat'].map((value, i) => [d_['Tiempo'][i], value]),
+    },
+    {name: 'Iplaca',
+      type: 'spline',
+      visible: Iplaca_visible,
+      color: Highcharts.getOptions().colors[3],
+      tooltip: {
+        valueSuffix: ' A',
+        valueDecimals: 1,
+        },
+      data: d_['Iplaca'].map((value, i) => [d_['Tiempo'][i], value]),
+    },
+    {name: 'Vbat',
+      type: 'spline',
+      visible: Vbat_visible,
+	  yAxis: 1,
+      color: Highcharts.getOptions().colors[0],
+      tooltip: {
+        valueSuffix: ' V',
+        valueDecimals: 2,
+        },
+      data: d_['Vbat'].map((value, i) => [d_['Tiempo'][i], value]),
+    },
+
+    {name: 'SOC',
+      type: 'spline',
+      visible: SOC_visible,
+      yAxis: 2,
+      color: Highcharts.getOptions().colors[1],
+      tooltip: {
+        valueSuffix: ' %',
+        valueDecimals: 2,
+        },
+     data: d_['SOC'].map((value, i) => [d_['Tiempo'][i], value]),
+      
+     },
+    {name: 'PWM',
+      type: 'spline',
+      visible: PWM_visible,
+      yAxis: 3,
+      color: Highcharts.getOptions().colors[5],
+      tooltip: {
+        valueSuffix: ' ',
+        valueDecimals: 0,
+        },
+      data: d_['PWM'].map((value, i) => [d_['Tiempo'][i], value]),
+        
+     },
+     {name: 'Vplaca',
+      type: 'spline',
+      visible: Vplaca_visible,
+      yAxis: 4,
+      color: '#632D2D', //Highcharts.getOptions().colors[20],
+      tooltip: {
+        valueSuffix: ' V',
+        valueDecimals: 0,
+        },
+      data: d_['Vplaca'].map((value, i) => [d_['Tiempo'][i], value]),
+     },   
+     {name: 'Wplaca',
+      type: 'spline',
+      visible: Wplaca_visible,
+      yAxis: 5,
+      color: '#E55FE5',
+      tooltip: {
+        valueSuffix: ' W',
+        valueDecimals: 0,
+        },
+      data: d_['Wplaca'].map((value, i) => [d_['Tiempo'][i], value]),
+      },     
+     {name: 'Wred',
+      type: 'spline',
+      visible: Wred_visible,
+      yAxis: 5,
+      color: '#D882C9',
+      tooltip: {
+        valueSuffix: ' W',
+        valueDecimals: 0,
+        },
+      data: d_['Wred'].map((value, i) => [d_['Tiempo'][i], value]),
+      },             
+     {name: 'Wconsumo',
+      type: 'spline',
+      visible: Wconsumo_visible,
+      yAxis: 5,
+      color: '#F39610',
+      tooltip: {
+        valueSuffix: ' W',
+        valueDecimals: 0,
+        },
+      data: d_['Wconsumo'].map((value, i) => [d_['Tiempo'][i], value]),
+      },         
+     
+     {name: 'Vred',
+      type: 'spline',
+      visible: Vred_visible,
+      yAxis: 6,
+      color: '#C55FE5',
+      tooltip: {
+        valueSuffix: ' V',
+        valueDecimals: 0,
+        },
+      data: d_['Vred'].map((value, i) => [d_['Tiempo'][i], value]),
+      },     
+
+     {name: 'Kwh_placa',
+      type: 'area',
+      visible: Kwh_placa_visible,
+      yAxis: 7,
+      fillOpacity: 0.2,
+      color: "#E55FE5",
+      tooltip: {
+        valueSuffix: ' Kwh',
+        valueDecimals: 1,
+        },
+      data: d_['Kwh_placa'].map((value, i) => [d_['Tiempo'][i], value]),
+     },     
+     {name: 'Kwh_bat',
+      type: 'area',
+      visible: Kwh_bat_visible,
+      yAxis: 8,
+      fillOpacity: 0.2,
+      color: "#7C75D7",
+      tooltip: {
+        valueSuffix: ' Kwh',
+        valueDecimals: 1,
+        },
+      data: d_['Kwh_bat'].map((value, i) => [d_['Tiempo'][i], value]),
+     },     
+     {name: 'Kwh_red',
+      type: 'area',
+      visible: Kwh_red_visible,
+      yAxis: 9,
+      fillOpacity: 0.2,
+      color: "#D882C9",
+      tooltip: {
+        valueSuffix: ' Kwh',
+        valueDecimals: 1,
+        },
+      data: d_['Kwh_red'].map((value, i) => [d_['Tiempo'][i], value]),
+      },
+     {name: 'Kwh_consumo',
+      type: 'area',
+      visible: Kwh_consumo_visible,
+      yAxis: 10,
+      fillOpacity: 0.2,
+      color: "#F39610",
+      tooltip: {
+        valueSuffix: ' Kwh',
+        valueDecimals: 1,
+        },
+      data: d_['Kwh_consumo'].map((value, i) => [d_['Tiempo'][i], value]),
+      },
+  
+     {name: 'Temp',
+      type: 'spline',
+      visible: Temp_visible,
+      yAxis: 11,
+      color: 'black',
+      tooltip: {
+        valueSuffix: ' ºC',
+        valueDecimals: 1,
+        },
+      data: d_['Temp'].map((value, i) => [d_['Tiempo'][i], value]),
+      },
+     
+     {name: 'Modo',
+      type: 'spline',
+      visible: Modo_visible,
+      yAxis: 12,
+      color: '#1604FA',
+      tooltip: {
+        valueSuffix: ' ',
+        valueDecimals: 0,
+        },
+      data: d_['Modo'].map((value, i) => [d_['Tiempo'][i], value]),
+      },
+       
+     {name: Nombre_Aux1,
+      type: 'spline',
+      visible: Aux1_visible,
+      yAxis: 13,
+      color: Highcharts.getOptions().colors[6],
+      tooltip: {
+        valueSuffix: Unidades_Aux1,
+        valueDecimals: 2,
+        },
+      data: d_['Aux1'].map((value, i) => [d_['Tiempo'][i], value]),
+      },     
+     {name: Nombre_Aux2,
+      type: 'spline',
+      visible: Aux2_visible,
+      yAxis: 14,
+      color: Highcharts.getOptions().colors[8],
+      tooltip: {
+        valueSuffix: Unidades_Aux2,
+        valueDecimals: 2,
+        },
+      data: d_['Aux2'].map((value, i) => [d_['Tiempo'][i], value]),
+      },
+          
+
+	 
+	 
+];
+
+// Crear el gráfico
+
+ Highcharts.setOptions({
     global: {
       useUTC: false
       },
+      
+    time: {
+        timezone: zona_horaria
+    },
+
     lang: {
       months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
       weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
@@ -77,24 +327,19 @@ $(function ()
       }
     });
 
-  var char = new Highcharts.StockChart ({
-    chart: {
-      renderTo: 'container12',
+Highcharts.stockChart('container', {
+	
+	chart: {
       zoomType: 'xy',
       alignTicks: false,
       panning: true,
       panKey: 'shift'
       },
-    //title: {
-    //  text: 'Grafica Diaria -- 1 DIA'
-    //  },
-    //subtitle: {
-    //  text: 'Permite Zoom XY'
-    //  },
-    credits: {
+	
+	credits: {
       enabled: false
       },
-    yAxis: [
+        yAxis: [
      {// ########## 0 - Valores eje Intensidad ######################
       visible: Eje_Intensidad,
       opposite: false,
@@ -158,6 +403,7 @@ $(function ()
         color: 'red',
         dashStyle: 'shortdash',
         label: {
+          y: 12,
           text: 'Vflot'
           }
        }]
@@ -411,7 +657,7 @@ $(function ()
       title: {
         align: 'high',
         offset: 0,
-        text: Nombre_Aux1, 
+        text: Nombre_Aux1,
         rotation: 0,
         y: -5
         },
@@ -436,6 +682,7 @@ $(function ()
       },
       
      ],
+
     xAxis: {
       dateTimeLabelFormats: { day: '%e %b' },
       type: 'datetime'
@@ -446,16 +693,16 @@ $(function ()
     rangeSelector: {
       buttons: [{
         type: 'hour',
-        count: 6,
-        text: '6h'
-       }, {
-        type: 'hour',
         count: 12,
         text: '12h'
        }, {
         type: 'day',
         count: 1,
         text: '1día'
+       }, {
+        type: 'day',
+        count: 2,
+        text: '2días'
        }, {
         type: 'all',
         text: 'Todo'
@@ -473,363 +720,14 @@ $(function ()
     navigator: {
       enabled: true // false
       },
-    series: [
-     {name: 'Ibat',
-      type: 'spline',
-      visible: Ibat_visible,
-      color: Highcharts.getOptions().colors[2],
-      tooltip: {
-        valueSuffix: ' A',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Ibat"];?>]);
-            <?php } ?>
-          return data;
-        })()
-     },
-     {name: 'Iplaca',
-      type: 'spline',
-      visible: Iplaca_visible,
-      color: Highcharts.getOptions().colors[3],
-      tooltip: {
-        valueSuffix: ' A',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Iplaca"];?>]);
-            <?php } ?>
-          return data;
-        })()
-     },
-     {name: 'Vbat',
-      type: 'spline',
-      visible: Vbat_visible,
-      yAxis: 1,
-      color: Highcharts.getOptions().colors[0],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-            data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vbat"];?>]);
-            <?php } ?>
-          return data;
-        })()
-     },
-     {name: 'SOC',
-      type: 'spline',
-      visible: SOC_visible,
-      yAxis: 2,
-      color: Highcharts.getOptions().colors[1],
-      tooltip: {
-        valueSuffix: ' %',
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-          for($i = 0 ;$i<count($rawdata);$i++){
-            ?>
-              data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["SOC"];?>]);
-              <?php } ?>
-            return data;
-        })()
-     },
-     {name: 'PWM',
-      type: 'spline',
-      visible: PWM_visible,
-      yAxis: 3,
-      color: Highcharts.getOptions().colors[5],
-      tooltip: {
-        valueSuffix: ' ',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["PWM"];?>]);
-          <?php } ?>
-        return data;
-        })()  
-        
-     },
-     {name: 'Vplaca',
-      type: 'spline',
-      visible: Vplaca_visible,
-      yAxis: 4,
-      color: '#632D2D', //Highcharts.getOptions().colors[20],
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vplaca"];?>]);
-          <?php } ?>
-        return data;
-        })()
-     },   
-     {name: 'Wplaca',
-      type: 'spline',
-      visible: Wplaca_visible,
-      yAxis: 5,
-      color: '#E55FE5',
-      tooltip: {
-        valueSuffix: ' W',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Wplaca"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },     
-     {name: 'Wred',
-      type: 'spline',
-      visible: Wred_visible,
-      yAxis: 5,
-      color: '#D882C9',
-      tooltip: {
-        valueSuffix: ' W',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Wred"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },             
-     {name: 'Wconsumo',
-      type: 'spline',
-      visible: Wconsumo_visible,
-      yAxis: 5,
-      color: '#F39610',
-      tooltip: {
-        valueSuffix: ' W',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Wconsumo"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },         
-     
-     {name: 'Vred',
-      type: 'spline',
-      visible: Vred_visible,
-      yAxis: 6,
-      color: '#C55FE5',
-      tooltip: {
-        valueSuffix: ' V',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Vred"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },     
 
-     {name: 'Kwh_placa',
-      type: 'area',
-      visible: Kwh_placa_visible,
-      yAxis: 7,
-      fillOpacity: 0.2,
-      color: "#E55FE5",
-      tooltip: {
-        valueSuffix: ' Kwh',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Kwh_placa"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },     
-     {name: 'Kwh_bat',
-      type: 'area',
-      visible: Kwh_bat_visible,
-      yAxis: 8,
-      fillOpacity: 0.2,
-      color: "#7C75D7",
-      tooltip: {
-        valueSuffix: ' Kwh',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Kwh_bat"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },     
-     {name: 'Kwh_red',
-      type: 'area',
-      visible: Kwh_red_visible,
-      yAxis: 9,
-      fillOpacity: 0.2,
-      color: "#D882C9",
-      tooltip: {
-        valueSuffix: ' Kwh',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Kwh_red"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },
-     {name: 'Kwh_consumo',
-      type: 'area',
-      visible: Kwh_consumo_visible,
-      yAxis: 10,
-      fillOpacity: 0.2,
-      color: "#F39610",
-      tooltip: {
-        valueSuffix: ' Kwh',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Kwh_consumo"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },
-  
-     {name: 'Temp',
-      type: 'spline',
-      visible: Temp_visible,
-      yAxis: 11,
-      color: 'black',
-      tooltip: {
-        valueSuffix: ' ºC',
-        valueDecimals: 1,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Temp"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },
-     
-     {name: 'Modo',
-      type: 'spline',
-      visible: Modo_visible,
-      yAxis: 12,
-      color: '#1604FA',
-      tooltip: {
-        valueSuffix: ' ',
-        valueDecimals: 0,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Modo"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },
-       
-     {name: Nombre_Aux1,
-      type: 'spline',
-      visible: Aux1_visible,
-      yAxis: 13,
-      color: Highcharts.getOptions().colors[6],
-      tooltip: {
-        valueSuffix: Unidades_Aux1,
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Aux1"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },     
-     {name: Nombre_Aux2,
-      type: 'spline',
-      visible: Aux2_visible,
-      yAxis: 14,
-      color: Highcharts.getOptions().colors[8],
-      tooltip: {
-        valueSuffix: Unidades_Aux2,
-        valueDecimals: 2,
-        },
-      data: (function() {
-        var data = [];
-        <?php
-        for($i = 0 ;$i<count($rawdata);$i++){
-          ?>
-          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Aux2"];?>]);
-          <?php } ?>
-        return data;
-        })()
-      },
-          
-    ]
-    });
-  });
+
+    series: series,
+    // Otras configuraciones de Highcharts...
+});
 </script>
 
 <?php
 include ("pie.inc");
 ?>
+

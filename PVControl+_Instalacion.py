@@ -101,7 +101,8 @@ lista2 = [# Sistema, Apache & php
          'sudo pip3 install clarifai',
          'sudo pip3 install clarifai-grpc',
          'sudo pip3 install goodwe',
-         
+         'sudo pip3 install bleak', #BMS JK por BT 
+         'sudo pip3 install pysolarmanv5' #DEYE
          
          # Varios
          # motionEye

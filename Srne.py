@@ -5,9 +5,12 @@ import time
 import sys, subprocess
 import logging, traceback
 from Bd import *
-from pymodbus.client.sync import ModbusSerialClient as ModbusClient
+
 import json
 
+usar_srne = 0
+
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 
@@ -174,6 +177,8 @@ if __name__ == '__main__':
         #print (commands.getoutput('sudo systemctl stop srne'))
         print (subprocess.getoutput('sudo systemctl stop srne'))
         sys.exit()
+    
+    from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 
     #main(sys.argv[1:])
     logging.basicConfig(level=DEBUG_LEVEL)

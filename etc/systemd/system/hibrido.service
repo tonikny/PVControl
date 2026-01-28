@@ -3,7 +3,11 @@ Description=Control Hibrido
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/hibrido.py
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/hibrido.py
 Restart=always
 RestartSec=30
 

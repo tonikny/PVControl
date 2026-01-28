@@ -9,13 +9,13 @@ from struct import pack
 from traceback import format_exc
 
 ################################################################
-dev_hibrido ='/dev/hidraw0'   # dipositivo donde reconoce al hibrido enla carpeta /dev
+dev_hibrido ='/dev/ttyUSB0'   # dipositivo donde reconoce al hibrido enla carpeta /dev
 usar_crc = 1                  # El protocolo usa CRC o no
 
 grabar_fichero_log = 0        # Se guardan las repuestas del hibrido en un archivo de log
 log = '/home/pi/'             # path al archivo de log (debe existir la carpeta)
 
-DEBUG = False                 # saca mas informacion por pantalla
+DEBUG = True                 # saca mas informacion por pantalla
 ###################################################################
 
 ################## Ejemplos de uso #########################################################
@@ -74,7 +74,9 @@ def comando(cmd):
         ee = 20
         if DEBUG: print ('Comando con CRC=',repr(cmd_crc))
         if os.path.exists(dev_hibrido):
+            print ('Abriendo ',dev_hibrido, end=' ')
             fd = open(dev_hibrido,'rb+')
+            print (Fore.GREEN + 'OK'+Style.RESET_ALL)
             time.sleep(.20)
             ee = 30
             if DEBUG: print ('Byte1=',repr(cmd_crc[:8]))
@@ -105,8 +107,8 @@ def comando(cmd):
                 ee += 1
                 time.sleep(.05)
                 r = r + fd.read(1)
-    except:
-        if DEBUG: print ('error Bloque B')
+    except Exception as e:
+        if DEBUG: print ('error Bloque B',e)
              
     
     try:
@@ -133,8 +135,8 @@ def comando(cmd):
             
         t_muestra=5
     
-    except:
-        print ('Error Comando ', end='')
+    except Exception as e:
+        print ('Error Comando ', e)
         t_muestra=12
         s = 'Error Hibrido = '+ str(ee)
         
@@ -192,8 +194,8 @@ while repeticion:
             ee = 700
         if repeticion == True:    
             time.sleep(t_muestra)
-    except:
-        print ("error comando=",ee)
+    except Exception as e:
+        print ("error comando=",ee, e)
         if grabar_fichero_log == 1:
             with open(log, 'a+') as f:
                 f.write("error comando\n")

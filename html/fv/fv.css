@@ -1,0 +1,245 @@
+/* CSS para el menú */
+body {
+  /*display: flex;*/
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar {
+  /*overflow: hidden;*/
+  background-color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.navbar a {
+  float: left;
+  display: block;
+  color: #f2f2f2;
+  text-align: center;
+  padding: 14px 20px;
+  text-decoration: none;
+}
+.dropdown {
+  float: left;
+  overflow: hidden;
+}
+.dropdown .dropbtn {
+  font-size: 16px;
+  border: none;
+  outline: none;
+  color: white;
+  padding: 14px 20px;
+  background-color: inherit;
+  font-family: inherit;
+  margin: 0;
+}
+.navbar a:hover,
+.dropdown:hover .dropbtn {
+  background-color: red;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+.dropdown-content a {
+  float: none;
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  text-align: left;
+}
+.dropdown-content a:hover {
+  background-color: #ddd;
+}
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+.navbar .icon {
+  display: none;
+}
+@media screen and (max-width: 600px) {
+  .navbar a:not(:first-child),
+  .dropdown .dropbtn {
+    display: none;
+  }
+  .navbar a.icon {
+    float: right;
+    display: block;
+  }
+}
+@media screen and (max-width: 600px) {
+  .navbar.responsive {
+    position: relative;
+  }
+  .navbar.responsive .icon {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+  .navbar.responsive a {
+    float: none;
+    display: block;
+    text-align: left;
+  }
+  .navbar.responsive .dropdown {
+    float: none;
+  }
+  .navbar.responsive .dropdown-content {
+    position: relative;
+  }
+  .navbar.responsive .dropdown .dropbtn {
+    display: block;
+    width: 100%;
+    text-align: left;
+  }
+}
+
+/* CSS para archivo*/
+
+#grafico {
+  flex-grow: 1;
+  display: flex;
+}
+.sideBlock {
+  background-color: rgba(208, 208, 208, 0.5);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+#central {
+  background-color: rgba(251, 251, 244, 0.5);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  position: relative;
+}
+
+#svgLines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  stroke-dasharray: 5, 5;
+}
+
+.line {
+  animation: dash 10s linear infinite;
+}
+
+.line_inactive {
+  stroke: gray;
+  stroke-width: 2;
+  animation: none; /* Desactivar animación */
+}
+
+@keyframes dash_normal {
+  from {
+    stroke-dashoffset: 30%;
+  }
+  to {
+    stroke-dashoffset: 5%;
+  }
+}
+
+@keyframes dash_inverso {
+  from {
+    stroke-dashoffset: 5%;
+  }
+  to {
+    stroke-dashoffset: 30%;
+  }
+}
+
+.row {
+  display: flex;
+  /*gap: 1px;  espacio entre columnas de una filas */
+}
+.block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: transparent;
+  margin: 20px 45px; /* espacio entre bloques; */
+}
+
+.element {
+  display: flex;
+  justify-content: center;
+  /*flex-wrap: wrap;*/
+  /*margin: 20px 45px;  margin for space between elements */
+}
+.side-element {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 5px; /* margin for space between elements */
+}
+.value {
+  align-items: center;
+  /*margin: 5px;  margin for space between values */
+}
+
+/* CSS para las ventanas modales y su arrastre */
+.modal {
+  /*display: flex;*/
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: yellow;
+  /*background-color = rgba(100, 100, 0, 0.5);*/
+  padding: 10px;
+  border: 1px solid black;
+  z-index: 1000;
+}
+.modal-header {
+  padding: 10px;
+  background-color: #333;
+  color: white;
+  cursor: move; /* Indicador de arrastre */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  flex-grow: 1;
+  text-align: left;
+}
+
+.modal-close {
+  cursor: pointer;
+  font-size: 20px;
+  color: magenta;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.warning-icon.blink {
+  display: block;
+  animation: blink 1s infinite;
+}

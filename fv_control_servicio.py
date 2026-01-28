@@ -1,8 +1,15 @@
 import sys,subprocess
 
 #Parametros Instalacion FV
-from Parametros_FV import *
+basepath = '/home/pi/PVControl+/'
+parametros_FV = basepath + "Parametros_FV.py"
+parametros_FV_DIST = basepath + "Parametros_FV_DIST.py"
 
+exec(open(parametros_FV_DIST).read(),globals())   #carga Parametros_FV_DIST.py por si hay variables no definidas en Parametros_FV.py
+exec(open(parametros_FV).read(),globals())        #carga Parametros_FV.py  .... Valores especificos de cada instalacion
+
+#####################
+    
 parar_servicio = False
 
 try:

@@ -3,7 +3,11 @@ Description= PVControl+ - Lectura SB2
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/sb.py SB2
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/sb.py SB2
 Restart=always
 RestartSec=30
 

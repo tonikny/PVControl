@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-01-22
+# Versión 2024-02-05
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fvbot'
@@ -17,18 +16,26 @@ import datetime
 import token
 import os
 import sys
-
+import json
 
 import MySQLdb
 import paho.mqtt.client as mqtt
 
 import requests,glob # control del motion via web
-
+"""
 bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
 bot.skip_pending=True # Skip the pending messages
+"""
+bot = telebot.TeleBot(
+    TOKEN, 
+    skip_pending=True,  # Ignora mensajes pendientes al iniciar
+    parse_mode=None,    # Opcional: evita formato automático de texto
+    threaded=False      # Recomendado para bots simples
+)
 
 nfallos=0
 cid = Aut[0]
+results = []
 #bot.send_message(cid, 'Arrancando Bot Telegram')
 
 # Control motion Camara -----------------
@@ -65,6 +72,7 @@ while Connected != True:
 #############################################
 #Listener
 def listener(messages): #definimos función 'listener', recibe como parámetro 'messages'.
+    ee = 10
     try:
         for m in messages: # Por cada dato 'm' en el dato 'messages'
             cid = m.chat.id # Almacenaremos el ID de la conversación.
@@ -72,351 +80,466 @@ def listener(messages): #definimos función 'listener', recibe como parámetro '
             tg_to=cid
             tg_to_u=str(m.chat.first_name)
             tg_from=cid
-
+            ee = 12
             if m.content_type == 'text':
                
                 #print (m)
                 
-                print (" Mensaje de [" + str(cid) + "]: " + m.text) # Y haremos que imprima algo parecido a esto -> [52033876]: /start
-                
+                print (" Mensaje de [" + str(cid) + "]: " + m.text) 
+                ee = 14
+                if cid in Aut:
+                    orden_autorizada = 1
+                else:
+                    orden_autorizada = 0
+                    bot.send_message( cid, f'Usuario {cid} no autorizado')
+
                 if m.text[0]=='#':
-                    tg_orden=str(m.text[1:])
+                    ee = 16
+                    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+                    cursor = db.cursor()
+                    sql = 'SELECT * FROM equipos'
+                    nequipos = int(cursor.execute(sql))
+                    ee = 17
+                    d_ = {}
+                    for row in cursor.fetchall():
+                        d_[row[0]] = json.loads(row[2])
+                        
+                    cursor.close()
+                    db.close()
                     
-                    if cid in Aut:
-                        orden_autorizada=1
+                    ee = 18
+                    
+                    mensaje = m.text[1:].strip() # quito # inicial
+                    
+                    # quitar del mensaje a partir de dos puntos(:) si existen
+                    indice_puntos = mensaje.find(":")
+                    if indice_puntos == -1:
+                        pass
                     else:
-                        orden_autorizada=0
-                        bot.send_message( cid, f'Usuario {cid} no autorizado')
-                        
-                    #bot.send_message( cid, "Orden introducida "+tg_orden)
-                    bot.send_chat_action(cid,'typing')
+                        mensaje = mensaje[:indice_puntos]
+                        print(f'Mensaje sin :...{mensaje}')
                     
-                    tipo_orden= tg_orden[0].upper() # H, I, R, P, V....
-
-                    print ('Orden introducida ',tg_orden, ' tipo=',tipo_orden)
+                    es_orden_equipo = 0
+                    indice = mensaje.find(" ")
+                    if indice == -1:
+                        equipo = mensaje
+                        orden_equipo = ''
+                    else:
+                        equipo = mensaje[:indice]
+                        orden_equipo =  mensaje[indice+1:].strip()
+                        """
+                        ee = 18.1
+                        #orden_equipo = orden_equipo.format(**locals())
+                        print( orden_equipo)
+                        ee = 18.2
+                        
+                        print ( f"{orden_equipo}")
+                        ee = 18.3
+                        
+                        print(eval(orden_equipo))
+                        """
+                        #orden_equipo = eval(orden_equipo)
                     
-
-                    #------------------ ORDEN RELES -----------------------
-                    if tipo_orden=='R':
-                        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                        cursor = db.cursor()
-                        try:
-                            objeto_orden= tg_orden[1:4]
-                            orden= tg_orden[4:].upper()
-                        except:
-                            objeto_orden=''
-                            orden=''
-                        try:
-                            orden1=orden[0]
-                        except:
-                            orden1=''
-                        
-                        try:
-                            orden2=orden[1:]
-                        except:
-                            orden2=''   
-
-                        # -------- Sub_Orden ON/OFF/PRG ---------    
-                        if orden in ('PRG','ON', 'OFF'):
-                            if orden_autorizada==1:
-                                try:
-                                    sql = f"UPDATE reles SET modo='{orden}' WHERE id_rele={objeto_orden}"
-                                    cursor.execute(sql)
-                                    db.commit()
-                                                                        
-                                    msg='Rele Nº'+objeto_orden+' puesto a '+ orden + ' por ' +tg_to_u
-                                    bot.send_message( cid, msg)
-                                    
-                                except:
-                                    msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
-                                    bot.send_message( cid, msg)
-                                                                        
-                            else:
-                                msg=tg_from+' NO tiene permiso para esta orden'
-                                bot.send_message( cid, msg)
-                        
-                        # -------- Sub_Orden Modo Manual (ejem sintaxis #r611M30  pone en modo manual al 30% el rele 611 ---------
-                        elif orden1=='M':
-                            if orden_autorizada==1:
-                              try:
-                                  orden='MAN'
-                                  sql = f"UPDATE reles SET modo='{orden}', estado={orden2} WHERE id_rele={objeto_orden}"
-                                  cursor.execute(sql)
-                                  db.commit()
-                                  
-                                  msg=f"Rele Nº {objeto_orden} puesto a modo={orden} y estado={orden2} por {tg_to_u}"
-                                  bot.send_message( cid, msg)
-                              except:
-                                    msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
-                                    bot.send_message( cid, msg)    
-                                  
-                                  
-                                  
-                        # -------- Sub_Orden Cambio Nombre Rele ---------    
-                        elif orden1=='N':
-                            if orden_autorizada==1:
-                                try:
-                                    sql = "UPDATE reles SET nombre='"+orden2+ "' WHERE id_rele="+objeto_orden
-                                    cursor.execute(sql)
-                                    db.commit()
-                                    msg='Nombre Rele Nº'+objeto_orden+' ='+ orden2 + ' por ' +tg_to_u
-                                    bot.send_message( cid, msg)
-                                    
-                                except:
-                                    msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
-                                    bot.send_message( cid, msg)
-                            else:
-                                msg=tg_from+' NO tiene permiso para esta orden'
-                                bot.send_message( cid, msg)
-
-                        # -------- Sub_Orden Creacion Rele ---------    
-                        elif orden1=='C':
-                            if orden_autorizada==1:
-                                try:
-                                    orden2=orden2[1:]
-                                    cursor.execute("""INSERT INTO reles
-                                                   (id_rele,nombre,modo,estado,grabacion)
-                                                   VALUES (%s,%s,%s,%s,%s)""",
-                                                        (objeto_orden,orden2,'OFF',0,'N'))
-
-                                    db.commit()
-                                    msg='Creado Rele Nº'+objeto_orden+' ='+ orden2 + ' por ' +tg_to_u
-                                    bot.send_message( cid, msg)
-
-                                except:
-                                    msg='No se puede crear rele con la orden recibida   '
-                                    bot.send_message( cid, msg)
-                            else:
-                                msg=tg_from+' NO tiene permiso para esta orden'
-                                bot.send_message( cid, msg)
-
-                        # -------- Sub_Orden Borrado Rele ---------    
-                        elif orden1=='B':
-                            if orden_autorizada==1:
-                                try:
-                                    sql = "DELETE FROM reles  WHERE id_rele="+objeto_orden
-                                    cursor.execute(sql)
-                                    db.commit()
-                                    msg='Borrado Rele Nº'+objeto_orden+' por ' +tg_to_u
-                                    bot.send_message( cid, msg)
-
-                                except:
-                                    msg='No se puede crear rele con la orden recibida   '
-                                    bot.send_message( cid, msg)
-                            else:
-                                msg=tg_from+' NO tiene permiso para esta orden'
-                                bot.send_message( cid, msg)
-
-                        # -------- Sub_Orden informacion Reles ---------
-                        elif orden=='':
-                            try:
-                                sql = "SELECT id_rele,nombre,modo,estado,grabacion FROM reles"
-                                cursor.execute(sql)
-                                nreles=cursor.execute(sql)
-                                nreles=int(nreles)  # = numero de reles
-                                TR=cursor.fetchall()
-                                msg=' ----- ESTADO RELES -----'+ '\n'
-                                msg=msg+'_id_|_S_|Mod|Gr| Nombre'+ '\n'
-                                for I in range(nreles):
-                                    msg=msg+str(TR[I][0])+'|_'+ str(TR[I][3])+'_|'+TR[I][2].ljust(3)+'|'+ TR[I][4]
-                                    msg=msg+ ' | '+TR[I][1] +'\n'
-                                    #msg=msg+str(TR[I])+ '\n'
-                                    
-                                msg=msg + '----------------------------------------------------------'+ '\n'
-                                msg=msg + '  EJEMPLOS COMANDOS RELES '+ '\n'
-                                msg=msg + '----------------------------------------------------------'+ '\n'
-                                msg=msg + ' #R201ON  activa rele 201'+ '\n'
-                                msg=msg + ' #R201OFF  apaga rele 201'+ '\n'
-                                msg=msg + ' #R201PRG  rele 201 programado'+ '\n'
-                                msg=msg + ' #R201N=XX cambia nombre a XX'+ '\n'
-                                msg=msg + ' #R201C=XX crea rele 201 N=XX-OFF'+ '\n'
-                                msg=msg + ' #R201B borra rele 201'+ '\n'
-                                            
-                                msg=msg + ' #R  Muestra este mensaje'
+                    ee = 18.9
+                    for eq in list(d_): # ordenes a equipos
+                        if eq in (equipo,f'BMS_{equipo}'):
+                            if orden_autorizada == 1:
                                 
-                                bot.send_message( cid, msg)
-
-                            except:
-                                msg= 'Error al acceder a la tabla reles'
-                                bot.send_message( cid, msg) 
+                                orden_equipo = orden_equipo.format(**locals())
+                                
+                                print(f'Publicando {orden_equipo} en topic PVControl/{equipo} ')
+                                
+                                #print(f'PVControl/{equipo}', f'{orden_equipo}')
+                                
+                                client.publish(f'PVControl/{equipo}', orden_equipo)
+                                es_orden_equipo = 1
+                    
+                    if es_orden_equipo == 0: # es una orden no asociada a equipos
+                        final_orden = m.text.find(':')
+                        
+                        if final_orden== -1:
+                            tg_orden=str(m.text[1:])
                         else:
-                            msg='No interpreto correctamente la orden recibida'
-                            bot.send_message( cid, msg)
-                        cursor.close()
-                        db.close()
+                            tg_orden=str(m.text[1:final_orden])
+                        
+                        tg_orden = tg_orden.strip()
+                        
+                        
+                            
+                        #bot.send_message( cid, "Orden introducida "+tg_orden)
+                        bot.send_chat_action(cid,'typing')
+                        
+                        tipo_orden= tg_orden[0].upper() # H, I, R, P, V....
 
-                    #------------------ ORDEN INFORMACION -----------------------
-                    elif tipo_orden=='I':
-                        try:
-                            subprocess.run(['python3','/home/pi/PVControl+/fvbot_msg.py','-m'])
-                        except:
-                            print ('Error en ejecucion de fvbot_msg.py')
-                    #------------------ ORDEN PARAMETROS -----------------------
-                    elif tipo_orden=='P':
-                        try:
-                            #print('a=',tg_orden[1:3])
-                            np = int(tg_orden[1:3])
-                            objeto_orden= tg_orden[1:3]
-                            orden= tg_orden[4:].upper()
-                            #print('b')
-                        except:
-                            try:
-                                #print('c',tg_orden[1:2])
-                                np = int(tg_orden[1:2])
-                                objeto_orden= tg_orden[1:2]
-                                orden= tg_orden[3:].upper()
-                                #print('d')
-                            except:
-                                #print('e')
-                                objeto_orden=''   
-                        try:
+                        print ('Orden introducida ',tg_orden, ' tipo=',tipo_orden)
+                        
+
+                        #------------------ ORDEN RELES -----------------------
+                        if tipo_orden=='R' and orden_autorizada == 1:
                             db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
                             cursor = db.cursor()
-                            sql='SELECT * FROM parametros'
-                            nparametros=cursor.execute(sql)
-                            nparametros=int(nparametros)  # = numero de filas de parametros.---- debe ser 1
-            
-                            columns = [column[0] for column in cursor.description]
-                            TP1 = []
-                            for row in cursor.fetchall(): TP1.append(dict(zip(columns, row)))
-                            TP = TP1[0] # solo la primera fila
-             
-                        except:
-                            bot.send_message( cid, 'Error en lectura tabla parametros')
-                        
-
-                        if objeto_orden=='':
-                            cursor.close()
-                            db.close()
-                            
-                            L='Tabla de parametros de la BD\n'
-                            np=0
-                            for p in TP:
-                                np += 1
-                                if columns[np-1] != 'id_parametros':
-                                    L += f'P{np}={TP[p]} -- {columns[np-1]}\n'
-                            
-                            L += ('\n### Ejemplos de comandos ###\n' +
-                            'P1=S    ..Grabar datos a Si\n' +
-                            'P2=N    ..Grabar reles a No\n' +
-                            'P3=5    ..T_muestras en 5 sg\n' +
-                            'P4=1    ..N_muestras para grabar a 1\n' +
-                            'P5=95.7 ..Actualizar SOC a 95.7%\n' +
-                            'P6=28.8 ..Actualizar Objetivo_PID a 28.8V\n' +
-                            'P7=Vbat ..Actualizar Sensor_PIDa Vbat\n' +
-                            'P8=10   ..Actualizar Kp del PID a 10\n' +
-                            '....\n' +
-                            'P12=28.8..Actualizar Vflot a 28.8V\n' +
-                            '....'
-                            )
-                            
-                            bot.send_message( cid, L) 
-                        
-                        elif orden_autorizada==1:
-                            ncolumna= int(objeto_orden)
-                            sql = f"UPDATE parametros SET {columns[ncolumna-1]}='{orden}'"
                             try:
-                                cursor.execute(sql)
-                                db.commit()
-                                bot.send_message( cid, f'{columns[ncolumna-1]} puesto a {orden}')
+                                objeto_orden= tg_orden[1:4]
+                                orden= tg_orden[4:].upper()
                             except:
-                                bot.send_message( cid, f'Error en ejecucion orden: {sql}')
+                                objeto_orden=''
+                                orden=''
+                            try:
+                                orden1=orden[0]
+                            except:
+                                orden1=''
+                            
+                            try:
+                                orden2=orden[1:]
+                            except:
+                                orden2=''   
+
+                            # -------- Sub_Orden ON/OFF/PRG ---------    
+                            if orden in ('PRG','ON', 'OFF'):
+                                if orden_autorizada==1:
+                                    try:
+                                        sql = f"UPDATE reles SET modo='{orden}' WHERE id_rele={objeto_orden}"
+                                        cursor.execute(sql)
+                                        db.commit()
+                                                                            
+                                        msg='Rele Nº'+objeto_orden+' puesto a '+ orden + ' por ' +tg_to_u
+                                        bot.send_message( cid, msg)
+                                        
+                                    except:
+                                        msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
+                                        bot.send_message( cid, msg)
+                                                                            
+                                else:
+                                    msg=tg_from+' NO tiene permiso para esta orden'
+                                    bot.send_message( cid, msg)
+                            
+                            # -------- Sub_Orden Modo Manual (ejem sintaxis #r611M30  pone en modo manual al 30% el rele 611 ---------
+                            elif orden1=='M':
+                                if orden_autorizada==1:
+                                  try:
+                                      orden='MAN'
+                                      sql = f"UPDATE reles SET modo='{orden}', estado={orden2} WHERE id_rele={objeto_orden}"
+                                      cursor.execute(sql)
+                                      db.commit()
+                                      
+                                      msg=f"Rele Nº {objeto_orden} puesto a modo={orden} y estado={orden2} por {tg_to_u}"
+                                      bot.send_message( cid, msg)
+                                  except:
+                                        msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
+                                        bot.send_message( cid, msg)    
+                                      
+                                      
+                                      
+                            # -------- Sub_Orden Cambio Nombre Rele ---------    
+                            elif orden1=='N':
+                                if orden_autorizada==1:
+                                    try:
+                                        sql = "UPDATE reles SET nombre='"+orden2+ "' WHERE id_rele="+objeto_orden
+                                        cursor.execute(sql)
+                                        db.commit()
+                                        msg='Nombre Rele Nº'+objeto_orden+' ='+ orden2 + ' por ' +tg_to_u
+                                        bot.send_message( cid, msg)
+                                        
+                                    except:
+                                        msg='No se puede actualizar la tabla reles con la orden recibida   '+sql
+                                        bot.send_message( cid, msg)
+                                else:
+                                    msg=tg_from+' NO tiene permiso para esta orden'
+                                    bot.send_message( cid, msg)
+
+                            # -------- Sub_Orden Creacion Rele ---------    
+                            elif orden1=='C':
+                                if orden_autorizada==1:
+                                    try:
+                                        orden2=orden2[1:]
+                                        cursor.execute("""INSERT INTO reles
+                                                       (id_rele,nombre,modo,estado,grabacion)
+                                                       VALUES (%s,%s,%s,%s,%s)""",
+                                                            (objeto_orden,orden2,'OFF',0,'N'))
+
+                                        db.commit()
+                                        msg='Creado Rele Nº'+objeto_orden+' ='+ orden2 + ' por ' +tg_to_u
+                                        bot.send_message( cid, msg)
+
+                                    except:
+                                        msg='No se puede crear rele con la orden recibida   '
+                                        bot.send_message( cid, msg)
+                                else:
+                                    msg=tg_from+' NO tiene permiso para esta orden'
+                                    bot.send_message( cid, msg)
+
+                            # -------- Sub_Orden Borrado Rele ---------    
+                            elif orden1=='B':
+                                if orden_autorizada==1:
+                                    try:
+                                        sql = "DELETE FROM reles  WHERE id_rele="+objeto_orden
+                                        cursor.execute(sql)
+                                        db.commit()
+                                        msg='Borrado Rele Nº'+objeto_orden+' por ' +tg_to_u
+                                        bot.send_message( cid, msg)
+
+                                    except:
+                                        msg='No se puede crear rele con la orden recibida   '
+                                        bot.send_message( cid, msg)
+                                else:
+                                    msg=tg_from+' NO tiene permiso para esta orden'
+                                    bot.send_message( cid, msg)
+
+                            # -------- Sub_Orden informacion Reles ---------
+                            elif orden=='':
+                                try:
+                                    sql = "SELECT id_rele,nombre,modo,estado,grabacion FROM reles"
+                                    cursor.execute(sql)
+                                    nreles=cursor.execute(sql)
+                                    nreles=int(nreles)  # = numero de reles
+                                    TR=cursor.fetchall()
+                                    msg=' ----- ESTADO RELES -----'+ '\n'
+                                    msg=msg+'_id_|_S_|Mod|Gr| Nombre'+ '\n'
+                                    for I in range(nreles):
+                                        msg=msg+str(TR[I][0])+'|_'+ str(TR[I][3])+'_|'+TR[I][2].ljust(3)+'|'+ TR[I][4]
+                                        msg=msg+ ' | '+TR[I][1] +'\n'
+                                        #msg=msg+str(TR[I])+ '\n'
+                                        
+                                    msg=msg + '----------------------------------------------------------'+ '\n'
+                                    msg=msg + '  EJEMPLOS COMANDOS RELES '+ '\n'
+                                    msg=msg + '----------------------------------------------------------'+ '\n'
+                                    msg=msg + ' #R201ON  activa rele 201'+ '\n'
+                                    msg=msg + ' #R201OFF  apaga rele 201'+ '\n'
+                                    msg=msg + ' #R201PRG  rele 201 programado'+ '\n'
+                                    msg=msg + ' #R201N=XX cambia nombre a XX'+ '\n'
+                                    msg=msg + ' #R201C=XX crea rele 201 N=XX-OFF'+ '\n'
+                                    msg=msg + ' #R201B borra rele 201'+ '\n'
+                                                
+                                    msg=msg + ' #R  Muestra este mensaje'
+                                    
+                                    bot.send_message( cid, msg)
+
+                                except:
+                                    msg= 'Error al acceder a la tabla reles'
+                                    bot.send_message( cid, msg) 
+                            else:
+                                msg='No interpreto correctamente la orden recibida'
+                                bot.send_message( cid, msg)
                             cursor.close()
                             db.close()
-                        else:
-                            bot.send_message( cid, msg)    
-                        
-                    #------------------ ORDEN AYUDA -----------------------
-                    elif tipo_orden=='?':
-                        L1='--- ORDENES ACEPTADAS ---'
-                        L2=''#reiniciar..reinicia la RPi'
-                        L3=''#teamviewer..reinicia teamviewer'
-                        L4='#?..Muestra esta ayuda'
-                        L5='#i..Informacion resumida FV'
-                        L6='#p..Ayuda para comandos parametros'
-                        L7='#r..Ayuda para comandos reles'
-                        L8='#h..Ayuda para comandos Hibrido'
-                        L9='#V..Ayuda para comandos Camara'
-                        
-                        msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+'\n'+L6+'\n'+L7+'\n'+L8+'\n'+L9
-                        bot.send_message( cid, msg)
 
-                    #------------------ COMANDO HIBRIDO -----------------------
-                    elif tipo_orden=='H':
-                        if tg_orden[1].isnumeric():
-                            print('PVControl/Hibrido'+tg_orden[1],tg_orden[2:])
-                            client.publish('PVControl/Hibrido'+tg_orden[1],tg_orden[2:])
-                        else:
-                            print('PVControl/Hibrido',tg_orden[1:])
-                            client.publish('PVControl/Hibrido',tg_orden[1:])
-                        
-                    #------------------ ORDEN VIGILANCIA -----------------------
-                    elif tipo_orden=='V':
-                        try:
-                            orden= tg_orden[1:].upper()
-                        except:
-                            print ('error tg_orden')
-                            orden=''
-                        print('orden V=',orden)
-                        #print('10')
-                        
-                        if orden == 'FOTO':
-                            requests.get('http://localhost:8080/0/action/snapshot')
-                        elif orden == 'PRG':
-                            webcontrol(cid, 'detection', 'start')
-                            with open('/run/shm/motion.cfg', mode='w') as f:
-                                f.write('PRG')
-                        elif orden == 'ESTADO':
-                            webcontrol(cid, 'detection', 'status')
-                        elif orden == 'OFF':
-                            webcontrol(cid, 'detection', 'pause')
-                            with open('/run/shm/motion.cfg', mode='w') as f:
-                                f.write('OFF')
-                        elif orden == 'ON':
-                            webcontrol(cid, 'detection', 'start')
-                            with open('/run/shm/motion.cfg', mode='w') as f:
-                                f.write('ON')
-                        elif orden == 'CHECK':
-                            webcontrol(cid, 'detection', 'connection')
-                        elif orden == 'TIME':
-                            bot.send_message(cid, 'hora '+str(datetime.datetime.now()))
-                        elif orden == 'VIDEO':
-                            # the most recent video in this particular folder of complete vids
-                            print('Video =',)
-                            video = max(glob.iglob('/home/pi/motion/videos/*.mp4'), key=os.path.getctime)
-                            print(video)
-                            # send video, adapt the the first argument to your own telegram id
-                            bot.send_video(cid, data=open(video, 'rb'), caption=video)
-                        elif orden == '':
-                            bot.send_message(cid, "foto,estado,pausa,start,check,time,video")
-                        else:
-                            bot.send_message(cid, "Comando no valido "+orden)
-                            bot.send_message(cid, "foto,estado,pausa,start,check,time,video")
+                        #------------------ ORDEN INFORMACION -----------------------
+                        elif tipo_orden=='I':
+                            try:
+                                print (f"Ejecutando fvbot_msg.py -m")
+                                
+                                subprocess.run(['python','fvbot_msg.py','-m', f'-cid{cid}'])
+                            except:
+                                print ('Error en ejecucion de fvbot_msg.py')
+                        #------------------ ORDEN PARAMETROS -----------------------
+                        elif tipo_orden=='P' and orden_autorizada == 1:
+                            try:
+                                #print('a=',tg_orden[1:3])
+                                np = int(tg_orden[1:3])
+                                objeto_orden= tg_orden[1:3]
+                                orden= tg_orden[4:].upper()
+                                #print('b')
+                            except:
+                                try:
+                                    #print('c',tg_orden[1:2])
+                                    np = int(tg_orden[1:2])
+                                    objeto_orden= tg_orden[1:2]
+                                    orden= tg_orden[3:].upper()
+                                    #print('d')
+                                except:
+                                    #print('e')
+                                    objeto_orden=''   
+                            try:
+                                db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+                                cursor = db.cursor()
+                                sql='SELECT * FROM parametros'
+                                nparametros=cursor.execute(sql)
+                                nparametros=int(nparametros)  # = numero de filas de parametros.---- debe ser 1
+                
+                                columns = [column[0] for column in cursor.description]
+                                TP1 = []
+                                for row in cursor.fetchall(): TP1.append(dict(zip(columns, row)))
+                                TP = TP1[0] # solo la primera fila
+                 
+                            except:
+                                bot.send_message( cid, 'Error en lectura tabla parametros')
+                            
+
+                            if objeto_orden=='':
+                                cursor.close()
+                                db.close()
+                                
+                                L='Tabla de parametros de la BD\n'
+                                np=0
+                                for p in TP:
+                                    np += 1
+                                    if columns[np-1] != 'id_parametros':
+                                        L += f'P{np}={TP[p]} -- {columns[np-1]}\n'
+                                
+                                L += ('\n### Ejemplos de comandos ###\n' +
+                                'P1=S    ..Grabar datos a Si\n' +
+                                'P2=N    ..Grabar reles a No\n' +
+                                'P3=5    ..T_muestras en 5 sg\n' +
+                                'P4=1    ..N_muestras para grabar a 1\n' +
+                                'P5=95.7 ..Actualizar SOC a 95.7%\n' +
+                                'P6=28.8 ..Actualizar Objetivo_PID a 28.8V\n' +
+                                'P7=Vbat ..Actualizar Sensor_PIDa Vbat\n' +
+                                'P8=10   ..Actualizar Kp del PID a 10\n' +
+                                '....\n' +
+                                'P12=28.8..Actualizar Vflot a 28.8V\n' +
+                                '....'
+                                )
+                                
+                                bot.send_message( cid, L) 
+                            
+                            elif orden_autorizada==1:
+                                ncolumna= int(objeto_orden)
+                                sql = f"UPDATE parametros SET {columns[ncolumna-1]}='{orden}'"
+                                try:
+                                    cursor.execute(sql)
+                                    db.commit()
+                                    bot.send_message( cid, f'{columns[ncolumna-1]} puesto a {orden}')
+                                except:
+                                    bot.send_message( cid, f'Error en ejecucion orden: {sql}')
+                                cursor.close()
+                                db.close()
+                            else:
+                                bot.send_message( cid, msg)    
+                            
+                        #------------------ ORDEN AYUDA -----------------------
+                        elif tipo_orden=='?' and orden_autorizada == 1:
+                            L1='--- ORDENES ACEPTADAS ---'
+                            L2=''#reiniciar..reinicia la RPi'
+                            L3=''#teamviewer..reinicia teamviewer'
+                            L4='#?..Muestra esta ayuda'
+                            L5='#i..Informacion resumida FV'
+                            L6='#p..Ayuda para comandos parametros'
+                            L7='#r..Ayuda para comandos reles'
+                            L8='#h..Ayuda para comandos Hibrido'
+                            L9='#V..Ayuda para comandos Camara'
+                            
+                            msg=L1+'\n'+L2+'\n'+L3+'\n'+L4+'\n'+L5+'\n'+L6+'\n'+L7+'\n'+L8+'\n'+L9
+                            bot.send_message( cid, msg)
+
+                        #------------------ COMANDO HIBRIDO -----------------------
+                        elif tipo_orden=='H' and orden_autorizada == 1:
+                            if tg_orden[1].isnumeric():
+                                print('PVControl/Hibrido'+tg_orden[1],tg_orden[2:])
+                                client.publish('PVControl/Hibrido'+tg_orden[1],tg_orden[2:])
+                            else:
+                                print('PVControl/Hibrido',tg_orden[1:])
+                                client.publish('PVControl/Hibrido',tg_orden[1:])
+                            
+                        #------------------ ORDEN VIGILANCIA -----------------------
+                        elif tipo_orden=='V' and orden_autorizada == 1:
+                            try:
+                                orden= tg_orden[1:].upper()
+                            except:
+                                print ('error tg_orden')
+                                orden=''
+                            print('orden V=',orden)
+                            #print('10')
+                            
+                            if orden == 'FOTO':
+                                requests.get('http://localhost:8080/0/action/snapshot')
+                            elif orden == 'PRG':
+                                webcontrol(cid, 'detection', 'start')
+                                with open('/run/shm/motion.cfg', mode='w') as f:
+                                    f.write('PRG')
+                            elif orden == 'ESTADO':
+                                webcontrol(cid, 'detection', 'status')
+                            elif orden == 'OFF':
+                                webcontrol(cid, 'detection', 'pause')
+                                with open('/run/shm/motion.cfg', mode='w') as f:
+                                    f.write('OFF')
+                            elif orden == 'ON':
+                                webcontrol(cid, 'detection', 'start')
+                                with open('/run/shm/motion.cfg', mode='w') as f:
+                                    f.write('ON')
+                            elif orden == 'CHECK':
+                                webcontrol(cid, 'detection', 'connection')
+                            elif orden == 'TIME':
+                                bot.send_message(cid, 'hora '+str(datetime.datetime.now()))
+                            elif orden == 'VIDEO':
+                                # the most recent video in this particular folder of complete vids
+                                print('Video =',)
+                                video = max(glob.iglob('/home/pi/motion/videos/*.mp4'), key=os.path.getctime)
+                                print(video)
+                                # send video, adapt the the first argument to your own telegram id
+                                bot.send_video(cid, data=open(video, 'rb'), caption=video)
+                            elif orden == '':
+                                bot.send_message(cid, "foto,estado,pausa,start,check,time,video")
+                            else:
+                                bot.send_message(cid, "Comando no valido "+orden)
+                                bot.send_message(cid, "foto,estado,pausa,start,check,time,video")
+                                            
+                        #------------------ ORDEN LINUX -------------------
+                        elif tipo_orden=='L':
+                            if orden_autorizada==1:
+                                comando= tg_orden[1:]
+                                print ("Comando: ", comando)
+                                
+                                if comando.strip() in ["sudo systemctl restart fvbot",  "sudo reboot"]:
+                                    
+                                    if cid < 0:
+                                        print (f" Intento de borrar mensaje desde el chat de grupo {cid}")
+                                        bot.send_message(cid, "No es posible ejecutar este comando desde un chat de grupo", disable_notification=True)
+                                        return              
+                                    try:
+                                        # 1. Borrar mensaje original
+                                        bot.delete_message(cid, m.message_id)
                                         
-                    #------------------ ORDEN LINUX -------------------
-                    elif tipo_orden=='L':
-                        comando= tg_orden[1:]
-                        print ("Comando: ", comando)
-                        proceso = subprocess.run(comando, shell=True,
-                                                 stdout=subprocess.PIPE,
-                                                 stderr=subprocess.PIPE,
-                                                 text=True
-                                                )
-                        if proceso.returncode==0:
-                            msg = proceso.stdout
+                                        # 2. Enviar notificación efímera
+                                        bot.send_message(cid, "🔄 Reinicio en curso...", disable_notification=True)
+                                        
+                                        # 3. Retraso para asegurar el borrado
+                                        time.sleep(1)
+                                        
+                                        proceso = subprocess.run(comando, shell=True,
+                                                     stdout=subprocess.PIPE,
+                                                     stderr=subprocess.PIPE,
+                                                     text=True
+                                                    )
+                                        if proceso.returncode==0:
+                                            msg = proceso.stdout
+                                        else:
+                                            msg = proceso.stderr
+                                        
+                                        maxlong = 4096
+                                        for t in [msg[i:i+maxlong] for i in range(0, len(msg), maxlong)]:
+                                            bot.send_message (cid, t)
+                                    
+                                    except Exception as e:
+                                        #print(f"Error en comando de reinicio: {e}")
+                                        #bot.send_message(cid, "Error al borrar mensaje de reinicio", disable_notification=True)
+                                        #return
+                                        pass
+                                else:
+                                    proceso = subprocess.run(comando, shell=True,
+                                                     stdout=subprocess.PIPE,
+                                                     stderr=subprocess.PIPE,
+                                                     text=True
+                                                    )
+                                    if proceso.returncode==0:
+                                        msg = proceso.stdout
+                                    else:
+                                        msg = proceso.stderr
+                                    
+                                    maxlong = 4096
+                                    for t in [msg[i:i+maxlong] for i in range(0, len(msg), maxlong)]:
+                                        bot.send_message (cid, t)
+                                                                
+                            else:
+                                msg=tg_from+' NO tiene permiso para esta orden'
+                                bot.send_messag
+        
+                        #------------------ ORDEN INCORRECTA -------------------
                         else:
-                            msg = proceso.stderr
-                            
-                        maxlong = 4096
-                        for t in [msg[i:i+maxlong] for i in range(0, len(msg), maxlong)]:
-                            bot.send_message (cid, t)
-                            
-                    #------------------ ORDEN INCORRECTA -------------------
-                    else:
-                        msg='Orden incorrecta .. #'
-                        bot.send_message( cid, msg)
+                                msg='Orden incorrecta .. #'
+                                bot.send_message( cid, msg)
+                                
     except:
-        print ('Fallo')
+        print (f'Fallo {ee}')
         
 bot.set_update_listener(listener) # definimos al bot la funcion 'listener' como "escucha".
 
@@ -429,39 +552,63 @@ def command_ayuda(m):
     global markup
 
     cid = m.chat.id
-    #conexion a la bbdd
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
+    if cid in Aut:
+        #conexion a la bbdd
+        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+        cursor = db.cursor()
     
-    #sql para sacar datos de vceldas y verificamos si la instalacion tiene o no el moniteado de celdas
-    sql_Vceldas="""SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1 """
-    celdas=0
-    try:
-        cursor.execute(sql_Vceldas)
-        var=cursor.fetchone() 
-        print(var)
-        if len(var) >0: celdas=1  
+        #sql para sacar datos de vceldas y verificamos si la instalacion tiene o no el moniteado de celdas
+        sql_Vceldas="""SELECT table_name
+FROM information_schema.tables
+WHERE table_name LIKE 'datos_celdas_%' """
+        celdas=0
         
-    except:
-        pass
-    cursor.close()
-    db.close()
-    
-    markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
-    itembtn1 = types.KeyboardButton('/i Informacion FV\n')    
-    itembtn3 = types.KeyboardButton('/p Actualizar parametros BD')
-    itembtn4 = types.KeyboardButton('/r Actualizar Reles')
-    itembtn5 = types.KeyboardButton('/V Configurar Alarma Camara')
-    itembtn6 = types.KeyboardButton('')
+        try:
+            cursor.execute(sql_Vceldas)
 
-    if celdas == 0:   ##Botones para seleccion ordenes sin Vceldas
-        markup.add(itembtn1, itembtn3, itembtn4, itembtn5, itembtn6)
+            results = cursor.fetchall()
+
+            if results:
+                for row in results:
+                    # Imprime todos los datos de cada fila
+                    celdas=1
+                    results = row
+                   
+            else:
+                # La lista 'results' está vacía (no contiene datos)
+                celdas= 0
+                print("No se encontraron resultados.")
+            
         
-    else:        ##Botones para seleccion ordenes con Vceldas
-        itembtn2 = types.KeyboardButton('/vc Vceldas')
-        markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6)
+        except:
+            pass
+        cursor.close()
+        db.close()
+    
+        markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
+        itembtn1 = types.KeyboardButton('/i Informacion FV\n') 
+       
+        itembtn3 = types.KeyboardButton('/p Actualizar parametros BD')
+        itembtn4 = types.KeyboardButton('/r Actualizar Reles')
+        itembtn5 = types.KeyboardButton('/V Configurar Alarma Camara')
+    
+        itembtn6 = types.KeyboardButton('/h Comandos Hibrido tipo Axpert/Volronic')
+        itembtn7 = types.KeyboardButton('/c Comandos personalizados')
+    
+    
+
+        if celdas == 0:   ##Botones para seleccion ordenes sin Vceldas
+            markup.add(itembtn1, itembtn3, itembtn4, itembtn5, itembtn6)
+        
+        else:        ##Botones para seleccion ordenes con Vceldas
+            itembtn2 = types.KeyboardButton('/vc Vceldas')
+            markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6, itembtn7)
          
-    msg=bot.send_message(cid, "Elige COMANDO:", reply_markup=markup)
+        msg=bot.send_message(cid, "Elige COMANDO:", reply_markup=markup)
+
+    else:
+        bot.send_message(cid,"Sin autorizacion para mostrar este dato",reply_markup=markup)        
+
     
     
 #------------- TEAMVIEWER ---------------------------
@@ -487,65 +634,87 @@ def command_raspberry_r(m):
     if cid in Aut:
         os.system('sudo shutdown -r now')
         
-        
-        
-        
-        
+
 #------------- Vceldas ---------------------------
-@bot.message_handler(commands=['vc'])
-def command_teamviewer_r(m):
+@bot.message_handler(commands=['vc','VC','Vc'])
+def command_vc(m):
       
     cid = m.chat.id
+    if cid in Aut:
+        bot.send_chat_action(cid,'typing')
+        
+        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+        cursor = db.cursor()
+        sql_Vceldas="""
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_name LIKE 'datos_celdas_%'
+            """
 
-    bot.send_chat_action(cid,'typing')
 
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
+        try:
+            cursor.execute(sql_Vceldas)
+
+            results = cursor.fetchall()
+            cleaned_results = [item[0] for item in results]
+            cleaned_results = [item.replace("'", "") for item in cleaned_results]
+  
    
-    #### CELDAS
-    #sql para sacar datos de vceldas  
-    sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
-    nparametros=cursor.execute(sql)
-    
-    columns = [column[0] for column in cursor.description]
-    #print(columns)
-    TC1 = []
-    for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
-    
-    
-    L_celdas = ''
-    
-    Valor_celdas = ''
-    if len(TC1) > 0: # Hay datos de celdas
-        TC = TC1[0] # Se crea diccionario TC con primer elemento de la lista
-       
-        del TC['Tiempo'] #borramos las claves no utilizadas para calcular max y min
-        del TC['id_celda']
+        #### CELDAS
         
-        Cmax = max(TC, key = TC.get) # clave del valor maximo
-        Cmin = min(TC, key = TC.get) # clave del valor minimo
-        
-        
-    for x in TC:
-        l=''
-        if x == Cmax: l=' --MAX'   
-        elif x== Cmin:l=' --min'   
-        Valor_celdas += f'{x:3}:{TC[x]}V{l}\n'
+            for table_name in cleaned_results:
+                
+                # Construye la consulta para obtener datos de cada tabla
+                sql = f"SELECT * FROM {table_name} ORDER BY Tiempo DESC LIMIT 1"
+                #print (sql)
             
-    L_celdas += (f'\n<code>{Valor_celdas}</code>' + '-'*50+
-                 f'\n <b> Vbat={sum(TC.values()):.2f}V -- Dif= {(TC[Cmax]-TC[Cmin])*1000:.0f}mV </b> ')
-    
-    ##### MENSAJE    
-    tg_msg=L_celdas
-    
-    #print (tg_msg)
-    bot.send_message(cid, tg_msg, parse_mode="HTML")
-    
-    cursor.close()
-    db.close()
-               
-        
+                # Ejecuta la consulta y obtén los datos
+                cursor.execute(sql)
+                table_data = cursor.fetchall()
+                
+                # Imprime los datos de la tabla
+                #print(f"Datos de la tabla {table_name}:")
+                for row in table_data:
+                    columns = [column[0] for column in cursor.description]
+                    TC1=(dict(zip(columns, row)))               
+                
+                    L_celdas = ''
+                
+                    Valor_celdas = ''
+                    if len(TC1) > 0: # Hay datos de celdas
+                        TC2 = {}
+                        for c in TC1:
+                            if c[0] == 'C':
+                                TC2[c] = TC1[c]
+                        
+                        Cmax = max(TC2, key = TC2.get) # clave del valor maximo
+                        Cmin = min(TC2, key = TC2.get) # clave del valor minimo
+                    
+                    
+                        for x in TC2:
+                            l=''
+                            if x == Cmax: l=' --MAX'   
+                            elif x== Cmin:l=' --min'   
+                            Valor_celdas += f'{x:3}:{TC2[x]}V{l}\n'
+                            
+                        L_celdas += (('-' * 10) + f'{table_name}' + '-' * 10 + f'\n<code>{Valor_celdas}</code>' + '-' * 50 +
+             f'\n <b> Vbat={sum(TC2.values()):.2f}V -- Dif= {(TC2[Cmax]-TC2[Cmin])*1000:.0f}mV </b> ')
 
+                    
+                        ##### MENSAJE    
+                        tg_msg=L_celdas
+                    
+                        #print (tg_msg)
+                        bot.send_message(cid, tg_msg, parse_mode="HTML")
+                    
+                    else:
+                        bot.send_message(cid,"Sin datos,algo a salido mal")  
+                        
+            cursor.close()
+            db.close()              
+
+        except Exception as e:
+            print("Error: ", e)
 #------------- INFORMACION ---------------------------
 @bot.message_handler(commands=['i'])
 def command_i(m):
@@ -561,41 +730,44 @@ def command_p(m):
     global markup
 
     cid = m.chat.id
-    
-    bot.send_chat_action(cid,'typing')
+    if cid in Aut:
+        bot.send_chat_action(cid,'typing')
 
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
+        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+        cursor = db.cursor()
 
-    sql_reles='SELECT * FROM parametros'
-    nparametros=cursor.execute(sql_reles)
-    TP=cursor.fetchone()
-    cursor.close()
-    db.close()
+        sql_reles='SELECT * FROM parametros'
+        nparametros=cursor.execute(sql_reles)
+        TP=cursor.fetchone()
+        cursor.close()
+        db.close()
     
-    msg=('PARAMETROS\nGrabar Datos= '+TP[0]+'\n'+'Grabar Reles= '+TP[1]+'\n'+
-         'Tiempo Muestra= '+str(TP[2])+'\n'+ 'Num Muestras entre registros BD= '+str(TP[3])
-         +'\n'+'SOC= '+str(TP[4])+'%')
-    bot.send_message(cid, msg)
+        msg=('PARAMETROS\nGrabar Datos= '+TP[0]+'\n'+'Grabar Reles= '+TP[1]+'\n'+
+             'Tiempo Muestra= '+str(TP[2])+'\n'+ 'Num Muestras entre registros BD= '+str(TP[3])
+             +'\n'+'SOC= '+str(TP[4])+'%')
+        bot.send_message(cid, msg)
     
 
-##Botones para seleccion campo de la tabla parametros 
-    markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
+        ##Botones para seleccion campo de la tabla parametros 
+        markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
 
-    #markup = types.ForceReply(force_replay)
+        #markup = types.ForceReply(force_replay)
     
-    itembtn1 = types.KeyboardButton('/GD Grabar datos FV en BD')
-    itembtn2 = types.KeyboardButton('/GR Grabar reles en BD')
-    itembtn3 = types.KeyboardButton('/TM T_muestra en segundos')
-    itembtn4 = types.KeyboardButton('/NM N_muestras para guardar')
-    itembtn5 = types.KeyboardButton('/SOC Actualizar SOC')
-    itembtn6 = types.KeyboardButton('/VPLACA Actualizar Vplaca_diver')
+        itembtn1 = types.KeyboardButton('/GD Grabar datos FV en BD')
+        itembtn2 = types.KeyboardButton('/GR Grabar reles en BD')
+        itembtn3 = types.KeyboardButton('/TM T_muestra en segundos')
+        itembtn4 = types.KeyboardButton('/NM N_muestras para guardar')
+        itembtn5 = types.KeyboardButton('/SOC Actualizar SOC')
+        itembtn6 = types.KeyboardButton('/PID Actualizar Objetivo_PID')
     
-    itembtn7 = types.KeyboardButton('/? Volver Menu Principal')
+        itembtn7 = types.KeyboardButton('/? Volver Menu Principal')
 
-    markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6, itembtn7)
+        markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6, itembtn7)
       
-    msg=bot.send_message(cid, "Elige parametro:", reply_markup=markup)
+        msg=bot.send_message(cid, "Elige parametro:", reply_markup=markup)
+
+    else:
+        bot.send_message(cid,"Sin autorizacion para mostrar este dato",reply_markup=markup)        
 
 # ---------------- GD -----------------------
 @bot.message_handler(commands=['GD'])
@@ -752,15 +924,15 @@ def SOC_upgrade(message):
     except:
         bot.send_message(cid, "No se puede actualizar el nuevo SOC\n Vuelve a intentarlo",reply_markup=markup)
     
-# ---------------- Vplaca_diver -----------------------
-@bot.message_handler(commands=['O_diver'])
-def O_diver(message):
+# ---------------- Objetivo_PID -----------------------
+@bot.message_handler(commands=['PID'])
+def O_PID(message):
     cid=message.chat.id
     FR=types.ForceReply(True)
-    msg=bot.send_message(cid, "Introduce nuevo Objetivo_diver:",reply_markup=FR)
-    bot.register_next_step_handler(msg,O_diver_upgrade)
+    msg=bot.send_message(cid, "Introduce nuevo Objetivo_PID:",reply_markup=FR)
+    bot.register_next_step_handler(msg,O_PID_upgrade)
 
-def O_diver_upgrade(message):
+def O_PID_upgrade(message):
     cid=message.chat.id
     bot.send_chat_action(cid,'typing')
     try:
@@ -768,10 +940,10 @@ def O_diver_upgrade(message):
             db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
             cursor = db.cursor()
 
-            sql = "UPDATE parametros SET objetivo_diver='"+message.text+ "'"
+            sql = "UPDATE parametros SET objetivo_PID='"+message.text+ "'"
             cursor.execute(sql)
             db.commit()
-            bot.send_message(cid,"objetivo_diver cambiado a "+message.text,reply_markup=markup)
+            bot.send_message(cid,"objetivo_PID cambiado a "+message.text,reply_markup=markup)
             cursor.close()
             db.close()
         else:
@@ -784,48 +956,53 @@ def O_diver_upgrade(message):
 @bot.message_handler(commands=['r'])
 def reles(message):
     cid=message.chat.id
-    bot.send_chat_action(cid,'typing')
-    try:
-        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-        cursor = db.cursor()
+
+    if cid in Aut:
+        bot.send_chat_action(cid,'typing')
+        try:
+            db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+            cursor = db.cursor()
         
-        sql = "SELECT id_rele,nombre,modo,estado,grabacion FROM reles"
-        cursor.execute(sql)
-        nreles=cursor.execute(sql)
-        nreles=int(nreles)  # = numero de reles
-        TR=cursor.fetchall()
-        cursor.close()
-        db.close()
+            sql = "SELECT id_rele,nombre,modo,estado,grabacion FROM reles"
+            cursor.execute(sql)
+            nreles=cursor.execute(sql)
+            nreles=int(nreles)  # = numero de reles
+            TR=cursor.fetchall()
+            cursor.close()
+            db.close()
         
-        msg=' ----- ESTADO RELES -----'+ '\n'
-        msg=msg+'_id_|_S_|Mod|Gr| Nombre'+ '\n'
-        for I in range(nreles):
-            msg=msg+str(TR[I][0])+'|_'+ str(TR[I][3])+'_|'+TR[I][2].ljust(3)+'|'+ TR[I][4]
-            msg=msg+ ' | '+TR[I][1] +'\n'
+            msg=' ----- ESTADO RELES -----'+ '\n'
+            msg=msg+'_id_|_S_|Mod|Gr| Nombre'+ '\n'
+            for I in range(nreles):
+                msg=msg+str(TR[I][0])+'|_'+ str(TR[I][3])+'_|'+TR[I][2].ljust(3)+'|'+ TR[I][4]
+                msg=msg+ ' | '+TR[I][1] +'\n'
                         
         
-        bot.send_message(cid, msg)
+            bot.send_message(cid, msg)
     
 
-##Botones reles 
-        markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
+            ##Botones reles 
+            markup = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=False,resize_keyboard=True)
 
-        #markup = types.ForceReply(force_replay)
+            #markup = types.ForceReply(force_replay)
         
-        itembtn1 = types.KeyboardButton('/ON Poner Rele a ON')
-        itembtn2 = types.KeyboardButton('/OFF Poner Rele a OFF')
-        itembtn3 = types.KeyboardButton('/PRG Poner Rele a PRG')
-        itembtn4 = types.KeyboardButton('/Crear_Rele')
-        itembtn5 = types.KeyboardButton('/Borrar_Rele')
-        itembtn6 = types.KeyboardButton('/? Volver Menu Principal')
+            itembtn1 = types.KeyboardButton('/ON Poner Rele a ON')
+            itembtn2 = types.KeyboardButton('/OFF Poner Rele a OFF')
+            itembtn3 = types.KeyboardButton('/PRG Poner Rele a PRG')
+            itembtn4 = types.KeyboardButton('/Crear_Rele')
+            itembtn5 = types.KeyboardButton('/Borrar_Rele')
+            itembtn6 = types.KeyboardButton('/? Volver Menu Principal')
 
-        markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6)
+            markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6)
 
-        msg=bot.send_message(cid, "Elige parametro:", reply_markup=markup)
+            msg=bot.send_message(cid, "Elige parametro:", reply_markup=markup)
 
-    except:
-        msg= 'Error al acceder a la tabla reles'
-        bot.send_message(cid, msg)
+        except:
+            msg= 'Error al acceder a la tabla reles'
+            bot.send_message(cid, msg)
+
+    else:
+        bot.send_message(cid,"Sin autorizacion para mostrar este dato",reply_markup=markup)       
 
 # ---------------- RELE ON -----------------------
 @bot.message_handler(commands=['ON'])
@@ -902,16 +1079,64 @@ def rele_upgrade(orden,nrele,cid):
 def comando_hibrido(message):
     cid=message.chat.id
     
+    txt = """
+Introduce cualquier Comando ...
+
+    <b><u> ----- Protocolo 30 -----</u></b>
+\U00002753 <i>Ejemplos Consulta</i>
+     <code>QPI</code> : Numero Protocolo
+     <code>QPIGS</code> : Informacion Status general
+ 
+\U0001f527 <i>Ejemplos Parametros</i>
+     <code>PCP00</code> : <i> Prioridad carga 
+         00= AC, 01=Solar, 
+         02=Solar&AC, 03 Solo Solar</i>
+         
+     <code>POP00</code> : <i> Prioridad salida
+         00=AC, 01=Solar, 02=SBU</i>
+     
+     <code>PCVV28.8</code> : Voltaje Absorcion a 28.8 
+     <code>PBFT27.2</code> : Voltaje Flotacion a 27.2
+     
+"""
     FR=types.ForceReply(True)
-    msg=bot.send_message(cid, "introduce Comando = ",reply_markup=FR)
+
+    if cid in Aut:    
+        msg=bot.send_message(cid, txt, reply_markup=FR, parse_mode="HTML")
+        #msg=bot.send_message(cid, txt, parse_mode="HTML")
     
-    bot.register_next_step_handler(msg,mandar_comando_hibrido)
+    
+        """    
+        itembtn1 = types.KeyboardButton('PCP00')
+        itembtn2 = types.KeyboardButton('PCP01')
+        itembtn3 = types.KeyboardButton('PCP02')
+        itembtn4 = types.KeyboardButton('PCP03')
+        itembtn5 = types.KeyboardButton('PBFT27.2')
+        itembtn6 = types.KeyboardButton('PBFT28.8')
+        itembtn7 = types.KeyboardButton('')
+
+        itembtn8 = types.KeyboardButton('/? Volver Menu Principal')
+    
+        markup1.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6, itembtn7, itembtn8)
+    
+        msg=bot.send_message(cid, txt,reply_markup=markup1,parse_mode="HTML")      
+        """
+    
+    
+        bot.register_next_step_handler(msg,mandar_comando_hibrido)
+
+    else:
+        bot.send_message(cid,"Sin autorizacion para mostrar este dato",reply_markup=markup)    
 
 def mandar_comando_hibrido(message):
     cid=message.chat.id
     #print (message.text)
+    
     if cid in Aut:
-        client.publish('PVControl/Hibrido',message.text)
+        #client.publish('PVControl/Hibrido',message.text)
+        print('PVControl/Hibrido',message.text)
+    msg=bot.send_message(cid, message.text,reply_markup=markup)      
+
     
 # -------- Funcion Alarma ------------
 @bot.message_handler(commands=['V','v']) 
@@ -994,7 +1219,16 @@ def command_motion_estado(m):
     elif orden == 'TIME':
         bot.send_message(cid, 'hora '+str(datetime.datetime.now()))      
 """
-           
+
+# ---------------- Comandos Personalizados -----------------------
+@bot.message_handler(commands=['c','C'])
+def comando_personalizado(message):
+    markup1 = types.ReplyKeyboardMarkup(row_width=2,one_time_keyboard=botones_visibles_una_vez,resize_keyboard=True)
+    for c in cmd_telegram: markup1.add(types.KeyboardButton(text=c))
+    markup1.add(types.KeyboardButton(text='/? Volver'))
+    
+    msg=bot.send_message(cid, 'Lista Comandos Personalizados', reply_markup=markup1)
+    
 #############################################
 #Polling
 def telegram_polling():

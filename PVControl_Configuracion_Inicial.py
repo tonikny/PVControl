@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-02-04
+# Versión 2025-11-25
 
 import time,sys,os,glob
 import MySQLdb 
@@ -68,6 +68,10 @@ print(f'  0 = Archivo actual {f[0]}')
 print(Fore.YELLOW)
 print ('..... elija el numero a usar de los archivos preconfigurados')
 
+print( '=' * 80)
+print( ' PARA LA CONFIGURACION INICIAL ES MUY CONVENIENTE SELECCIONAR Parametros_FV_DIST.py')
+print( '=' * 80)
+
 print ('..... Pulse 0 para usar el archivo Parametros_FV.py actual')
 print()
 print ('..... Pulse 99 para seguir sin modificar el archivo Parametros_FV.py')
@@ -105,7 +109,7 @@ if s != 99:
         
     print(Fore.RED+'ES MUY IMPORTANTE RELLENAR BIEN ESTE ARCHIVO SIN ERRORES DE SINTAXIS')
     print ('LEA EL MANUAL SI TIENE DUDAS DE COMO RELLENAR EL ARCHIVO')
-    print(Fore.YELLOW+' MODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de geany para continuar')
+    print(Fore.YELLOW+' MODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de Thonny para continuar')
     print('#' * 80)
 
     continuar = click.prompt('pulsa una tecla para seguir.....    ', type=str, default=' ')
@@ -151,9 +155,6 @@ res = subprocess.run(['sudo','rm', '/home/pi/Desktop/Deshabilitar_Servicios_PVCo
 res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Arrancar_servicios_PVControl+.py','/home/pi/Desktop'])
 res = subprocess.run(['sudo','ln', '-s','/home/pi/PVControl+/Parar_Servicios_PVControl+.py','/home/pi/Desktop'])
 
-if not os.path.exists('/home/pi/PVControl+/etc/cron.d/pvcontrol'):
-    res = subprocess.run(['sudo','cp', '-n', '/home/pi/PVControl+/etc/cron.d/pvcontrol.DIST','/home/pi/PVControl+/etc/cron.d/pvcontrol'])
-
 
 # ######## ACTUALIZACION BD (CAMPOS,..) 
 try:
@@ -178,7 +179,7 @@ print (Fore.YELLOW+'  Actualización de la tabla parametros para el Control de E
 print ()
 print(Fore.RED+'ES MUY IMPORTANTE DEFINIR LOS CAMPOS DE CONTROL DE EXCEDENTES ACORDES A LA INSTALACION FV')
 print ('LEA EL MANUAL SI TIENE DUDAS DE LO QUE TIENE QUE PONER')
-#print(Fore.YELLOW+' iNTRODMODIFIQUE LO NECESARIO SEGUN SU INSTALACION, ...GUARDE el archivo..... y SALGA de geany para continuar')
+
 print('#' * 80)
 
 sensor_PID = click.prompt(Fore.YELLOW+'Introduce la variable de control de excedentes ', type=str, default='Vbat')

@@ -7,8 +7,8 @@
 <body>
 
 <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-<script src="http://code.highcharts.com/highcharts.js"></script>
-<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
 
 
 <div id="container" style="width: 1000px; height: 310px; margin: 0 auto">

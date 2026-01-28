@@ -76,7 +76,7 @@ else:
 
 if NUM_OLED == 0: print ('NO detectada OLED')
 elif NUM_OLED >= 1: 
-    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.ANTIALIAS).convert('1')    
+    image = Image.open(basepath+'pvcontrol_128_64.png').resize((disp1.width, disp1.height), Image.LANCZOS).convert('1')    
     disp1.display(image.convert(disp1.mode))   
     
     width = disp1.width

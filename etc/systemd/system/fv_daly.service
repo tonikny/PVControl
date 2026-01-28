@@ -3,8 +3,11 @@ Description=FV lectura DALY
 After= fv.service
 
 [Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
 ExecStartPre=/bin/sleep 5
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_daly.py
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_daly.py
 Restart=always
 RestartSec=60
 

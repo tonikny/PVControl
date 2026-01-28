@@ -1,0 +1,15 @@
+[Unit]
+Description=FV lectura PYLONTECH
+After= fv.service
+
+[Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 5
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_pylontech.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

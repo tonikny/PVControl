@@ -1,18 +1,37 @@
+################ CONFIGURACION ##############################
+mqtt_broker  = "192.168.1.10"
+mqtt_puerto  = 1883
+mqtt_usuario = "rpi"
+mqtt_clave   = "fv"
+
+# lista con [Nombre, Topic, valor por defecto, num decimales, unidades, rojo, amarillo, verde, amarillo, rojo]
+
+Datos =  [['SOC',"PVControl/SOC",80,0,'%',25,50,100,100,100],
+          ['Voltaje',"PVControl/Vbat", 24,1,'V',51,52,58.1,58.4,59],
+          ['Intensidad',"PVControl/Ibat",0,0,'A',-120,-80,80,100,120],
+          ['Placas',"PVControl/Wplaca",0,0,'W',-10,500,4000,5000,6000],
+          
+          ['INV_1',"PVControl/W1",0,0,'W',-1000,-1000,3000,4000,5000],
+          ['INV_2',"PVControl/W2",0,0,'W',-1000,-1000,3000,4000,5000],
+          ['TOTAL',"PVControl/W3",0,0,'W',-1000,-1000,6000,8000,10000] 
+         ]
+         
+Titulo = '   BATERIAS'
+
+t_refresco = 1 # tiempo de refresco en sg
+
+######################################################
+
 import time
 from tkinter import *
-
 import paho.mqtt.client as mqtt
-
 import locale
 locale.setlocale(locale.LC_ALL, '')
 
 def on_connect(client, userdata, flags, rc):
-    #print("Connected with result code "+str(rc))
-    client.subscribe("PVControl/DatosFV/SOC")
-    client.subscribe("PVControl/DatosFV/Vbat")
-    client.subscribe("PVControl/DatosFV/Ibat")
-    client.subscribe("PVControl/DatosFV/Iplaca")
-    
+    for s in Datos:
+        client.subscribe(s[1])
+    print("Suscripcion a topic MQTT realizada con resultado "+str(rc))
      
 def on_disconnect(client, userdata, rc):
     if rc != 0:
@@ -22,70 +41,21 @@ def on_disconnect(client, userdata, rc):
         client.disconnect()
 
 def on_message(client, userdata, msg):
-    global SOC, Vbat,Ibat, Iplaca,hora_msg, t_msg
+    global Datos, hora_msg, t_msg
     
     hora_msg = time.strftime("%H:%M:%S")
     t_msg = time.time()
     
-    #print(msg.topic+" "+str(msg.payload))
-    if msg.topic== "PVControl/DatosFV/SOC":
-        SOC = round(float(msg.payload),1)    
-    elif msg.topic== "PVControl/DatosFV/Vbat":
-        Vbat = round(float(msg.payload),1)
-    elif msg.topic== "PVControl/DatosFV/Ibat":
-        Ibat = round(float(msg.payload))
-    elif msg.topic== "PVControl/DatosFV/Iplaca":
-        Iplaca = round(float(msg.payload),1)
-       
-
+    for i in range(len(Datos)):
+        if msg.topic == Datos[i][1]:
+            Datos[i][2] = round(float(msg.payload),Datos[i][3])
+            
 def muestra():
-    global SOC,Vbat,Ibat,Iplaca,hora_msg,t_msg
-   
-    #Vbat_status.configure(text = Vbat+' V')
-    soc_label.configure(text = str(SOC) +' %')
-    vbat_label.configure(text = str(Vbat) +' V')
-    ibat_label.configure(text = str(Ibat) +' A')
-    
-    consumo = f'{round((Iplaca-Ibat) * Vbat):,.0f}'.replace(",", "@").replace(".", ",").replace("@", ".") + ' W'
-    #wconsumo_label.configure(text = str(round((Iplaca-Ibat) * Vbat)) +' W')
-    wconsumo_label.configure(text = consumo)
+    global Datos, hora_msg, t_msg
     
     hora_label.configure(text = hora_msg)
-   
-  
-    v = float(Vbat)
-    if v < 24 or v > 29.5:
-        vbat_label.configure(bg = 'red')   
-    elif v < 24.3 or v > 28.5:
-        vbat_label.configure(bg = 'orange')
-    else:
-        vbat_label.configure(bg = 'green')   
-       
-    so = round(float(SOC),1)
-   
-    if so < 80: soc_label.configure(bg = 'red')   
-    elif so < 85:  soc_label.configure(bg = 'orange')
-    else: soc_label.configure(bg = 'green')
-   
-    i = round(float(Ibat))
-   
-    if i < -80 or 1 > 100:
-        ibat_label.configure(bg = 'red')   
-    elif i < -60 or i > 80:
-        ibat_label.configure(bg = 'orange')
-    else:
-        ibat_label.configure(bg = 'green')   
-   
-    w = round(float((Iplaca-Ibat)*Vbat))
-   
-    if w > 3000:
-        wconsumo_label.configure(bg = 'red')   
-    elif w > 2000:
-        wconsumo_label.configure(bg = 'orange')
-    else:
-        wconsumo_label.configure(bg = 'green')   
-   
-   
+    
+    # Control de tiempo de ultima actualización
     if time.time()-t_msg > 120:
         hora_label.configure(bg = 'red')
     elif time.time()-t_msg > 20:
@@ -93,17 +63,23 @@ def muestra():
     else:
         hora_label.configure(bg = 'green')
     
-    root.after(2000, muestra)       
-
-
+    # Actualizo valores y fondo de color
+    for i in range(1,8):
+        exec(f"F{i}_label.configure(text = '{Datos[i-1][2]:,.{Datos[i-1][3]}f}'.replace(',', '@').replace('.', ',').replace('@', '.') + ' {Datos[i-1][4]}')")
+        
+        if Datos[i-1][2] < Datos[i-1][5] or Datos[i-1][2] > Datos[i-1][9]:
+            exec(f"F{i}_label.configure(bg = 'red')")
+        elif Datos[i-1][2] < Datos[i-1][6] or Datos[i-1][2] > Datos[i-1][8]:
+            exec(f"F{i}_label.configure(bg = 'orange')")
+        else:
+            exec(f"F{i}_label.configure(bg = 'green')")
+    
+    
+    root.after(t_refresco*1000, muestra)       
 
 ##################
 ###### MQTT ######
 ##################
-mqtt_broker  = "localhost"
-mqtt_puerto  = 1883
-mqtt_usuario = "rpi"
-mqtt_clave   = "fv"
              
 client = mqtt.Client() #crear nueva instancia
 client.on_connect = on_connect
@@ -120,15 +96,12 @@ client.loop_start()
 
 ####################################################33
 
-Vbat = 24
-SOC = 50
-Ibat = 0
-Iplaca = 0
+
 hora_msg = time.strftime("%H:%M:%S")
 t_msg = time.time()
 
 root = Tk()
-root.geometry('1100x300')
+root.geometry('1150x500') #300
 root.title('PVControl+  GUI')
 
 canvas = Canvas(root, width = 400, height = 80,bg = 'seagreen')
@@ -137,57 +110,54 @@ canvas.pack(anchor = NW,fill = BOTH)#, expand = True)
 #foto_logo = PhotoImage(file = 'PVControl+.gif') #logo.gif
 #canvas.create_image(120, 40, image=foto_logo)
 
-canvas.create_text(400, 35,text = '      BATERIAS TITUL', font = ('Helvetica', 40, 'bold'), fill='black')
+canvas.create_text(400, 35,text = Titulo, font = ('Helvetica', 40, 'bold'), fill='black')
 #canvas.create_text(300, 50, text = '  ', font = ('Helvetica', 12, 'bold'), justify = 'center', fill='black')
 
 #canvas.create_text(400, 200, text = 'SOC='+ SOC, font = ('Helvetica', 20, 'bold'), justify = 'center', fill='black')
 
 canvas.update
 
-
-soc_fr = Frame(root,bg="khaki",width=250,bd=2,height=150)
-vbat_fr = Frame(root,bg="khaki",width=250,bd=2,height=150)
-ibat_fr = Frame(root,bg="khaki",width=250,bd=2,height=150)
-wconsumo_fr = Frame(root,bg="khaki",width=280,bd=2,height=150)
+# Creacion frames
 hora_fr = Frame(root,bg="yellow",width=200,bd=2,height=50)
 
-soc_fr.place(x=10,y=120)# fill = BOTH)#,expand = True)
-vbat_fr.place(x=280,y=120)# fill = BOTH)#,expand = True)
-ibat_fr.place(x=550,y=120)# fill = BOTH)#,expand = True)
-wconsumo_fr.place(x=820,y=120)# fill = BOTH)#,expand = True)
+F1_fr = Frame(root,bg="khaki",width=250,bd=2,height=150)
+F2_fr = Frame(root,bg="khaki",width=250,bd=2,height=150)
+F3_fr = Frame(root,bg="hot pink",width=250,bd=2,height=150)
+F4_fr = Frame(root,bg="khaki",width=300,bd=2,height=150)
 
+F5_fr = Frame(root,bg="khaki",width=300,bd=2,height=150)
+F6_fr = Frame(root,bg="khaki",width=300,bd=2,height=150)
+F7_fr = Frame(root,bg="khaki",width=300,bd=2,height=150)
+
+#Coloco frames en root
 hora_fr.place(x=800,y=10)# fill = BOTH)#,expand = True)
 
+F1_fr.place(x=5,y=120)# fill = BOTH)#,expand = True)
+F2_fr.place(x=260,y=120)# fill = BOTH)#,expand = True)
+F3_fr.place(x=515,y=120)# fill = BOTH)#,expand = True)
+F4_fr.place(x=770,y=120)# fill = BOTH)#,expand = True)
 
-soc_tit=Label(soc_fr, relief ='groove',text=" SOC ",font=("Verdana",20))
-soc_tit.place(x=60, y=0, height=30,width = 120)
-
-vbat_tit=Label(vbat_fr, relief ='groove',text=" Vbat ",font=("Verdana",20))
-vbat_tit.place(x=60, y=0, height=30,width = 120)
-
-ibat_tit=Label(ibat_fr, relief ='groove',text=" Ibat ",font=("Verdana",20))
-ibat_tit.place(x=60, y=0, height=30,width = 120)
-
-wconsumo_tit=Label(wconsumo_fr, relief ='groove',text=" Consumo ",font=("Verdana",20))
-wconsumo_tit.place(x=60, y=0, height=30,width = 140)
+F5_fr.place(x=10,y=320)
+F6_fr.place(x=320,y=320)
+F7_fr.place(x=630,y=320)
 
 
-soc_label = Label(soc_fr,  text = "SOC", font = ('Helvetica', 50, 'bold'))
-soc_label.place(x=10, y=50, height=80,width = 225)
-
-vbat_label = Label(vbat_fr,  text = "Vbat", font = ('Helvetica', 50, 'bold'))
-vbat_label.place(x=10, y=50, height=80,width = 225)
-
-ibat_label = Label(ibat_fr,  text = "Ibat", font = ('Helvetica', 50, 'bold'))
-ibat_label.place(x=10, y=50, height=80,width = 225)
-
-wconsumo_label = Label(wconsumo_fr,  text = "Consumo", font = ('Helvetica', 40, 'bold'))
-wconsumo_label.place(x=10, y=50, height=80,width = 240)
-
+# Titulos de frames
 
 hora_label = Label(hora_fr,  text = "Hora_mensaje", font = ('Helvetica', 30, 'bold'))
 hora_label.place(x=2, y=2, height=40,width = 190)
 
+# Variables
+for i in range(1,8):
+    # Titulos
+    exec(f"F{i}_tit=Label(F{i}_fr, relief ='groove',text=' {Datos[i-1][0]} ',font=('Verdana',18,'bold'))")
+    exec(f"F{i}_tit.place(x=50, y=0, height=30,width = 150)")
+    
+    # Valores
+    #exec(f"F{i}_label=Label(F{i}_fr, text=' {Datos[i-1][2]} {Datos[i-1][4]} ',font=('Helvetica',50))")
+    exec(f"F{i}_label=Label(F{i}_fr, text=' {Datos[i-1][2]} {Datos[i-1][4]} ',font=('Arial',50, 'bold'))")
+    if i<4: exec(f"F{i}_label.place(x=5, y=50, height=80,width = 225)") # primera linea
+    else: exec(f"F{i}_label.place(x=5, y=50, height=80,width = 275)")   # segunda linea
 
 muestra()
 

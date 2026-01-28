@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-09-22
+# Versión 2023-07-14
 
 import time,sys,os,glob
 import MySQLdb 
@@ -9,14 +9,30 @@ import MySQLdb
 import subprocess,shutil
 import click
 
-#Parametros Instalacion FV
-from Parametros_FV import *
-
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
 from datetime import datetime
+
+#################################################
+# tablas a BORRAR con campo fecha
+# Sobreescribir configuración en ParametrosFV
+#################################################
+tablas_d=[
+         ['reles_segundos_on',366],
+        ]  
+
+
+
+parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
+parametros_FV_DIST = "/home/pi/PVControl+/Parametros_FV_DIST.py"
+try:
+    exec(open(parametros_FV_DIST).read(),globals()) #cargo Parametros_FV_DIST.py por si hay variables no definidas en Parametros_FV.py
+    exec(open(parametros_FV).read(),globals()) #cargo Parametros_FV.py
+except:
+    print ('Error en carga de los ficheros Parametros_FV_DIST.py o Parametros_FV.py')
+    
 
 ###### UBICACION DE LA CARPETA DE BACKUP ###########
 
@@ -51,26 +67,21 @@ def borrar_ficheros(carpeta, dias=10): # borra ficheros mas antiguos de X dias e
 
 def vaciar_tablas():
     try: # tuplas de [nombre tabla, dias maximos de antiguedad de registros]
-        # tablas con campo tiempo (fecha/hora)
-        tablas=[
-                ['datos_s',10],
-                ['datos',366],
-                ['reles_grab',366],
-                ['log',30],
-                ['hibrido',366],
-                ['datos_aux',366]
-               ]
-               
-        # tablas con campo fecha
-        tablas_d=[
-                  ['reles_segundos_on',366],
-                 ]      
-               
+
         error='conexion BD'
         db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
         cursor = db.cursor()
         
-        for t in tablas:
+        for t in limpieza_tablas:
+            # chequear que la tabla existe en la BD
+            sql = f"SHOW TABLES LIKE '{t[0]}'"
+            try:
+                cursor.execute(sql)
+                if not cursor.fetchone(): continue   
+            except:
+                pass
+            
+            # Limpieza de registros antiguos
             error = f'borrando tabla {t[0]}'
             sql = f"DELETE FROM {t[0]} WHERE Tiempo < SUBDATE(NOW(),INTERVAL {t[1]} DAY)"
             try:

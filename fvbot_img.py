@@ -10,6 +10,7 @@ import os,glob # para mandar ultimo video
 
 # -----------------------------------------------
 ## Los parametros si se usa en PVControl+ lo logico es pillarlos del fichero Parametros_FV.py"
+from Parametros_FV_DIST import *
 from Parametros_FV import * # importo TOKEN de Telegram etc
 
 """

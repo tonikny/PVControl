@@ -1,0 +1,15 @@
+[Unit]
+Description= PVControl+ - Lectura BMS JK por RS485
+After=mysql.service
+
+[Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_jk_rs485.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,16 @@
+[Unit]
+Description= PVControl+ - Lectura SRNE
+After=mysql.service
+
+[Service]
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+SyslogIdentifier=%N
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_srne.py
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target
+

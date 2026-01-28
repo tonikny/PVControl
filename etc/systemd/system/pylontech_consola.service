@@ -1,0 +1,15 @@
+[Unit]
+Description=Control PYLONTEC POR PUERTO CONSOLA
+After=mysql.service
+
+[Service]
+SyslogIdentifier=%N
+ExecStart=/usr/bin/python3 -u /home/pi/PVControl+/pylontech_consola.py
+WorkingDirectory=/home/pi/PVControl+/
+StandardOutput=journal
+StandardError=journal
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

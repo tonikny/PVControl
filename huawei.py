@@ -1,24 +1,24 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#  version 17/Dic/21
+#  version 2023-32-12
 #--------------------------------------------------------------------------
+# #################### Control Ejecucion Servicio ########################################
+equipo = 'huawei'
+servicio = 'huawei'
+control = 'usar_huawei'
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
+# ########################################################################################
+
+
 from pyModbusTCP.client import ModbusClient
 import time
 import sys
 import subprocess
 import MySQLdb 
 import json
-from Parametros_FV import *
 import pickle
-
-if usar_huawei == 0:
-        print (subprocess.getoutput('sudo systemctl stop huawei'))
-        sys.exit()
         
-hua = ModbusClient()
-hua.host(IP_HUAWEI)
-hua.port(502)
-hua.unit_id(0)
+hua = ModbusClient(host=IP_HUAWEI, port=puerto_huawei, unit_id=0)
 hua.open()
 
 Equipo = 'HUAWEI'

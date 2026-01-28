@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# ======= ACTIVACIÓN DEL ENTORNO VIRTUAL PVControl+ =======
+PVCDIR="/home/pi/PVControl+"
+if [ -f "$PVCDIR/env/bin/activate" ]; then
+    source "$PVCDIR/env/bin/activate"
+    echo -e "\033[1;34m✓ Entorno virtual PVControl+ activado\033[0m"
+else
+    echo -e "\033[0;31m✗ ERROR: No se encuentra el entorno virtual en $PVCDIR/env\033[0m"
+    exit 1
+fi
+
+# Ruta de la carpeta de actualizaciones y archivo de log
+ACTUALIZACIONES_DIR="./actualizaciones"
+LOG_FILE="./actualizaciones/log_actualizaciones_personal.txt"
+
+# Códigos de colores
+COLOR_VERDE="\033[0;32m"
+COLOR_ROJO="\033[0;31m"
+COLOR_AZUL="\033[1;34m"
+COLOR_AMARILLO="\033[1;33m"
+
+COLOR_RESET="\033[0m"
+
+# Asegúrate de que el archivo de log existe
+if [ ! -f "$LOG_FILE" ]; then
+    touch "$LOG_FILE"
+fi
+
+# Función para registrar en el log
+registrar_log() {
+    local archivo=$1
+    local resultado=$2
+    local fecha_hora=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "$fecha_hora $archivo $resultado" >> "$LOG_FILE"
+}
+
+# Función para verificar si un archivo ya fue ejecutado con éxito
+ya_ejecutado() {
+    local archivo=$1
+    grep -q "$archivo ACTUALIZADO" "$LOG_FILE" 2>/dev/null
+}
+
+echo
+echo -e "${COLOR_AMARILLO}  ====== ACTUALIZACION PVControl+ ======= ${COLOR_RESET}"
+echo
+echo -e "${COLOR_AZUL}----------- INICIO ACTUALIZACION GIT ----------------------- ${COLOR_RESET}"
+
+# Realiza el git pull
+echo "Actualizando el repositorio git de PVControl+..."
+git pull
+
+# Verificar si git pull tuvo éxito
+if [ $? -ne 0 ]; then
+    echo -e "${COLOR_ROJO}Error: 'git pull' falló. Deteniendo el proceso.${COLOR_RESET}"
+    exit 1
+fi
+
+echo -e "${COLOR_AZUL}------------- FIN ACTUALIZACION GIT -----------------------${COLOR_RESET}"
+
+echo
+echo -e "${COLOR_AMARILLO}  ---------------------------------------------------- ${COLOR_RESET}"
+echo
+
+echo -e "${COLOR_AZUL}----------- INICIO ACTUALIZACION CONFIGURACION ---------------- ${COLOR_RESET}"
+
+# Itera sobre los archivos en la carpeta de actualizaciones
+for archivo in "$ACTUALIZACIONES_DIR"/*; do
+    # Verificar si ya fue ejecutado con éxito
+    if ya_ejecutado "$archivo"; then
+        echo -e "${COLOR_VERDE}El archivo $archivo ya se ejecutó correctamente anteriormente. Saltando...${COLOR_RESET}"
+        continue
+    fi
+
+    # Si el archivo es un script de Python
+    if [[ "$archivo" == *.py ]]; then
+        if [[ "$archivo" == *root* ]]; then
+            echo "Ejecutando con privilegios de superusuario: $archivo"
+            sudo python "$archivo"
+        else
+            echo "Ejecutando: $archivo"
+            python "$archivo"
+        fi
+    
+    # Si el archivo es un script de bash
+    elif [[ "$archivo" == *.sh ]]; then
+        if [[ "$archivo" == *root* ]]; then
+            echo "Ejecutando con privilegios de superusuario: $archivo"
+            sudo bash "$archivo"
+        else
+            echo "Ejecutando: $archivo"
+            bash "$archivo"
+        fi
+    fi
+
+    # Verificar si el script anterior tuvo éxito
+    if [ $? -ne 0 ]; then
+        echo -e "${COLOR_ROJO}Error: El script $archivo falló.${COLOR_RESET}"
+        registrar_log "$archivo" "FALLO"
+        exit 1
+    else
+        echo -e "${COLOR_VERDE}El script $archivo se ejecutó correctamente.${COLOR_RESET}"
+        registrar_log "$archivo" "ACTUALIZADO"
+    fi
+
+    # Línea de separación entre bloques
+    echo "---------------------------------------------"
+
+done
+
+echo -e "${COLOR_AZUL}------------- FIN ACTUALIZACION CONFIGURACION ---------------- ${COLOR_RESET}"
+echo
+
+echo -e "${COLOR_AMARILLO}  ====== ACTUALIZACION PVControl+ COMPLETADA ======= ${COLOR_RESET}"
+echo
+
+
+

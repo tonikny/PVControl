@@ -16,7 +16,7 @@ if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
 
 
 //Coger datos grafica
-$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Aux1, Vplaca,Wplaca,PWM,IPWM_P,IPWM_I,IPWM_D
+$sql = "SELECT  UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Aux1, Vplaca,Wplaca,PWM,IPWM_P,IPWM_I,IPWM_D,Wred
         FROM datos_s WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
         ORDER BY id lIMIT 80000";
 
@@ -61,10 +61,10 @@ mysqli_close($link);
 <!---->
 
 <script src="https://code.jquery.com/jquery.js"></script>
-<script src="http://code.highcharts.com/stock/highstock.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
 
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
 
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
     Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
@@ -89,6 +89,11 @@ $(function () {
     global: {
       useUTC: false
       },
+      
+    time: {
+        timezone: zona_horaria
+    },
+            
     lang: {
       months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
       weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
@@ -109,7 +114,7 @@ $(function () {
       panKey: 'shift'
       },
     title: {
-      text: 'SOC, Iplaca -Ibat - Vbat - Vplaca - Wplaca - PWM - IPWM_P/I/D'
+      text: 'SOC, Iplaca -Ibat - Vbat - Vplaca - Wplaca - Wred - PWM - IPWM_P/I/D'
       },
     subtitle: {
       //text: 'Permite Zoom XY'
@@ -119,7 +124,8 @@ $(function () {
       },
     yAxis: [
      {// ########## 0 - Valores eje Intensidad ######################
-      opposite: false,     
+      opposite: false,  
+      visible: Eje_Intensidad,   
       min: Escala_intensidad_min,
       max: Escala_intensidad_max,
       tickInterval: 20,
@@ -145,6 +151,7 @@ $(function () {
      },
      {// ########## 1 - Valores eje Vbat ######################
       opposite: false,
+      visible: Eje_Vbat,
       min: Escala_Vbat_min,
       max: Escala_Vbat_max,
       tickInterval: 1,
@@ -185,6 +192,7 @@ $(function () {
      },
      {// ########## 2 - Valores eje SOC ######################
       opposite: true,
+      visible: Eje_SOC,
       min: 20,
       max: 100 ,
       tickInterval: 20,
@@ -221,6 +229,7 @@ $(function () {
      },
      {// ########## 3 - Valores eje PWM ######################
       opposite: true,
+      visible: Eje_PWM,
       min: -50,
       max: Escala_PWM_max,
       gridLineColor: 'transparent',
@@ -260,6 +269,7 @@ $(function () {
      },
      {// ########## 4 - Valores eje WPlaca ######################
       opposite: true,
+      visible: Eje_Wplaca,
       min: 0,
       max: Watios_placa_max ,
       gridLineColor: 'transparent',
@@ -293,6 +303,44 @@ $(function () {
         y: -5
         },
       },
+     {// ########## 6 - Valores eje Wred ######################
+      opposite: true,
+      visible: Eje_Wred,
+      min: Escala_Wred_min,
+      max: Escala_Wred_max,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      labels: {
+        //align: 'left',
+        y: 5
+        },
+      title: {
+        align: 'high',
+        offset: -10,
+        text: 'Wred',
+        rotation: 0,
+        y: -5
+        },
+      },
+      {// ########## 7 - Valores eje Vplaca ######################
+      opposite: true,
+      visible: Eje_Vplaca,
+      min: 0,
+      max: Escala_Vplaca_max,
+      gridLineColor: 'transparent',
+      minorGridLineColor: 'transparent',
+      labels: {
+        //align: 'left',
+        y: 5
+        },
+      title: {
+        align: 'high',
+        offset: -10,
+        text: 'Vplaca',
+        rotation: 0,
+        y: -5
+        },
+      }   
      ],
 
     xAxis: {
@@ -331,7 +379,7 @@ $(function () {
       },
     series: [
      {name: 'SOC',
-      visible: false,
+      visible: SOC_visible,
       type: 'spline',
       yAxis: 2,
       color: Highcharts.getOptions().colors[1],
@@ -352,6 +400,7 @@ $(function () {
      },
      {name: 'Vbat',
       type: 'spline',
+      visible: Vbat_visible,
       yAxis: 1,
       color: Highcharts.getOptions().colors[0],
       tooltip: {
@@ -370,6 +419,7 @@ $(function () {
      },
      {name: 'Ibat',
       type: 'spline',
+      visible: Ibat_visible,
       color: Highcharts.getOptions().colors[2],
       tooltip: {
         valueSuffix: ' A',
@@ -387,6 +437,7 @@ $(function () {
      },
      {name: 'Iplaca',
       type: 'spline',
+      visible: Iplaca_visible,
       color: Highcharts.getOptions().colors[3],
       tooltip: {
         valueSuffix: ' A',
@@ -403,9 +454,9 @@ $(function () {
         })()
      },
      {name: 'Vplaca',
-      visible: false,
+      visible: Vplaca_visible,
       type: 'spline',
-      yAxis: 0, // poner 2 para escala del SOC
+      yAxis: 7, // poner 2 para escala del SOC
       color: Highcharts.getOptions().colors[20],
       tooltip: {
         valueSuffix: ' V',
@@ -441,7 +492,7 @@ $(function () {
         })()
       },
      {name: 'PWM',
-      visible: true,
+      visible: PWM_visible,
       type: 'spline',
       yAxis: 3,
       color: Highcharts.getOptions().colors[5],
@@ -460,7 +511,7 @@ $(function () {
         })()  
       },
      {name: 'Wplaca',
-      visible: true,
+      visible: Wplaca_visible,
       type: 'spline',
       yAxis: 4,
       color: 'black', //Highcharts.getOptions().colors[7],
@@ -479,7 +530,7 @@ $(function () {
         })()  
      },
      {name: 'IPWM_P',
-      visible: true,
+      visible: false,
       type: 'spline',
       yAxis: 3,
       color: Highcharts.getOptions().colors[6],
@@ -498,7 +549,7 @@ $(function () {
         })()  
       },
      {name: 'IPWM_I',
-      visible: true,
+      visible: false,
       type: 'spline',
       yAxis: 3,
       color: Highcharts.getOptions().colors[7],
@@ -517,7 +568,7 @@ $(function () {
         })()  
       },
      {name: 'IPWM_D',
-      visible: true,
+      visible: false,
       type: 'spline',
       yAxis: 3,
       color: Highcharts.getOptions().colors[8],
@@ -534,7 +585,27 @@ $(function () {
           <?php } ?>
         return data;
         })()  
-      }
+      },
+      
+     {name: 'Wred',
+      visible: Wred_visible,
+      type: 'spline',
+      yAxis: 6,
+      color: 'red', //Highcharts.getOptions().colors[7],
+      tooltip: {
+        valueSuffix: ' ',
+        valueDecimals: 0,
+        },
+      data: (function() {
+        var data = [];
+        <?php
+        for($i = 0 ;$i<count($rawdata);$i++){
+          ?>
+          data.push([<?php echo $rawdata[$i]["Tiempo"];?>,<?php echo $rawdata[$i]["Wred"];?>]);
+          <?php } ?>
+        return data;
+        })()  
+     }
           
      ]
 

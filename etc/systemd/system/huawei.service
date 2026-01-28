@@ -3,9 +3,13 @@ Description= PVControl+ - Lectura HUAWEI
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/huawei.py
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/huawei.py
 Restart=always
-RestartSec=30
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target

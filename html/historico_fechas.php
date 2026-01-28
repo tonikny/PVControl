@@ -7,6 +7,8 @@ require('conexion.php');
 if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
    $fecha1 = $_POST["fecha1"];
    $fecha2 = $_POST["fecha2"];
+   
+   
    if ( $_POST["nseg_punto"] ) {
 	   $nseg_punto=$_POST["nseg_punto"];   
    } else {
@@ -17,7 +19,7 @@ if(( isset($_POST["fecha1"]) ) && (isset($_POST["fecha2"]) )) {
    	 $fecha1= date("Y") . "-" . date("m") . "-" . date("d");
      $fecha2= date("Y") . "-" . date("m") . "-" . date("d");
 	 $nseg_punto=600;
-    
+  
  }
 
 $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, Vplaca, PWM, Wplaca,Vred, Wred, Temp,
@@ -25,8 +27,9 @@ $sql = "SELECT UNIX_TIMESTAMP(Tiempo)*1000 as Tiempo, SOC, Ibat, Iplaca, Vbat, V
           Wh_placa/1000 as Kwh_placa, (Whp_bat-Whn_bat)/1000 as Kwh_bat,(Whp_red-Whn_red)/1000 as Kwh_red,
           (Wh_placa - Whp_bat + Whn_bat - Whp_red + Whn_red)/1000 as Kwh_consumo,
           Mod_bat * 1 as Modo, Aux1, Aux2
-        FROM datos_c WHERE DATE(Tiempo) >= '" . $fecha1 . "' and DATE(Tiempo) <= '" . $fecha2 . "'
-        ORDER BY Tiempo";
+        FROM datos WHERE Tiempo BETWEEN '" . $fecha1 ." 00:00:00' and '".$fecha2 . " 23:59:59'		
+		GROUP BY UNIX_TIMESTAMP(Tiempo) DIV ($nseg_punto)
+        ";
 
 
 //echo " Desde: ",$fecha1,"   Hasta: ",$fecha2,"   -- Muestra cada ",$nseg_punto," seg   -- ";
@@ -60,19 +63,21 @@ mysqli_close($link);
        
 
 <script src="https://code.jquery.com/jquery.js"></script>
-<script src="http://code.highcharts.com/stock/highstock.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
 
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
+
 
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
     Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
     A: <input type="date" name="fecha2" value=<?php echo $fecha2 ?> />
-	Muestra cada:<input type="number" size="5" name="nseg_punto" min="5" max="3600" step="5" value= <?php echo $nseg_punto ?> > seg__
+	
+    Muestra cada:<input type="number" size="5" name="nseg_punto" min="1" max="99999" step="1" value= <?php echo $nseg_punto ?> > seg__
+	
     <input type = "submit" value = "Ver" />
-		
+  
 </form>
-
 <p></p>
 
 <div id="container12" style="width: 100%; height: 80vh; margin-left: 5; float: left"></div>
@@ -88,6 +93,11 @@ $(function ()
     global: {
       useUTC: false
       },
+
+    time: {
+        timezone: zona_horaria
+    },
+
     lang: {
       months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
       weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
@@ -180,6 +190,7 @@ $(function ()
         color: 'red',
         dashStyle: 'shortdash',
         label: {
+          y: 12,
           text: 'Vflot'
           }
        }]
@@ -770,7 +781,7 @@ $(function ()
   
      {name: 'Temp',
       type: 'spline',
-      visible: Wplaca_visible,
+      visible: Temp_visible,
       yAxis: 11,
       color: 'black',
       tooltip: {

@@ -2,10 +2,10 @@
 $titulo="Meteo";
 include ("cabecera.inc");
 
-$municipio = "Madrid";
-$codigo_aemet = "titulcia-id28147?";
-$latitud = "40.4167"; 
-$longitud = "-3.70325";
+$municipio = "Masquefa";
+$codigo_aemet = "titulcia-id08783?";
+$latitud = "41.50003"; 
+$longitud = "1.80851";
 ?>
 
 <h1 style="text-align: center"><?php echo $municipio; ?></h1>

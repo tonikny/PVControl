@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-#  version 25/Dic/21
+#  version 08/Ene/23
 # --------------------------------------------------------------------------
 from colorama import Fore, Back, Style
 import colorama  # colores en ventana Terminal
@@ -10,19 +10,18 @@ import sys
 import subprocess
 import MySQLdb
 import json
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 import pickle
 
-if usar_SI1 == 0:
-    print(subprocess.getoutput('sudo systemctl stop sb'))
+
+
+if usar_SI == 0:
+    print(subprocess.getoutput('sudo systemctl stop si1'))
     sys.exit()
 
-si = ModbusClient()
-host = 'si.host(IP_'+sys.argv[1]+')'
-exec(host)
-print(si.host())
-si.port(502)
-si.unit_id(3)
+
+si = ModbusClient(host= '192.168.0.100', port=502, unit_id=3)
 si.open()
 
 Equipo = sys.argv[1]
@@ -61,13 +60,45 @@ except:
 
 def leer_datos():
 
-    try:
-
+    if 1==1: #try:        
+        equipo = si.read_holding_registers(30057, 2)
+        if equipo !=None:
+            equipo = 65536*equipo[0]+equipo[1]
+        else: equipo=0
+        
+        
+        if equipo != 3015118151:
+            a = calcula_host()
+        equipo = 3015118151
+        #print('Equipo',equipo, 'IP :')
         Vbat = si.read_holding_registers(30851, 2)
         Vbat = round(Vbat[1]*0.01, 2)
+        
         Ibat = si.read_holding_registers(30843, 2)
+        
         p_desc = si.read_holding_registers(31395, 2)
         p_desc = p_desc[1]
+        
+        p_l1 = si.read_holding_registers(30777, 2)
+        if p_l1[0] <= 32768:
+            p_l1 = -(p_l1[1]+p_l1[0]*65535)
+        else:
+            p_l1 = (65535-p_l1[1]+(65535-p_l1[0])*65536)
+
+        p_l2 = si.read_holding_registers(30779, 2)
+        if p_l2[0] <= 32768:
+            p_l2 = -(p_l2[1]+p_l2[0]*65535)
+        else:
+            p_l2 = (65535-p_l2[1]+(65535-p_l2[0])*65536)
+
+        p_l3 = si.read_holding_registers(30781, 2)
+
+        if p_l3[0] <= 32768:
+            p_l3 = -(p_l3[1]+p_l3[0]*65535)
+
+        else:
+            p_l3 = (65535-p_l3[1]+(65535-p_l3[0])*65536)
+
         p_carg = si.read_holding_registers(31393, 2)
         p_carg = p_carg[1]
         Aux1 = si.read_holding_registers(30803, 2)
@@ -78,20 +109,42 @@ def leer_datos():
 
         else:
             Ibat = (65535-Ibat[1]+(65535-Ibat[0])*65536)*0.001
+            
+        p_gen = si.read_holding_registers(31419, 6)       
+        p_gen_L1 = p_gen[1]
+        if p_gen_L1 > 32768: p_gen_L1 = p_gen_L1 - 65535
+        p_gen_L2 = p_gen[3]
+        if p_gen_L2 > 32768: p_gen_L2 = p_gen_L2 - 65535
+        p_gen_L3 = p_gen[5]
+        if p_gen_L3 > 32768: p_gen_L3 = p_gen_L3 - 65535
+        
+        Temp = si.read_holding_registers(30849, 2)
+        Temp = Temp[1]*0.1
+        
+        print('TEMP', Temp)
+        
+        if DEBUG: print(p_gen, p_gen_L1, p_gen_L2, p_gen_L3)
 
         datos = {'Vbat': Vbat, 'Ibat': Ibat,
-                 'Pdesc': p_desc, 'Pcarg': p_carg, 'Aux1': Aux1}
+                 'Pdesc': p_desc, 'Pcarg': p_carg, 'Aux1': Aux1, 'PL1': p_l1, 'PL2' : p_l2, 'PL3' : p_l3,
+                 'p_gen_L1':p_gen_L1, 'p_gen_L2':p_gen_L2, 'p_gen_L3':p_gen_L3,'temp':Temp}                 
+        
+        
+        
+        
+                 
+        
         if DEBUG:
             print(datos)
 
-    except:
-        if DEBUG:
-            print('error de lectura SI')
-        logBD('Error de Lectura SI Vbat,Ibat...')
-        si.close()
-        time.sleep(3)
-        si.open()
-        pass
+    #except:
+        #if DEBUG:
+            #print('error de lectura SI')
+        #logBD('Error de Lectura SI Vbat,Ibat...')
+        #si.close()
+        #time.sleep(3)
+        #si.open()
+        #pass
 
     if datos != None:
         return(datos)
@@ -152,19 +205,48 @@ def leer_datos_est():
         pass
     return(None)
 
+def calcula_host():
+    global si
+    x = 100
+    equipo = 0
 
+    while equipo != 3015118151:
+        
+        ip = '192.168.0.' + str(x)
+        
+        if DEBUG: print('Intentando conectar a IP: ', ip)
+
+        si = ModbusClient(host= ip, port=502, unit_id=3)
+
+        if si.open():
+
+            equipo = si.read_holding_registers(30057, 2)
+            equipo = 65536*equipo[0]+equipo[1]
+            
+        else: equipo = None
+        
+        print('IP: ',ip,'Equipo SMA:',equipo)
+
+        x = x+1
+        if x==256:x=1
+        print('Host salida calcula datos: ', ip)
+        print('---------------------------------------------------')
+        time.sleep(1)
+    return(ip)
+ 
+        
 while True:
 
     try:
 
         datos = leer_datos()
-        if cont % 10 == 0:
-            leer_datos_est()
-            cont = 1
-        cont += 1
+        #if cont % 10 == 0:
+        #    leer_datos_est()
+            #cont = 1
+        #cont += 1
 
-        if DEBUG:
-            print('datos=', datos, 'cont', cont)
+        #if DEBUG:
+            #print('datos=', datos, 'cont', cont)
 
         if datos != None:
             if crear_pkl == 0:

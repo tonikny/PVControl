@@ -64,9 +64,9 @@ mysqli_close($link);
 
 <!-- Importo el archivo Javascript directamente desde la web -->
 <script src="https://code.jquery.com/jquery.js"></script>
-<script src="http://code.highcharts.com/stock/highstock.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
 
 <form action = "<?php $_PHP_SELF ?>" method = "POST">
     Periodo Desde: <input type="date" name="fecha1" value=<?php echo $fecha1 ?> />
@@ -96,9 +96,14 @@ mysqli_close($link);
 $(function () {
 
 	Highcharts.setOptions({
-            global: {
-                useUTC: false
-            },
+        global: {
+            useUTC: false
+        },
+            
+        time: {
+            timezone: zona_horaria
+        },
+
 	    lang: {
 		  months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
 		  weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],

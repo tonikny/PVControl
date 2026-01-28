@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal PVControl+</title>
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Panel de Monitorización */
+        .monitor-panel {
+            width: 400px;
+            background: #2d2d2d;
+            border-right: 2px solid #00ff00;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .monitor-header {
+            background: #3d3d3d;
+            padding: 10px;
+            border-bottom: 1px solid #00ff00;
+            text-align: center;
+        }
+
+        .monitor-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffff00;
+        }
+
+        .monitor-subtitle {
+            font-size: 12px;
+            color: #cccccc;
+        }
+
+        .monitor-controls {
+            padding: 10px;
+            background: #2a2a2a;
+            border-bottom: 1px solid #444;
+            display: flex;
+            gap: 10px;
+        }
+
+        .monitor-btn {
+            background: #444;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .monitor-btn:hover {
+            background: #555;
+        }
+
+        .monitor-output {
+            flex: 1;
+            background: #000;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        .process-item {
+            margin-bottom: 8px;
+            padding: 5px;
+            border-bottom: 1px solid #333;
+            position: relative;
+        }
+
+        .process-pid {
+            color: #ff4444;
+            font-weight: bold;
+        }
+
+        .process-user {
+            color: #00ffff;
+        }
+
+        .process-time {
+            color: #ffff00;
+        }
+
+        .process-cmd {
+            color: #00ff00;
+            word-break: break-all;
+        }
+
+        .kill-btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .no-processes {
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Panel Principal del Terminal */
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .terminal-header {
+            background: #2d2d2d;
+            padding: 10px;
+            border-bottom: 2px solid #00ff00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: #444;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .btn:hover {
+            background: #555;
+        }
+
+        .terminal-output {
+            flex: 1;
+            background: #000;
+            padding: 15px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            margin: 10px 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .command-line {
+            color: #00ff00;
+            margin-bottom: 5px;
+        }
+
+        .command-output {
+            color: #cccccc;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+
+        .error {
+            color: #ff4444;
+        }
+
+        .success {
+            color: #00ff00;
+        }
+
+        .warning {
+            color: #ffff00;
+        }
+
+        .terminal-input-container {
+            display: flex;
+            align-items: center;
+            background: #000;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+
+        .prompt-display {
+            color: #ffff00;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        #commandInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .welcome-message {
+            color: #00ffff;
+            margin-bottom: 15px;
+        }
+
+        /* ESTILOS MEJORADOS PARA quick-commands */
+        .quick-commands {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        /* Títulos de grupos alineados a la izquierda */
+        .group-title {
+            color: #ffff00;
+            font-size: 12px;
+            font-weight: bold;
+            /*text-transform: uppercase;*/
+            letter-spacing: 0.5px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            padding-left: 5px;
+            border-left: 3px solid #00ff00;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Para el primer grupo, no necesitamos margen superior */
+        .quick-commands .group-title:first-child {
+            margin-top: 0;
+        }
+
+        /* Línea decorativa opcional debajo del título */
+        .group-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #00ff00;
+            opacity: 0.3;
+            margin-left: 10px;
+            max-width: 200px;
+        }
+
+        .quick-buttons-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            padding-left: 10px; /* Indentación para alinear con títulos */
+        }
+
+        .quick-btn {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #444;
+            transform: translateY(-1px);
+        }
+
+        /* Toggle para panel de monitorización */
+        .panel-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #444;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            z-index: 1000;
+        }
+
+        /* Estados del panel */
+        .monitor-panel.collapsed {
+            width: 0;
+            display: none;
+        }
+
+        .main-container.full-width .terminal-container {
+            margin-left: 0;
+        }
+
+        .executing {
+            border-left: 3px solid #ffff00;
+            background: #1a1a1a;
+            padding-left: 10px;
+        }
+
+    </style>
+
+</head>
+<body>
+    <!-- Toggle para panel -->
+    <button class="panel-toggle" onclick="toggleMonitorPanel()">📊 Monitor</button>
+
+    <div class="main-container">
+        <!-- Panel de Monitorización de Procesos Python -->
+        <div class="monitor-panel" id="monitorPanel">
+            <div class="monitor-header">
+                <div class="monitor-title">🐍 Procesos Python Activos</div>
+                <div class="monitor-subtitle">Actualizado cada 5 segundos</div>
+            </div>
+            
+            <div class="monitor-controls">
+                <button class="monitor-btn" onclick="refreshProcesses()">🔄 Actualizar</button>
+                <button class="monitor-btn" onclick="toggleAutoRefresh()" id="autoRefreshBtn">⏸️ Pausar Auto</button>
+            </div>
+
+            <div class="monitor-output" id="processOutput">
+                <div class="no-processes">Cargando procesos Python...</div>
+            </div>
+        </div>
+
+        <!-- Panel Principal del Terminal -->
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-title">🖥️ Terminal PVControl+ </div>
+                <div class="terminal-controls">
+                    <button class="btn" onclick="goToHome()">🏠 Inicio</button>
+                    <button class="btn" onclick="clearTerminal()">🧹 Limpiar</button>
+                    <button class="btn" onclick="showQuickCommands()">⚡ Comandos Rápidos</button>
+                    <button class="btn" onclick="location.reload()">🔄 Recargar</button>
+                </div>
+            </div>
+
+            <div class="terminal-output" id="output">
+                <div class="welcome-message">
+                    🌟 Terminal PVControl+ - Versión Inicial<br>
+                    💡 Ejecución con salida por pantalla al final de la ejecución del comando<br>
+                    🐍 Entorno virtual python activado automáticamente<br>
+                   <!-- 🛑 CTRL+C funcional para parar procesos<br>-->
+                    📊 Monitor de procesos en tiempo real<br><br>
+                </div>
+                
+
+                <div class="quick-commands" id="quickCommands">
+                    <!-- Actualizacion -->
+                    <div class="group-title">ACTUALIZAR PVControl+</div>
+                    <div class="quick-buttons-row">
+                        <button class="quick-btn" onclick="executeQuickCommand('git status')">git status</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('./actualizar')">Actualizar</button>
+                    </div>
+                    no
+                    <!-- Grupo Sistema -->
+                    <div class="group-title">SISTEMA</div>
+                    <div class="quick-buttons-row">
+                        <button class="quick-btn" onclick="executeQuickCommand('pwd')">pwd</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('ls -la')">ls -la</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('ps aux | grep python')">Ver Procesos</button>
+                    </div>
+                    
+                    <!-- Grupo Python -->
+                    <div class="group-title">PYTHON</div>
+                    <div class="quick-buttons-row">
+                        <button class="quick-btn" onclick="executeQuickCommand('python --version')">Python</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('pip list')">Pip List</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('python Arrancar_servicios_PVControl+_mejorado.py -f')">Crear Servicios PVControl+ no creados</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('python Arrancar_servicios_PVControl+_mejorado.py -p')">Parar TODOS los Servicios PVControl+</button>
+                        <button class="quick-btn" onclick="executeQuickCommand('python Arrancar_servicios_PVControl+_mejorado.py -t')">Reiniciar/Crear TODOS los Servicios PVControl+</button>
+                        
+                        
+                    </div>
+                    
+                    <!-- Grupo Hardware -->
+                    <div class="group-title">HARDWARE</div>
+                    <div class="quick-buttons-row">
+                        <button class="quick-btn" onclick="executeQuickCommand('echo === MODELO === ; cat /proc/device-tree/model;echo; echo === MEMORIA ===; free -h; echo === TEMPERATURA ===; vcgencmd measure_temp; echo === ALMACENAMIENTO ===; df -h /; echo === SISTEMA ===; cat /etc/os-release | grep PRETTY_NAME')">
+                            📊 Info Raspberry Pi
+                        </button>
+                    </div>
+                </div>
+                                    
+                <div id="commandHistory"></div>
+            </div>
+
+            <div class="terminal-input-container">
+                <div class="prompt-display" id="promptDisplay">🐍 pi@pvcontrol:~$</div>
+                <input type="text" id="commandInput" placeholder="Escribe un comando y presiona Enter..." autofocus>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // VARIABLES GLOBALES
+        // =============================================
+        let currentDir = '/home/pi/PVControl+';
+        let commandHistory = [];
+        let historyIndex = -1;
+        let autoRefreshInterval = null;
+        let isAutoRefresh = true;
+        let isExecuting = false;
+
+        // =============================================
+        // FUNCIONES NUEVAS
+        // =============================================
+        function goToHome() {
+            // Redirige a la página principal (raíz del sitio)
+            window.location.href = '/';
+            // Alternativas según tu estructura:
+            // window.location.href = 'index.html';
+            // window.location.href = '/index.php';
+            // window.location.href = '../'; // Subir un nivel
+        }
+
+        // =============================================
+        // ELEMENTOS DOM
+        // =============================================
+        const output = document.getElementById('output');
+        const commandInput = document.getElementById('commandInput');
+        const promptDisplay = document.getElementById('promptDisplay');
+        const commandHistoryElement = document.getElementById('commandHistory');
+        const processOutput = document.getElementById('processOutput');
+        const monitorPanel = document.getElementById('monitorPanel');
+        const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+
+        // =============================================
+        // FUNCIONES DEL TERMINAL PRINCIPAL
+        // =============================================
+        function updatePrompt() {
+            const dir = currentDir === '/home/pi/PVControl+' ? '~' : currentDir;
+            promptDisplay.textContent = `🐍 pi@pvcontrol:${dir}$`;
+        }
+
+        async function executeCommand(command) {
+            if (!command.trim() || isExecuting) return;
+
+            isExecuting = true;
+            commandInput.disabled = true;
+
+            // Mostrar comando
+            addToHistory(`<div class="command-line">${promptDisplay.textContent} ${command}</div>`);
+            commandInput.value = '';
+            
+            // Guardar en historial
+            commandHistory.push(command);
+            historyIndex = commandHistory.length;
+
+            // Mostrar indicador de ejecución
+            const executingIndicator = document.createElement('div');
+            executingIndicator.id = 'executing-indicator';
+            executingIndicator.className = 'command-output executing';
+            executingIndicator.innerHTML = '⏳ Ejecutando comando...';
+            commandHistoryElement.appendChild(executingIndicator);
+
+            try {
+                const response = await fetch('terminal.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `command=${encodeURIComponent(command)}&working_dir=${encodeURIComponent(currentDir)}&action=execute`
+                });
+
+                const data = await response.json();
+
+                // Remover indicador de ejecución
+                const indicator = document.getElementById('executing-indicator');
+                if (indicator) indicator.remove();
+
+                if (data.success) {
+                    const outputText = data.output.join('\n');
+                    
+                    let enhancedOutput = outputText;
+                    if (data.python_path && data.python_path.includes('PVControl+/env/bin/python')) {
+                        enhancedOutput = `🐍 Entorno virtual activado\n` + outputText;
+                    }
+                    
+                    addToHistory(`<div class="command-output">${enhancedOutput}</div>`);
+                    
+                    // Actualizar directorio si cambió
+                    if (data.current_dir && data.current_dir !== currentDir) {
+                        currentDir = data.current_dir;
+                        updatePrompt();
+                    }
+
+                    // Mostrar código de retorno si no es 0
+                    if (data.return_code !== 0) {
+                        addToHistory(`<div class="command-output warning">💡 Código de retorno: ${data.return_code}</div>`);
+                    }
+                } else {
+                    addToHistory(`<div class="command-output error">❌ Error: ${data.error || 'Error desconocido'}</div>`);
+                }
+            } catch (error) {
+                const indicator = document.getElementById('executing-indicator');
+                if (indicator) indicator.remove();
+                addToHistory(`<div class="command-output error">❌ Error de conexión: ${error.message}</div>`);
+            }
+
+            isExecuting = false;
+            commandInput.disabled = false;
+            commandInput.focus();
+            output.scrollTop = output.scrollHeight;
+            
+            // Actualizar lista de procesos después de ejecutar comando
+            refreshProcesses();
+        }
+
+        function addToHistory(html) {
+            commandHistoryElement.innerHTML += html;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearTerminal() {
+            commandHistoryElement.innerHTML = '';
+        }
+
+        function executeQuickCommand(command) {
+            commandInput.value = command;
+            executeCommand(command);
+        }
+
+        function executeQuickCommand1(command) {
+            console.log("Ejecutando comando:", command);
+            
+            fetch('/execute-command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ command: command })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.result);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function showQuickCommands() {
+            const quickCommands = document.getElementById('quickCommands');
+            quickCommands.style.display = quickCommands.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        // =============================================
+        // FUNCIONES DEL PANEL DE MONITORIZACIÓN
+        // =============================================
+
+        async function refreshProcesses() {
+            try {
+                const response = await fetch('terminal.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=processes'
+                });
+
+                const data = await response.json();
+                
+                if (data.success && data.processes && data.processes.length > 0) {
+                    let html = '';
+                    data.processes.forEach(line => {
+                        if (line.trim()) {
+                            const parts = line.trim().split(/\s+/);
+                            if (parts.length >= 4) {
+                                const pid = parts[0];
+                                const user = parts[1];
+                                const etime = parts[2];
+                                let cmd = parts.slice(3).join(' ');
+                                
+                                const pythonMatch = cmd.match(/(?:python3|python)\s+(.+)$/);
+                                if (pythonMatch) {
+                                    const scriptPath = pythonMatch[1];
+                                    const scriptName = scriptPath.split('/').pop();
+                                    cmd = `python3 ${scriptName}`;
+                                }
+                                
+                                html += `
+                                    <div class="process-item">
+                                        <button class="kill-btn" onclick="killProcess('${pid}')">🛑</button>
+                                        <span class="process-pid">PID: ${pid}</span> | 
+                                        <span class="process-user">User: ${user}</span> | 
+                                        <span class="process-time">Time: ${etime}</span>
+                                        <div class="process-cmd">${cmd}</div>
+                                    </div>
+                                `;
+                            }
+                        }
+                    });
+                    processOutput.innerHTML = html;
+                } else {
+                    processOutput.innerHTML = '<div class="no-processes">No hay procesos Python en ejecución</div>';
+                }
+            } catch (error) {
+                processOutput.innerHTML = `<div class="no-processes error">Error al cargar procesos: ${error.message}</div>`;
+                    }
+        }
+
+        async function killProcess(pid) {
+            if (!confirm(`¿Estás seguro de que quieres terminar el proceso ${pid}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('terminal.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=kill&pid=${pid}`
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    addToHistory(`<div class="command-output success">✅ Proceso ${pid} terminado (CTRL+C enviado)</div>`);
+                    refreshProcesses();
+                } else {
+                    addToHistory(`<div class="command-output error">❌ Error terminando proceso ${pid}: ${data.error}</div>`);
+                }
+            } catch (error) {
+                addToHistory(`<div class="command-output error">❌ Error de conexión: ${error.message}</div>`);
+            }
+        }
+
+        function toggleAutoRefresh() {
+            isAutoRefresh = !isAutoRefresh;
+            
+            if (isAutoRefresh) {
+                autoRefreshBtn.textContent = '⏸️ Pausar Auto';
+                startAutoRefresh();
+            } else {
+                autoRefreshBtn.textContent = '▶️ Reanudar Auto';
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            autoRefreshInterval = setInterval(refreshProcesses, 5000);
+            refreshProcesses();
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function toggleMonitorPanel() {
+            monitorPanel.classList.toggle('collapsed');
+            document.querySelector('.main-container').classList.toggle('full-width');
+        }
+
+        // =============================================
+        // EVENT LISTENERS
+        // =============================================
+        commandInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                executeCommand(this.value);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (commandHistory.length > 0 && historyIndex > 0) {
+                    historyIndex--;
+                    this.value = commandHistory[historyIndex];
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < commandHistory.length - 1) {
+                    historyIndex++;
+                    this.value = commandHistory[historyIndex];
+                } else {
+                    historyIndex = commandHistory.length;
+                    this.value = '';
+                }
+            }
+        });
+
+        // =============================================
+        // INICIALIZACIÓN
+        // =============================================
+        updatePrompt();
+        commandInput.focus();
+        startAutoRefresh();
+
+        setTimeout(() => {
+            addToHistory(`<div class="command-output success">✅ Terminal listo. Usa los botones 🛑 para parar procesos.</div>`);
+        }, 1000);
+    </script>
+</body>
+</html>

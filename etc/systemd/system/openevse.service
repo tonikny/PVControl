@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenEVSE Cargador Vehículos eléctricos
+After= fv.service
+
+[Service]
+SyslogIdentifier=%N
+ExecStartPre=/bin/sleep 5
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/openevse_mqtt.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

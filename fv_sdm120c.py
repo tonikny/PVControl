@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-12-22
+# Versión 2023-09-02
 
 import sys, time
 import MySQLdb,json
@@ -9,6 +9,7 @@ import subprocess
 
 import minimalmodbus
 
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 import colorama # colores en ventana Terminal
@@ -43,7 +44,7 @@ if '-p' in sys.argv: DEBUG= 1 # para desarrollo permite print en distintos sitio
 
 # se cambiara para poner datos desde Parametros_FV.py para N equipos
 if simular != 1:
-    rs485 = minimalmodbus.Instrument('/dev/ttyUSB0', 1)
+    rs485 = minimalmodbus.Instrument(dev_sdm120c[0], 1)
     rs485.serial.baudrate = 2400
     rs485.serial.bytesize = 8
     rs485.serial.parity = minimalmodbus.serial.PARITY_NONE

@@ -18,7 +18,12 @@ if($result = mysqli_query($link, $sql)){
   $i=0;
   while($row = mysqli_fetch_assoc($result)) {
         //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
-        $rawdata[$i] = $row;
+        $row['Wconsumo'] = round($row['Wconsumo'], 0);
+        $row['Kwh_placa'] = round($row['Kwh_placa'], 1);
+		$row['Kwh_bat'] = round($row['Kwh_bat'], 1);
+		$row['Kwh_red'] = round($row['Kwh_red'], 1);
+		
+		$rawdata[$i] = $row;
         $i++;
   }
 
@@ -45,10 +50,10 @@ mysqli_close($link);
 <!---->
 
 <script src="https://code.jquery.com/jquery.js"></script>
-<script src="http://code.highcharts.com/stock/highstock.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
 
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
 
 <!--
 <div id="container12" style="width: auto; height: 600px; margin-left: 5;margin-right:5"></div>
@@ -65,7 +70,12 @@ $(function ()
   Highcharts.setOptions({
     global: {
       useUTC: false
-      },
+      }, 
+
+    time: {
+        timezone: zona_horaria
+    },
+
     lang: {
       months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
       weekdays: ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'],
@@ -158,6 +168,7 @@ $(function ()
         color: 'red',
         dashStyle: 'shortdash',
         label: {
+          y: 12,
           text: 'Vflot'
           }
        }]
@@ -748,7 +759,7 @@ $(function ()
   
      {name: 'Temp',
       type: 'spline',
-      visible: Wplaca_visible,
+      visible: Temp_visible,
       yAxis: 11,
       color: 'black',
       tooltip: {

@@ -1,0 +1,2565 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración PVControl+</title>
+    
+    <!-- Ace Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.8/ace.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.8/mode-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.8/mode-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.8/mode-text.min.js"></script>
+    
+    <style>
+        /* ESTILOS ABSOLUTAMENTE MÍNIMOS - SOLO LO ESENCIAL */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .header-left h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary { background: #3498db; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        
+        /* Botón de volver al menú */
+        .btn-menu {
+            background: #8e44ad;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-menu:hover {
+            background: #7d3c98;
+        }
+        
+        .btn-menu::before {
+            content: "←";
+            font-weight: bold;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #ecf0f1;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            background: white;
+            border-bottom: 3px solid #3498db;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* EDITOR - ESTILO MÍNIMO CRÍTICO */
+        .editor {
+            height: 400px;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+        
+        .form-actions {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-submit {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-submit:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .btn-nav {
+            background: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-nav:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .file-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .file-path {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* Estilos básicos para pestaña 3 */
+        .config-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .active-config {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .active-config-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* LISTADO DE ARCHIVOS ESTILO LISTA */
+        .files-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e1e8ed;
+            border-radius: 4px;
+            padding: 4px;
+        }
+        
+        .file-item {
+            padding: 4px 8px;
+            background: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.1s ease;
+            font-weight: 500;
+            font-size: 0.8rem;
+            position: relative;
+        }
+        
+        .file-item:hover {
+            background: #3498db;
+            color: white;
+        }
+        
+        .file-item.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .file-item.active:after {
+            content: '✓';
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .config-actions {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        /* Estilos para la tabla de parámetros de la base de datos */
+        .parametros-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .parametros-table th,
+        .parametros-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .parametros-table th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+            width: 30%;
+        }
+
+        .parametros-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .parametros-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .parametros-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .parametros-input:read-only {
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .parametros-value {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .parametros-descripcion {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-style: italic;
+            max-width: 300px;
+        }
+        
+        /* MODAL MEJORADO */
+        .custom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        .custom-modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10001;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .custom-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .custom-modal-header h3 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.3rem;
+        }
+        
+        .custom-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+        
+        .custom-modal-close:hover {
+            background: #f8f9fa;
+            color: #e74c3c;
+        }
+        
+        .custom-form-group {
+            margin: 20px 0;
+        }
+        
+        .custom-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .custom-form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .custom-form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+        
+        .custom-btn-primary {
+            background: #3498db;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .custom-btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+        
+        .custom-btn-secondary {
+            background: #95a5a6;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .custom-btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .custom-alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+
+        /* Estilos para los resultados de sintaxis */
+        .syntax-success {
+            color: #27ae60;
+            background: #d4edda;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .syntax-error {
+            color: #e74c3c;
+            background: #f8d7da;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            margin-bottom: 15px;
+        }
+
+        .output-text {
+            font-family: 'Courier New', monospace;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+
+        .pyodide-loading {
+            font-style: italic;
+            color: #7f8c8d;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* Estilos para botones de verificación */
+        .btn-verify {
+            background: #2ecc71;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-verify:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .btn-execute {
+            background: #3498db;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-execute:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        /* ===== ESTILOS PARA SERVICIOS COMPACTOS ===== */
+        .services-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        /* Tarjeta compacta */
+        .service-card-compact {
+            background: white;
+            border: 1px solid #e1e8ed;
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+        }
+
+        .service-card-compact:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Header compacto */
+        .service-header-compact {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .service-name-compact {
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .service-status-compact {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-stopped {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-disabled {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Descripción compacta */
+        .service-description-compact {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            max-height: 2.6em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        /* Acciones compactas */
+        .service-actions-compact {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .service-action-btn-compact {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s ease;
+            flex-grow: 1;
+            text-align: center;
+            min-width: 0;
+        }
+
+        .service-action-btn-compact:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .service-action-btn-compact:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Colores para botones compactos */
+        .service-action-start { background: #27ae60; color: white; }
+        .service-action-stop { background: #e74c3c; color: white; }
+        .service-action-restart { background: #3498db; color: white; }
+        .service-action-disable { background: #f39c12; color: white; }
+        .service-action-create { background: #9b59b6; color: white; }
+        .service-action-create-start { background: #9b59b6; color: white; }
+
+        /* Header de secciones */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            flex-grow: 1;
+            font-size: 1.1rem;
+        }
+
+        .section-global-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* Resumen de servicios */
+        .services-summary-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e1e8ed;
+            flex-wrap: wrap;
+        }
+
+        .summary-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+
+        .summary-label {
+            font-weight: bold;
+        }
+
+        .summary-value {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            background: #f8f9fa;
+            font-family: 'Courier New', monospace;
+        }
+
+        .summary-active { color: #27ae60; }
+        .summary-stopped { color: #f39c12; }
+        .summary-disabled { color: #e74c3c; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .control-buttons {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            
+            .services-list {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: 8px;
+            }
+            
+            .service-name-compact {
+                font-size: 0.85rem;
+            }
+            
+            .service-action-btn-compact {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .section-global-actions {
+                width: 100%;
+            }
+        }        
+        
+    </style>
+</head>
+<body>
+    <!-- Modal de autenticación -->
+    <div id="customModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h3>Autenticación requerida</h3>
+                <button type="button" class="custom-modal-close">&times;</button>
+            </div>
+            <div id="modal-error" class="custom-alert-danger"></div>
+            <form id="auth-form">
+                <div class="custom-form-group">
+                    <label for="password">Contraseña de edición:</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Introduce la contraseña de acceso">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="custom-btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" class="custom-btn-primary">Acceder al modo edición</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para resultados de verificación de sintaxis -->
+    <div id="syntaxModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h3>Resultado de Verificación de Sintaxis</h3>
+                <button type="button" class="custom-modal-close" onclick="closeSyntaxModal()">&times;</button>
+            </div>
+            <div id="syntax-result" style="padding: 20px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
+                Verificando sintaxis...
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="custom-btn-primary" onclick="closeSyntaxModal()">Cerrar</button>
+                <button type="button" class="custom-btn-secondary" onclick="copySyntaxResult()">Copiar Resultado</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="header-left">
+                    <button class="btn-menu" id="btnVolverMenu">Volver al Menú principal</button>
+                    <h1>PVControl+ - Configuración Inicial</h1>
+                </div>
+                <div class="control-buttons">
+                    <button class="btn btn-primary" id="btnLoginManual">Editar Configuración</button>
+                    <button class="btn btn-danger" id="btnLogout" style="display: none;">Cerrar edición</button>
+                </div>
+            </div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="1">Paso 1: Parametros_FV.py</div>
+            <div class="tab" data-tab="2">Paso 2: version.inc</div>
+            <div class="tab" data-tab="3">Paso 3: Configuraciones</div>
+            <div class="tab" data-tab="4">Paso 4: Parametros_Web.js</div>
+            <div class="tab" data-tab="5">Paso 5: Base de Datos</div>
+            <div class="tab" data-tab="6">Paso 6: Servicios del Sistema</div>
+        </div>
+        
+        <!-- Pestaña 1: Parametros_FV.py -->
+        <div class="tab-content active" id="tab-1">
+            <h2>Edición de Parametros_FV.py</h2>
+            <div class="file-info">
+                <p><strong>Ubicación:</strong> <span class="file-path">/home/pi/PVControl+/Parametros_FV.py</span></p>
+                <p><strong>Estado:</strong> <span id="file-status-1">Cargando archivo...</span></p>
+            </div>
+            
+            <div id="editor-1" class="editor"></div>
+            
+            <div class="form-actions">
+                <button class="btn-submit" id="save-step1" disabled>Guardar Cambios</button>
+                <button class="btn btn-primary" id="reload-step1">Recargar Archivo</button>
+                <button class="btn btn-success" id="check-syntax">Verificar Sintaxis</button>
+                <button class="btn btn-info" id="execute-script">Ejecutar Script</button>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn-nav" disabled>Anterior</button>
+                <button class="btn-nav" id="next-to-2">Siguiente</button>
+            </div>
+        </div>
+        
+        <!-- Pestaña 2: version.inc -->
+        <div class="tab-content" id="tab-2">
+            <h2>Edición de version.inc</h2>
+            <div class="file-info">
+                <p><strong>Ubicación:</strong> <span class="file-path">/home/pi/PVControl+/html/version.inc</span></p>
+                <p><strong>Estado:</strong> <span id="file-status-2">Cargando archivo...</span></p>
+            </div>
+            
+            <div id="editor-2" class="editor"></div>
+            
+            <div class="form-actions">
+                <button class="btn-submit" id="save-step2" disabled>Guardar Cambios</button>
+                <button class="btn btn-primary" id="reload-step2">Recargar Archivo</button>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn-nav" id="prev-to-1">Anterior</button>
+                <button class="btn-nav" id="next-to-3">Siguiente</button>
+            </div>
+        </div>
+        
+        <!-- Pestaña 3: Configuraciones -->
+        <div class="tab-content" id="tab-3">
+            <h2>Gestión de Archivos de Configuraciones del Dibujo de la FV</h2>
+            
+            <div class="config-section">
+                <h3>Configuración Activa</h3>
+                <div class="file-info">
+                    <p><strong>Ubicación:</strong> <span class="file-path">/home/pi/PVControl+/html/configuracion_activa.txt</span></p>
+                    <p><strong>Estado:</strong> <span id="file-status-3">Cargando archivo...</span></p>
+                </div>
+                
+                <div class="active-config">
+                    <input type="text" class="active-config-input" id="active-config-input" placeholder="config1.js">
+                    <button class="btn btn-success" id="save-active-config" disabled>Guardar Configuración Activa</button>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3>Configuraciones Disponibles</h3>
+                <p>Selecciona una configuración para editarla:</p>
+                <div id="files-list-container">Cargando lista...</div>
+                <div class="config-actions">
+                    <button class="btn btn-primary" id="refresh-files-list">Actualizar Lista</button>
+                    <button class="btn btn-success" id="set-as-active" disabled>Establecer como Activa</button>
+                    <button class="btn" id="duplicate-config" disabled>Duplicar Configuración</button>
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3>Editor de Configuración</h3>
+                <div class="file-info">
+                    <p><strong>Archivo:</strong> <span id="current-config-file">Selecciona una configuración</span></p>
+                    <p><strong>Estado:</strong> <span id="file-status-dib">-</span></p>
+                </div>
+                
+                <div id="editor-dib" class="editor"></div>
+                
+                <div class="form-actions">
+                    <button class="btn-submit" id="save-dib" disabled>Guardar Configuración</button>
+                    <button class="btn btn-primary" id="reload-dib" disabled>Recargar Configuración</button>
+                </div>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn-nav" id="prev-to-2">Anterior</button>
+                <button class="btn-nav" id="next-to-4">Siguiente</button>
+            </div>
+        </div>
+        
+        <!-- Pestaña 4: Parametros_Web.js -->
+        <div class="tab-content" id="tab-4">
+            <h2>Edición de Parametros_Web.js (control de relojes y gráficas históricas)</h2>
+            <div class="file-info">
+                <p><strong>Ubicación:</strong> <span class="file-path">/home/pi/PVControl+/html/Parametros_Web.js</span></p>
+                <p><strong>Estado:</strong> <span id="file-status-4">Cargando archivo...</span></p>
+            </div>
+            
+            <div id="editor-4" class="editor"></div>
+            
+            <div class="form-actions">
+                <button class="btn-submit" id="save-step4" disabled>Guardar Cambios</button>
+                <button class="btn btn-primary" id="reload-step4">Recargar Archivo</button>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn-nav" id="prev-to-3">Anterior</button>
+                <button class="btn-nav" id="next-to-5">Siguiente</button>
+            </div>
+        </div>
+        
+        <!-- Pestaña 5: Base de Datos -->
+        <div class="tab-content" id="tab-5">
+            <div class="file-info">
+                <p><strong>Tabla:</strong> <span class="file-path">parametros</span></p>
+                <p><strong>Estado:</strong> <span id="file-status-5">Cargando parámetros...</span></p>
+            </div>
+            
+            <div class="config-section">
+                <h3>Parámetros del Control Excedentes, Carga y bucle de fv.py</h3>
+                <div id="parametros-container">
+                    <div class="loading">Cargando parámetros de la base de datos...</div>
+                </div>
+                
+                <div class="form-actions">
+                    <button class="btn-submit" id="save-step5" disabled>Guardar Cambios</button>
+                    <button class="btn btn-primary" id="reload-step5">Recargar Parámetros</button>
+                </div>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn-nav" id="prev-to-4">Anterior</button>
+                <button class="btn-nav" id="next-to-6">Siguiente</button>
+            </div>
+        </div>
+
+        <!-- Pestaña 6: Servicios del Sistema -->
+        <div class="tab-content" id="tab-6">
+            <h2>Gestión de Servicios del Sistema</h2>
+            
+            <div class="file-info">
+                <p><strong>Carpeta de servicios:</strong> <span class="file-path">/home/pi/PVControl+/etc/systemd/system</span></p>
+                <p><strong>Estado:</strong> <span id="file-status-6">Cargando servicios...</span></p>
+                <p><strong>Resumen:</strong> <span id="services-summary">-</span></p>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-info btn-sm" id="btn-refresh-services">↻ Actualizar Lista</button>
+                </div>
+            </div>
+            
+            <!-- Sección 1: Servicios Activos -->
+            <div class="config-section">
+                <div class="section-header">
+                    <h3>Servicios Activos (ejecutándose)</h3>
+                    <div class="section-global-actions">
+                        <button class="btn btn-warning btn-sm" id="btn-restart-all-active">↻ Reiniciar Todos</button>
+                        <button class="btn btn-danger btn-sm" id="btn-stop-all-active">⏹ Parar Todos</button>
+                    </div>
+                </div>
+                <div id="active-services" class="services-list">
+                    <div class="loading">Cargando servicios activos...</div>
+                </div>
+            </div>
+            
+            <!-- Sección 2: Servicios Parados -->
+            <div class="config-section">
+                <div class="section-header">
+                    <h3>Servicios Parados (en systemd pero no ejecutándose)</h3>
+                    <div class="section-global-actions">
+                        <button class="btn btn-success btn-sm" id="btn-start-all-stopped">▶ Iniciar Todos</button>
+                    </div>
+                </div>
+                <div id="stopped-services" class="services-list">
+                    <div class="loading">Cargando servicios parados...</div>
+                </div>
+            </div>
+            
+            <!-- Sección 3: Servicios No Creados/Deshabilitados -->
+            <div class="config-section">
+                <div class="section-header">
+                    <h3>Servicios No Creados o Deshabilitados</h3>
+                    <div class="section-global-actions">
+                        <button class="btn btn-primary btn-sm" id="btn-create-start-all-disabled">⏵ Crear+Arrancar</button>
+                        <button class="btn btn-info btn-sm" id="btn-create-all-disabled">+ Crear Todos</button>
+                    </div>
+                </div>
+                <div id="disabled-services" class="services-list">
+                    <div class="loading">Cargando servicios no creados...</div>
+                </div>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn-nav" id="prev-to-5">Anterior</button>
+                <button class="btn-nav" disabled>Siguiente</button>
+            </div>
+        </div>
+        
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+    <script>
+        // Configuración de rutas
+        const API_BASE = window.location.origin + '/api';
+        
+        // Variables globales
+        let currentStep = 1;
+        const totalSteps = 6;
+        let editors = {};
+        let currentSelectedConfig = '';
+        let availableConfigs = [];
+        let isLogged = false;
+        let activeConfigFile = '';
+        let parametrosData = {};
+        
+        // Datos para servicios
+        let servicesData = {
+            active: [],
+            stopped: [],
+            disabled: []
+        };
+
+        // =============================================
+        // FUNCIONES PARA MODALES
+        // =============================================
+        
+        function openModal() {
+            const modal = document.getElementById('customModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                document.getElementById('password')?.focus();
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('customModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.getElementById('auth-form').reset();
+                document.getElementById('modal-error').style.display = 'none';
+            }
+        }
+
+        function openSyntaxModal() {
+            const modal = document.getElementById('syntaxModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeSyntaxModal() {
+            const modal = document.getElementById('syntaxModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function copySyntaxResult() {
+            const resultDiv = document.getElementById('syntax-result');
+            const text = resultDiv.innerText || resultDiv.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('Resultado copiado al portapapeles', true);
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+                showStatus('Error al copiar', false);
+            });
+        }
+        
+        // =============================================
+        // FUNCIÓN PARA VOLVER AL MENÚ
+        // =============================================
+        
+        function volverAlMenu() {
+            // Redirigir a la raíz del sitio
+            window.location.href = '/';
+        }
+
+        // =============================================
+        // INICIALIZACIÓN DE EDITORES
+        // =============================================
+        
+        function initializeEditors() {
+            if (document.getElementById('editor-1')) {
+                editors[1] = ace.edit("editor-1");
+                editors[1].setTheme("ace/theme/monokai");
+                editors[1].session.setMode("ace/mode/python");
+                editors[1].setOptions({
+                    enableBasicAutocompletion: true,
+                    enableLiveAutocompletion: true,
+                    enableSnippets: true
+                });
+            }
+
+            if (document.getElementById('editor-2')) {
+                editors[2] = ace.edit("editor-2");
+                editors[2].setTheme("ace/theme/monokai");
+                editors[2].session.setMode("ace/mode/text");
+            }
+
+            if (document.getElementById('editor-4')) {
+                editors[4] = ace.edit("editor-4");
+                editors[4].setTheme("ace/theme/monokai");
+                editors[4].session.setMode("ace/mode/javascript");
+            }
+
+            if (document.getElementById('editor-dib')) {
+                editors['dib'] = ace.edit("editor-dib");
+                editors['dib'].setTheme("ace/theme/monokai");
+                editors['dib'].session.setMode("ace/mode/javascript");
+            }
+        }
+
+        // =============================================
+        // FUNCIONES DE CARGA Y GUARDADO DE ARCHIVOS
+        // =============================================
+        
+        async function loadFile(tabId) {
+            try {
+                const fileStatus = document.getElementById(`file-status-${tabId}`);
+                if (fileStatus) fileStatus.textContent = 'Cargando...';
+                
+                const endpoint = isLogged ? `${API_BASE}/parametros.php?logged=true` : `${API_BASE}/parametros.php`;
+                const response = await fetch(endpoint);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let content = '';
+                    
+                    if (tabId === 1) content = result.data.FV || '';
+                    else if (tabId === 2) content = result.data.Version || '';
+                    else if (tabId === 3) {
+                        content = result.data.Config || '';
+                        activeConfigFile = content.trim();
+                        
+                        const activeConfigInput = document.getElementById('active-config-input');
+                        if (activeConfigInput && content) {
+                            activeConfigInput.value = content.trim();
+                        }
+                        
+                        if (activeConfigFile && activeConfigFile !== '') {
+                            await loadActiveConfigFile(activeConfigFile);
+                        }
+                    }
+                    else if (tabId === 4) content = result.data.Web || '';
+                    else if (tabId === 'dib') content = result.data.Dib || '';
+                    
+                    if (editors[tabId] && tabId !== 3) {
+                        editors[tabId].setValue(content);
+                    }
+                    
+                    if (fileStatus) fileStatus.textContent = 'Archivo cargado correctamente';
+                    
+                } else {
+                    throw new Error(result.message || 'Error en la respuesta del servidor');
+                }
+            } catch (error) {
+                console.error(`Error cargando pestaña ${tabId}:`, error);
+                const fileStatus = document.getElementById(`file-status-${tabId}`);
+                if (fileStatus) fileStatus.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function saveFile(tabId) {
+            try {
+                const fileStatus = document.getElementById(`file-status-${tabId}`);
+                if (fileStatus) fileStatus.textContent = 'Guardando...';
+                
+                let fileType = '';
+                let content = '';
+                
+                if (tabId === 1 && editors[1]) { 
+                    fileType = 'FV'; 
+                    content = editors[1].getValue(); 
+                }
+                else if (tabId === 2 && editors[2]) { 
+                    fileType = 'version'; 
+                    content = editors[2].getValue(); 
+                }
+                else if (tabId === 3) { 
+                    fileType = 'config'; 
+                    content = document.getElementById('active-config-input').value.trim();
+                }
+                else if (tabId === 4 && editors[4]) { 
+                    fileType = 'Web'; 
+                    content = editors[4].getValue(); 
+                }
+                else if (tabId === 'dib' && editors['dib']) { 
+                    content = editors['dib'].getValue();
+                    
+                    if (!currentSelectedConfig) {
+                        throw new Error('No hay archivo de configuración seleccionado');
+                    }
+                    
+                    return await saveConfigFileDirectly(currentSelectedConfig, content, fileStatus);
+                }
+                
+                if (fileType && fileType !== 'dib') {
+                    const response = await fetch(`${API_BASE}/parametros.php`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            file: fileType, 
+                            data: content 
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error HTTP: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        if (fileStatus) fileStatus.textContent = 'Archivo guardado correctamente';
+                        showStatus('Archivo guardado correctamente', true);
+                        
+                        if (tabId === 3) {
+                            activeConfigFile = content;
+                        }
+                    } else {
+                        throw new Error(result.message || 'Error al guardar el archivo');
+                    }
+                }
+            } catch (error) {
+                console.error(`Error guardando pestaña ${tabId}:`, error);
+                const fileStatus = document.getElementById(`file-status-${tabId}`);
+                if (fileStatus) fileStatus.textContent = `Error: ${error.message}`;
+                showStatus(`Error al guardar: ${error.message}`, false);
+            }
+        }
+        
+        // =============================================
+        // FUNCIONES PARA VERIFICACIÓN DE SINTÁXIS PYTHON
+        // =============================================
+
+        async function checkPythonSyntax() {
+            const resultDiv = document.getElementById('syntax-result');
+            
+            resultDiv.innerHTML = '<div class="pyodide-loading">Verificando sintaxis Python...</div>';
+            openSyntaxModal();
+            
+            try {
+                const response = await fetch(`${API_BASE}/check_python.php`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `<div class="syntax-success">${result.message}</div>`;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="syntax-error">${result.error}</div>
+                        <div class="output-text">${escapeHtml(result.output)}</div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error("Error en checkPythonSyntax:", error);
+                resultDiv.innerHTML = `<div class="error">Error: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        async function executePythonScript() {
+            const resultDiv = document.getElementById('syntax-result');
+            
+            resultDiv.innerHTML = '<div class="pyodide-loading">Ejecutando script Python...</div>';
+            openSyntaxModal();
+            
+            try {
+                const response = await fetch(`${API_BASE}/execute_python.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        logged: isLogged 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="syntax-success">${result.message}</div>
+                        <div class="output-text"><strong>Salida:</strong><br>${escapeHtml(result.output)}</div>
+                    `;
+                } else {
+                    let errorHtml = `<div class="syntax-error">${result.error || 'Error'}</div>`;
+                    
+                    if (result.error && result.error.includes('No autenticado')) {
+                        errorHtml += `
+                            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px;">
+                                <strong>🔒 Autenticación requerida</strong>
+                                <p style="margin: 5px 0;">Para ejecutar scripts necesitas:</p>
+                                <ol style="margin: 5px 0; padding-left: 20px;">
+                                    <li>Hacer clic en <strong>"Editar Configuración"</strong> (arriba a la derecha)</li>
+                                    <li>Ingresar la contraseña correcta</li>
+                                    <li>Intentar ejecutar nuevamente</li>
+                                </ol>
+                                <div style="margin-top: 5px; font-size: 0.9em; color: #666;">
+                                    Estado actual: <strong>${isLogged ? 'Autenticado ✓' : 'No autenticado ✗'}</strong>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (result.output) {
+                        errorHtml += `<div class="output-text">${escapeHtml(result.output)}</div>`;
+                    }
+                    
+                    resultDiv.innerHTML = errorHtml;
+                }
+                
+            } catch (error) {
+                console.error("Error en executePythonScript:", error);
+                resultDiv.innerHTML = `
+                    <div class="error">Error de conexión</div>
+                    <div class="output-text">${escapeHtml(error.message)}</div>
+                `;
+            }
+        }
+
+        // =============================================
+        // FUNCIONES EXISTENTES PARA CONFIGURACIONES
+        // =============================================
+
+        async function loadActiveConfigFile(filename) {
+            if (!filename || filename === '') return;
+            
+            const fileStatusDib = document.getElementById('file-status-dib');
+            const currentConfigFile = document.getElementById('current-config-file');
+            
+            if (fileStatusDib) fileStatusDib.textContent = 'Cargando configuración activa...';
+            if (currentConfigFile) currentConfigFile.textContent = filename;
+            
+            try {
+                // Intentar cargar usando la API primero
+                const response = await fetch(`${API_BASE}/configuraciones.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        action: 'get',
+                        filename: filename
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success && editors['dib']) {
+                        editors['dib'].setValue(result.content || '');
+                        if (fileStatusDib) fileStatusDib.textContent = 'Configuración activa cargada correctamente';
+                        currentSelectedConfig = filename;
+                        renderFilesList();
+                        return;
+                    }
+                }
+                
+                // Fallback: carga directa
+                const directResponse = await fetch(`../configuraciones/${filename}`);
+                if (!directResponse.ok) {
+                    throw new Error(`Archivo no encontrado: ${filename}`);
+                }
+                const content = await directResponse.text();
+                
+                if (editors['dib']) {
+                    editors['dib'].setValue(content);
+                    if (fileStatusDib) fileStatusDib.textContent = 'Configuración activa cargada correctamente';
+                }
+                
+                currentSelectedConfig = filename;
+                renderFilesList();
+                
+            } catch (error) {
+                console.error('Error cargando archivo de configuración activa:', error);
+                if (fileStatusDib) fileStatusDib.textContent = `Error: ${error.message}`;
+                if (editors['dib']) {
+                    editors['dib'].setValue(`// Error al cargar el archivo de configuración activa: ${error.message}`);
+                }
+            }
+        }        
+        
+        async function saveConfigFileDirectly(filename, content, fileStatus) {
+            try {
+                const response = await fetch(`${API_BASE}/configuraciones.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        action: 'save',
+                        filename: filename,
+                        content: content
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (fileStatus) fileStatus.textContent = 'Archivo guardado correctamente';
+                    showStatus('Configuración guardada correctamente', true);
+                    return true;
+                } else {
+                    throw new Error(result.message || 'Error al guardar el archivo');
+                }
+            } catch (error) {
+                console.error('Error guardando archivo de configuración:', error);
+                if (fileStatus) fileStatus.textContent = `Error: ${error.message}`;
+                showStatus(`Error al guardar configuración: ${error.message}`, false);
+                return false;
+            }
+        }
+
+        async function loadFilesList() {
+            try {
+                const container = document.getElementById('files-list-container');
+                if (!container) return;
+                
+                container.innerHTML = '<div class="loading">Cargando lista de configuraciones...</div>';
+                
+                // Usar la API en lugar de acceso directo
+                const response = await fetch(`${API_BASE}/configuraciones.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        action: 'list'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    availableConfigs = result.files || [];
+                    renderFilesList();
+                } else {
+                    throw new Error(result.message || 'Error al cargar la lista');
+                }
+                
+            } catch (error) {
+                console.error('Error cargando lista:', error);
+                const container = document.getElementById('files-list-container');
+                if (container) container.innerHTML = '<div class="error">Error cargando lista de configuraciones: ' + escapeHtml(error.message) + '</div>';
+            }
+        }
+        
+        function renderFilesList() {
+            const container = document.getElementById('files-list-container');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (availableConfigs.length === 0) {
+                container.innerHTML = '<div class="loading">No se encontraron archivos de configuración</div>';
+                return;
+            }
+            
+            availableConfigs.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = `file-item ${file === currentSelectedConfig ? 'active' : ''}`;
+                fileItem.textContent = file;
+                fileItem.addEventListener('click', () => selectConfigFile(file));
+                container.appendChild(fileItem);
+            });
+        }
+
+        async function selectConfigFile(filename) {
+            currentSelectedConfig = filename;
+            renderFilesList();
+            
+            const currentConfigFile = document.getElementById('current-config-file');
+            if (currentConfigFile) currentConfigFile.textContent = filename;
+            
+            const fileStatusDib = document.getElementById('file-status-dib');
+            if (fileStatusDib) fileStatusDib.textContent = 'Cargando...';
+            
+            try {
+                // Usar la API para obtener el contenido del archivo
+                const response = await fetch(`${API_BASE}/configuraciones.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        action: 'get',  // Nota: necesitas agregar esta acción al PHP
+                        filename: filename
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (editors['dib']) {
+                        editors['dib'].setValue(result.content || '');
+                        if (fileStatusDib) fileStatusDib.textContent = 'Cargado correctamente';
+                    }
+                } else {
+                    throw new Error(result.message || 'Error al cargar el archivo');
+                }
+            } catch (error) {
+                console.error('Error cargando archivo:', error);
+                if (fileStatusDib) fileStatusDib.textContent = `Error: ${error.message}`;
+                
+                // Intentar cargar de forma directa como fallback
+                try {
+                    const directResponse = await fetch(`../configuraciones/${filename}`);
+                    if (directResponse.ok) {
+                        const content = await directResponse.text();
+                        if (editors['dib']) {
+                            editors['dib'].setValue(content);
+                            if (fileStatusDib) fileStatusDib.textContent = 'Cargado (fallback)';
+                        }
+                    }
+                } catch (fallbackError) {
+                    // Si ambos métodos fallan, mostrar mensaje de error
+                    if (editors['dib']) {
+                        editors['dib'].setValue(`// Error al cargar el archivo: ${error.message}`);
+                    }
+                }
+            }
+        }
+        
+        async function duplicateConfig() {
+            if (!currentSelectedConfig) {
+                showStatus('Por favor, selecciona una configuración para duplicar', false);
+                return;
+            }
+            
+            if (!isLogged) {
+                showStatus('Debes estar en modo edición para duplicar configuraciones', false);
+                return;
+            }
+            
+            const originalName = currentSelectedConfig;
+            const baseName = originalName.replace('.js', '');
+            const newName = prompt(`Duplicar "${originalName}" como:`, `${baseName}_copia.js`);
+            
+            if (!newName || !newName.trim()) return;
+            
+            let newFilename = newName.trim();
+            if (!newFilename.endsWith('.js')) {
+                newFilename += '.js';
+            }
+            
+            if (availableConfigs.includes(newFilename)) {
+                showStatus(`El archivo ${newFilename} ya existe`, false);
+                return;
+            }
+            
+            try {
+                const content = editors['dib'].getValue();
+                
+                const response = await fetch(`${API_BASE}/configuraciones.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        action: 'create',
+                        filename: newFilename,
+                        content: content
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    availableConfigs.push(newFilename);
+                    renderFilesList();
+                    selectConfigFile(newFilename);
+                    showStatus(`Configuración duplicada como ${newFilename}`, true);
+                } else {
+                    throw new Error(result.message || 'Error al crear el archivo');
+                }
+                
+            } catch (error) {
+                console.error('Error duplicando configuración:', error);
+                showStatus(`Error al duplicar: ${error.message}`, false);
+            }
+        }
+
+        async function saveActiveConfig() {
+            try {
+                const activeConfigInput = document.getElementById('active-config-input');
+                if (!activeConfigInput) return;
+                
+                const content = activeConfigInput.value.trim();
+                
+                const response = await fetch(`${API_BASE}/parametros.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        file: 'config', 
+                        data: content 
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('Configuración activa guardada', true);
+                    const fileStatus3 = document.getElementById('file-status-3');
+                    if (fileStatus3) fileStatus3.textContent = 'Guardado correctamente';
+                    
+                    if (content !== activeConfigFile) {
+                        activeConfigFile = content;
+                        await loadActiveConfigFile(content);
+                    }
+                } else {
+                    throw new Error(result.message || 'Error al guardar la configuración activa');
+                }
+            } catch (error) {
+                console.error('Error guardando configuración activa:', error);
+                showStatus(`Error: ${error.message}`, false);
+            }
+        }
+
+        function setAsActive() {
+            if (currentSelectedConfig) {
+                const activeConfigInput = document.getElementById('active-config-input');
+                if (activeConfigInput) {
+                    activeConfigInput.value = currentSelectedConfig;
+                    showStatus(`Configuración ${currentSelectedConfig} establecida como activa`, true);
+                    saveActiveConfig();
+                }
+            }
+        }
+
+        // =============================================
+        // FUNCIONES PARA BASE DE DATOS
+        // =============================================
+        
+        async function loadParametros() {
+            try {
+                const fileStatus = document.getElementById('file-status-5');
+                if (fileStatus) fileStatus.textContent = 'Cargando parámetros...';
+                
+                const endpoint = isLogged ? `${API_BASE}/database.php?logged=true` : `${API_BASE}/database.php`;
+                const response = await fetch(endpoint);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    parametrosData = {
+                        data: result.data,
+                        grupos: result.grupos || null
+                    };
+                    renderParametros();
+                    if (fileStatus) fileStatus.textContent = 'Parámetros cargados correctamente';
+                } else {
+                    throw new Error(result.message || 'Error al cargar los parámetros');
+                }
+            } catch (error) {
+                console.error('Error cargando parámetros:', error);
+                const fileStatus = document.getElementById('file-status-5');
+                if (fileStatus) fileStatus.textContent = `Error: ${error.message}`;
+                
+                const container = document.getElementById('parametros-container');
+                if (container) {
+                    container.innerHTML = `<div class="error">Error cargando parámetros: ${error.message}</div>`;
+                }
+            }
+        }
+        
+        function renderParametros() {
+            const container = document.getElementById('parametros-container');
+            if (!container) return;
+            
+            if (!parametrosData || !parametrosData.data || Object.keys(parametrosData.data).length === 0) {
+                container.innerHTML = '<div class="loading">No se encontraron parámetros</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            const dataToShow = { ...parametrosData.data };
+            delete dataToShow.id_parametros;
+            
+            if (parametrosData.grupos) {
+                for (const [grupoNombre, campos] of Object.entries(parametrosData.grupos)) {
+                    html += `
+                        <div class="config-section">
+                            <h3>${escapeHtml(grupoNombre)}</h3>
+                            <table class="parametros-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parámetro</th>
+                                        <th>Valor</th>
+                                        <th>Descripción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    for (const [campo, descripcion] of Object.entries(campos)) {
+                        if (dataToShow.hasOwnProperty(campo)) {
+                            const value = dataToShow[campo];
+                            const isSensitive = value === '***' || campo.toLowerCase().includes('password') || campo.toLowerCase().includes('token');
+                            
+                            if (isLogged && !isSensitive) {
+                                html += `
+                                    <tr>
+                                        <td><strong>${escapeHtml(campo)}</strong></td>
+                                        <td>
+                                            <input type="text" 
+                                                   class="parametros-input" 
+                                                   data-key="${escapeHtml(campo)}" 
+                                                   value="${escapeHtml(value)}">
+                                        </td>
+                                        <td class="parametros-descripcion">${escapeHtml(descripcion)}</td>
+                                    </tr>
+                                `;
+                            } else {
+                                html += `
+                                    <tr>
+                                        <td><strong>${escapeHtml(campo)}</strong></td>
+                                        <td>
+                                            <div class="parametros-value">
+                                                ${escapeHtml(value)}
+                                            </div>
+                                        </td>
+                                        <td class="parametros-descripcion">${escapeHtml(descripcion)}</td>
+                                    </tr>
+                                `;
+                            }
+                            
+                            delete dataToShow[campo];
+                        }
+                    }
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+                
+                if (Object.keys(dataToShow).length > 0) {
+                    html += `
+                        <div class="config-section">
+                            <h3>Otros Parámetros</h3>
+                            <table class="parametros-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parámetro</th>
+                                        <th>Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    const sortedKeys = Object.keys(dataToShow).sort();
+                    sortedKeys.forEach(campo => {
+                        const value = dataToShow[campo];
+                        const isSensitive = value === '***' || campo.toLowerCase().includes('password') || campo.toLowerCase().includes('token');
+                        
+                        if (isLogged && !isSensitive) {
+                            html += `
+                                <tr>
+                                    <td><strong>${escapeHtml(campo)}</strong></td>
+                                    <td>
+                                        <input type="text" 
+                                               class="parametros-input" 
+                                               data-key="${escapeHtml(campo)}" 
+                                               value="${escapeHtml(value)}">
+                                    </td>
+                                </tr>
+                            `;
+                        } else {
+                            html += `
+                                <tr>
+                                    <td><strong>${escapeHtml(campo)}</strong></td>
+                                    <td>
+                                        <div class="parametros-value">
+                                            ${escapeHtml(value)}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    });
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            } else {
+                html += `
+                    <div class="config-section">
+                        <h3>Parámetros del Sistema</h3>
+                        <table class="parametros-table">
+                            <thead>
+                                <tr>
+                                    <th>Parámetro</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                const sortedKeys = Object.keys(dataToShow).sort();
+                sortedKeys.forEach(campo => {
+                    const value = dataToShow[campo];
+                    const isSensitive = value === '***' || campo.toLowerCase().includes('password') || campo.toLowerCase().includes('token');
+                    
+                    if (isLogged && !isSensitive) {
+                        html += `
+                            <tr>
+                                <td><strong>${escapeHtml(campo)}</strong></td>
+                                <td>
+                                    <input type="text" 
+                                           class="parametros-input" 
+                                           data-key="${escapeHtml(campo)}" 
+                                           value="${escapeHtml(value)}">
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        html += `
+                            <tr>
+                                <td><strong>${escapeHtml(campo)}</strong></td>
+                                <td>
+                                    <div class="parametros-value">
+                                        ${escapeHtml(value)}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+                
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            
+            const saveButton = document.getElementById('save-step5');
+            if (saveButton) {
+                saveButton.disabled = !isLogged;
+            }
+        }
+
+        async function saveParametros() {
+            try {
+                const fileStatus = document.getElementById('file-status-5');
+                if (fileStatus) fileStatus.textContent = 'Guardando parámetros...';
+                
+                const updatedData = {};
+                const inputs = document.querySelectorAll('.parametros-input:not([readonly])');
+                
+                let hasChanges = false;
+                inputs.forEach(input => {
+                    const key = input.getAttribute('data-key');
+                    const newValue = input.value;
+                    const oldValue = parametrosData.data[key];
+                    
+                    if (newValue !== oldValue) {
+                        updatedData[key] = newValue;
+                        hasChanges = true;
+                    }
+                });
+                
+                if (!hasChanges) {
+                    showStatus('No hay cambios para guardar', true);
+                    if (fileStatus) fileStatus.textContent = 'Sin cambios';
+                    return;
+                }
+                
+                const response = await fetch(`${API_BASE}/database.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        data: updatedData
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (fileStatus) fileStatus.textContent = 'Parámetros guardados correctamente';
+                    showStatus('Parámetros guardados correctamente', true);
+                    
+                    await loadParametros();
+                    
+                } else {
+                    throw new Error(result.message || 'Error al guardar los parámetros');
+                }
+            } catch (error) {
+                console.error('Error guardando parámetros:', error);
+                const fileStatus = document.getElementById('file-status-5');
+                if (fileStatus) fileStatus.textContent = `Error: ${error.message}`;
+                showStatus(`Error al guardar parámetros: ${error.message}`, false);
+            }
+        }
+
+        // =============================================
+        // FUNCIONES PARA GESTIÓN DE SERVICIOS
+        // =============================================
+
+        // Función principal para cargar servicios
+        async function loadServices() {
+            try {
+                const fileStatus = document.getElementById('file-status-6');
+                const servicesSummary = document.getElementById('services-summary');
+                
+                if (fileStatus) fileStatus.textContent = 'Cargando servicios...';
+                if (servicesSummary) servicesSummary.textContent = '-';
+                
+                const response = await fetch(`${API_BASE}/services.php?action=list`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    servicesData = {
+                        active: result.data.active || [],
+                        stopped: result.data.stopped || [],
+                        disabled: result.data.disabled || []
+                    };
+                    
+                    renderServices();
+                    updateServicesSummary();
+                    
+                    if (fileStatus) {
+                        fileStatus.textContent = 'Lista actualizada';
+                    }
+                } else {
+                    throw new Error(result.message || 'Error al cargar servicios');
+                }
+            } catch (error) {
+                console.error('Error cargando servicios:', error);
+                const fileStatus = document.getElementById('file-status-6');
+                if (fileStatus) fileStatus.textContent = `Error: ${error.message}`;
+                
+                ['active', 'stopped', 'disabled'].forEach(section => {
+                    const container = document.getElementById(`${section}-services`);
+                    if (container) {
+                        container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                    }
+                });
+            }
+        }
+
+        // Renderizar todas las secciones
+        function renderServices() {
+            renderServiceSection('active', 'active-services');
+            renderServiceSection('stopped', 'stopped-services');
+            renderServiceSection('disabled', 'disabled-services');
+        }
+
+        // Renderizar una sección específica (VERSIÓN COMPACTA)
+        function renderServiceSection(dataKey, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            const services = servicesData[dataKey];
+            
+            if (!services || services.length === 0) {
+                container.innerHTML = `<div class="loading">No hay servicios en esta categoría</div>`;
+                return;
+            }
+            
+            let html = '';
+            
+            // Ordenar alfabéticamente
+            services.sort((a, b) => a.name.localeCompare(b.name));
+            
+            services.forEach(service => {
+                // VERSIÓN COMPACTA
+                html += `
+                    <div class="service-card-compact" data-service="${service.name}">
+                        <div class="service-header-compact">
+                            <div class="service-name-compact">${escapeHtml(service.name)}</div>
+                            <div class="service-status-compact status-${dataKey}">${getStatusLabel(dataKey)}</div>
+                        </div>
+                        
+                        ${service.description ? `
+                            <div class="service-description-compact">${escapeHtml(service.description)}</div>
+                        ` : ''}
+                        
+                        <div class="service-actions-compact">
+                            ${renderServiceActions(service, dataKey)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Agregar event listeners a los botones
+            services.forEach(service => {
+                addServiceEventListeners(service.name, dataKey);
+            });
+        }
+
+        // Obtener etiqueta de estado
+        function getStatusLabel(statusKey) {
+            const labels = {
+                active: 'ACT',
+                stopped: 'PAR',
+                disabled: 'N/C'
+            };
+            return labels[statusKey] || '?';
+        }
+
+        // Renderizar acciones para cada servicio
+        function renderServiceActions(service, category) {
+            let actions = '';
+            
+            switch(category) {
+                case 'active':
+                    actions = `
+                        <button class="service-action-btn-compact service-action-stop" data-action="stop" title="Parar servicio">Parar</button>
+                        <button class="service-action-btn-compact service-action-restart" data-action="restart" title="Reiniciar servicio">Reiniciar</button>
+                        <button class="service-action-btn-compact service-action-disable" data-action="disable" title="Deshabilitar servicio">Deshab.</button>
+                    `;
+                    break;
+                    
+                case 'stopped':
+                    actions = `
+                        <button class="service-action-btn-compact service-action-start" data-action="start" title="Arrancar servicio">Arrancar</button>
+                        <button class="service-action-btn-compact service-action-disable" data-action="disable" title="Deshabilitar servicio">Deshab.</button>
+                    `;
+                    break;
+                    
+                case 'disabled':
+                    actions = `
+                        <button class="service-action-btn-compact service-action-create" data-action="create" title="Crear servicio (sin arrancar)">Crear</button>
+                        <button class="service-action-btn-compact service-action-create-start" data-action="create-start" title="Crear y arrancar servicio">Crear+</button>
+                    `;
+                    break;
+            }
+            
+            return actions;
+        }
+
+        function addServiceEventListeners(serviceName, category) {
+            const card = document.querySelector(`.service-card-compact[data-service="${serviceName}"]`);
+            if (!card) return;
+            
+            const buttons = card.querySelectorAll('.service-action-btn-compact');
+            buttons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    const action = button.getAttribute('data-action');
+                    await performServiceAction(serviceName, action, category);
+                });
+            });
+        }
+
+        async function performServiceAction(serviceName, action, category) {
+            const card = document.querySelector(`.service-card-compact[data-service="${serviceName}"]`);
+            if (!card) return;
+            
+            const buttons = card.querySelectorAll('.service-action-btn-compact');
+            const originalText = buttons[0]?.textContent;
+            
+            // Deshabilitar botones durante la operación
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'Procesando...';
+            });
+            
+            try {
+                const response = await fetch(`${API_BASE}/services.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: serviceName,
+                        action: action
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`Servicio ${serviceName} ${action} correctamente`, true);
+                    loadServices();
+                } else {
+                    showStatus(`Error: ${result.message}`, false);
+                    
+                    // Restaurar botones
+                    buttons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.textContent = originalText;
+                    });
+                }
+            } catch (error) {
+                console.error('Error ejecutando acción:', error);
+                showStatus(`Error: ${error.message}`, false);
+                
+                // Restaurar botones
+                buttons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                });
+            }
+        }
+
+        // Actualizar resumen de servicios
+        function updateServicesSummary() {
+            const servicesSummary = document.getElementById('services-summary');
+            if (!servicesSummary) return;
+            
+            const total = servicesData.active.length + servicesData.stopped.length + servicesData.disabled.length;
+            
+            let html = `
+                <div class="services-summary-stats">
+                    <div class="summary-stat">
+                        <span class="summary-label">Total:</span>
+                        <span class="summary-value">${total}</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="summary-label summary-active">Activos:</span>
+                        <span class="summary-value">${servicesData.active.length}</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="summary-label summary-stopped">Parados:</span>
+                        <span class="summary-value">${servicesData.stopped.length}</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="summary-label summary-disabled">No creados:</span>
+                        <span class="summary-value">${servicesData.disabled.length}</span>
+                    </div>
+                </div>
+            `;
+            
+            servicesSummary.innerHTML = html;
+        }
+
+        // Función genérica para acciones globales
+        async function executeGlobalAction(category, action, actionName, confirmMessage) {
+            const services = servicesData[category].map(s => s.name);
+            if (services.length === 0) {
+                showStatus(`No hay servicios ${category} para ${actionName.toLowerCase()}`, false);
+                return;
+            }
+            
+            if (!confirm(`${confirmMessage} (${services.length} servicios)`)) {
+                return;
+            }
+            
+            // Obtener botón por ID
+            const buttonId = `btn-${action.replace('-', '-')}-all-${category}`;
+            const btn = document.getElementById(buttonId);
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'Procesando...';
+                btn.disabled = true;
+                
+                try {
+                    const results = [];
+                    for (const serviceName of services) {
+                        const result = await performSingleServiceAction(serviceName, action, category);
+                        results.push({ service: serviceName, success: result.success });
+                        // Pequeña pausa entre servicios para no saturar
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    
+                    const successCount = results.filter(r => r.success).length;
+                    const failedCount = services.length - successCount;
+                    
+                    let message = `${successCount} de ${services.length} servicios ${actionName.toLowerCase()} correctamente`;
+                    if (failedCount > 0) {
+                        message += ` (${failedCount} fallos)`;
+                    }
+                    
+                    showStatus(message, true);
+                    
+                    // Recargar lista después de 1.5 segundos
+                    setTimeout(() => loadServices(), 1500);
+                    
+                } finally {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // Función auxiliar para acciones individuales
+        async function performSingleServiceAction(serviceName, action, category) {
+            try {
+                const response = await fetch(`${API_BASE}/services.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        service: serviceName,
+                        action: action
+                    })
+                });
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error(`Error en acción ${action} para ${serviceName}:`, error);
+                return { success: false, message: error.message };
+            }
+        }
+
+        // =============================================
+        // FUNCIONES AUXILIARES
+        // =============================================
+        
+        function escapeHtml(unsafe) {
+            if (unsafe === null || unsafe === undefined) return '';
+            return unsafe.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function authenticate(password) {
+            const formData = new FormData();
+            formData.append('password', password);
+            
+            const response = await fetch('?', { method: 'POST', body: formData });
+            
+            if (response.ok) return true;
+            else throw new Error('Clave incorrecta');
+        }
+
+        function setEditMode(logged) {
+            console.log("Modo edición:", logged ? "ACTIVADO" : "DESACTIVADO");
+            
+            // Actualizar variable global
+            isLogged = logged;
+            
+            // Mostrar/ocultar botones login/logout
+            const btnLogin = document.getElementById('btnLoginManual');
+            const btnLogout = document.getElementById('btnLogout');
+            
+            if (btnLogin) btnLogin.style.display = logged ? 'none' : 'block';
+            if (btnLogout) btnLogout.style.display = logged ? 'block' : 'none';
+            
+            // Habilitar/deshabilitar botones según autenticación
+            const editButtons = [
+                'save-step1', 'save-step2', 'save-step4', 'save-dib',
+                'save-active-config', 'set-as-active', 'duplicate-config',
+                'reload-dib', 'save-step5', 'execute-script'
+            ];
+            
+            editButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = !logged;
+                    if (btnId === 'execute-script') {
+                        btn.title = logged ? 'Ejecutar el script Python' : 'Requiere autenticación';
+                    }
+                }
+            });
+            
+            // Configurar editores
+            for (let tabId in editors) {
+                if (editors[tabId]) {
+                    editors[tabId].setReadOnly(!logged);
+                }
+            }
+            
+            // Recargar contenido según pestaña
+            if ([1, 2, 4, 'dib'].includes(currentStep)) loadFile(currentStep);
+            if (currentStep === 3) {
+                loadFile(3);
+                loadFilesList();
+            }
+            if (currentStep === 5) loadParametros();
+            if (currentStep === 6) loadServices();
+        }
+        
+        function showStatus(message, isSuccess) {
+            const statusMessage = document.getElementById('status-message');
+            if (!statusMessage) return;
+            
+            statusMessage.textContent = message;
+            statusMessage.className = isSuccess ? 'status-success' : 'status-error';
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => statusMessage.style.display = 'none', 5000);
+        }
+        
+        function showTab(step) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            const tabContent = document.getElementById(`tab-${step}`);
+            const tabElement = document.querySelector(`.tab[data-tab="${step}"]`);
+            if (tabContent) tabContent.classList.add('active');
+            if (tabElement) tabElement.classList.add('active');
+            
+            currentStep = step;
+            
+            setTimeout(() => {
+                if (editors[step]) editors[step].resize();
+                if (step === 3 && editors['dib']) editors['dib'].resize();
+            }, 100);
+            
+            if ([1, 2, 4].includes(step)) loadFile(step);
+            if (step === 3) {
+                loadFile(3);
+                loadFilesList();
+            }
+            if (step === 5) {
+                loadParametros();
+            }
+            if (step === 6) {
+                loadServices();
+            }
+        }
+        
+        function safeAddEventListener(elementId, event, handler) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.addEventListener(event, handler);
+            }
+        }
+
+        // =============================================
+        // INICIALIZACIÓN
+        // =============================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Página cargada - CON GESTIÓN DE SERVICIOS');
+            
+            // 1. Inicializar editores
+            initializeEditors();
+            
+            // 2. Establecer modo no autenticado inicialmente
+            setEditMode(false);
+            
+            // 3. Event listener para volver al menú principal
+            safeAddEventListener('btnVolverMenu', 'click', volverAlMenu);
+            
+            // 4. Event listeners para guardar y recargar archivos
+            for (let i = 1; i <= 4; i++) {
+                safeAddEventListener(`save-step${i}`, 'click', () => saveFile(i));
+                safeAddEventListener(`reload-step${i}`, 'click', () => loadFile(i));
+            }
+            
+            // 5. Event listeners para VERIFICACIÓN DE SINTÁXIS PYTHON
+            const checkSyntaxBtn = document.getElementById('check-syntax');
+            if (checkSyntaxBtn) {
+                checkSyntaxBtn.addEventListener('click', checkPythonSyntax);
+            }
+            
+            // 6. Event listeners para EJECUCIÓN DE SCRIPT PYTHON
+            const executeScriptBtn = document.getElementById('execute-script');
+            if (executeScriptBtn) {
+                executeScriptBtn.addEventListener('click', executePythonScript);
+                if (!isLogged) {
+                    executeScriptBtn.disabled = true;
+                    executeScriptBtn.title = 'Requiere autenticación para ejecutar';
+                }
+            }
+            
+            // 7. Event listeners para editor de configuraciones
+            safeAddEventListener('save-dib', 'click', () => saveFile('dib'));
+            safeAddEventListener('reload-dib', 'click', () => {
+                if (currentSelectedConfig) {
+                    selectConfigFile(currentSelectedConfig);
+                } else if (activeConfigFile) {
+                    loadActiveConfigFile(activeConfigFile);
+                }
+            });
+            
+            // 8. Event listeners para pestaña 3 (Configuraciones)
+            safeAddEventListener('save-active-config', 'click', saveActiveConfig);
+            safeAddEventListener('refresh-files-list', 'click', loadFilesList);
+            safeAddEventListener('set-as-active', 'click', setAsActive);
+            safeAddEventListener('duplicate-config', 'click', duplicateConfig);
+            
+            // 9. Event listeners para pestaña 5 (Base de datos)
+            safeAddEventListener('save-step5', 'click', saveParametros);
+            safeAddEventListener('reload-step5', 'click', loadParametros);
+            
+            // 10. Event listeners para pestaña 6 (Servicios)
+            // Botones globales
+            safeAddEventListener('btn-restart-all-active', 'click', () => 
+                executeGlobalAction('active', 'restart', 'Reiniciar', '¿Reiniciar todos los servicios activos?'));
+            
+            safeAddEventListener('btn-stop-all-active', 'click', () => 
+                executeGlobalAction('active', 'stop', 'Parar', '¿Parar todos los servicios activos?'));
+            
+            safeAddEventListener('btn-start-all-stopped', 'click', () => 
+                executeGlobalAction('stopped', 'start', 'Iniciar', '¿Iniciar todos los servicios parados?'));
+            
+            safeAddEventListener('btn-create-start-all-disabled', 'click', () => 
+                executeGlobalAction('disabled', 'create-start', 'Crear y arrancar', '¿Crear y arrancar todos los servicios no creados?'));
+            
+            safeAddEventListener('btn-create-all-disabled', 'click', () => 
+                executeGlobalAction('disabled', 'create', 'Crear', '¿Crear todos los servicios no creados (sin arrancar)?'));
+            
+            safeAddEventListener('btn-refresh-services', 'click', loadServices);
+            
+            // 11. Navegación entre pestañas
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const step = parseInt(tab.getAttribute('data-tab'));
+                    showTab(step);
+                });
+            });
+            
+            // 12. Botones de navegación (anterior/siguiente)
+            for (let i = 2; i <= 6; i++) {
+                safeAddEventListener(`next-to-${i}`, 'click', () => showTab(i));
+            }
+            for (let i = 1; i <= 5; i++) {
+                safeAddEventListener(`prev-to-${i}`, 'click', () => showTab(i));
+            }
+            
+            // 13. Autenticación
+            safeAddEventListener('btnLoginManual', 'click', openModal);
+            safeAddEventListener('btnLogout', 'click', () => {
+                setEditMode(false);
+                showStatus('Modo edición desactivado', true);
+            });
+            
+            // 14. Cerrar modal de autenticación
+            document.querySelector('.custom-modal-close')?.addEventListener('click', closeModal);
+            
+            // 15. Cerrar modal al hacer clic fuera
+            document.getElementById('customModal')?.addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+            
+            // 16. Cerrar modal de sintaxis al hacer clic fuera
+            document.getElementById('syntaxModal')?.addEventListener('click', function(e) {
+                if (e.target === this) closeSyntaxModal();
+            });
+            
+            // 17. Cerrar modales con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const authModal = document.getElementById('customModal');
+                    const syntaxModal = document.getElementById('syntaxModal');
+                    
+                    if (authModal && authModal.style.display === 'flex') {
+                        closeModal();
+                    }
+                    if (syntaxModal && syntaxModal.style.display === 'flex') {
+                        closeSyntaxModal();
+                    }
+                }
+            });
+            
+            // 18. Formulario de autenticación
+            document.getElementById('auth-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const password = document.getElementById('password')?.value;
+                const errorDiv = document.getElementById('modal-error');
+                
+                try {
+                    await authenticate(password);
+                    closeModal();
+                    setEditMode(true);
+                    showStatus('Modo edición activado', true);
+                } catch (error) {
+                    if (errorDiv) {
+                        errorDiv.textContent = error.message;
+                        errorDiv.style.display = 'block';
+                    }
+                }
+            });
+            
+            // 19. Cargar el archivo inicial (pestaña 1)
+            loadFile(1);
+            
+            console.log('Inicialización completada');
+        });
+
+    </script>
+</body>
+</html>

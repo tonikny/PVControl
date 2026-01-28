@@ -1,0 +1,16 @@
+[Unit]
+Description=FV MQTT EXTERNO
+After=mysql.service
+
+[Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 15
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_mqtt_publicar_externo.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target
+

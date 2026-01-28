@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="455"
+   height="405"
+   viewBox="0 0 405.00001 405"
+   version="1.1"
+   id="svg2"
+   xml:space="preserve"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   sodipodi:docname="Bubble_placa.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><sodipodi:namedview
+   id="namedview7"
+   pagecolor="#ffffff"
+   bordercolor="#000000"
+   borderopacity="0.25"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0.0"
+   inkscape:pagecheckerboard="0"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:document-units="mm"
+   showgrid="false"
+   inkscape:zoom="1.1416828"
+   inkscape:cx="61.313002"
+   inkscape:cy="296.49216"
+   inkscape:window-width="1920"
+   inkscape:window-height="991"
+   inkscape:window-x="-9"
+   inkscape:window-y="-9"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="layer6"
+   inkscape:lockguides="false"
+   showguides="true"><inkscape:grid
+     type="xygrid"
+     id="grid40975"
+     originx="0"
+     originy="0" /></sodipodi:namedview><defs
+   id="defs2"><inkscape:path-effect
+     effect="spiro"
+     id="path-effect25993"
+     is_visible="true"
+     lpeversion="1" /><inkscape:path-effect
+     effect="spiro"
+     id="path-effect25989"
+     is_visible="true"
+     lpeversion="1" /><inkscape:path-effect
+     effect="spiro"
+     id="path-effect24468"
+     is_visible="true"
+     lpeversion="1" /><inkscape:path-effect
+     effect="spiro"
+     id="path-effect24464"
+     is_visible="true"
+     lpeversion="1" /><inkscape:path-effect
+     effect="bspline"
+     id="path-effect8238"
+     is_visible="true"
+     lpeversion="1"
+     weight="33.333333"
+     steps="2"
+     helper_size="0"
+     apply_no_weight="true"
+     apply_with_weight="true"
+     only_selected="false" /><inkscape:path-effect
+     effect="bspline"
+     id="path-effect8234"
+     is_visible="true"
+     lpeversion="1"
+     weight="33.333333"
+     steps="2"
+     helper_size="0"
+     apply_no_weight="true"
+     apply_with_weight="true"
+     only_selected="false" /><rect
+     x="451.66248"
+     y="200.40981"
+     width="455.61145"
+     height="105.1411"
+     id="rect44125" /></defs><g
+   inkscape:groupmode="layer"
+   id="layer6"
+   inkscape:label="lineas"><path
+     style="opacity:1;fill:#b3b3b3;fill-opacity:1;stroke:#00b7ff;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:3.2;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+     d="m 45.850353,129.59851 v 82.09461"
+     id="path-placa" /></g><g
+   inkscape:groupmode="layer"
+   id="layer3"
+   inkscape:label="bubbles"><ellipse
+     style="fill:#00b7ff;fill-opacity:1;stroke:#00b7ff;stroke-width:1.99998;stroke-linejoin:miter;stroke-miterlimit:3.2;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+     id="bubble_placa"
+     cx="0"
+     cy="0"
+     rx="2"
+	 ry="2"
+     inkscape:label="bubble placa"><animateMotion
+       id="bubble_placa_anim"
+       dur="20.0s"
+       keyPoints="0;1"
+       keyTimes="0;1"
+       calcMode="linear"
+       repeatCount="indefinite"><mpath
+         xlink:href="#path-placa" /></animateMotion></ellipse><ellipse
+     style="fill:#00b7ff;fill-opacity:1;stroke:#00b7ff;stroke-width:1.99998;stroke-linejoin:miter;stroke-miterlimit:3.2;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+     id="estatico"
+     cx="45.850773"
+     cy="128.43806"
+     rx="2"
+     ry="2.000005"
+     inkscape:label="bubble placa estatico" /></g>
+   
+   <script
+   type="text/javascript"
+   id="script46"><![CDATA[
+
+
+document.Animation = function(Power, MaxPower) 
+{
+
+	var DirStr = "";
+	var text_id ="";
+	var luz_id 	= "";
+	
+	if (Math.abs(Power) < 0.5)
+		Power = 0;
+
+	bubble_id = "bubble_placa_anim";
+	
+	speed_0 = document.getElementById(bubble_id).getAttribute("dur");
+	speed_0 = speed_0.substr(0, speed_0.length-1);
+	
+	if( MaxPower == 0 ) // div by zero
+		MaxPower = 10000; // 10 kW
+	
+	TmpPower = Math.abs(Power);
+	if( TmpPower > MaxPower )
+		TmpPower = MaxPower;
+	max_speed = 0.4; // 0.4 s bubble speed
+	min_speed = 10.0; // min bubble speed 3 seconds
+	speed = (TmpPower/MaxPower) * (max_speed-min_speed) + min_speed;
+	speed_1 = speed;
+	speed = String(speed) + "s";
+	
+	if (Power > 0) {
+		DirStr = "0;1";
+		opac = 1;
+		radio = 2;
+	} else {
+		DirStr = "1;0";	
+		opac = 0.2;
+		radio = 0;
+	}
+	
+	document.getElementById("path-placa").style.opacity = opac;
+	document.getElementById("estatico").style.opacity = opac;
+	
+	document.getElementById("svg2").setCurrentTime(document.getElementById("svg2").getCurrentTime() * speed_1 / speed_0);
+
+	document.getElementById(bubble_id).setAttribute("keyPoints", DirStr);
+	document.getElementById("bubble_placa").setAttribute("rx", radio);
+	document.getElementById("bubble_placa").setAttribute("ry", radio);
+	
+	document.getElementById(bubble_id).setAttribute("dur", speed);
+	
+}
+
+]]></script>
+   
+   
+   </svg>

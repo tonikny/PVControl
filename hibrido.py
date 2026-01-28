@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-05-25
+# Versión 2024-06-11
 
 import os, sys, time
+#sys.path.append ("/home/pi/PVControl+/env/lib/python3.11/site-packages")
 import serial
 
 import subprocess
 import timeout_decorator
 
-# Supresion de warning de crc16, TO-DO: cambiar la libreria, está obsoleta
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
-from crc16 import crc16xmodem
-
+try:
+    from libscrc import xmodem as crc16xmodem
+except:
+    res = subprocess.run('pip install libscrc' , shell=True)
+    if res.returncode == 0:
+        try:
+            from libscrc import xmodem as crc16xmodem
+        except:
+            print ('Error en instalacion libreria libscrc')
+            
 from struct import pack
 from traceback import format_exc
 
@@ -30,12 +36,12 @@ import multiprocessing
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
-COLOR = [Fore.BLACK,Fore.RED,Fore.GREEN,Fore.YELLOW,Fore.BLUE,Fore.MAGENTA,Fore.CYAN,Fore.WHITE]
+COLOR = [Fore.BLACK,Fore.YELLOW,Fore.GREEN,Fore.RED,Fore.BLUE,Fore.MAGENTA,Fore.CYAN,Fore.WHITE]
 FONDO = [Back.BLACK,Back.RED,Back.GREEN,Back.YELLOW,Back.BLUE,Back.MAGENTA,Back.CYAN,Back.WHITE]
 BRILLO = [Style.DIM,Style.NORMAL,Style.BRIGHT]
 
 ##### Parametros_FV.py (lo que se indique en el archivo Parametros.py tiene prevalencia sobre lo aqui indicado) ################
-usar_hibrido = [0,0] #1 para leer datos Hibrido ..... 0 para no usar
+usar_hibrido = [1,1] #1 para leer datos Hibrido ..... 0 para no usar
 
 dev_hibrido = ["/dev/hidraw0","/dev/hidraw1"]  # puerto donde reconoce la RPi al Hibrido
 usar_crc = [1,1]                  # 1 para comandos del hibrido con CRC... 0 para no añadir CRC
@@ -46,12 +52,21 @@ publicar_hibrido_mqtt = [0,0]     # Publica o no por MQTT los datos capturados d
 grabar_datos_hibrido = [1,1]      # 1 = Graba la tabla Hibrido... 0 = No graba
 n_muestras_hibrido = [1,1]        # grabar en BD en tabla 'hibrido' cada X capturas del Hibrido 
 
-protocolo_hibrido = [30,30]      
-###############################################
+protocolo_hibrido = [30,30]  
 
+QPIGS2h_enviar = [0,0]           # Envia QPIGS2h en protocolo 30 ademas de QPIGS para el segundo MPPT      
+
+###############################################
+basepath = '/home/pi/PVControl+/'
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
+parametros_FV_DIST = "/home/pi/PVControl+/Parametros_FV_DIST.py"
+
+exec(open(parametros_FV_DIST).read(),globals()) #cargo Parametros_FV_DIST.py por si hay variables no definidas en Parametros_FV.py
 exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
 
+# leer el dispositivo real, no los posibles symlinks
+for idx, x in enumerate(dev_hibrido):
+    dev_hibrido[idx] = os.path.realpath(x)
 
 simular = DEBUG = BORRAR = TEST = 0
 narg = len(sys.argv)
@@ -68,21 +83,21 @@ if sum(usar_hibrido)== 0 and TEST == 0:
     print (subprocess.getoutput('sudo systemctl stop hibrido'))
     sys.exit()
     
-
-
 time.sleep(1)
 
 print (BRILLO[2] + COLOR[3] + 'Arrancando'+ COLOR[2] +' hibrido.py') #+Style.RESET_ALL)
 print()
-
-
 
 @timeout_decorator.timeout(10, use_signals=False)
 def cmd_test(cmd,dev,crc):
     try:
         ee = 'c00'
         if crc == 1:
+            ee = 'c01'
+            print(cmd)
+            ee = 'c02'
             checksum = crc16xmodem(cmd)
+            ee = 'c03'
             cmd_crc = cmd + pack('>H', checksum)
              
         else:
@@ -104,8 +119,9 @@ def cmd_test(cmd,dev,crc):
         else:   # Hibridos con puerto tipo  /dev/hidraw
             ee = 'c40'
             print(Fore.RESET+f'          dev={dev}-  cmd_crc={cmd_crc}')
-            
-            fd = open(dev,'rb+')    
+            res = subprocess.run(['sudo','chown', 'pi:pi', dev])
+            fd = open(dev,'rb+') 
+               
             time.sleep(.20)
             if DEBUG == 100: print ('Byte1=',repr(cmd_crc[:8]))
             fd.write(cmd_crc[:8])
@@ -163,23 +179,24 @@ if TEST == 1:
     sys.exit()
 
 
-
 n_muestras_contador = [1 for i in range(len(usar_hibrido))] # contadores grabacion BD
 
+@timeout_decorator.timeout(5, use_signals=False)
+def bot_enviar_mensaje(cid, msg):
+    bot.send_message(cid, msg)
 
 if usar_telegram == 1:
-    bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-    bot.skip_pending = True # Skip the pending messages
-    cid = Aut[0]
-    bot.send_message(cid, f'Arrancando Programa Control Hibrido')
-
-
-
+    try:
+        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
+        bot.skip_pending = True # Skip the pending messages
+        cid = Aut[0]
+        bot_enviar_mensaje(cid, f'Arrancando Programa Control Hibrido')
+    except:
+        print ('Error en envio de mensaje Telegram')
+        
 
 def Hibrido_lectura(NHIBRIDO):
-    global hora,nbucle,n_muestras_contador
-    
-    
+    global hora,nbucle,n_muestras_contador, nfallos, ncapturas, dia, dia_anterior, flag_lectura
     
     print(f"Iniciando Hibrido{NHIBRIDO} ..PID: {multiprocessing.current_process().pid}")
     
@@ -206,9 +223,10 @@ def Hibrido_lectura(NHIBRIDO):
             client.disconnect()
 
     def on_message(client, userdata, msg):
-        global hora,nbucle,n_muestras_contador
+        global hora,nbucle,n_muestras_contador, nfallos, ncapturas, dia, dia_anterior,flag_lectura
         
         ee = '0'
+        flag_lectura = True #flag de lectura activa en hibrido (bloquea envios de QPIGSBD hasta que finalice)
         
         try:
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -216,6 +234,13 @@ def Hibrido_lectura(NHIBRIDO):
             hora_ant= hora
             hora = time.time()
             
+            #### Cambio de dia
+            dia_anterior = dia
+            dia = time.strftime("%Y-%m-%d")
+
+            if dia_anterior != dia: #cambio de dia
+                nfallos = ncapturas = 0
+                
             #print (int(hora-hora_ant), end = '')
             if nbucle > 0: nbucle -= 1
             
@@ -245,13 +270,20 @@ def Hibrido_lectura(NHIBRIDO):
                         '00010000', '00', '00', '00000', '010']
                 else:
                     ee = '10c'
+                    t1 = time.time()
                     r= comando(cmd,I_Hibrido)
+                    t2= time.time()
+                    #print(f'T_captura_comando desde fuera= {round(t2 - t1,1)}')
+                    
+        
                     ee = '10d'
-                    r = [i.decode() for i in r]
-                    if DEBUG == 100: print('Respuesta Hibrido',r)
+                    if 'Error' not in r:
+                        r = [i.decode() for i in r]
+                        if DEBUG == 100: print('Respuesta Hibrido',r)
+                    else:
+                        nfallos += 1
                  
-                if cmd == b'QPIGSBD' and len(r) >= 24:
-                
+                if cmd == b'QPIGSBD' and 'Error' not in r:
                     
                     if protocolo_hibrido[I_Hibrido]==30:
                         ee = '10e'
@@ -285,9 +317,11 @@ def Hibrido_lectura(NHIBRIDO):
                         Datos['Wplaca'] = float(r[22]) # W produccion placas
                         ee = '26'
                         Datos['Flot'] = int(r[23][0]) # estado bit flotacion
+                        ee = '26a'
                         Datos['OnOff'] = int(r[23][1]) # estado pulsador OnOff Hibrido
-                        
+                        ee = '26b'
                         Datos['Iplaca'] = round(float(Datos['Wplaca'])/float(Datos['Vbat']),1)  # Intensidad producida por placas en relacion a Vbat
+                        ee = '26c'
                         Datos['Ibat']  = round(float(Datos['Ibatp']) - float(Datos['Ibatn']),2) # Intensidad de bateria             
                         
                         ee = '28'
@@ -306,6 +340,32 @@ def Hibrido_lectura(NHIBRIDO):
                         Datos['Carga_SCC'] = int(r[19][6]) # estado carga SCC
                         Datos['Carga_AC'] = int(r[19][7]) # estado carga AC
                         
+                        if QPIGS2h_enviar[I_Hibrido] == 1:
+                            try:
+                                ee = '30c'
+                                cmd = b'QPIGS2h'
+                                r= comando(cmd,I_Hibrido)
+                                ee = '31c'
+                                r = [i.decode() for i in r]
+                                if DEBUG == 100: print(f'Respuesta Hibrido comando {cmd}',r)
+                                
+                                
+                                Datos['Vplaca2'] = float(r[4]) # Voltaje placas MPPT2
+                                Datos['Wplaca2'] = float(r[5]) # Watios placas MPPT2
+                                Datos['Iplaca2'] = round(float(Datos['Wplaca2'])/float(Datos['Vbat']),1) #Intensidad placas MPPT2
+                                
+                                Datos['Wplaca1'] = Datos['Wplaca'] # Watios placas MPPT1
+                                Datos['Wplaca'] += Datos['Wplaca2'] # MPPT! + MPPT2
+                                
+                                Datos['Iplaca1'] = Datos['Iplaca'] # A placas MPPT1
+                                Datos['Iplaca'] += Datos['Iplaca2'] # A MPPT! + A MPPT2
+                                
+                                
+                                
+                                 
+                            except:
+                                print(Fore.RED+f'error {ee}, Comando {cmd} en HIBRIDO{N_Hibrido}')
+                                
                 
                     elif protocolo_hibrido[I_Hibrido]==18:
                         ee = '10f'
@@ -388,25 +448,26 @@ def Hibrido_lectura(NHIBRIDO):
                         Datos = {} # inicializo diccionario
                         ee = '20g' # Datos Entrada AC
                         try:
-                            Datos['Vred'] = float(r[3]) # Voltaje AC entrada Linea
+                            Datos['Vgen'] = float(r[3]) # Voltaje AC entrada Linea
                             
-                            if r[4][0] == '1': signo = -1
+                            if r[4][0] == '1': signo = -1 #Estamos exportando energia? Negativizamos
                             else: signo = 1
-                                
-                            Datos['Wred'] = signo * float(r[4][1:]) # Watios AC entrada Linea
-                            Datos['Fred'] = float(r[5]) # Frecuencia AC entrada Linea
-                            Datos['Ired'] = signo * float(r[6]) # Intensidad AC entrada Linea
+                        
+                            Datos['Wgen'] = signo * int(r[4][1:]) # Watios AC entrada Linea
+                            Datos['Fgen'] = float(r[5]) # Frecuencia AC entrada Linea
+                            Datos['Igen'] = signo * float(r[6]) # Intensidad AC entrada Linea
                             
-                        except:
-                            Datos['Vgrid'] = 0.01
-                            Datos['Wgrid'] = 0.01
-                            Datos['Fgrid'] = 0.01
-                            Datos['Igrid'] = 0.01
+                        except Exception as e:
+                            print(e)
+                            Datos['Vgen'] = 0.01
+                            Datos['Wgen'] = 0.01
+                            Datos['Fgen'] = 0.01
+                            Datos['Igen'] = 0.01
                             
                         ee = '21g' # Datos Salida AC
                         try:
                             Datos['Vacout'] = float(r[7]) # Voltaje AC salida
-                            Datos['PACW'] = float(r[8]) # Watios AC salida
+                            Datos['PACW'] = float(r[8]) # Consumo Activo (cargas)
                             Datos['Facout'] = float(r[9]) # Frecuencia AC salida
                             Datos['Iacout'] = float(r[10]) # Intensidad AC salida
                             Datos['PACVA'] = round(Datos['Vacout'] * Datos['Iacout'],2)# Consumo aparente AC 
@@ -425,6 +486,7 @@ def Hibrido_lectura(NHIBRIDO):
                             Datos['Vpbus'] = float(r[12]) # Voltaje P BUS
                             Datos['Vsbus'] = float(r[13]) # Voltaje S BUS
                         
+                            Datos['Vbus'] = Datos['Vpbus']
                         except:
                             Datos['Outputload'] =  0.01
                             Datos['Vpbus'] = 0.01
@@ -432,7 +494,7 @@ def Hibrido_lectura(NHIBRIDO):
                         
                         ee = '23g' # datos bateria
                         try:
-                            Datos['Vbat'] = float(r[14]) # Voltaje bateria
+                            Datos['Vbat'] = float(r[14]) * 0.995 # Voltaje bateria
                             Datos['Vbat_n'] = r[15]      # Voltaje bateria n ?? (pte actualizar)
                             Datos['SOC'] = float(r[16])  # Capacidad Bateria
                         except:
@@ -511,7 +573,7 @@ def Hibrido_lectura(NHIBRIDO):
                         """
                         Datos_BD = Datos.copy()
                         
-                        
+                    t3 = time.time()    
                         
                     if DEBUG == 100: print(Fore.GREEN+'Datos=',Datos,Fore.RESET)
                     
@@ -521,11 +583,15 @@ def Hibrido_lectura(NHIBRIDO):
                         for i in Datos:
                             client.publish("PVControl/Hibrido"+ N_Hibrido+"/"+i,Datos[i])
                     
+                    #print(f'Tiempos= t1={round(t1- tiempo_sg,1)} / t2={round(t2- tiempo_sg,1)} / t3={round(t3- tiempo_sg,1)}')
+                    
                     try:####  ARCHIVOS RAM en BD ############ 
                         ee = '40'
-                        salida = json.dumps(Datos)
+                        Datos['Tcaptura'] = round(time.time() - tiempo_sg,1)
+                        Datos['Ncapturas'] = ncapturas
+                        Datos['Nfallos'] = nfallos
                         
-                        #print (f'salida={salida}')
+                        salida = json.dumps(Datos)
                         
                         ee = '42'
                         sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'HIBRIDO{N_Hibrido}'") # grabacion en BD RAM
@@ -545,7 +611,7 @@ def Hibrido_lectura(NHIBRIDO):
                                 Datos_BD['Tiempo'] = tiempo
                                 ee = '50b'
                                 
-                                del Datos_BD['Ibat'] # se quita la clave que no esta en tabla BD
+                                #del Datos_BD['Ibat'] # se quita la clave que no esta en tabla BD
                                 if protocolo_hibrido[I_Hibrido]==18:
                                     del Datos_BD['Change']
                                     del Datos_BD['Mppt1']
@@ -554,8 +620,35 @@ def Hibrido_lectura(NHIBRIDO):
                                     del Datos_BD['Bat_status']
                                     del Datos_BD['Bat_Power_Direction']
                                     del Datos_BD['Line_Power_Direction']
-                                
+
+                                # Quitamos claves que no vamos a encontrar en la tabla híbrido
+                                elif protocolo_hibrido[I_Hibrido]==16:
+                                    del Datos_BD['Fgen']
+                                    del Datos_BD['Igen']
+                                    del Datos_BD['Vacout']
+                                    del Datos_BD['Facout']
+                                    del Datos_BD['Iacout']
+                                    del Datos_BD['Outputload']
+                                    del Datos_BD['Vpbus']
+                                    del Datos_BD['Vsbus']
+                                    del Datos_BD['Vbat_n']
+                                    del Datos_BD['SOC']
+                                    del Datos_BD['Wplaca1']
+                                    del Datos_BD['Wplaca2']
+                                    del Datos_BD['Wplaca3']
+                                    del Datos_BD['Vplaca1']
+                                    del Datos_BD['Vplaca2']
+                                    del Datos_BD['Vplaca3']
+                                    del Datos_BD['Status']
+                                    del Datos_BD['Load']
+                                    del Datos_BD['Carga']
+                                    del Datos_BD['Inv_direction']
+                                    del Datos_BD['Lin_direction']
+
+
                                 #print ('Datos_BD=',Datos_BD)
+                                if 'Ibat' in Datos_BD: del Datos_BD['Ibat']
+                                
                                 campos = ",".join(Datos_BD.keys())
                                 valores = "','".join(str(v) for v in Datos_BD.values())
                                 Sql = f"INSERT INTO hibrido{N_Hibrido} ("+campos+") VALUES ('"+valores+"')"
@@ -576,25 +669,36 @@ def Hibrido_lectura(NHIBRIDO):
                         
                     db.commit()
                         
-                elif cmd == b'QPIGSBD':
+                elif cmd == b'QPIGSBD': # Existe error en CRC
                     ee = '70'
-                    if DEBUG >= 1: print ('X', end = '')
+                    if DEBUG >= 1: print (COLOR[I_Hibrido+1]+'X/', end = '')
                     pass
 
-                else:
+                else: # Cualquier otro comando recibido
                     ee = '80'
                     print (Fore.CYAN,r, len(r)) 
-                    client.publish(f"PVControl/Hibrido{N_Hibrido}/Respuesta",str(r))
-                    if usar_telegram == 1: 
-                        L1 = f'Comando Hibrido{N_Hibrido}= '+ str(cmd)[2:-1]
-                        L2 = str(r)
-                        tg_msg = L1+'\n'+L2
-                        print (tg_msg) 
-                        bot.send_message(cid, tg_msg)
+                    if 'Error' not in r:
+                        client.publish(f"PVControl/Hibrido{N_Hibrido}/Respuesta",str(r))
+                        if usar_telegram == 1: 
+                            L1 = f'Comando Hibrido{N_Hibrido}= '+ str(cmd)[2:-1]
+                            L2 = str(r)
+                            tg_msg = L1+'\n'+L2
+                            print (tg_msg) 
+                            bot_enviar_mensaje(cid, tg_msg)
+                    else:
+                        bot_enviar_mensaje(cid, 'Error en repuesta...' + str(r))
                 
-        except:
-            print (tiempo,f' -- error {ee} en on_message ')
-
+        except Exception as e:
+            print("Exception", e)
+            print (tiempo,f' Error {ee} en on_message  Hibrido{I_Hibrido} - nbucle={nbucle}', end='')
+            nfallos += 1
+            try:
+                print(f'... respuesta: {r}')
+            except:
+                print()
+        
+        flag_lectura = False
+    
     client = mqtt.Client(f"hibrido{NHIBRIDO}") #crear nueva instancia
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
@@ -612,7 +716,7 @@ def Hibrido_lectura(NHIBRIDO):
         
     @timeout_decorator.timeout(15, use_signals=False)
     def comando(cmd,I_Hibrido):
-        
+        t0 = time.time()
         #print ('cmd=',cmd, '  cmd.decode()=',cmd.decode())
         cmd1 = cmd
         
@@ -631,7 +735,7 @@ def Hibrido_lectura(NHIBRIDO):
             #print('cmd1==',cmd1)
             
             if usar_crc[I_Hibrido] == 1:
-                if cmd1 == b"POP02":   # ERROR firmware - CRC correcto es: 0xE2 0x0A
+                if cmd1 == b"POP02":   # ERROR firmware o bytes reservados 0x0d,0x28,0x0a
                     cmd_crc = b'\x50\x4f\x50\x30\x32\xe2\x0b\x0d'
                 elif cmd1[:9] == b'^S007POP1':
                     cmd1 = b'^S007POP1\x0e\x10\r'    
@@ -644,23 +748,36 @@ def Hibrido_lectura(NHIBRIDO):
                 cmd_crc = cmd1 + b'\r'
 
             #print ('Comando=',cmd_crc)
+            
             err=20
             if os.path.exists(dev_hibrido[I_Hibrido]):
                 if DEBUG == 100:
                         print(f'Mandando comando {cmd_crc} al Hibrido {dev_hibrido[I_Hibrido]}')
+                
                 if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
                     err=21
-                    ser = serial.Serial(dev_hibrido[I_Hibrido], 2400, timeout = 1) 
+                    t1 = time.time()
+                    #ser = serial.Serial(dev_hibrido[I_Hibrido], 2400, timeout = 0.1) 
                     err=22
+                    t2 = time.time()
+                    
                     time.sleep(.15)
                     ser.write(bytes(cmd_crc)) # Envio comando al Hibrido
                     err=30
-                    r = ser.readline()  # lectura respuesta Hibrido
+                    t3 = time.time()
+                    #r = ser.readline()  # lectura respuesta Hibrido
+                    r = ser.read(5)
+                    while r.find(b'\r') == -1 :
+                        time.sleep(.004) # 0.02
+                        r = r + ser.read(1)
+                    t4 = time.time()
+                    
                 else:   # Hibridos con puerto tipo  /dev/hidraw
                     err=21
-                    fd = open(dev_hibrido[I_Hibrido],'rb+')
+                    t1 = time.time()
+                    #fd = open(dev_hibrido[I_Hibrido],'rb+')
                     err=22
-                    
+                    t2 = time.time()
                     fd.write(cmd_crc[:8])
                     
                     if len(cmd_crc) > 8:
@@ -673,45 +790,83 @@ def Hibrido_lectura(NHIBRIDO):
                     if len(cmd_crc) > 16:
                         fd.flush()
                         fd.write(cmd_crc[16:])        
-                    time.sleep(.5)
+                    time.sleep(.1) # 0.5 
                     
                     err=30
+                    t3 = time.time()
                     r = fd.read(5)
                     while r.find(b'\r') == -1 :
-                        time.sleep(.02)
+                        time.sleep(.004) # 0.02
                         r = r + fd.read(1)
+                    t4 = time.time()
+                #print(f'Respuesta Hibrido={r}')
+                
+                if usar_crc[I_Hibrido] == 1:
+                    crc_teorico = pack('>H', crc16xmodem(r[:-3]))
+                    crc_respuesta = r[-3:-1]
+                    #print(f'crc_teorico={crc_teorico}/crc_respuesta={crc_respuesta}')
+
+                    checksum = 0
+                    for i in range(2):
+                        checksum += crc_teorico[i]
+                        if crc_teorico[i] in [0x0d,0x28,0x0a]:
+                            checksum +=  1
+                            #print (f'Byte reservado en CRC= {crc_teorico[i]}')
+                        checksum -= crc_respuesta[i]
+                                    
+                    #print(f'checksum= {checksum}')
+                
+
+                    if checksum == 0:
+                        if DEBUG == 100: print(Fore.GREEN+'CRC correcto ', end='')
+            
+                    else:
+                        s = f'Error CRC Hibrido{I_Hibrido}'
+                        if DEBUG >= 1:
+                            print(Fore.RED+ f'CRC incorrecto H{I_Hibrido}..HEX_CRC:{hex(checksum)}')
+                            print(f'r={r}') 
+                else:
+                    checksum = 0
+                    
                 err=40
-                r = r[0:len(r)-3] # quita CRC
-                #print (r)
-                
-                #Añado a la respuesta fecha hora y comando enviado
-                if protocolo_hibrido[I_Hibrido]==30:            
-                    r = time.strftime("%Y-%m-%d %H:%M:%S").encode()+ b" " + cmd1 + b" " + r 
-                    # Creo lista separando por espacio
-                    s = r.split(b" ")
-                    
-                    err=50
-                    s[3]=s[3][1:] #quito el parentesis inicial de la respuesta
+                if checksum == 0:
+                    try:
+                        if usar_crc[I_Hibrido] == 1: r = r[:-3] # quita CRC y \r
+                        else: r = r[:-1] # quita \r
+                            
+                        #print (r)
+                        
+                        #Añado a la respuesta fecha hora y comando enviado
+                        if protocolo_hibrido[I_Hibrido]==30:            
+                            r = time.strftime("%Y-%m-%d %H:%M:%S").encode()+ b" " + cmd1 + b" " + r 
+                            # Creo lista separando por espacio
+                            s = r.split(b" ")
+                            
+                            err=50
+                            s[3]=s[3][1:] #quito el parentesis inicial de la respuesta
 
-                elif protocolo_hibrido[I_Hibrido]==18:
-                    r = time.strftime("%Y-%m-%d,%H:%M:%S").encode()+ b"," + cmd1 + b"," + r 
-                    # Creo lista separando por coma
-                    s = r.split(b",")
-                    
-                    err=50
-                    s[3]=s[3][5:] #quito la D106 inicial de la respuesta
+                        elif protocolo_hibrido[I_Hibrido]==18:
+                            r = time.strftime("%Y-%m-%d,%H:%M:%S").encode()+ b"," + cmd1 + b"," + r 
+                            # Creo lista separando por coma
+                            s = r.split(b",")
+                            
+                            err=50
+                            s[3]=s[3][5:] #quito la D106 inicial de la respuesta
 
-                elif protocolo_hibrido[I_Hibrido] == 16:            
-                    r = time.strftime("%Y-%m-%d %H:%M:%S").encode()+ b" " + cmd1 + b" " + r 
-                    # Creo lista separando por espacio
-                    s = r.split(b" ")
-                    
-                    err=50
-                    s[3]=s[3][1:] #quito el parentesis inicial de la respuesta
-                
-                
+                        elif protocolo_hibrido[I_Hibrido] == 16:
+                            r = time.strftime("%Y-%m-%d %H:%M:%S").encode()+ b" " + cmd1 + b" " + r[:-2]
+ 
+                            # Creo lista separando por espacio
+                            s = r.split(b" ")
+                            
+                            err=50
+                            s[3]=s[3][1:] #quito el parentesis inicial de la respuesta
+                        
+                    except:
+                        print (f'Error split {err} - r={r} - s={s}')                    
             else:
                 print(f'No se conecta Hibrido{I_Hibrido}')
+                s = f'Error Hibrido{I_Hibrido}'
                 """
                 s = [b'0',b'1',b'2',b'3',b'4',b'5',b'6',b'7',b'8',b'9',
                      b'10',b'11',b'12',b'13',b'14',b'15',b'16',b'17',b'18',b'19',
@@ -725,45 +880,72 @@ def Hibrido_lectura(NHIBRIDO):
             
         finally:
             #print ('finally')
+            
             if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB":
                 ser.flush() #limpia el buffer
+                #ser.close()
+            """
             else:
                 try:
                     fd.close()
                 except:
                     pass
-            #print (s)
-            return s
+            """
+            try:
+                i = s
+            except:
+                s= 'Error en respuesta del Hibrido'
+            
+            #print (f't_open<=,{round(t1-t0,2)} -t_open=,{round(t2-t1,1)} -t_write={round(t3-t2,1)} -t_read={round(t4-t3,1)}-- Total={round(time.time()-t0,1)}')
+            pass
+            
+            
+        #print (f't_comando_interno={round(time.time()-t0,1)}')
+                     
+        return s
           
         
-        time.sleep(20)    
+        #time.sleep(20)    
             
 
             
     ##### Bucle infinito  ######################
-    hora = time.time()
-
-    #client.publish('PVControl/Hibrido/Respuesta','Arrancando Control Hibrido')
-
-    nbucle=0
-    tiempo_sg = time.time()
+    hora = tiempo_sg = time.time()
+    nbucle = nfallos = ncapturas = 0
+    dia = dia_anterior = time.strftime("%Y-%m-%d")
+    flag_lectura = False
 
     while True:
+        if os.path.exists(dev_hibrido[NHIBRIDO]):
+            if dev_hibrido[NHIBRIDO][-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSBX
+                ser = serial.Serial(dev_hibrido[NHIBRIDO], 2400, timeout = 1) 
+            else: # Hibridos con puerto tipo /dev/hidrawX
+                res = subprocess.run(['sudo','chown', 'pi:pi', dev_hibrido[NHIBRIDO]])
+                fd = open(dev_hibrido[NHIBRIDO],'rb+')
+                
+            break
+        else:
+            print(f'No existe {dev_hibrido[NHIBRIDO]} en carpeta /dev ... reintento en 30sg')                    
+        time.sleep(30)
+        
+    while True:
         try:
+
             if nbucle < 60:
-                if usar_hibrido[i] == 1:
+                
+                if usar_hibrido[i] == 1 and flag_lectura == False:
                     if i==0: N_Hibrido = ""
                     else: N_Hibrido = f"{i}"
-                    if int(time.time())%t_muestra_hibrido[i] == 0:
+                    
+                    if (time.time() - tiempo_sg > t_muestra_hibrido[i]):
+                        tiempo_sg = time.time()
                         nbucle += 1
+                        ncapturas += 1 
                         
                         client.publish(f'PVControl/Hibrido{N_Hibrido}',"QPIGSBD")
-                        #client.publish(f'PVControl/Hibrido{N_Hibrido}',"QPI")
-                        #client.publish(f'PVControl/Hibrido{N_Hibrido}',"QMD")
                         
                         if DEBUG == 100:
                             print (Fore.RESET,time.strftime("%Y-%m-%d %H:%M:%S"),f'-- Publico PVControl/Hibrido{N_Hibrido} QPIGSBD')
-            
             else:
                 cursor.close()
                 db.close()
@@ -771,7 +953,7 @@ def Hibrido_lectura(NHIBRIDO):
                 time.sleep(5)
                 sys.exit()
               
-            time.sleep(1)
+            time.sleep(0.1)
             
         except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
             break
@@ -813,14 +995,14 @@ try:
                   `Fgen` float NOT NULL DEFAULT 0,
                   `Iplaca` float NOT NULL DEFAULT 0,
                   `Vplaca` float NOT NULL DEFAULT 0,
-                  `Wplaca` smallint(5) NOT NULL DEFAULT 0,
+                  `Wplaca` float NOT NULL DEFAULT 0,
                   `Vbat` float NOT NULL DEFAULT 0,
-                  `Vbus` smallint(3) NOT NULL DEFAULT 0,
+                  `Vbus` float NOT NULL DEFAULT 0,
                   `Ibatp` float NOT NULL DEFAULT 0,
                   `Ibatn` float NOT NULL DEFAULT 0,
                   `temp` float NOT NULL DEFAULT 0,
-                  `PACW` smallint(5) NOT NULL DEFAULT 0,
-                  `PACVA` smallint(5) NOT NULL DEFAULT 0,
+                  `PACW` float NOT NULL DEFAULT 0,
+                  `PACVA` float NOT NULL DEFAULT 0,
                   `Flot` tinyint(1) NOT NULL DEFAULT 0,
                   `OnOff` tinyint(1) NOT NULL DEFAULT 0,
                   PRIMARY KEY (`id`),

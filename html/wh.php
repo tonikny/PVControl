@@ -98,9 +98,9 @@ for($i=0;$i<count($rawdata4);$i++){
 
 <script src="https://code.jquery.com/jquery.js"></script>
 
-<script src="http://code.highcharts.com/highcharts.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
 
 
 <div id="container2"  style="width: 100%; height: 240px; margin-left:5; float: left"></div>

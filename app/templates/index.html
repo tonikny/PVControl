@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edicion Parametros_FV.py</title>
+    <style>
+        textarea {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport1" content="width=device-width, initial-scale=1.0">
+    <title>Edicion Parametros_Web.js</title>
+    <style>
+        textarea {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Tabla parametros</title>
+    
+</head>
+<body>
+    <h1>--- Edicion Parametros_FV.py ---</h1>
+    <form action="/guardar_Parametros_FV" method="post">
+        <textarea name="FV" id="texto_Parametros_FV" placeholder="texto..."></textarea>
+        <br>
+        <button type="submit">Guardar</button>
+    </form>
+    
+    <h1>--- Edicion Parametros_Web.js ---</h1>
+    <form action="/guardar_Parametros_Web" method="post">
+        <textarea name="Web" id="texto_Parametros_Web" placeholder="Texto..."></textarea>
+        <br>
+        <button type="submit">Guardar</button>
+    </form>
+
+    <a href="/logout">Cerrar Sesión</a>    
+    
+    <script>
+        // Fetch the content of the text file and fill the textarea
+        fetch('/leer_Parametros_FV')
+            .then(response => response.text())
+            .then(data => document.getElementById('texto_Parametros_FV').value = data);
+        fetch('/leer_Parametros_Web')
+            .then(response => response.text())
+            .then(data => document.getElementById('texto_Parametros_Web').value = data);
+        
+    </script>
+</body>
+</html>
+
+

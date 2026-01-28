@@ -1,0 +1,42 @@
+{
+  "ejemplos": [
+    {
+      "condicion1": " time.time() - d_['ANENJI1']['timestamp'] > 300",
+      "condicion2": "time.time() - control.get('reinicio_fv_anenji', 0) > 300",
+      "accion": "subprocess.run(['sudo', 'systemctl', 'restart', 'fv_anenji'])\\ncontrol['reinicio_fv_anenji'] = time.time()\\nlogBD('Reinicio servicio fv_anenji')",
+      "descripcion": "Monitorización de servicio:\\n\\n• Reinicia si no hay datos por 5min\\n• Previene reinicios continuos con control del ultimo reinicio\\n• Añade registro de Log"
+    },
+    {
+      "condicion1": "Vbat > 60",
+      "condicion2": "",
+      "accion": "bot_enviar_mensaje(< poner el numero de chat donde se envia>, 'Bateria mayor de 60V',30)",
+      "descripcion": "Manda mensaje por Telegram si Vbat es mayor de 60 cada 30 segundos"
+    },
+    {
+      "condicion1": "hora > \"13:00:00\"\\nand dia_semana < 5",
+      "condicion2": "Rele_Tiempo[221] < 1800\\nand PWM < 20",
+      "accion": "PWM = 20\\nlogBD('Ajuste PWM a 20')",
+      "descripcion": "Condición activa en horario laboral:\\n- Hora > 13:00\\n- Días de semana (L-V)\\n\\nAcción:\\nAjusta PWM a 20 si el rele 221 lleva menos de 30min activo"
+    },
+    {
+      "condicion1": "Vcelda_max > 3.45",
+      "condicion2": "CD1 == 0",
+      "accion": "client.publish('PVControl/MPPT1','Vabs=14.4')\\nCD1 = 1",
+      "descripcion": "Protección de sobrevoltaje:\\n\\n• Reduce tensión Vabs en MPPT1 cuando celdas > 3.45V\\n• Evita activación múltiple con flag CD1\\n• La variable Vcelda_max se ha creado en Parametros_FV.py"
+    },
+    {
+      "condicion1": "Vcelda_max < 3.30",
+      "condicion2": "CD1 == 1",
+      "accion": "client.publish('PVControl/MPPT1','Vabs=14.7')\\nCD1 = 0",
+      "descripcion": "Sube tensión Vabs en MPPT1 cuando celdas < 3.30V\\n• Evita activación múltiple con flag CD1\\n• La variable Vcelda_max se ha creado en Parametros_FV.py"
+    },
+
+    {
+      "condicion1": "SOC > 95",
+      "condicion2": "(time.time() - control.get('801_ON', 0)) > 300",
+      "accion": "client.publish('PVControl/Reles/TUYA','801ON')\\ncontrol['801_ON'] = time.time()",
+      "descripcion": "• Activa dispositivo TUYA (rele 801) cuando batería > 95%\\n• Usa flag control para refresco activacion cada 5 minutos"
+    }
+    
+  ]
+}

@@ -1,174 +1,248 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2020-05-01
+# Versión 2023-02-20
 
-import  sys, time
-import os
+import sys, time
 import serial
-import pickle
-#from csvFv import CsvFv
+import json
+#import pickle
+
 import subprocess
-from Parametros_FV import *
 import MySQLdb
 
+
+equipo = 'VICTRON'
+
+###### Parametros por defecto .... NO CAMBIAR ....... modificar en fichero Parametros_FV.py #########
+
+usar_victron = 1              # 1 para leer datos victron ..... 0 para no usar
+
+dev_victron = "/dev/ttyUSB0"  # puerto donde reconoce la RPi al Victron
+
+
+##################################################################################
+
+from Parametros_FV_DIST import * # para asegurar que estan la ultimas variables aunque no se usen
+
+from Parametros_FV import *
+
 if usar_victron == 0:
-    print ('apagando servicio victron por no configurar equipo')
+    print ('apagando servicio VICTRON por no configurar equipo')
     print (subprocess.getoutput('sudo systemctl stop victron')) #python3
     sys.exit()
 
-class victron:
+import colorama # colores en ventana Terminal
+from colorama import Fore, Back, Style
+colorama.init()
+import timeout_decorator
 
-    def __init__(self, serialport):
-        self.serialport = serialport
-        self.ser = serial.Serial(serialport, 19200, timeout=5000)
-        self.crlf = '\r\n'
-        self.tab = '\t'
-        self.key = ''
-        self.value = ''
-        self.dct = {}
-        
-    def read_data_single(self):
-        try:
-            flag_Vbat = 0
-            while True:
-                try:
-                    ee=10
-                    data = self.ser.readline()
-                    ee=20
-                    #print ('data=',data)
-                    
-                    data=data.strip(b'\r\n')
-                    ee=30
-                    data=data.split(b'\t')
-                    #print ('data=',data, len(data))
-                except:
-                    print (time.strftime("%Y-%m-%d %H:%M:%S"),' - error readline ', ee, data)
-                    self.ser.close()
-                    time.sleep(0.2)
-                    return None
-                    
-                try:
-                    if len(data) == 2:
-                        ee = 100
-                        if data[0] == b"V": 
-                            self.dct["Vbat"] = float(data[1]) / 1000         # Vbat
-                            flag_Vbat = 1
-                        elif data[0] == b"VPV": self.dct["Vplaca"] = float(data[1]) / 1000   # Vplaca
-                        elif data[0] == b"PPV": self.dct["Wplaca"] = float(data[1])          # Wplaca
-                        elif data[0] == b"I":   self.dct["Iplaca"] = float(data[1]) / 1000    # Iplaca
-                        elif data[0] == b"VM":  self.dct["Vm"] = float(data[1]) / 1000       # Vbat en punto medio
-                        elif data[0] == b"T":   self.dct["Temp"] = float(data[1])            # Temperatura
-                        elif data[0] == b"SOC": self.dct["SOC"] = float(data[1]) / 10        # SOC
-                                           
-                        elif data[0].decode(encoding='UTF-8')[0]== "H": 
-                            ee = 200
-                            self.dct[data[0].decode(encoding='UTF-8')] = float(data[1])    ## distintas H*
-                            
-                        elif data[0] == b"CS":
-                            ee = 300
-                            if int(data[1]) == 0: self.dct["CS"] = 'OFF'
-                            elif int(data[1]) == 2: self.dct["CS"] = 'FAULT'
-                            elif int(data[1]) == 3: self.dct["CS"] = 'BULK'
-                            elif int(data[1]) == 4: self.dct["CS"] = 'ABSORTION'
-                            elif int(data[1]) == 5: self.dct["CS"] = 'FLOAT'
-                         
-                        elif data[0] == b'Checksum' and flag_Vbat == 1:
-                            ee = 400
-                            flag_Vbat = 0
-                            self.dct['Tiempo_sg'] = time.time()
-                            self.dct['Tiempo'] = time.strftime("%Y-%m-%d %H:%M:%S")
-                            return self.dct
-                            
-                        else:
-                            ee= 900 
-                            self.dct[str(data[0])] = str(data[1])  # resto campos
-                        
-                except:
-                    print('pasa por donde no debe=',ee)
-                    time.sleep(0.2)
-                    pass 
-                
-        except:
-            print ("Error recolectando datos victron", ee, ' data=',data, len(data))
-            #self.ser.close()
-            time.sleep(0.5)
-            #self.ser = serial.Serial(serialport, 19200, timeout=5000)
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando '+ Fore.GREEN + sys.argv[0]) #+Style.RESET_ALL)
+
+#Comprobacion argumentos en comando
+DEBUG= 0
+narg = len(sys.argv)
+if '-p1' in sys.argv: DEBUG= 1 # para desarrollo permite print en distintos sitios
+elif '-p' in sys.argv: DEBUG= 100 
 
 
-if __name__ == '__main__':
-    #c = CsvFv('/run/shm/datos_victron.csv')
-    archivo_ram = '/run/shm/datos_victron.pkl'
+suma = 0
+nfallos = 0
+t=time.time()
+@timeout_decorator.timeout(5, timeout_exception=StopIteration) 
+def lectura():
+    global suma
+    ee=10
+    data = ''
+    if DEBUG == 100: print('...',round(time.time()-t,3),end='')
+    data = ser.readline()
+    if sum(data) != 23:
+        suma = (sum(data) + suma)%256
+    if DEBUG == 100: 
+        print('suma',suma,' data',data,'..OK...', end='')
     
-    #nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Ibat':'Ibat','SOC':'SOC','Vm':'Vm','Temp':'Temp'}
-    nombresBD = {'Tiempo':'Tiempo','Vbat':'Vbat','Iplaca':'Iplaca','Vplaca':'Vplaca','Estado':'CS'}
+    ee=20
+    #print ('data1=',data)
     
-    datosBD = {}
-    grabar_BD = grabar_datos_victron
-    n_grabar_BD = n_grabar_BD_cont = 5
-    
-    while True:
-        try:
-            ee=10
-            ve = victron(dev_victron)
-            ee=20
-            datos = ve.read_data_single()
-            ee=30
-            if datos != None :
-                with open(archivo_ram, 'wb') as f:
-                    pickle.dump(datos, f)
+    data=data.strip(b'\r\n')
+    ee=30
+    data=data.split(b'\t')
+    #print ('data2=',data, len(data))
+    return data
 
-                #c.escribirCsv(datos)
-                #print (datos) #descomenta esta linea para ver la salida completa de datos en el terminal
-                #print ('--------------')
-                
-                try:
-                    #print (datos['Tiempo'],' - Vbat=',datos['Vbat'],' - Ibat=',datos['Iplaca'])
-                    
-                    n_grabar_BD_cont -= 1
-                    #print ('------------ ',n_grabar_BD_cont,' ---------')
-                    if grabar_BD == 1 and n_grabar_BD_cont == 0:
-                        n_grabar_BD_cont = n_grabar_BD
-                        
-                        # Adapto nombres de campos para BD
-                        for i,j in zip (nombresBD.keys(),nombresBD.values()):
-                            try:
-                                #print (i,j)
-                                datosBD[i]= datos[j]
-                            except:
-                                datosBD[i] = 0
+# Comprobacion BD
+
+try:
+    ee = '10'
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()
+    
+    ee = '10b'
+    try: #inicializamos registro en BD RAM
+        cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)",
+                      (equipo,'{}'))
+        db.commit()
+    except:
+        pass    
+    
                                 
-                        #del dict['Tiempo_sg']
-                        #print ('-------------------BD---------------------------')
-                        #print (datosBD)
-                        #print ('-------------')
-                    
-                        
-                        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-                        cursor = db.cursor()
-                        n_campos = ', '.join(['%s'] * len(datosBD))
-                        campos = ', '.join(datosBD.keys())
-                        sql = "INSERT INTO victron ( %s ) VALUES ( %s )" % (campos, n_campos)
-                        #print (sql,list(datosBD.values()))
-                        cursor.execute(sql, list(datosBD.values()))
+except:
+    print (Fore.RED,f'ERROR {ee} - inicializando BD RAM')
+    sys.exit()
 
-                        db.commit()
-                        cursor.close()
-                        db.close()
 
-                except:
-                    print ('error grabacion BD')
-                    pass
-            else:
-                print('no hay datos',ee)
-            #print ('..........')
-            time.sleep(0.2)
-        except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
-            break
-        except:
-            print("error no conocido", ee)
-            #sys.exit()
+ser = serial.Serial(dev_victron, 19200, timeout=5000)
+crlf = '\r\n'
+tab = '\t'
+key = ''
+value = ''
+dct = {} 
+    
+flag_registro = 0
+dia = time.strftime("%Y-%m-%d")
+
+
+while True:
+    ee = 10
+    try:
+        dia_anterior = dia
+        dia = time.strftime("%Y-%m-%d")
+        tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+
+        if dia_anterior != dia: #cambio de dia
+            dct = {} # borrar claves creadas por errores de transmision cada dia
+            nfallos = 0 # se inicializa el contador de fallos de lectura
+            
+        ee=15 
+        try:           
+            data = lectura() # lectura com timeout
+        except Exception as e: 
+            print(e)
+            #log en BD
+            ee=16
+            cursor.execute("""INSERT INTO log (Tiempo,log) VALUES(%s,%s)""",(tiempo, 'Error en lectura Victron'))
+            db.commit()
+            ee=17
+            # reiniciamos puerto serie
+            ser.close()
+            ee=18
+            #ser.flushInput()
+            #ser.flushOutput()
+            ee=19
+            time.sleep(2)
+            ser = serial.Serial(dev_victron, 19200, timeout=5000)
+
+            #ser.open()        
+            time.sleep(2)
+            continue #mejor que empiece el bucle de nuevo?
+        ee=20
         
+        
+        
+        
+        # Interpretar dato leido
+        try:
+            ee = 100
+            if DEBUG == 100: print('Lectura readline.. ',data) 
+            if len(data) == 2:
+                ee = 110
+                if data[0] == b"V":     dct["Vbat"] = float(data[1]) / 1000     # Vbat
+                elif data[0] == b"VPV": dct["Vplaca"] = float(data[1]) / 1000   # Vplaca
+                elif data[0] == b"PPV": dct["Wplaca"] = float(data[1])          # Wplaca
+                elif data[0] == b"I":   dct["Ibat"] = float(data[1]) / 1000     # Ibat
+                elif data[0] == b"VM":  dct["Vm"] = float(data[1]) / 1000       # Vbat en punto medio
+                elif data[0] == b"T":   dct["Temp"] = float(data[1])            # Temperatura
+                elif data[0] == b"SOC": dct["SOC"] = float(data[1]) / 10        # SOC
+                                  
+                elif data[0].decode(encoding='UTF-8')[0]== "H": 
+                    ee = 120
+                    dct[data[0].decode(encoding='UTF-8')] = float(data[1])    ## distintas H*
+                    
+                elif data[0] == b"CS":
+                    ee = 130
+                    if int(data[1]) == 0: dct["CS"] = 'OFF'
+                    elif int(data[1]) == 2: dct["CS"] = 'FALLO'
+                    elif int(data[1]) == 3: dct["CS"] = 'BULK'
+                    elif int(data[1]) == 4: dct["CS"] = 'ABS'
+                    elif int(data[1]) == 5: dct["CS"] = 'FLOT'
+                
+                elif data[0] == b"Checksum": flag_registro = 1
+                    
+                else:
+                    ee= 190
+                    if data[0] != b"Checksum":
+                        dct[data[0].decode(encoding='UTF-8')] = data[1].decode(encoding='UTF-8')
+                    else:
+                        if DEBUG == 100: print('Lectura readline tonta1',data) 
+            else:
+                if DEBUG == 100: print('Lectura readline tonta2',data) 
+                      
+        except:
+            print(Fore.RED+'pasa por donde no debe=',ee, '-- data=',data)
+            time.sleep(0.2)
+             
+        # Grabar en BD
+        ee = 200
+        if flag_registro == 1:
+            ee= 205
+            flag_registro = 0
+            if suma == 0:
+                # Campos Calculados
+                try:
+                    dct["Iplaca"] =  round(dct["Wplaca"]/ dct["Vbat"],2)
+                    dct["Nfallos"] =  nfallos # nombre para fallos de lectura?
+                    
+                except:
+                    pass
+           
+                try:####  ARCHIVOS RAM en BD ############ 
+                    ee = 210
+                    
+                    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    salida = json.dumps(dct)
+                    sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{equipo.upper()}'") # grabacion en BD RAM
+                    cursor.execute(sql)
+                    
+                except:
+                    print(Fore.RED+f'error {ee}, Grabacion tabla RAM equipos en {equipo.upper()}')
+                    print (salida)
+            
+                
+                # Salida DEBUG
+                try:
+                    if DEBUG == 1:
+                        print (Fore.RESET+f" {time.strftime('%H:%M:%S')} : Vbat= {dct['Vbat']:.3f}V - Ibat= {dct['Ibat']:.3f}A - SOC= {dct['SOC']:.2f}%")
+                    
+                    elif DEBUG ==100:
+                        print(Fore.RESET+'=' * 50)
+                        print (Fore.YELLOW+time.strftime("%H:%M:%S"), end='')
+                        print (Fore.CYAN+ '--', dct) 
+                except:
+                    pass
+                
+                    
+                db.commit()
+            else:
+                suma=0
+                nfallos += 1
+                if DEBUG == 100:
+                    print(Fore.RED,'=' * 50)
+                    print(Fore.YELLOW + f'Fallo lectura registro-- Nfallos al dia = {nfallos}') 
+                    print(Fore.RED,'=' * 50, Fore.RESET)                
+                #time.sleep(0.2)
+            
+    except KeyboardInterrupt:   # Se ha pulsado CTRL+C!!
+        ser.close()
+        cursor.close()
+        db.close()
+        break
+    except:
+        print("error no conocido", ee)
+        time.sleep(1)
+        #sys.exit()
+
+# todos los campos posibles que pille en algun sitio del protocolo Victron    
 """
     units[V]="mV";            descr[V]="Voltage" # descr[V]="Main (battery) voltage"
     units[VS]="mV";           descr[VS]="Auxiliary (starter) voltage"

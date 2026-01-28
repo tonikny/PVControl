@@ -14,6 +14,7 @@ print ('Arrancando_PVControl+- ... fv_oled_remoto')
 basepath = '/home/pi/PVControl+/'
 
 #Parametros Instalacion FV
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 OLED_salida1 =[4] # secuencia de pantallazos modelo 1, 2, 3 o 4...0=Logo

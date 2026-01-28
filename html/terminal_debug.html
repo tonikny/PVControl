@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Caracteres Especiales y Emojis</title>
+    <style>
+        body {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+        }
+        
+        .test-title {
+            color: #ffff00;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .test-content {
+            background: #000;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        
+        .charset-info {
+            color: #00ffff;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test de Caracteres Especiales y Emojis</h1>
+    
+    <div class="test-section">
+        <div class="test-title">1. Emojis Directos en HTML</div>
+        <div class="test-content">
+            ✅ Éxito<br>
+            ❌ Error<br>
+            ⚠️ Advertencia<br>
+            🔄 Actualizar<br>
+            🐍 Python<br>
+            🖥️ Terminal<br>
+            📊 Monitor<br>
+            🛑 Detener<br>
+            ⏳ Esperando<br>
+            🌟 Estrella<br>
+            💡 Idea<br>
+            🚀 Cohete
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">2. Caracteres Españoles Directos</div>
+        <div class="test-content">
+            Letras con tilde: á é í ó ú<br>
+            Letra ñ: español cañón<br>
+            Signos de interrogación: ¿?<br>
+            Signos de exclamación: ¡!<br>
+            Caracteres especiales: ç ü
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">3. Emojis desde JavaScript</div>
+        <div class="test-content" id="js-emojis">
+            <!-- Se llenará con JavaScript -->
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">4. Caracteres desde JavaScript</div>
+        <div class="test-content" id="js-chars">
+            <!-- Se llenará con JavaScript -->
+        </div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">5. Información del Navegador</div>
+        <div class="test-content" id="browser-info">
+            <!-- Se llenará con JavaScript -->
+        </div>
+    </div>
+
+    <div class="charset-info">
+        <strong>Charset detectado:</strong> <span id="charset-display">...</span><br>
+        <strong>User Agent:</strong> <span id="user-agent">...</span>
+    </div>
+
+    <script>
+        // =============================================
+        // 3. Emojis desde JavaScript
+        // =============================================
+        const jsEmojis = document.getElementById('js-emojis');
+        const emojis = [
+            '✅ Éxito desde JS',
+            '❌ Error desde JS', 
+            '⚡ Rápido desde JS',
+            '🐍 Python desde JS',
+            '🖥️ Terminal desde JS',
+            '📊 Gráfico desde JS',
+            '🛑 Parar desde JS',
+            '⏳ Esperar desde JS',
+            '🚀 Cohete desde JS',
+            '💡 Bombilla desde JS'
+        ];
+        
+        jsEmojis.innerHTML = emojis.join('<br>');
+
+        // =============================================
+        // 4. Caracteres desde JavaScript
+        // =============================================
+        const jsChars = document.getElementById('js-chars');
+        const spanishText = [
+            'á - a con tilde',
+            'é - e con tilde',
+            'í - i con tilde',
+            'ó - o con tilde', 
+            'ú - u con tilde',
+            'ñ - eñe española',
+            'ü - u con diéresis',
+            '¿ - apertura interrogación',
+            '¡ - apertura exclamación',
+            'ç - cedilla francesa'
+        ];
+        
+        jsChars.innerHTML = spanishText.join('<br>');
+
+        // =============================================
+        // 5. Información del Navegador
+        // =============================================
+        const browserInfo = document.getElementById('browser-info');
+        const info = [
+            `Navegador: ${navigator.userAgent}`,
+            `Idioma: ${navigator.language}`,
+            `Idiomas: ${navigator.languages ? navigator.languages.join(', ') : 'No disponible'}`,
+            `Plataforma: ${navigator.platform}`,
+            `Cookies: ${navigator.cookieEnabled ? 'Habilitadas' : 'Deshabilitadas'}`,
+            `Java: ${navigator.javaEnabled ? 'Habilitado' : 'Deshabilitado'}`
+        ];
+        
+        browserInfo.innerHTML = info.join('<br>');
+
+        // =============================================
+        // Información de Charset
+        // =============================================
+        document.getElementById('charset-display').textContent = document.characterSet;
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+
+        // =============================================
+        // Test adicional: Crear elementos dinámicamente
+        // =============================================
+        setTimeout(() => {
+            const dynamicSection = document.createElement('div');
+            dynamicSection.className = 'test-section';
+            dynamicSection.innerHTML = `
+                <div class="test-title">6. Elementos Creados Dinámicamente</div>
+                <div class="test-content" id="dynamic-content">
+                    🔄 Cargado dinámicamente<br>
+                    ✅ Funciona dinámicamente<br>
+                    🐍 Python dinámico<br>
+                    Carácter: ñ á é í ó ú
+                </div>
+            `;
+            document.body.appendChild(dynamicSection);
+        }, 1000);
+
+        // =============================================
+        // Test de fuentes
+        // =============================================
+        setTimeout(() => {
+            const fontTest = document.createElement('div');
+            fontTest.className = 'test-section';
+            fontTest.innerHTML = `
+                <div class="test-title">7. Test de Fuentes</div>
+                <div class="test-content">
+                    <div style="font-family: 'Courier New'">Courier New: ✅ 🐍 á é í ó ú ñ</div>
+                    <div style="font-family: Arial">Arial: ✅ 🐍 á é í ó ú ñ</div>
+                    <div style="font-family: 'Times New Roman'">Times New Roman: ✅ 🐍 á é í ó ú ñ</div>
+                    <div style="font-family: 'Segoe UI'">Segoe UI: ✅ 🐍 á é í ó ú ñ</div>
+                    <div style="font-family: monospace">Monospace: ✅ 🐍 á é í ó ú ñ</div>
+                </div>
+            `;
+            document.body.appendChild(fontTest);
+        }, 1500);
+    </script>
+</body>
+</html>

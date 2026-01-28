@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-10-30
+# Versión 2023-01-01
 
 N= 25 # repeticion lecturas
 data_rate= 128 # data_rate apliacado en ADS
@@ -11,6 +11,8 @@ import MySQLdb
 from smbus import SMBus
 import Adafruit_ADS1x15 # Import the ADS1x15 module.
 import click
+
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 import colorama # colores en ventana Terminal
@@ -235,6 +237,7 @@ while True:
         except:
             try:
                 sql = f"UPDATE parametros1 SET valor= '{VceldaRatio}' WHERE nombre='mux_calibracion'"
+                print (sql)
                 cursor.execute(sql)
             
             except:

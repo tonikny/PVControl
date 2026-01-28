@@ -2,6 +2,7 @@
 Description=motionEye Server
 
 [Service]
+SyslogIdentifier=%N
 ExecStart=/usr/local/bin/meyectl startserver -c /home/pi/motioneye/motioneye.conf
 Restart=on-abort
 

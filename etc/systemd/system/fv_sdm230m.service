@@ -1,0 +1,15 @@
+[Unit]
+Description= PVControl+ - Lectura SDM230M
+After=mysql.service
+
+[Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_sdm230m.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=FV lectura Hibrido ANENJI
+After=mysql.service
+
+[Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_anenji.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

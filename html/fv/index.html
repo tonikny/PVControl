@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=0.5" />
+    <link href="/img/favicon.ico" rel="shortcut icon" type="image/x-icon" />
+    <link
+      id="dynamicStyles"
+      rel="stylesheet"
+      type="text/css"
+      href="fv.css"
+      media="screen"
+    />
+    <title>PVControl+</title>
+    <script type="module" src="fv.js"></script>
+  </head>
+
+  <body>
+    <div class="navbar" id="navbar">
+      <img
+        src="/img/fvcontrol.png"
+        alt="PVControl+"
+        style="width: 200px; height: 60px"
+      />
+      <a href="javascript:void(0);" class="menu-icon" onclick="toggleMenu()"
+        >&#9776;</a
+      >
+      <span id="menutitle"></span>
+      <div class="menu-items" id="menuItems"></div>
+    </div>
+
+    <div id="grafico">
+      <div id="izquierdo" class="sideBlock"></div>
+      <div id="central">
+        <svg id="svgLines"></svg>
+      </div>
+      <div id="derecho" class="sideBlock"></div>
+    </div>
+  </body>
+</html>

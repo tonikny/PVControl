@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador de Configuración</title><!-- Prism.js CSS -->
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.css" rel="stylesheet" />
+
+	<!-- Prism.js JS -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/prism.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-javascript.min.js"></script>
+
+	
+    <style>
+        /* Estilos generales */
+        body {
+            display: flex;
+            height: 100vh; /* Ocupa la altura completa de la ventana */
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+        }
+
+        /* Barra lateral fija */
+        #commands {
+            width: 250px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto; /* Permitir desplazamiento si es necesario */
+            position: fixed; /* Mantener la barra lateral fija */
+            top: 0;
+            bottom: 0;
+        }
+
+        /* Contenedor del contenido principal */
+        #content {
+            flex: 1;
+            margin-left: 250px; /* Alinearse con el ancho de la barra lateral */
+            padding: 20px;
+            overflow-y: auto; /* Permitir desplazamiento en el contenido */
+        }
+
+        /* Estilos del listado de archivos */
+        #fileList {
+            margin-bottom: 20px;
+        }
+
+        #fileList button {
+            background-color: #2980b9;
+            color: #ecf0f1;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #fileList button:hover {
+            background-color: #3498db;
+        }
+
+        /* Estilos del árbol de configuración */
+        .separator {
+            border-top: 1px solid #7f8c8d;
+            margin: 20px 0;
+        }
+
+        .tree {
+            list-style-type: none;
+            padding-left: 10px;
+        }
+
+        .tree-item {
+            margin: 10px 0;
+        }
+
+        .tree-item button {
+            background: none;
+            border: none;
+            text-align: left;
+            color: #ecf0f1;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.3s, background-color 0.3s;
+        }
+
+        .tree-item button:hover {
+            color: #3498db;
+            background-color: #34495e;
+            border-radius: 5px;
+        }
+
+        /* Estilos del contenido de la configuración */
+        #configOutput {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            font-family: "Courier New", Courier, monospace;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+
+        /* Estilos de desplazamiento suave */
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Barra lateral fija -->
+<div id="commands">
+    <div id="fileList"></div>
+    <ul id="configTree" class="tree"></ul>
+</div>
+
+<!-- Contenido desplazable -->
+<div id="content">
+    <div id="configOutput"></div>
+</div>
+
+<script>
+// Variable para guardar los datos de configuración
+let configData = {};
+
+// Al cargar la página, listar los archivos disponibles en la carpeta /configuraciones
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('configuraciones/')
+        .then(response => response.text())
+        .then(data => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data, "text/html");
+            const links = doc.querySelectorAll('a');
+            const configFiles = Array.from(links).map(link => link.getAttribute('href')).filter(file => file.endsWith('.js'));
+
+            displayFileList(configFiles);  // Mostrar el listado de archivos
+        })
+        .catch(error => console.error('Error al listar los archivos:', error));
+});
+
+// Mostrar el listado de archivos
+function displayFileList(files) {
+    const fileListContainer = document.getElementById('fileList');
+    fileListContainer.innerHTML = '';  // Limpiar cualquier listado anterior
+
+    files.forEach(file => {
+        const button = document.createElement('button');
+        button.textContent = file;
+        button.onclick = () => loadSelectedConfigFile(file);  // Cargar el archivo seleccionado
+        fileListContainer.appendChild(button);
+    });
+}
+
+// Cargar el archivo seleccionado como un script y visualizar el árbol
+function loadSelectedConfigFile(fileName) {
+    botonesSuperiores()
+	
+	const treeContainer = document.getElementById('configTree');
+	treeContainer.innerHTML = '';
+    const configOutput = document.getElementById('configOutput');
+    configOutput.textContent = '';
+    
+	// Crear un script para cargar el archivo de configuración
+    const newScript = document.createElement("script");
+    newScript.src = `configuraciones/${fileName}`;
+    newScript.setAttribute('data-config', fileName);
+	
+	
+    newScript.onload = () => {
+	    
+        if (typeof config === 'object') {
+            configData = config;  // Guardar la referencia a la constante config
+            updateTreeView(configData, fileName);  // Actualizar el árbol con el archivo seleccionado
+			//addEditButton(); // Agregar el botón "Editar" al cargar correctamente el archivo
+        } else {
+		    console.error('El archivo no contiene una constante "config" válida.');
+			showErrorInSidebar(event, fileName, 'Pulsa F12 para ver mas detalles.');
+        
+			// Mostrar el contenido del archivo en formato texto
+			fetch(`configuraciones/${fileName}`)
+				.then(response => response.text())
+				.then(fileContent => {
+					configOutput.textContent = fileContent;
+				})
+				
+        }
+    };
+
+    // Manejar errores de carga del script
+    newScript.onerror = (event) => {
+		console.log('D');
+        console.error(`Error 2 al cargar el archivo "${fileName}":`, event);
+        showErrorInSidebar(event, fileName, 'Error x al cargar el archivo.');
+        
+        // Mostrar el contenido del archivo en formato texto
+        fetch(`configuraciones/${fileName}`)
+            .then(response => response.text())
+            .then(fileContent => {
+                configOutput.textContent = fileContent;
+            })
+            .catch(err => console.error('Error 3 al cargar el contenido del archivo:', err));
+    };
+
+    document.head.appendChild(newScript);
+	
+}
+
+// Actualizar la vista de árbol con el contenido del archivo cargado
+function updateTreeView(config, fileName) {
+    const treeContainer = document.getElementById('configTree');
+    treeContainer.innerHTML = '';  // Limpiar cualquier árbol anterior
+
+    // Mostrar solo el nombre del archivo seleccionado en la parte superior
+    const fileNameButton = document.createElement('button');
+    fileNameButton.textContent = fileName;
+    fileNameButton.onclick = () => showFullConfig(config);  // Al hacer clic, mostrar todo el archivo
+    treeContainer.appendChild(fileNameButton);
+
+    // Separador visual
+    const separator = document.createElement('div');
+    separator.className = 'separator';
+    treeContainer.appendChild(separator);
+
+    // Crear el árbol de primer nivel
+    Object.keys(config).forEach(key => {
+        const li = document.createElement('li');
+        li.className = 'tree-item';
+
+        const button = document.createElement('button');
+        button.textContent = key;  // El texto del botón será la clave
+        button.onclick = () => handleTreeItemClick(config[key], li);  // Mostrar/ocultar el contenido de la clave
+
+        li.appendChild(button);
+        treeContainer.appendChild(li);
+    });
+
+    // Mostrar el contenido inicial del archivo completo al cargarlo
+    const configOutput = document.getElementById('configOutput');
+    
+	
+	//configOutput.textContent = JSON.stringify(config, null, 2);  // Mostrar el archivo completo inicialmente
+	//configOutput.textContent = prettier.format(config, { parser: "babel" });
+	displayFormattedCode(config);
+}
+
+// Manejar el clic en cada clave del árbol y mostrar su contenido
+function handleTreeItemClick(subConfig, parentElement) {
+    // Si ya tiene subclaves visibles, se colapsan
+    const existingSubTree = parentElement.querySelector('ul');
+    if (existingSubTree) {
+        existingSubTree.remove();  // Colapsar el árbol y salir
+        return;
+    }
+
+    // Mostrar el contenido del nivel más profundo en la ventana de visualización
+    const configOutput = document.getElementById('configOutput');
+    //configOutput.textContent = JSON.stringify(subConfig, null, 2);  // Mostrar el valor seleccionado
+    displayFormattedCode(subConfig);
+
+
+    // Si es un objeto, se muestran las subclaves
+    if (typeof subConfig === 'object' && subConfig !== null) {
+        const subTree = document.createElement('ul');
+        subTree.className = 'tree';  // Añadir clase para darle estilo al subárbol
+
+        Object.keys(subConfig).forEach(subKey => {
+            const subLi = document.createElement('li');
+            subLi.className = 'tree-item';
+
+            const subButton = document.createElement('button');
+            subButton.textContent = subKey;
+            subButton.onclick = () => handleTreeItemClick(subConfig[subKey], subLi);  // Anidar más subclaves si existen
+
+            subLi.appendChild(subButton);
+            subTree.appendChild(subLi);
+        });
+
+        parentElement.appendChild(subTree);  // Añadir el subárbol al elemento padre
+    }
+}
+
+// Mostrar todo el contenido del archivo seleccionado
+function showFullConfig(config) {
+    const configOutput = document.getElementById('configOutput');
+    
+	//configOutput.textContent = JSON.stringify(config, null, 2);  // Mostrar el archivo completo
+	displayFormattedCode(config);
+}
+
+
+function showErrorInSidebar(error, fileName, errorMessage) {
+    // Reiniciar la barra lateral a su estado inicial con el listado de archivos
+    //listarArchivosConfiguracion();
+
+    // Mostrar el mensaje de error en la barra lateral
+    const treeContainer = document.getElementById('configTree');
+    const errorParagraph = document.createElement('p');
+    errorParagraph.id = 'errorMessage';
+    errorParagraph.textContent = `Error al cargar el archivo "${fileName}": ${errorMessage}`;
+    treeContainer.appendChild(errorParagraph);
+}
+
+
+// Función para agregar el botón "Editar" al cargar el archivo
+function addEditButton() {
+    const fileList = document.getElementById('fileList');
+
+    // Crear el botón "Editar"
+    const editButton = document.createElement('button');
+    editButton.textContent = 'Editar';
+    editButton.classList.add('edit-button');
+    
+    // Al hacer clic en el botón "Editar", cambia la ventana de visualización a modo edición
+    editButton.addEventListener('click', () => {
+        const configOutput = document.getElementById('configOutput');
+
+        // Obtener el contenido actual del archivo mostrado
+        const currentContent = configOutput.textContent;
+
+        // Reemplazar el contenido actual con un textarea para edición
+        configOutput.innerHTML = `<textarea id="editor" style="width: 100%; height: 400px;">${currentContent}</textarea>`;
+
+        // Agregar un botón para "Guardar" los cambios
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Guardar';
+        saveButton.classList.add('save-button');
+
+        // Al hacer clic en "Guardar", se actualiza el contenido de la configuración
+        saveButton.addEventListener('click', () => {
+            const editedContent = document.getElementById('editor').value;
+            configOutput.textContent = editedContent;
+
+            // Aquí puedes agregar una lógica para guardar el archivo actualizado, ya sea vía backend o almacenando el cambio en el cliente.
+            saveConfigFile(editedContent);
+        });
+
+        // Reemplazar el botón "Editar" por el botón "Guardar"
+        fileList.innerHTML = ''; // Limpiar cualquier otro contenido previo
+        fileList.appendChild(saveButton);
+    });
+
+    // Agregar el botón "Editar" al listado de archivos o configuraciones
+    fileList.appendChild(editButton);
+}
+
+
+// Función para simular el guardado del archivo (puedes reemplazarla con una lógica de guardado real)
+function saveConfigFile(content) {
+    console.log("El archivo editado sería guardado con el siguiente contenido:");
+    console.log(content);
+    botonesSuperiores()
+    // Aquí podrías hacer una llamada a un servidor para guardar el archivo, por ejemplo con fetch:
+    /*
+    fetch('/saveConfig', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: content }),
+    }).then(response => {
+        console.log("Archivo guardado exitosamente");
+    }).catch(error => {
+        console.error("Error al guardar el archivo:", error);
+    });
+    */
+}
+
+function botonesSuperiores() {
+    const fileListContainer = document.getElementById('fileList');
+    fileListContainer.innerHTML = '';  // Limpiar cualquier listado anterior
+	
+	const button = document.createElement('button');
+	button.textContent = 'atras';
+	button.onclick = () => reiniciar();  // 
+    fileListContainer.appendChild(button);
+    addEditButton()
+}
+
+function objectToJSCode(obj, level = 0) {
+    const indent = '    '.repeat(level);  // Nivel de indentación
+    const entries = Object.entries(obj).map(([key, value]) => {
+        // Si el valor es otro objeto, lo procesamos de forma recursiva
+        if (typeof value === 'object' && value !== null) {
+            return `${indent}${key}: {\n${objectToJSCode(value, level + 1)}\n${indent}}`;
+        } else if (typeof value === 'string') {
+            // Si el valor es una cadena, usamos comillas simples
+            return `${indent}${key}: '${value}'`;
+        } else {
+            // Si es otro tipo de dato (número, booleano, etc.)
+            return `${indent}${key}: ${value}`;
+        }
+    });
+    
+    return entries.join(',\n');
+}
+
+function displayFormattedCode(obj) {
+    const jsCode = objectToJSCode(obj);  // Convertimos el objeto o parte del objeto
+    
+    // Usamos Prism.js para resaltar la sintaxis del código
+    const highlightedCode = Prism.highlight(jsCode, Prism.languages.javascript, 'javascript');
+    
+    // Mostramos el código resaltado en el contenedor de salida
+    configOutput.innerHTML = `<pre><code class="language-javascript">${highlightedCode}</code></pre>`;
+}
+
+
+
+</script>
+</body>
+</html>
+

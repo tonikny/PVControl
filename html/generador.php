@@ -1,4 +1,4 @@
 <?php
-$texto=md5(fv);
+$texto=md5('fv');
 echo $texto;
 ?>

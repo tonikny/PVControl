@@ -3,8 +3,12 @@ Description=Control Fotovoltaico
 After=mysql.service
 
 [Service]
+SyslogIdentifier=%N
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/PVControl+ 
 ExecStartPre=/bin/sleep 10
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv.py
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv.py
 Restart=always
 RestartSec=30
 

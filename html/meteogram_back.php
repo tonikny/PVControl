@@ -7,8 +7,8 @@
 <body>
 
 <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-<script src="http://code.highcharts.com/highcharts.js"></script>
-<link href="http://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
 
 <!-- Grafico B -->
 <iframe width="600" height="400" src="https://embed.windy.com/embed2.html?lat=40.13751&lon=-3.530851&zoom=5&level=surface&overlay=clouds&menu=&message=true&marker=true&calendar=&pressure=true&type=map&location=coordinates&detail=true&detailLat=40.13751&detailLon=-3.530851&metricWind=default&metricTemp=default&radarRange=-1" frameborder="0"></iframe>

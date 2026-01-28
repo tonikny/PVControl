@@ -5,7 +5,10 @@
 
 import os, sys, time
 import csv,traceback
+
+from Parametros_FV_DIST import *
 from Parametros_FV import *
+
 import MySQLdb 
 from pymodbus.client.sync import ModbusSerialClient as ModbusClient
 from pymodbus.register_read_message import ReadHoldingRegistersResponse

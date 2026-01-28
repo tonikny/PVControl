@@ -144,9 +144,9 @@ if( isset($_POST["id_rele"]) ) {
 
 <script src="https://code.jquery.com/jquery.js"></script>
 
-<script src="http://code.highcharts.com/highcharts.js"></script>
-<script src="http://code.highcharts.com/highcharts-more.js"></script>
-<script src="http://code.highcharts.com/themes/grid.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/highcharts-more.js"></script>
+<script src="https://code.highcharts.com/themes/grid.js"></script>
 
 <?php
 

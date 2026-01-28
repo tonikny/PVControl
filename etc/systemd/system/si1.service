@@ -3,7 +3,11 @@ Description= PVControl+ - Lectura SI1
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/si.py SI1
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/si.py SI1
 Restart=always
 RestartSec=30
 

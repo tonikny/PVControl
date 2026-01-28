@@ -1,9 +1,16 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-08-20
+# Versión 2025-12-01
 #
 #
+
+# #################### Control Ejecucion Servicio ########################################
+equipo = 'deye'
+servicio = 'fv_deye'
+control = 'sum(usar_deye)'
+exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
+# ########################################################################################
+
 import sys, time, datetime
 import MySQLdb,json
 import subprocess
@@ -11,44 +18,27 @@ import subprocess
 import telebot # Librería de la API del bot.
 import token
 
-from pymodbus.client.sync import ModbusSerialClient
+
+# Aseguramos que la libreria pysolarmanv5 esta instalada
+try:
+    import minimalmodbus
+    from pysolarmanv5 import PySolarmanV5
+    
+except:
+    res = subprocess.run('pip3 install pysolarmanv5' , shell=True)
+    if res.returncode == 0:
+        try:
+            from pysolarmanv5 import PySolarmanV5
+        except:
+            print ('Error en instalacion libreria pysolarmanv5')
+            
+            #sys.exit()
 
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
 
-print (Style.BRIGHT + Fore.YELLOW + 'Arrancando '+ Fore.GREEN + sys.argv[0]) #+Style.RESET_ALL)
-
-
-#### Parametros_FV.py ##########
-usar_deye = [0]              # Poner a 1 si se quiere activar  (lo indicado en Parametros_FV.py prevalece sobre estos valores)
-dev_deye = ["/dev/ttyUSB0"]  # puerto donde reconoce la RPi al equipo
-t_muestra_deye = [1]         # Tiempo en segundos entre muestras
-con_bateria_deye = [0]            # Inversor con bateria = 1 , sin bateria = 0
-
-grabar_datos_deye = [0]      # 1 = Graba la tabla deye.. 0 = No graba .... NO IMPLEMENTADO AUN
-n_muestras_deye = [5]        # grabar en BD cada nmuestras .... NO IMPLEMENTADO AUN
-usar_telegram = 1
-
-# ###############################################
-#Variables Script
-can_e = 0 # Variable control cambio de estado
-est_ant = '0' #estado anterior del inversor
-# ##############################################
-
-
-equipo = 'deye'
-from Parametros_FV import *
-
-if sum(eval(f'usar_{equipo}')) == 0:
-    print (subprocess.getoutput(f'sudo systemctl stop fv_{equipo}'))
-    sys.exit()
-
-if usar_telegram == 1:
-    bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-    bot.skip_pending = True # Skip the pending messages
-    cid = Aut[0]
-    bot.send_message(cid, f'Arrancando Programa Lectura DEYE')
+print (Style.BRIGHT + Fore.YELLOW + 'Arrancando '+ Fore.GREEN + sys.argv[0])
 
 #Comprobacion argumentos en comando
 simular = DEBUG= 0
@@ -56,426 +46,262 @@ narg = len(sys.argv)
 if '-p' in sys.argv: DEBUG= 1 # para desarrollo permite print en distintos sitios
 
 
-#############################################################################
-##### Script de captura cortesia de  Juan Andres Hernandez ##################
-#############################################################################
-
-version				=	"alpha-2022050201"	# Program Version
-inverterConnection	=	ModbusSerialClient(method='rtu', port = dev_deye[0], baudrate=9600, timeout=3, parity='N', stopbits=1, bytesize=8)
-
-dataSet				=	[0]*2				# Inverter Registers from 59 to 172 and from 173 to 284
-dataSet1From		=	59
-dataSet1Size		=	113
-dataSet2From		=	dataSet1From+dataSet1Size
-dataSet2Size		=	113
-
-# Loop mode dumps data continuously
-loopMode			=	True
-
-# Time in seconds beteen readings in loop mode
-highRateDataDelay	=	10			# 0 = Run continuously
-lowRateDataEvery	=	5
-
-# Classes
-#
-
-# Defines a simple register. A register may contain data from multiple addresses.
-class Register:
-	registerName = ""
-	baseAddress = 0
-	sizeOfRegister = 0
-	multiplier = 0
-	unit = 0
-
-	def __init__(self, registerName, baseAddress, sizeOfRegister, multiplier, unit):
-		self.registerName = registerName
-		self.baseAddress = baseAddress
-		self.sizeOfRegister = sizeOfRegister
-		self.multiplier = multiplier
-		self.unit = unit
-
-	# Return the usable value of the register or "NotValid"
-	def getData(self):
-		dataSetIndex = -1
-		returnValue = ""
-		#print("Obteniendo dato de ",self.registerName)
-		#print("Obteniendo dato del índice: ", self.baseAddress)
-		if self.baseAddress < dataSet2From:
-			dataSetIndex = 0
-			registerIndex = self.baseAddress - dataSet1From
-			#print("DataSet1From: ",dataSet1From)
-		else:
-			dataSetIndex = 1
-			registerIndex = self.baseAddress - dataSet2From
-			#print("DataSet2From: ",dataSet2From)
-
-		#print("dataSetindex ", dataSetIndex)
-		#print("registerIndex ", registerIndex)
-
-		if dataSet[dataSetIndex].isError():
-			returnValue = "NotValid"
-		else:
-			if self.sizeOfRegister == 1:
-				#print("Dato con una dirección")
-				returnValue = dataSet[dataSetIndex].registers[registerIndex]
-
-				# Humanize Running State values.
-				if self.baseAddress == 59:
-					if returnValue == 0:
-						returnValue = "Stand By"
-					elif returnValue == 1:
-						returnValue = "Self Checking"
-					elif returnValue == 2:
-						returnValue = "Normal"
-					elif returnValue == 3:
-						returnValue = "Fault"
-
-				# Temperatures are calculated as data-1000 in register. 1000 = 0ºC. Add them on this list
-				if self.baseAddress in [90, 91, 95, 182]:
-					returnValue = returnValue - 1000
-				# Some values are represented as signed int
-				if self.baseAddress in [190, 191, 172]:
-					if returnValue > 32767:
-						#print(self.baseAddress)
-						returnValue -= 65535
-				returnValue *= self.multiplier
-
-				# Humanize Grid Side Relay Status
-				if self.baseAddress in [194]:
-					if returnValue == 1:
-						returnValue = "on"
-					elif returnValue == 0:
-						returnValue = "off"
-					else:
-						returnValue = "unknown"
-
-				# Humanize Time of Use Selling
-				if self.baseAddress == 248:
-					if (returnValue & int("11111111",2)) == 0xFF:
-						returnValue = "on"
-					elif (returnValue & int("11111111",2)) == 0x00:
-						returnValue = "off"
-					# Time of Use Selling dumpt the time table too
-					#returnValue = [returnValue, "linea 1", "linea 2", "linea 3", "linea 4", "linea 5", "linea 6" ]
-					
-
-				# Humanize Grid Mode
-				if self.baseAddress == 284:
-					if returnValue == 0:
-						returnValue = "General_Standard"
-					elif returnValue == 1:
-						returnValue = "UL1741&IEE1547"
-					elif returnValue == 2:
-						returnValue = "CPUC_RULE21"
-					elif returnValue == 3:
-						returnValue = "SRD-UL1741"
-
-
-			# 
-			if self.sizeOfRegister == 2:
-				#print("Datos con dos direcciones")
-				#print("Primera palabra ",dataSet[dataSetIndex].registers[registerIndex])
-				returnValue = dataSet[dataSetIndex].registers[registerIndex]
-				nextAddress = 1
-				# Some values are not in consecutive addresses. Add them on this list
-				if self.baseAddress in [78]:
-					#print("Dos registros no contínuos")
-					nextAddress = 2
-				# Values are usually in consecutive registers
-				else:
-					nextAddress = 1
-					#print("Dos registros contínuos")
-
-				#print("Segunda palabra ",dataSet[dataSetIndex].registers[registerIndex+nextAddress])
-				returnValue += dataSet[dataSetIndex].registers[registerIndex+nextAddress] << 16
-				returnValue *= self.multiplier
-
-		if type(returnValue) == float:
-			returnValue = round(returnValue, 2)
-		return returnValue
-
-class inverterData:
-	# Name, First Address, Size in 16bit words, multiplier, unit
-	EstadoInv				    =	Register("RunningState", 59, 1, 1, "")
-	DayActivePower				=	Register("DayActivePower", 60, 1, 0.1, "kWh")
-	TotalActivePower			=	Register("TotalActivePower", 63, 2, 0.1, "kWh")
-	DayBattCharge				=	Register("DayBattCharge", 70, 1, 0.1, "kwh")
-	DayBattDischarge			=	Register("DayBattDisCharge", 71, 1, 0.1, "kwh")
-	TotalBatteryChargePower		=	Register("TotalBatteryChargePower", 72, 2, 0.1, "W")
-	TotalBatteryDischargePower	=	Register("TotalBatteryDischargePower", 74, 2, 0.1, "W")
-	DayGridBuyPower				=	Register("DayGridBuyPower", 76, 1, 0.1, "kWh")
-	DayGridSellPower			=	Register("DayGridSellPower", 77, 1, 0.1, "kWh")
-	TotalGridBuyPower			=	Register("TotalGridBuyPower", 78, 2, 0.1, "kWh")		# Registers 78 and 80 instead of 78 and 79
-	TotalGridSellPower			=	Register("TotalGridSellPower", 81, 2, 0.1, "kWh")
-	DayLoadPower				=	Register("DayLoadPower", 84, 1, 0.1, "kWh")
-	TotalLoadPower				=	Register("TotalLoadPower", 85, 2, 0.1, "kWh")
-	YearLoadPower				=	Register("YearLoadPower", 87, 2, 0.1, "kWh")
-	RadiatorTempDC				=	Register("RadiatorTempDC", 90, 1, 0.1, "ºC")
-	IGBTTemp					=	Register("IGBTTemp", 91, 1, 0.1, "ºC")
-	Inductance1Temp				=	Register("Inductance1Temp", 92, 1, 0.1, "ºC")
-	EnvironmentTemp				=	Register("EnvironmentTemp", 95, 1, 0.1, "ºC")
-	HistPVPower					=	Register("HistPVPower", 96, 2, 0.1, "kWh")
-	DayPVPower					=	Register("DayPVPower", 108, 1, 0.1, "kWh")
-	Vplaca1					    =	Register("DCVoltage1", 109, 1, 0.1, "V")
-	Iplaca1					    =	Register("DCCurrent1", 110, 1, 0.1, "A")
-	Vplaca2					    =	Register("DCVoltage2", 111, 1, 0.1, "V")
-	Iplaca2					    =	Register("DCCurrent2", 112, 1, 0.1, "A")
-	Vred			            =	Register("GridSideVoltageL1N", 150, 1, 0.1, "V")
-	LoadVoltageL1				=	Register("LoadVoltageL1", 157, 1, 0.1, "V")
-	Wred		                =	Register("GridExternalTotalPower", 172, 1, 1, "W")
-	Wconsumo			        =	Register("LoadSideTotalPower", 178, 1, 1, "W")
-	Tbat			            =	Register("BatteryTemperature", 182, 1, 0.1, "ºC")
-	Vbat				        =	Register("Vbat", 183, 1, 0.01, "V")
-	BatteryCapacity				=	Register("BatteryCapacity", 184, 1, 1, "%")
-	PV1InputPower				=	Register("PV1InputPower", 186, 1, 1, "W")
-	PV2InputPower				=	Register("PV2InputPower", 187, 1, 1, "W")
-	BatteryOutputPower			=	Register("BatteryOutputPower", 190, 1, 1, "w")
-	Ibatn		                =	Register("BatteryOutputCurrent", 191, 1, 0.01, "A")
-	GridSideRelayStatus			=	Register("GridSideRelayStatus", 194, 1, 1, "")			# 0=Disconnected ; 1=Connected
-	TimeOfUseSelling			=	Register("TimeOfUSeSelling", 248, 1, 1, "")
-	GridMode					=	Register("GridMode", 284, 1, 1, "")
-	GridExternalLimeterCT1		=	Register("GridExternalLimeterCT1", 170, 1, 1,"w")  # no esta claro que es este parametro , en teoria la pontencia minima que consuma para asegurar el NO vertido
-	#Ired		                =	Register("GridSideCurrentL1", 164, 1, 0.01, "A")
-	Ired		                =	Register("GridExternalLimeterCurrentL1", 162, 1, 0.01, "A")
-	Ired2		                =	Register("GridExternalLimeterCurrentL2", 163, 1, 0.01, "A")
-	GrideSideL1P   =	Register("GrideSideL1P", 172, 1, 1, "W")
-	GrideSideL2P   =	Register("GrideSideL1P", 170, 1, 1, "W")
-#
-#
-# returns:
-#		 0 = All Registers
-#		 1 = Some registers not readed
-#		-1 = No register could be read
-#
-
-def readInverterData():
-	global dataSet
-	global inverterConnection
-	#global dataSet2
-	returnValue = -1
-	dataSet1Readed = False
-	dataSet2Readed = False
-
-	#print(inverterConnection.is_socket_open())
-
-	try:
-		# Am I already connected
-		if inverterConnection.is_socket_open() == False:
-		#	print("Conectando al Inversor")
-			inverterConnection.connect()  # Trying for connect to Modbus Server/Slave
-		#else:
-		#	print("Ya estoy connectado al inversor")
-
-		if inverterConnection.is_socket_open():
-			dataSet[0] = inverterConnection.read_holding_registers(address=dataSet1From, count=dataSet1Size, unit=1)
-			if not dataSet[0].isError():
-				#print("Primer lote leído.")
-				dataSet1Readed = True
-			else:
-				dataSet1Readed = False
-
-			dataSet[1] = inverterConnection.read_holding_registers(address=dataSet2From, count=dataSet2Size, unit=1)
-			if not dataSet[1].isError():
-				#print("Segundo lote leído.")
-				dataSet2Readed = True
-			else:
-				dataSet2Readed = False
-
-			if dataSet1Readed == True or dataSet2Readed == True:
-				returnValue = 0
-			else:
-				returnValue = 1
-
-			#inverterConnection.close()
-
-		else:
-			print('Cannot create modbus connection')
-			returnValue = -1
-
-	except IOError:
-		print("Error reading from the inverter")
-	except ValueError:
-		print("Inverter response is invalid")
-	except:
-		print("An exception ocurred")
-	
-	return returnValue
-
-
-
-# Comprobacion BD
-
-n_muestras_contador = [1 for i in range(len(eval(f'usar_{equipo}')))] # contadores grabacion BD
-
-try:
-    ee = '10'
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
+def leer_equipo(I_equipo): # bucle de lectura de cada equipo
+    global n_fallos_lectura
     
-    for i in range(len(eval(f'usar_{equipo}'))):
-        ee = '10a'    
-        if eval(f'usar_{equipo}[{i}]') == 1:
-            if i==0: N_Equipo = ""
-            else: N_Equipo = f"{i}"
-            try: #inicializamos registro RAM en BD 
-                ee = '10b'
-                cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
-                              (equipo.upper()+ N_Equipo ,'{}'))   
-                db.commit()
-            except:
-                pass             
-                                
-except:
-    print (Fore.RED,f'ERROR {ee} - inicializando BD RAM')
-    sys.exit()
-
-
-def logBD(msg) : # Incluir en tabla de Log
-    try: 
-        cursor.execute("""INSERT INTO log (Tiempo,log) VALUES(%s,%s)""",(tiempo,msg))
-        #print (tiempo,' ', msg)
-        db.commit()
-    except:
-        db.rollback()
+    t0= time.time()
     
-    return
-
-
-def leer_equipo(equipo,I_Equipo):
-    global n_muestras_contador, dataReadResult, can_e, est_ant
-    
-    if I_Equipo == 0: N_Equipo = ""
-    else: N_Equipo = f"{I_Equipo}"
-
-    datos= {} # Diccionarios datos
-    
+    # creamos que registro en tabla equipos
     try:
-        dataReadResult = readInverterData() 
-    
-        datos['WplacaST1'] = inverterData.PV1InputPower.getData()
-        datos['WplacaST2'] = inverterData.PV2InputPower.getData()
-        datos['EstadoInv'] = inverterData.EstadoInv.getData()
-        datos['IGBTTemp'] = inverterData.IGBTTemp.getData()
-        datos['Vplaca1'] = inverterData.Vplaca1.getData()
-        datos['Iplaca1'] = inverterData.Iplaca1.getData()
-        datos['Vplaca2'] = inverterData.Vplaca2.getData()
-        datos['Iplaca2'] = inverterData.Iplaca2.getData()
-        datos['Vred'] = inverterData.Vred.getData()
-        #datos['LoadVoltageL1'] = inverterData.LoadVoltageL1.getData()
-        datos['Wred'] = -(inverterData.Wred.getData())
-        datos['Wconsumo'] = inverterData.Wconsumo.getData()
-        #datos['TotalActivePower'] = inverterData.TotalActivePower.getData()       
-        #datos['DayPVPower'] = inverterData.DayPVPower.getData()
-        datos['Wplaca'] = datos['WplacaST1'] + datos['WplacaST2']
-        #datos['Iplaca'] = (datos['Iplaca1'] + datos['Iplaca2'])/2 # Revisar que sea correcto
-        #datos['Vplaca'] = datos['Wplaca'] / datos['Iplaca'] # Revisar que sea correcto
-        datos['Vplaca'] = (datos['Vplaca1'] + datos['Vplaca2'])/2 # Revisar que sea correcto
-        datos['Iplaca'] = datos['Wplaca'] / datos['Vplaca'] # Revisar que sea correcto
-        if datos['Wred'] < 0:
-            datos["Ired"] = -(inverterData.Ired.getData())
-        else:
-            datos["Ired"] = (inverterData.Ired.getData())
-        #datos["Ired2"] = inverterData.Ired2.getData()
+        ee = '10'
+        db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+        cursor = db.cursor()
         
-        if eval(f'con_bateria_deye{N_Equipo}[{I_Equipo}]') == 1:
-            datos['BatteryOutputPower'] = inverterData.BatteryOutputPower.getData()
-            datos['Vbat'] = inverterData.Vbat.getData()
-            datos['Tbat'] = inverterData.Tbat.getData()
-            datos['Ibatn'] = inverterData.Ibatn.getData()
+        try: #inicializamos registro RAM en BD 
+            ee = '10b'
+            nombre_equipo = nombre_deye[I_equipo].upper()
             
+            cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                          (nombre_equipo,'{}'))   
+            db.commit()
+        except:
+            pass             
+                            
+    except:
+        print (Fore.RED,f'ERROR {ee} - inicializando BD RAM')
+        sys.exit()
 
-    except:
-        print (Fore.RED + 'ERROR EN CAPTURA DATOS DEYE')
+
+    # Conexion al equipo
+    if dev_deye[I_equipo][:4] == '/dev': # se usa RS485
         
+        tipo_conexion = 'RS485'
+        modbus = minimalmodbus.Instrument(dev_deye[I_equipo], 1)
+        modbus.serial.baudrate = 9600
+        modbus.serial.bytesize = 8
+        modbus.serial.parity = minimalmodbus.serial.PARITY_NONE
+        modbus.serial.stopbits = 1
+        modbus.serial.timeout = 3
+        modbus.debug = False
+        modbus.mode = minimalmodbus.MODE_RTU
+        
+    else: # se usa Dongle Wifi
+        tipo_conexion = 'WIFI'
+        modbus = PySolarmanV5(dev_deye[I_equipo], n_serie_dongle[I_equipo], port=8899, mb_slave_id=mb_slave_id[I_equipo], verbose=False)
+        
+    #Captura 
+    t1= time.time()
+    
+    datos= {} # inicializo diccionario
+    error = False
+    
+    # --- BLOQUE 1: Registros 59 - 172 ---
     try:
-        if usar_telegram_deye[I_Equipo] == 1:
-            ee = '25a'
-            if can_e == 0:
-                ee = '25b'
-                L1 = f"Estado inversor{N_Equipo}: {datos['EstadoInv']}" 
-                can_e = 1
-                est_ant = str(datos['EstadoInv'])
-                tg_msg = L1
-                ee = '25c'
-                print (tg_msg) 
-                bot.send_message(cid, tg_msg)
-                     
-            if est_ant !=  str(datos['EstadoInv']):
-                ee = '25d'
-                can_e = 0
-                print("Cambio variable can_e: " + str(can_e))
-                logBD('Estado inversor DEYE: '+ str(datos['EstadoInv'])) # incluyo mensaje en el log
+        ee = 100
+        if tipo_conexion == 'RS485':
+            
+            d = modbus.read_registers(59, 114, 3)
+        else:
+            try:
+                d = modbus.read_holding_registers(register_addr=59, quantity=114) # leo registros del 59 al 172 
+                
+            except:
+                error = True
+                
+        if not error:
+            ee = 110
+            if d[0] == 0: # registro 59
+                datos['EstadoInv'] = "Stand By"
+            elif d[0] == 1:
+                datos['EstadoInv'] = "Self Checking"
+            elif d[0] == 2:
+                datos['EstadoInv'] = "Normal"
+            elif d[0] == 3:
+                datos['EstadoInv'] = "Fault"
+                
+            datos['DayActivePower'] = round(d[1]/10,2) # registro 60
+            datos['TotalActivePower'] = round(d[4]/10,2) # registro 63
+            datos['DayBattCharge'] = round(d[11]/10,2) # registro 70 que sera el de la posicion 70-59 = 11
+            datos['DayBattDischarge'] = round(d[12]/10,2) # registro 71
+            datos['TotalBatteryChargePower'] = round(d[13]/10,2) # registro 72
+            datos['TotalBatteryDischargePower'] = round(d[15]/10,2) # registro 74
+            datos['DayGridBuyPower'] = round(d[17]/10,2) # registro 76
+            datos['DayGridSellPower'] = round(d[18]/10,2) # registro 77
+            datos['TotalGridBuyPower'] = round(d[19]/10,2) # registro 78
+            datos['TotalGridSellPower'] = round(d[22]/10,2) # registro 81
+            datos['DayLoadPower'] = round(d[25]/10,2) # registro 84
+            datos['TotalLoadPower'] = round(d[26]/10,2) # registro 85
+            datos['YearLoadPower'] = round(d[28]/10,2) # registro 87
+            datos['RadiatorTempDC'] = round((d[31]-1000)/10,2) # registro 90
+            datos['IGBTTemp'] = round((d[32]-1000)/10,2) # registro 91
+            
+            ee = 120
+            
+            # --- SE ELIMINAN REGISTROS 92 y 95 (Inductance1Temp y EnvironmentTemp) por anomalía y por no ser registros de Temp ---
+            
+            datos['HistPVPower'] = round(d[37]/10,2) # registro 96
+            
+            # Mapeo de Voltajes de Absorción/Flotación a Registros 100 y 101 (Protocolo Oficial) ---
+            # d[41] es el registro 100 (100 - 59 = 41)
+            datos['AbsorptionV'] = round(d[41]/100,2) # registro 100 (0x0064) - Absorption V
+            # d[42] es el registro 101 (101 - 59 = 42)
+            datos['FloatV'] = round(d[42]/100,2)      # registro 101 (0x0065) - Float V
+            
+            datos['DayPVPower'] = round(d[49]/10,2) # registro 108
+            datos['Vplaca1'] = round(d[50]/10,2) # registro 109
+            datos['Iplaca1'] = round(d[51]/10,2) # registro 110
+            datos['Vplaca2'] = round(d[52]/10,2) # registro 111
+            datos['Iplaca2'] = round(d[53]/10,2) # registro 112
+            datos['Vred'] = round(d[91]/10,2) # registro 150
+            datos['LoadVoltageL1'] = round(d[98]/10,2) # registro 157
+            datos['Ired'] = round(d[103]/100,2) # registro 162
+            datos['Ired2'] = round(d[104]/100,2) # registro 163
+            
+            if d[111] > 32767 : d[111] -= 65535  # campo signet int 
+            datos['GrideSideL2P'] = round(d[111]/10,2) # registro 170
+            
+            if d[113] > 32767 : d[113] -= 65535
+            datos['Wred'] = round(d[113]/10,2) # registro 172
+            
     except:
-        logBD(' Fallo en script DEYE en el punto '+str(ee)) # incluyo mensaje en el log
+        error = True
+        print(f'error en captura {ee}')
+    
+    t2= time.time()
+    
+    # --- BLOQUE 2: Registros 178 - 284  ---
+    if not error:
+        try:
+            
+            ee = 200
+            if tipo_conexion == 'RS485':
+                d = modbus.read_registers(178, 107, 3) 
+            else:
+                try:
+                    d = modbus.read_holding_registers(register_addr=178, quantity=107) 
+                except:
+                    error = True
+                    
+            if not error:
+                ee = 210
+                # --- Mapeo Original (TIEMPO REAL) ---
+                datos['Wconsumo'] = round(d[0],2) # registro 178
+                datos['Tbat'] = round((d[4] - 1000)/10,2) # registro 182
+                datos['Vbat'] = round(d[5]/100,2) # registro 183
+                datos['SOC'] = round(d[6],2) # registro 184
+                datos['PV1InputPower'] = round(d[8],2) # registro 186
+                datos['PV2InputPower'] = round(d[9],2) # registro 187 
+                
+                if d[12] > 32767 : d[12] -= 65535
+                datos['BatteryOutputPower'] = d[12] # registro 190
+                
+                if d[13] > 32767 : d[13] -= 65535
+                
+                datos['Ibatn'] = round(d[13]/100,2) # registro 191
+                datos['Ibat'] = -round(d[13]/100,2) # registro 191 con signo negativo si sale de bateria
+                datos['Fout'] = round(d[15]/100,2) # registro 193
+                datos['GridSideRelayStatus'] = d[16] # registro 194
+                datos['GeneratorSideRelayStatus'] = d[17] # registro 195
+                if (d[70]) == 0: # registro 248
+                    datos['TimeOfUseSelling'] = "OFF"
+                else:
+                    datos['TimeOfUseSelling'] = "ON"
+                
+                ee = 220
+                if d[106] == 0: #registro 284
+                    datos['GridMode'] = "General_Standard"
+                elif d[106] == 1:
+                    datos['GridMode'] = "UL1741&IEE1547"
+                elif d[106] == 2:
+                    datos['GridMode'] = "CPUC_RULE21"
+                elif d[106] == 3:
+                    datos['GridMode'] = "SRD-UL1741"
+                
+                
+                # --- Mapeo de Configuración ---
+                # Índice = Registro - 178
+                
+                datos['BatteryControlMode'] = d[22] # 200 (0x00C8)
+                
+                # 201 (0x00C9) ya NO se usa aquí
+                
+                datos['ZeroExportW'] = d[28] # 206 (0x00CE) 
+                datos['MaxChargeCurrent'] = d[32] # 210 (0x00D2)
+                datos['MaxDischargeCurrent'] = d[33] # 211 (0x00D3)
+                datos['ShutdownSOC'] = d[39] # 217 (0x00D9)
+                datos['LowSOC'] = d[41] # 219 (0x00DB) 
+                datos['ShutdownV'] = round(d[42] / 100, 2) # 220 (0x00DC) 
+                datos['RestartV'] = round(d[43] / 100, 2) # 221 (0x00DD) 
+                datos['LowV'] = round(d[44] / 100, 2) # 222 (0x00DE)
+                datos['GenStartV'] = round(d[47] / 100, 2) # 225 (0x00E1) 
+                datos['GenStartSOC'] = d[48] # 226 (0x00E2)
+                
+        except:
+            error= True
+            print(f'error en captura {ee}')
         
-        
-     
+    t3= time.time()
+    
     if DEBUG == 1:
-        for i in datos: print(f'{i}= {datos[i]}')    
+        if tipo_conexion == 'RS485':  print(Fore.BLUE, end='')
+        else : print(Fore.CYAN, end='')
+        print ('=' *80)
+        print (f'Tipo Captura = {tipo_conexion}   Tiempo captura ={t3-t1:.2f}sg -- Bloque 1: {t2-t1:.2f}sg -- Bloque 2 (Consolidado): {t3-t2:.2f}sg')
+        print(time.strftime("%Y-%m-%d %H:%M:%S"), datos) 
 
     
     try:####  ARCHIVOS RAM en BD ############ 
-        ee = '40'
+        ee = '300' 
         tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-        salida = json.dumps(datos)
-        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{equipo.upper()}{N_Equipo}'") # grabacion en BD RAM
-        #print (Fore.RED+sql)
-        cursor.execute(sql)
-        #db.commit()
+        if not error:
+            datos['Nfallos'] = n_fallos_lectura[I_equipo]
+            
+            salida = json.dumps(datos)
+            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{nombre_equipo}'") 
+            cursor.execute(sql)
+            ee = 310
+            db.commit()
+            print('G', flush= True, end='')
+        else:
+            n_fallos_lectura[I_equipo] += 1
+            print(f'{tiempo} - Error {ee} en captura equipo {nombre_equipo}')
+            
     except:
-        print(Fore.RED+f'error, Grabacion tabla RAM equipos en {equipo.upper()}{N_Equipo}')
+        print(Fore.RED+f'error {ee}, Grabacion tabla RAM equipos en {nombre_equipo}')
     
-
-    if eval(f'grabar_datos_{equipo}[{I_Equipo}]') == 1: 
-        ee = '50'
-        try:
-            # Insertar Registro en BD
-            if n_muestras_contador[I_Equipo] == 1:
-                ee = '50a'
-                datos['Tiempo'] = tiempo
-                
-                #del Datos['Ibat'] # se quitan las claves que no estan en tabla BD
-                
-                campos = ",".join(datos.keys())
-                valores = "','".join(str(v) for v in datos.values())
-                
-                # PENDIENTE
-                if DEBUG == 1: print (tiempo,' No se graba tabla por ahora')
-                """
-                Sql = f"INSERT INTO {equipo}{N_Equipo} ("+campos+") VALUES ('"+valores+"')"
-                #print (Fore.RESET+Sql)
-                cursor.execute(Sql)
-                print (Fore.RED+'G'+N_Equipo,end='/',flush=True)
-                db.commit()
-                """
-                
-                
-                ee = '50d'
-            
-            if n_muestras_contador[I_Equipo] >= eval(f'n_muestras_{equipo}[{I_Equipo}]'):
-                n_muestras_contador[I_Equipo] = 1
-            else:
-                n_muestras_contador[I_Equipo] +=1                   
-        except:
-            db.rollback()
-            print (f'Error {ee} grabacion tabla {equipo}{N_Equipo}')
-            
-    db.commit()
-
+    cursor.close()
+    db.close()
+    
+    if tipo_conexion == 'WIFI':  modbus.disconnect()
+    
+    
+# Bucle para llamada a funcion leer_equipo
+n_recarga_parametros = 0
+n_fallos_lectura = [0] * 10 
+dia = time.strftime("%Y-%m-%d")
 
 while True:
+    n_recarga_parametros += 1
+    if n_recarga_parametros == 15: # cada XX bucles
+        n_recarga_parametros = 0
+        if DEBUG == 1: print(Fore.RED + 'recarga Parametros')
+        exec(open(parametros_FV_DIST).read(),globals()) 
+        exec(open(parametros_FV).read(),globals()) 
+    
+    dia_anterior = dia
+    dia = time.strftime("%Y-%m-%d")
+
+    if dia_anterior != dia: #cambio de dia
+        n_fallos_lectura = [0] * 10
+        
     try:
         for i in range(len(eval(f'usar_{equipo}'))):
             if eval(f'usar_{equipo}[{i}]') == 1:
-                if i==0: N_Equipo = ""
-                else: N_Equipo = f'{i}'
-                
-                if int(time.time()) % eval(f't_muestra_{equipo}[{i}]') == 0: leer_equipo(equipo,i)
+                if int(time.time()) % eval(f't_muestra_{equipo}[{i}]') == 0:
+                    leer_equipo(i)
                     
     except:
         print ('Error desconocido....')
         sys.exit()
     
     time.sleep(1)
-
-

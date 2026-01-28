@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2022-08-12
+# Versión 2026-01-12
 
-import time,sys
+import time,sys,os
 import traceback
 import datetime
 import MySQLdb 
@@ -12,8 +11,10 @@ import pickle,json
 
 from smbus import SMBus
 
-import telebot # Librería de la API del bot.
-import token
+from fv_guardar_variables import BackupVariables  # backup variables definidas en sensores para reinicios
+
+import timeout_decorator
+
 import paho.mqtt.client as mqtt
 
 import colorama # colores en ventana Terminal
@@ -27,9 +28,7 @@ Style: DIM, NORMAL, BRIGHT, RESET_ALL
 print (Style.BRIGHT + Fore.YELLOW + 'Arrancando'+ Fore.GREEN +' PVControl+') #+Style.RESET_ALL)
 
 try:
-    import RPi.GPIO as GPIO # reles 4XX via GPIO
-    GPIO.setmode(GPIO.BOARD) #para reles SSR en pines RPi
-    #GPIO.setmode(GPIO.BCM) #para reles SSR en pines RPi
+    import gpiozero
     GPIO_PINES_PCB = [11,12,13,15,16,18,22,29] # Numero de pines que presenta la PCB
 
 except:
@@ -43,33 +42,47 @@ import click # para DEBUG parando ejecucion donde se quiera
 
 basepath = '/home/pi/PVControl+/'
 parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
+parametros_FV_DIST = "/home/pi/PVControl+/Parametros_FV_DIST.py"
 
-usar_mqtt_publicaciones = [] # para evitar errores si no esta definida la variable en Parametros_FV.py
+# para evitar errores si no estan definidas las variables en Parametros_FV.py
+usar_mqtt_publicaciones = [] 
+
+SOC_incremento_rapido_condicion = 'Ibat>0 and Ibat<0.005*AH and abs(Vbat-Vflot)<0.2'
+SOC_incremento_rapido_accion = 'DS += (AH-DS)/50'  # AH es el valor de los Ah nominales de bateria --  DS son los Ah actuales de capacidad
+Bulk_Absorcion_accion = Absorcion_Flotacion_accion = Flotacion_Bulk_accion = ''
 
 try:
     #Parametros Instalacion FV
-    #from Parametros_FV import *
-    exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-                    
-    from Srne import Srne # Libreria reguladores SRNE
-
+    
+    exec(open(parametros_FV_DIST).read(),globals()) #cargo Parametros_FV_DIST.py por si hay variables no definidas en Parametros_FV.py
+    exec(open(parametros_FV).read(),globals()) #cargo Parametros_FV.py
+    t_cambio_parametros = os.path.getmtime(parametros_FV)
+    
     #aseguro que los valores introducidos en Parametros_FV.py son float
     AH = float(AH)
     CP = float(CP)
     EC = float(EC)  
     vflotacion = float(vflotacion)
     
-    if usar_telegram == 1:
-        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-        bot.skip_pending = True # Skip the pending messages
-        cid = Aut[0]
+    t_mensaje_telegram = 0 # tiempo del ultimo mensaje de Telegram enviado
+    try:
+        if usar_telegram == 1:
+            import telebot # Librería de la API del bot.
+            import token
+            bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
+            bot.skip_pending = True # Skip the pending messages
+            cid = Aut[0]
+            
+    except:
+        print (Fore.RED + 'ERROR en la inicalizacion del BOT de TELEGRAM ..... Revise configuracion en Parametros_FV.py')
+
     try:
         bus = SMBus(1) # Activo Bus I2C para PCF
     except:
         pass
 
 except:
-    print ('Error irrecuperable en Parametros_FV.py')
+    print (Fore.RED + 'Error irrecuperable en Parametros_FV.py')
     
     
 #Comprobacion argumentos en comando de fv.py
@@ -168,6 +181,14 @@ N = 5  # numero de muestras para control PID
 Lista_errores_PID = [0.0 for i in range(5)]
 PWM = IPWM_P = IPWM_I = IPWM_D = PWM_ant = 0.0
 
+#---Variables control Icola --------------------------------
+Icola_ok_t = 0
+Icola_last_ok = 0
+Ibat_f = Ibat
+
+control : dict = {}   # Diccionario generico de control para condiciones
+d_:  dict = {}        # Diccionario donde se carga el contenido de tabla Equipos
+
 
 #########################################################################################
 # Creacion tabla RAM equipos y datos_aux en BD si no existe
@@ -241,11 +262,14 @@ except:
 def on_connect(cli, userdata, flags, rc):
     #print("Connected with result code "+str(rc))
     cli.subscribe("PVControl/Log")
+    cli.subscribe("PVControl/SQL")
+    cli.subscribe("PVControl/RELES/WEB")
+        
     cli.subscribe("PVControl/Opcion")
      
 def on_disconnect(cli, userdata, rc):
     if rc != 0:
-        print ("Unexpected MQTT disconnection. Will auto-reconnect")
+        print (f'{time.strftime("%H:%M:%S")} Desconexion MQTT.... intentando reconectar (asegure que NO esta corriendo a la vez el servicio fv y fv.py')
     else:
         cli.loop_stop()
         cli.disconnect()
@@ -266,6 +290,44 @@ def on_message(client, userdata, msg):
             db1.close()
         except:
             pass
+    elif msg.topic== "PVControl/SQL":
+        try:
+            db1 = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+            cursor1 = db1.cursor()
+            
+            sql = msg.payload.decode('utf-8')
+            if DEBUG == 1: print(f'comando SQL recibido: {sql}')
+            cursor1.execute(sql)
+            db1.commit()
+        except:
+            db1.rollback()
+        try:
+            cursor1.close()
+            db1.close()
+        except:
+            pass
+            
+    elif msg.topic== "PVControl/RELES/WEB":
+        try:
+            db1 = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+            cursor1 = db1.cursor()
+            
+            comando = msg.payload.decode('utf-8')
+            if DEBUG == 1: print(f'comando recibido: {comando}')
+            id_rele = comando[0:3]
+            modo = comando[3:]
+            sql = f'UPDATE reles SET modo="{modo}" WHERE id_rele={id_rele}'
+            cursor1.execute(sql)
+            db1.commit()
+        except:
+            db1.rollback()
+        try:
+            cursor1.close()
+            db1.close()
+        except:
+            pass
+    
+    
     
              
 client = mqtt.Client("fv") #crear nueva instancia
@@ -332,7 +394,22 @@ def act_rele(adr,out,tipo) :
         
         # ----- Activacion real de Reles -----------    
         if simular_reles == 0:
-            if int(adr/100) == 2: #Rele WIFI por MQTT
+            
+            if int(adr/100) == 1: # Rele personalizado en Parametros_FV.py
+                try:
+                    for r in reles_personalizados:
+                        if r[0] == adr:
+                            if DEBUG > 1:print(f'Rele personalizado {adr}')
+                            for comando in r[1:]:
+                                if DEBUG > 0:print(f'....Ejecutando {comando}...')
+                                try:
+                                    exec(comando)
+                                except:
+                                    print(f'Error en comando {comando} del rele {adr}')
+                except:
+                    print(f'{time.strftime("%H:%M:%S")} Error en reles_personalizados')                            
+           
+            elif int(adr/100) == 2: #Rele WIFI por MQTT
                 try:
                     out1 = calibracion_rele(adr,out)
                     client.publish(f'PVControl/Reles/{adr}',int(out1))  # via MQTT
@@ -358,33 +435,25 @@ def act_rele(adr,out,tipo) :
 
             elif int(adr/100) == 4: # Rele GPIO .. esta por regulacion SC
                 try:
-                    #if DEBUG >= 2: print('rele GPIO=',adr, int(out))
-                    for I in range (NGPIO):
-                        if Rele_SSR[I][1] == adr % 100:
-                            out1=int(out) #por ahora resolucion maxima de 1 
-                            
-                            #print('rele GPIO=',adr, 'duty=',int(out1))
-                            
-                            Rele_SSR[I][0].ChangeDutyCycle(out1)
-                            if out1 == 0 or out1 == 100:
-                                pass
-                                #Rele_SSR[I][0].ChangeFrequency(5)
-                            elif out1 <= 50:
-                                #print (' frec=',out)
-                                Rele_SSR[I][0].ChangeFrequency(out1)
-                            else:
-                                Rele_SSR[I][0].ChangeFrequency(100-out1)
-                                #print (' frec=',100-out1)
-                            break
+                    # actualizo valor
+                    Rele_SSR[id_rele].value = out / 100.0
+                    
+                    # actualizo frecuencia
+                    if out == 0 or out == 100:
+                        pass
+                    elif out <= 50:
+                        Rele_SSR[id_rele].frequency = out
+                    else:
+                        Rele_SSR[id_rele].frequency = 100 - out
                 except:
-                    print ('Error rele GPIO')
-                    print (I, Rele_SSR[I][0],Rele_SSR[I][1], adr,out1)         
-
+                    print (f'{time.strftime("%H:%M:%S")} Error rele GPIO')
+                    print (Rele_SSR[id_rele], adr,out)
+            
             elif int(adr/100) == 5: #Rele Sonoff (tasmota)
                 try:
                     if out == 100: out1 = "ON"
                     else:          out1 = "OFF"
-                    client.publish(f"cmnd/PVControl/Reles/{str(adr)[0:2]}/POWER",str(out1))  # via MQTT
+                    client.publish(f"cmnd/PVControl/Reles/{str(adr)[0:2]}/POWER{str(adr)[-1]}",str(out1))  # via MQTT               
                 except:
                     logBD(f'Error TASMOTA ON/OFF {adr}={out} - ´{out1}')
             
@@ -438,7 +507,7 @@ def leer_sensor(variable, sensor) :  # leer sensor
     except:
         #traceback.print_exc()
         
-        print (Fore.RED+f'Error en sensor..{variable } ..valor anterior = {anterior}   - ',flush=True, end='')
+        print (Fore.RED+f'{time.strftime("%H:%M:%S")} Error en sensor..{variable } ..valor anterior = {anterior}   - ',flush=True, end='')
         y = anterior
         y_err = 1
     
@@ -506,6 +575,18 @@ def Calcular_PWM(PWM):
     return PWM
 
 
+def bot_enviar_mensaje(cid, msg, espera = 0):
+    global t_mensaje_telegram
+    
+    if time.time()-t_mensaje_telegram > espera:
+        bot_enviar_mensaje_timeout(cid,msg)
+        t_mensaje_telegram = time.time()
+    
+@timeout_decorator.timeout(5, use_signals=False)    
+def bot_enviar_mensaje_timeout(cid, msg):
+    bot.send_message(cid, msg)
+
+    
 #########################################################################################
 #    INICIALIZACION PVControl+
 #########################################################################################
@@ -548,6 +629,19 @@ except Exception as e:
 
 # inicializando variables definidas en Parametros_FV.py
 
+# ===  INICIALIZAR BACKUP Variables ===
+print("\n" + "="*60)
+print("INICIANDO SISTEMA FV CON BACKUP DINÁMICO")
+print("="*60)
+
+# Crear e iniciar el gestor de backup
+gestor_backup = BackupVariables("Parametros_FV.py")
+gestor_backup.iniciar()  # Esto automáticamente usa globals()
+
+print("✅ Sistema de backup configurado")
+print("="*60 + "\n")
+
+
 while True:
     errores = 0
     Estado['PVControl+'] = 'OK'
@@ -575,6 +669,7 @@ while True:
                     l = list (sensores[sensor])
                     try:
                         exec (f'{sensor}= {l[0]}')
+                        print (Fore.GREEN,end='')
                     except:
                         exec (f'{sensor}= 0.0')
                         Estado['PVControl+'] = 'ERROR'
@@ -584,6 +679,7 @@ while True:
                         if sensores[sensor] != '':
                             y = exec (f'{sensores[sensor]}')
                             exec (f'{sensor}= {y}')
+                            print (Fore.GREEN,end='')
                                 
                         else: exec (f'{sensor}= 0.0')
                     except:
@@ -645,7 +741,7 @@ TR=[]
 for row in cursor.fetchall(): TR.append(dict(zip(columns, row)))
 TR_refresco = TR[:] # lista copia de tabla reles para ir refrescando 1 valor por ciclo en los reles
 
-Rele_SSR = [ ]
+Rele_SSR = {}
 NGPIO =0 # Num Reles GPIO
 
 for r in TR: # inicializando reles
@@ -668,12 +764,9 @@ for r in TR: # inicializando reles
         Rele[id_rele], i = act_rele(id_rele,0,2) # No actualizo la marca temporal de cambio
 
     if tipo_rele == 4: # Inicializo Rele SSR en GPIO
-        NGPIO_PIN = id_rele % 100
-  
-        GPIO.setup(NGPIO_PIN, GPIO.OUT)
-        Rele_SSR.append ([GPIO.PWM(NGPIO_PIN, 5),NGPIO_PIN])# 5hz
-        
-        Rele_SSR[NGPIO][0].start(0)
+        NGPIO_PIN = f'BOARD{id_rele % 100}'
+        Rele_SSR[id_rele] = gpiozero.PWMOutputDevice(NGPIO_PIN , active_high=True, initial_value=0, frequency=5)
+        Rele_SSR[id_rele].value = 0
         NGPIO +=1
         
 # Actualizar valores de  numero conmutaciones y tiempo activo del dia actual
@@ -694,7 +787,7 @@ try:
             pass
 except:
     db.rollback()
-    print ('Error lectura tabla reles_segundos_on')
+    print (f'{time.strftime("%H:%M:%S")} Error lectura tabla reles_segundos_on')
     logBD('Error lectura tabla reles_segundos_on')
 
 if nreles > 0 : # apagado reles en BD
@@ -730,8 +823,8 @@ log = f' Arrancando programa fv.py ....{Vbat}V  {log}'
 logBD(log) # incluyo mensaje en el log
 if usar_telegram == 1:
     try:        
-        pass
-        #bot.send_message( cid, log)
+        #pass
+        bot_enviar_mensaje(cid, log)
     except:
         logBD("Error en Msg Telegram") # incluyo mensaje en el log
 
@@ -746,6 +839,8 @@ PWM_Max = Nreles_Diver * 100
 print ('Reles para excedentes = Reles_D_Ord[Id_rele, salto, prioridad] =',Reles_D_Ord)
 
 if DEBUG >= 100: print ('PWM_Max=',PWM_Max)
+
+tiempo_ultimo_backup_manual = time.time() # marca temporal para backup variables sensores
 
 #########################################################################################
 # -------------------------------- BUCLE PRINCIPAL --------------------------------------
@@ -767,7 +862,7 @@ try:
 
         hora1=time.time()
         
-        if 'ERROR' in Estado['PVControl+']:  print (Estado['PVControl+'],Estado['PVControl+_error'])
+        if 'ERROR' in Estado['PVControl+']:  print (time.strftime("%H:%M:%S"),Estado['PVControl+'],Estado['PVControl+_error'])
             
         if 'ERROR CRITICO' in Estado['PVControl+']:
             Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
@@ -775,17 +870,33 @@ try:
         else:
             Estado['PVControl+'] = 'OK'
             Estado['PVControl+_error'] = ''
-       
+        
+        if os.path.getmtime(parametros_FV) != t_cambio_parametros:#recargo Parametros_FV.py si hay cambios
+            t_cambio_parametros = os.path.getmtime(parametros_FV)
+            
+            try:
+                exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
+                Estado['PVControl+'] = 'OK'
+                Estado['PVControl+_error'] = ''
+                
+                # Actualizar lista de variables en el backup si cambió
+                variables_actuales = list(sensores.keys())
+                gestor_backup.actualizar_lista_variables(variables_actuales)
+                
+                # 1. Backup variables cada X (además del automático)
+                tiempo_actual = time.time()
+                if tiempo_actual - tiempo_ultimo_backup_manual > 900:  # 15 minutos
+                    print(f"\n⏰ Backup horario manual...")
+                    gestor_backup.forzar_backup_ahora()
+                    tiempo_ultimo_backup_manual = tiempo_actual
+                        
+                
+            except:
+                Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
+                Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo' 
+            
+        
         if Grabar == 1: #leer BD cada t_muestra * N_muestras
-            if int(time.time()%100) < 10: # cada 100 sg
-                try:
-                    exec(open(parametros_FV).read(),globals()) #recargo Parametros_FV.py por si hay cambios
-                    Estado['PVControl+'] = 'OK'
-                    Estado['PVControl+_error'] = ''              
-             
-                except:
-                    Estado['PVControl+'] = 'ERROR CRITICO EN Parametros_FV.py'
-                    Estado['PVControl+_error'] = 'No es posible leer correctamente Parametros_FV.py...corrija el archivo'                        
             
             ### B1 ---------- Cargar tablas parametros, reles , reles_c, reles_h ---------------------
             sql='SELECT * FROM parametros'
@@ -804,6 +915,7 @@ try:
             Vequ = float(TP['Vequ'])
             Tequ_max = float(TP['Tequ'])
             Coef_Temp = float(TP['coef_temp'])
+            Icola_Params = float(TP['Icola'])
 
             sql='SELECT * FROM reles'
             nreles=cursor.execute(sql)
@@ -926,37 +1038,15 @@ try:
             Wconsumo = Wplaca - Wbat - Wred
             
             Grafica_Aux_dict['Activo'] = 0
-            """
-            CD1 += 1
-            if DEBUG1 == 'RELES' : 
-                print(Fore.GREEN+'datos_FV  =',datos_FV)
-                print(Fore.CYAN +'Reles_Dict=',Rele_Dict)
-        
-            print('Rele=',Rele)
-            print ('Rele_Tiempo=',Rele_Tiempo)
-            print()
-            print ('== ',CD1,'=' * 80)
-            if CD1 == 1:   Vbat = 12; Iplaca = 50; Wconsumo = 1000
-            elif CD1 == 2: Vbat = 12; Iplaca = 110; Wconsumo = 2000
-            elif CD1 == 3: Vbat = 12; Iplaca = 110; Wconsumo = 3100
-            elif CD1 == 4: Vbat = 13.8; Iplaca = 90; Wconsumo = 2500
-            elif CD1 == 5: Vbat = 13.8; Iplaca = 110; Wconsumo = 2500
-            elif CD1 == 6: Vbat = 13.8; Iplaca = 110; Wcomsumo = 2500
-            elif CD1 == 7: Vbat = 13.8; Iplaca = 110; Wconsumo = 3100
-            elif CD1 == 8: Vbat = 13.8; Iplaca = 90; Wconsumo = 3100
-            
-            #elif CD1 == 9: Vbat = 13.8; Iplaca = 90; Wconsumo = 2500
-            #elif CD1 ==10: Vbat = 13.8; Iplaca = 90; Wconsumo = 2500
-            
-            else:
-                #sys.exit()
-                CD1 = 0
-            """
+
             d_={}
             sql = 'SELECT * FROM equipos'
             nequipos = int(cursor.execute(sql))
-            for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
-                        
+            for row in cursor.fetchall(): 
+                d_[row[0]] = json.loads(row[2])
+                d_[row[0]]['tiempo'] = row[1].strftime("%Y-%m-%d %H:%M:%S")
+                d_[row[0]]['timestamp'] = time.mktime(row[1].timetuple())
+            
         else:
             ## Capturando valores desde BD en tabla equipos
             ee=30.1
@@ -965,7 +1055,11 @@ try:
 
             d_={}
             try:
-                for row in cursor.fetchall(): d_[row[0]] = json.loads(row[2])
+                for row in cursor.fetchall(): 
+                    d_[row[0]] = json.loads(row[2])
+                    d_[row[0]]['tiempo'] = row[1].strftime("%Y-%m-%d %H:%M:%S")
+                    d_[row[0]]['timestamp'] = time.mktime(row[1].timetuple())
+
             except:
                 if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                 else: Estado['PVControl+'] = 'ERROR'
@@ -984,16 +1078,6 @@ try:
                 
             ## Capturando valores desde xxxxx.pkl...esta opcion se ira eliminando dejando solo la tabla de equipos
             
-            ee=30.2
-            if usar_victron == 1:
-                archivo_ram='/run/shm/datos_victron.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_victron = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
-
             ee=30.4
             if usar_smameter == 1:
                 archivo_ram='/run/shm/datos_smameter.pkl'
@@ -1004,15 +1088,6 @@ try:
                     logBD('error lectura '+archivo_ram)
                     continue
                           
-            ee=30.43             
-            if usar_must == 1:
-                archivo_ram='/run/shm/datos_must.pkl'
-                try:
-                    with open(archivo_ram, 'rb') as f:
-                        d_must = pickle.load(f)
-                except:
-                    logBD('error lectura '+archivo_ram)
-                    continue
 
             # LECTURA SENSORES EQUIPOS
             ee=34
@@ -1067,7 +1142,7 @@ try:
                             Estado['PVControl+_error'] += f' # Corrija en Parametros_FV.py definicion sensor {sensor} (se pone a 0.00)'
                             
                     else:
-                        print('Tipo no tratado en sensores=',type(sensores[sensor]))
+                        print(f'{time.strftime("%H:%M:%S")} Tipo no tratado en sensores=',type(sensores[sensor]))
                 except:
                     if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                     else: Estado['PVControl+'] = 'ERROR'
@@ -1089,14 +1164,14 @@ try:
 
                     for i in range(len(Grafica_Aux)): Grafica_Aux_dict[Grafica_Aux_Nombres[i]] = Grafica_Aux[i]
             except:
-                print ('Error en la definicion de la grafica auxiliar')
+                print (f'{time.strftime("%H:%M:%S")} - Error en la definicion de la grafica auxiliar')
 
             
             if 'Temp_Bat' in sensores.keys():
                 if 'Equipo' in sensores['Temp_Bat']:
                     if len(sensores['Temp_Bat']['Equipo']) >= 1 : # calculo compensacion temperatura solo cuando existe Temperature_sensor
                         Vbat_temp = Coef_Temp * (min(max(Temp_Bat,0),45) - 25)# Nominal 25ºC - rango maximo admisible (0-45ºC)
-                        if Vbat_temp >0:# permito un maximo de variacion de 1V por cada 12V de bateria
+                        if Vbat_temp > 0:# permito un maximo de variacion de 1V por cada 12V de bateria
                             Vbat_temp = min( Vbat_temp, vsis * 1) 
                         else:
                             Vbat_temp = max( Vbat_temp, -vsis * 1)
@@ -1134,7 +1209,7 @@ try:
                     cursor.execute("INSERT INTO reles_segundos_on (id_rele,fecha,segundos_on,nconmutaciones) VALUES (%s,%s,%s,%s)",
                       (id_rele,time.strftime("%Y-%m-%d"),0,0))
                 except:
-                    print ('Error creacion registros diarios reles_segundos_on')
+                    print (f'{time.strftime("%H:%M:%S")} Error creacion registros diarios reles_segundos_on')
             db.commit() 
         
         else: # calculo Wh
@@ -1149,7 +1224,7 @@ try:
             Wh_placa = round(Wh_placa + (Wplaca * t_muestra/3600),2)
             Wh_consumo = Wh_placa - Wh_red - Wh_bat
         
-        if AH > 1:   #Calculo SOC solo si hay batería
+        if AH > 1:   #Calculo SOC y Algoritmo de carga (solo si hay batería)
             ## -------- CALCULO SOC% A C20 ----------
             if Ibat < 0 :
                 Ip1 = -Ibat; Ip1 = Ip1**CP; Ip1 = AH*Ip1
@@ -1158,8 +1233,14 @@ try:
             else :
                 Ip = Ibat * EC
 
-            if (Ibat>0 and Ibat<0.005*AH and abs(Vbat-Vflot)<0.2) : DS = DS + (AH-DS)/50
-            else : DS = DS + (Ip * t_muestra/3600)
+            try: # incremento rapido del SOC por condiciones definidas en Parametros_FV.py
+                if eval(SOC_incremento_rapido_condicion): exec (SOC_incremento_rapido_accion)
+                else: DS = DS + (Ip * t_muestra/3600)
+            except:
+                logBD('Error en condicion definida para variacion rapida del SOC')
+                Estado['PVControl+'] = 'ERROR EN Parametros_FV.py'
+                Estado['PVControl+_error'] = 'Condicion no valida en SOC_incremento_rapido...corrija el archivo'
+                DS = DS + (Ip * t_muestra/3600)
             
             if DS > AH : DS = AH
             if DS < 0 :  DS = 0
@@ -1176,63 +1257,127 @@ try:
                 if Mod_bat == 'BULK':
                     ee=38.1
                     if Iplaca > 0: Tbulk += t_muestra
-                    
-                    if Vbat >= Vabs:# paso de Bulk a Abs
+
+                    # Mantenir Icola si sortim de ABS
+                    if usar_Icola and Icola_t > 0: 
+                        Icola_last_ok += t_muestra
+                        # Si passa massa temps sense condicions bones fem reset
+                        if Icola_last_ok > Icola_reset_t: Icola_ok_t = Icola_last_ok = 0
+
+                    if Vbat >= Vabs + Vbat_temp:# paso de Bulk a Abs
                         Mod_bat = 'ABS'
                         cursor.execute("UPDATE parametros SET Mod_bat='ABS'")
                         db.commit()
                         try:
-                            if flag_Abs == 0 and usar_telegram == 1:
+                            if flag_Abs == 0:
                                 flag_Abs =1
                                 logBD('Inicio ABS')
-                                bot.send_message( cid, 'Inicio Absorcion')
+                                if usar_telegram == 1: bot_enviar_mensaje(cid, 'Inicio Absorcion')
+                                try: # acciones a ejecutar al iniciar ABS
+                                    for i in Bulk_Absorcion_accion:
+                                        try:
+                                            exec (i)
+                                        except:
+                                            logBD(f'Error  en Bulk_Absorcion_accion...corrija {i}')    
+                                except:
+                                    logBD('Condiciones no validas en Bulk_Absorcion_accion...corrija Parametros_FV.py')
+
                         except:
                             pass
 
                 elif Mod_bat == 'FLOT': 
                     ee=38.2
-                    if Vbat >= Vflot-0.2: Tflot += t_muestra
+                    if Vbat >= Vflot + Vbat_temp - 0.2: Tflot += t_muestra
                 
                     # paso de Flot a Bulk
-                    if Vbat <= Vflot-4: Tflot_bulk += 8 * t_muestra
-                    elif Vbat <= Vflot-3: Tflot_bulk += 4 * t_muestra
-                    elif Vbat <= Vflot-2: Tflot_bulk += 2 * t_muestra
-                    elif Vbat <= Vflot-0.1: Tflot_bulk += t_muestra
+                    if Vbat <= Vflot + Vbat_temp - 2 * vsis: Tflot_bulk += 8 * t_muestra
+                    elif Vbat <= Vflot + Vbat_temp - 1.5 * vsis: Tflot_bulk += 4 * t_muestra
+                    elif Vbat <= Vflot + Vbat_temp - vsis: Tflot_bulk += 2 * t_muestra
+                    elif Vbat <= Vflot + Vbat_temp - 0.05 * vsis: Tflot_bulk += t_muestra
 
-                    if Tflot_bulk > 10000: # Ver que tiempo se pone o si se pone como parametro
+                    if Tflot_bulk > Tflot_bulk_tiempo: # Parametro en Parametros_FV.py
                         Tflot_bulk = Tabs = flag_Abs= 0
                         Mod_bat = 'BULK'
                         cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
                         if TP['sensor_PID'] == 'Vbat': # si sensor_PID es Vbat
                             cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vabs)+"'")
                         db.commit()
+                        Icola_ok_t = Icola_last_ok = 0
                         try:
-                            if flag_Flot == 1 and usar_telegram == 1:
+                            if flag_Flot == 1:
                                 flag_Flot = 0
                                 logBD('Inicio BULK')
-                                bot.send_message( cid, 'Inicio BULK')
+                                try: # acciones a ejecutar al iniciar bulk desde flotacion
+                                    for i in Flotacion_Bulk_accion: 
+                                        try:
+                                            exec (i)
+                                        except:
+                                            logBD(f'Error en Flotacion_Bulk_accion...corrija {i}') 
+                                except:
+                                    logBD('Condiciones no validas en Flotacion_Bulk_accion...corrija Parametros_FV.py')                                                                                                                                                     
                         except:
                             pass
                 
                 elif Mod_bat == 'ABS':
                     ee=38.3
-                    if Vbat >= Vabs-0.1:Tabs += t_muestra
+                    if Vbat >= Vabs + Vbat_temp - 0.1:
+                        Tabs += t_muestra
+                        Icola_last_ok += t_muestra
+                        Icola_pass = False
+                        if usar_Icola:
+                            # print('TP[Icola]=',Icola)
+
+                            # --- Filtrat EMA amb constant de temps ---
+                            alpha_I = t_muestra / (Icola_t_f + t_muestra)
+                            Ibat_f = Ibat_f + alpha_I * (Ibat - Ibat_f)
+
+                            # Càlcul d’Icola amb o sense compensació per temperatura
+                            if usar_Icola_temp:
+                                Icola = Icola_Params * (1 + Icola_TC * (Temp_Bat - Icola_T_ref) / 10.0)
+                            else:
+                                Icola = Icola_Params
+
+                            # --- Condició de cua --
+                            if (Ibat_f > 1 and Ibat_f <= Icola):
+                                Icola_ok_t += t_muestra
+                                Icola_last_ok = 0
+
+                            # Si passa massa temps sense condicions bones fem reset
+                            if Icola_last_ok > Icola_reset_t: Icola_ok_t = Icola_last_ok = 0
+
+                            # --- Validació final ---
+                            if Icola_ok_t >= Icola_t:
+                                Icola_pass = True
+
+                            if DEBUG==100 or True:
+                                print(f"[Icola] {time.strftime('%H:%M:%S')} \
+V={Vbat:.2f}V Temp_Bat={Temp_Bat:.1f}C Icola={Icola:.1f}A \
+Ibat={Ibat:.1f}A Ibat_f={Ibat_f:.1f}A Icola_last_ok={Icola_last_ok:.0f}s \
+Icola_ok_t={Icola_ok_t:.0f}s Tabs={Tabs:.0f}s")
                     
-                    elif Vbat < Vabs-0.2:# paso de Abs a Bulk
+                    elif Vbat < Vabs + Vbat_temp - 0.2:# paso de Abs a Bulk
                         Mod_bat = 'BULK'
                         cursor.execute("UPDATE parametros SET Mod_bat='BULK'")
                         db.commit() 
                     
-                    if Tabs >= Tabs_max: # paso de Abs a Flot
+                    if Tabs >= Tabs_max or Icola_pass: # paso de Abs a Flot
                         cursor.execute("UPDATE parametros SET Mod_bat='FLOT'")
                         if TP['sensor_PID'] == 'Vbat':
                             cursor.execute("UPDATE parametros SET objetivo_PID='"+str(Vflot)+"'")
                         db.commit()
                         try:
-                            if flag_Flot == 0 and usar_telegram == 1:
+                            if flag_Flot == 0:
                                 flag_Flot = 1
                                 logBD('Inicio FLOT')
-                                bot.send_message( cid, 'Inicio Flotacion')
+                                if usar_telegram == 1: bot_enviar_mensaje(cid, 'Inicio Flotacion')
+                                try: # acciones a ejecutar al iniciar flotacion
+                                    for i in Absorcion_Flotacion_accion:
+                                        try:
+                                            exec (i)
+                                        except:
+                                            logBD(f'Error en Absorcion_Flotacion_accion...corrija {i}')    
+                                except:
+                                    logBD('Condiciones no validas en Absorcion_Flotacion_accion...corrija Parametros_FV.py')
                         except:
                             pass
 
@@ -1350,39 +1495,32 @@ try:
                 
                     Estado['PVControl+_error'] += f' #### Corrija condicion del rele {id_rele}-{condicion} en tabla reles_c'
                 
-                    #print (f'Error condicion rele {id_rele}-{condicion}')
-                    #logBD(f'Error condicion rele {id_rele}-{condicion[:23]}')
-                    #db.commit()
             else:
                 pass
-                #Rele[id_rele] = 0
-                #print ( f'no entro en {condicion} por estar ya puesto a 0')
-        #print(Fore.CYAN+'tras condiciones=',Rele)
-             
+
         # -------------------- Bucle de condiciones  --------------------------
         ee=60.0
         for r in TC:
             try:
+                ee_t = ""
                 TC1 = r['condicion1']
                 TC2 = r['condicion2']
                 #print(TC1],TC2) 
                 if TC1 in ('', ' ','1'): TC1 = 'True'          
                 if TC2 in ('', ' ','1'): TC2 = 'True'
+                ee_t = "condicion1"
+                if eval(TC1): pass
+                ee_t = "condicion2"
+                if eval(TC2): pass
+                ee_t = "accion"
                 if (eval(TC1) and eval(TC2)): exec(r['accion']) 
+                ee_t = ""
             except:
                 if 'ERROR CRITICO' in Estado['PVControl+']: Estado['PVControl+'] += ' / ERROR'
                 else: Estado['PVControl+'] = 'ERROR'
                 
-                Estado['PVControl+_error'] += f" #### Corrija definicion id_condicion = {r['id_condicion']} en tabla condiciones "
+                Estado['PVControl+_error'] += f" #### Corrija definicion {ee_t} -> id_condicion = {r['id_condicion']} en tabla condiciones "
                 
-                #print (f"Error Condicion {r['id_condicion']}")
-                #logBD(f"Error en id_condicion={r['id_condicion']}")
-        
-        #print ('Antes=',Estado['Condiciones'])
-        #Estado['Condiciones'] = Estado['Condiciones'].replace("'", "''")
-        #print ('Despues=',Estado['Condiciones'])
-        
-        
         #-------------------- Bucle encendido/apagado reles ------------------------------------
         ee=62.0
         Flag_Rele_Encendido = 0
@@ -1402,7 +1540,7 @@ try:
                     tipo_act_rele = 1
                        
                 ### dejar rele como esta     
-                if Rele[id_rele] == 100 and Rele_Ant[id_rele] < 100 and Flag_Rele_Encendido == 1 : 
+                if Rele[id_rele] == 100 and Rele_Ant[id_rele] < 100 and Flag_Rele_Encendido == 1 and ("NR" not in Rele_Dict[id_rele]['nombre']): 
                     #print ('Dejo el rele ', id_rele, ' para encender en otro ciclo por flag ', Rele[id_rele] ,'/', Rele_Ant[id_rele] )
                     Rele[id_rele] = Rele_Ant[id_rele]      #dejar rele en el estado anterior
                     
@@ -1421,10 +1559,6 @@ try:
             
             Rele_Dict[id_rele]['espera']=  max(0,int(Rele_Dict[id_rele]['cambio'] +  Rele_Dict[id_rele]['retardo'] - time.time())) # sg hasta permitir cambio
                 
-            
-        #print('tras activacion=',Rele)
-        #print ('C.excedentes=', Rele_H)
-            
       ## --------- ACTIVACION RELES CONTROL DE EXCEDENTES -------------
         t_muestra_3=(time.time()-hora_m) * 1000
         ee=90.0
@@ -1490,7 +1624,7 @@ try:
             t_refresco_rele = time.time()
             if len(TR_refresco) > 0:
                 id_rele = TR_refresco[0]['id_rele'] 
-                if TR_refresco[0]['modo'] != 'MAN': 
+                if (TR_refresco[0]['modo'] != 'MAN') and ('NR' not in TR_refresco[0]['nombre']): # los reles con NR en nombre no tienen refresco 
                     Rele[id_rele], i = act_rele(id_rele, Rele[id_rele],2)
                     try:
                         Rele_Dict[id_rele]['estado']= Rele[id_rele]
@@ -1586,22 +1720,28 @@ try:
                      'Aux1':Aux1,'Aux2':Aux2,'Aux3':Aux3,'Aux4':Aux4,'Aux5':Aux5,'Aux6':Aux6,'Aux7':Aux7
                      }
         
-        salida_FV = json.dumps(datos_FV)
-        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_FV}' WHERE id_equipo = 'FV'") # grabacion en BD RAM
-        cursor.execute(sql)
-                    
-        ee=310.0
-        salida_RELES = json.dumps(Rele_Dict)
-        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_RELES}' WHERE id_equipo = 'RELES'") # grabacion en BD RAM
-        cursor.execute(sql)
-        
-        ee=320.0
-        if Estado['PVControl+_error'] == '': del Estado['PVControl+_error'] 
-        salida_ESTADO = json.dumps(Estado)
-        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = '_PVControl+'") # grabacion en BD RAM
-        #print ('sql=',sql)
-        cursor.execute(sql)
-        
+        try:
+            ee=305.0
+            salida_FV = json.dumps(datos_FV)
+            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_FV}' WHERE id_equipo = 'FV'") # grabacion en BD RAM
+            cursor.execute(sql)
+                        
+            ee=310.0
+            salida_RELES = json.dumps(Rele_Dict)
+            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_RELES}' WHERE id_equipo = 'RELES'") # grabacion en BD RAM
+            cursor.execute(sql)
+            
+            ee=320.0
+            if Estado['PVControl+_error'] == '': del Estado['PVControl+_error'] 
+            salida_ESTADO = json.dumps(Estado)
+            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida_ESTADO}' WHERE id_equipo = '_PVControl+'") # grabacion en BD RAM
+            cursor.execute(sql)
+      
+        except:
+            if usar_telegram == 1: bot_enviar_mensaje(cid, 'Error en UPDATE equipos', espera = 60)
+            logBD(f"error {ee} en SQL UPDATE equipos")
+            print (f'Error {ee} - sql=',sql)
+            
         db.commit()
         
         if DEBUG1 == 'RELES' : 
@@ -1614,7 +1754,8 @@ try:
 
 
         ee=330.0
-        # ----------------- Guardamos tabla personalizada en Equipos si se ha definido en Parametros_FV ------
+        # ----------------- Guardamos tablas personalizadas en Equipos si se ha definido en Parametros_FV ------
+     
         if Grafica_Aux_dict['Activo'] == 1:
             salida_Aux = json.dumps(Grafica_Aux_dict)
             try:
@@ -1642,8 +1783,96 @@ try:
                             cursor.execute("INSERT INTO datos_aux (Tiempo,datos) VALUES (%s,%s)", (tiempo,salida_Aux))
                             
             except:
-                print('Error grabacion datos_aux.....')
+                print(f'{time.strftime("%H:%M:%S")} Error grabacion datos_aux.....')
                 
+        ###  Nueva version de generacion de graficas auxiliares
+        ee = 330
+        if 'Graficas_Aux' in locals():
+            ee = 331
+            #print(Graficas_Aux)
+            for g in Graficas_Aux:
+                ee = 332
+                try:
+                    if 'tiempo' not in Graficas_Aux[g] : Graficas_Aux[g]['tiempo']= time.time()-100
+                    
+                    if time.time() - Graficas_Aux[g]['tiempo'] > Graficas_Aux[g]['tmuestra'] and Graficas_Aux[g]['activo'] == 1:
+                        ee = 333 
+                        Graficas_Aux[g]['tiempo']= time.time()
+                        Grafica_Aux_dict = {} # generamos diccionario de la grafica auxiliar
+                        Grafica_Aux_Nombres = list(Graficas_Aux[g]['variables'].split(','))
+                        
+                        if Grafica_Aux_Nombres != ['']:
+                            ee = 334
+                            for v in Grafica_Aux_Nombres:
+                                v = v.strip()
+                                Grafica_Aux_dict[v] = eval(v)
+                            
+                            #print(time.strftime("%H:%M:%S"),Grafica_Aux_dict)
+                        
+                            salida_Aux = json.dumps(Grafica_Aux_dict)
+                            #tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+                            
+                            ee = 335
+                            try:
+                                sql = (f"UPDATE `equipos` SET `tiempo` = '{tiempo}',`sensores` = '{salida_Aux}' WHERE id_equipo = '{g}'") # grabacion en BD RAM
+                                nr = cursor.execute(sql)
+                                if nr == 0:
+                                    cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)", (f"{g}",f"{salida_Aux}"))
+                                
+                                db.commit()
+                            except:
+                                print (f'Error en actualizacion registro equipo {g}')
+                            
+                            # Grabacion en tabla historica
+                            ee = 336
+                            try:
+                                campos = ",".join(Grafica_Aux_dict.keys())
+                                valores = "','".join(str(v) for v in Grafica_Aux_dict.values())
+                                
+                                Sql = f"INSERT INTO {g} ("+campos+") VALUES ('"+valores+"')"
+                                    
+                                #print(Sql, end='....')
+                                cursor.execute(Sql)
+                                #print ('OK')
+                                
+                                
+                            except: # hay problemas con la tabla o campos definidos en tabla
+                                ee = 337
+                                try: # veo si existe la tabla
+                                    sql_create1 = f""" CREATE TABLE `{g}` (
+                                    `Tiempo` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha datos',
+                                     PRIMARY KEY (`Tiempo`)
+                                    );"""
+
+                                    cursor.execute(sql_create1)
+                            
+                                except: #si ya existe la tabla compruebo campos
+                                    ee = 338
+                                    Sql=f'SELECT * FROM {g} LIMIT 1' 
+                                    nreg=cursor.execute(Sql)
+
+                                    ncampos = [c[0] for c in cursor.description]
+                                    print(ncampos)
+                                    ee = 338.2
+                                    for c in Grafica_Aux_dict.keys():
+                                        if c not in ncampos:
+                                            
+                                            print(f'crear campo {c}')
+                                            Sql = f"ALTER TABLE `{g}` ADD `{c}` FLOAT NOT NULL DEFAULT '0'"
+                                            cursor.execute(Sql)
+                                    ee = 338.4
+                                    for c in ncampos:
+                                        if c not in Grafica_Aux_dict.keys():
+                                            if c != 'Tiempo':
+                                                print(f'borrar campo {c}')
+                                                Sql = f"ALTER TABLE `{g}` DROP `{c}`"
+                                                cursor.execute(Sql)
+                                    
+                except:
+                    print (f'{time.strftime("%H:%M:%S")} - Error {ee} en la definicion de la grafica auxiliar')
+        
+       
+   
         ###### PUBLICACION MQTT ##########
         ee = 340.0
         try:
@@ -1659,10 +1888,19 @@ try:
                     if tm2 != 0:
                         if tm1 % tm2 < TP['t_muestra']:
                             ee = 340.4
-                            if DEBUG == 100:print(Fore.CYAN+f' MQTT:{tm[0]}={eval(tm[1])}'+Fore.RESET,end='')
-                            client.publish(f'{mqtt_topic_raiz}{tm[0]}',f'{eval(tm[1])}')
+                            datosp = f'{eval(tm[1])}'
+                            
+                            if datosp[:2] =="{'": # comprobacion de si la variable tiene forma de diccionario
+                                td = "json.dumps(" + tm[1] + ")" 
+                            else:
+                                td = tm[1]
+                            
+                            datosp = f'{eval(td)}'
+                            
+                            if DEBUG == 100:print(Fore.CYAN+f' MQTT:{tm[0]}={datosp}'+Fore.RESET,end='')
+                            client.publish(f'{mqtt_topic_raiz}{tm[0]}',f'{datosp}')
         except:
-            print (f'Error {ee} en Publicacion MQTT')
+            print (f'{time.strftime("%H:%M:%S")} Error {ee} en Publicacion MQTT')
             
         
         ###### ajuste fino tiempo bucle
@@ -1689,13 +1927,12 @@ except:
     print()
     print ('Error en bucle fv',ee)
     try:
+        print (f'Cerrando Conexion BD..')
         cursor.close()
         db.close()
     except:
         pass    
-    for I in range (NGPIO):
-        print (I)
-        Rele_SSR[I][0].stop()
+    for r in Rele_SSR:
+        print (f'Parando Rele GPIO nº {r}..')
+        Rele_SSR[r].close()
     traceback.print_exc()
-finally:
-    GPIO.cleanup()    

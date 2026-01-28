@@ -3,7 +3,11 @@ Description= PVControl+ - Lectura Temperatura DS18B20
 After=fv.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/fv_temp.py
+SyslogIdentifier=%N
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_temp.py
 Restart=always
 RestartSec=60
 

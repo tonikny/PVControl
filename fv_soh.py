@@ -10,6 +10,7 @@ import telebot # Librería de la API del bot.
 from telebot import types # Tipos para la API del bot.
 import token
 
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 

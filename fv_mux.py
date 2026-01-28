@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Versión 2021-11-07
+# Versión 2023-12-04
 
 # #################### Control Ejecucion Servicio ########################################
 servicio = 'fv_mux'
@@ -109,25 +109,47 @@ try:
 
     try: #inicializamos registro en BD RAM
         cursor.execute("INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)",
-                      ('CELDAS','{}'))
+                      ('BMS_MUX','{}'))
         db.commit()
     except:
         pass
+    
+    # actualizar instalaciones antiguas
+    try:
+        cursor.execute("RENAME TABLE `datos_celdas` TO `datos_celdas_mux`;")
+        db.commit()
+    except:
+        pass
+    
+    try:
+        cursor.execute("ALTER TABLE `datos_celdas_mux` ADD `Ibat` FLOAT NOT NULL DEFAULT '0' AFTER `Tiempo`;")
+        db.commit()
+    except:
+        pass
+    
+    try:
+      cursor.execute(f"UPDATE equipos SET `tiempo` = '{tiempo}', id_equipo = 'BMS_MUX' WHERE id_equipo = 'CELDAS'") 
+      db.commit()
+    except:
+        pass
+    
+    # Asegurar exise tabla datos_celdas_mux
     Sql = """    
-    CREATE TABLE IF NOT EXISTS `datos_celdas` (
+    CREATE TABLE IF NOT EXISTS `datos_celdas_mux` (
     `id_celda` int(11) NOT NULL AUTO_INCREMENT,
     `Tiempo` datetime NOT NULL DEFAULT current_timestamp(),
+    `Ibat` float NOT NULL DEFAULT 0,
     `C1` float NOT NULL DEFAULT 0,
      PRIMARY KEY (`id_celda`),
      KEY `Tiempo` (`Tiempo`)
      ) 
      ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_spanish_ci;
      """
-    if DEBUG >= 100: cursor.execute (Sql)
+    cursor.execute (Sql)
     
-    Sql='SELECT * FROM datos_celdas LIMIT 1' 
+    Sql='SELECT * FROM datos_celdas_mux LIMIT 1' 
     nreg=cursor.execute(Sql)
-    ncel = len(cursor.description) - 2 # Nº de celdas declaradas en BD
+    ncel = len(cursor.description) - 3 # Nº de celdas declaradas en BD
     
     if ncel < usar_mux:
         print (Fore.RED+ "ATENCION... el nº de campos en BD es menor que el nº de celdas declaradas en Parametros_FV.py")
@@ -135,7 +157,7 @@ try:
         print ("-" * 50)
         for K in range(usar_mux):
             try:
-                Sql = f"ALTER TABLE `datos_celdas` ADD `C{K+1}` FLOAT NOT NULL DEFAULT '0'"
+                Sql = f"ALTER TABLE `datos_celdas_mux` ADD `C{K+1}` FLOAT NOT NULL DEFAULT '0'"
                 cursor.execute(Sql)
                 db.commit()
                 if DEBUG >= 2: print (Fore.RED,f'Campo de celda C{K+1} creado')
@@ -147,7 +169,7 @@ try:
         print ("-" * 50)
         for K in range(usar_mux,ncel):
             try:
-                Sql = f"ALTER TABLE `datos_celdas` DROP `C{K+1}`"
+                Sql = f"ALTER TABLE `datos_celdas_mux` DROP `C{K+1}`"
                 cursor.execute(Sql)
                 db.commit()
                 if DEBUG >= 2: print (Fore.RED,f'Campo de celda C{K+1} borrado')
@@ -206,11 +228,12 @@ try:
        
         ee='20'
         for K in range(1,usar_mux+1):  # For para ir recorriendo cada entrada del Mux  
-            bus.write_byte(32,K-1 % 16) # escribo en PCF 32
+            bus.write_byte(32,(K-1) % 16) # escribo en PCF 32
             if DEBUG >= 100:
                 estado = bus.read_byte(32) # compruebo dato PCF
                 if estado != (K-1) % 16:
                     print ('Error en escritura/lectura PCF 32 con datos', (K-1) % 16,'/',estado)  
+            #time.sleep(0.005)
             time.sleep(0.005)
             try:
                 ###### Lectura Mux        
@@ -229,7 +252,7 @@ try:
                 Min = min(lecturas)
                 lectura_ADS = round(Suma/len(lecturas),2)
                 if DEBUG >= 100:
-                    print (Fore.GREEN+'Lecturas Celda',K,'=', lecturas, lectura_ADS,Max, Min)        
+                    print (Fore.GREEN+'Lecturas Celda',K,'=', lecturas, lectura_ADS,Max, Min, f'Error={Max-Min}')        
             except:
                 logBD('-ERROR MEDIDA MUX-'+ str(K))
             
@@ -312,18 +335,23 @@ try:
                 logBD ('Celdas descomp. ' + log)
             
             # Insertar Registro en BD
-            if n_muestras_mux_contador == 1 : #n_muestras_mux: 
-                campos = ",".join(DatosMux.keys())
-                valores = "','".join(str(v) for v in DatosMux.values())
-                Sql = "INSERT INTO datos_celdas ("+campos+") VALUES ('"+valores+"')"
-                cursor.execute(Sql)
-                print (Fore.RED+'G',end='',flush=True)
-            
-            if n_muestras_mux_contador >= n_muestras_mux:
-                n_muestras_mux_contador = 1
-            else:
-                n_muestras_mux_contador +=1
+            if n_muestras_mux > 0:
+                if n_muestras_mux_contador == 1 : #n_muestras_mux: 
+                    campos = ",".join(DatosMux.keys())
+                    campos = 'Ibat,' + campos
+                    
+                    valores = "','".join(str(v) for v in DatosMux.values())
+                    valores = '0.0' +  "','" + valores # pediente de ver si pillamos la Ibat del shunt
+                    
+                    Sql = "INSERT INTO datos_celdas_mux ("+campos+") VALUES ('"+valores+"')"
+                    cursor.execute(Sql)
+                    print (Fore.RED+'G',end='',flush=True)
                 
+                if n_muestras_mux_contador >= n_muestras_mux:
+                    n_muestras_mux_contador = 1
+                else:
+                    n_muestras_mux_contador +=1
+                    
         except:
             print('error, BD', Sql)
             db.rollback()
@@ -335,7 +363,7 @@ try:
         
         try:
             Vcelda = list(DatosMux.values())
-            datos = {'Nombre' : list(DatosMux.keys()), 'Max': Vcelda_max,'Valor' : Vcelda,'Min' : Vcelda_min}
+            datos = {'Nombres' : list(DatosMux.keys()), 'Max': Vcelda_max,'Vceldas' : Vcelda,'Min' : Vcelda_min}
                     
             if DEBUG >= 1:
                 for i in DatosMux.keys():
@@ -350,7 +378,7 @@ try:
                 #print(Fore.BLUE+f' Min:{CeldaMin[0]}:{CeldaMin[1]:4.2f}', sep='-')
                 
             salida = json.dumps(datos)
-            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'CELDAS'") # grabacion en BD RAM
+            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'BMS_MUX'") # grabacion en BD RAM
             cursor.execute(sql)
                 
         except:

@@ -15,6 +15,7 @@ colorama.init()
 print (Style.BRIGHT + Fore.YELLOW + 'Actualizando'+ Fore.GREEN +' Reles PVControl') #+Style.RESET_ALL)
 
 #Parametros Instalacion FV
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 #Comprobacion argumentos en comando 

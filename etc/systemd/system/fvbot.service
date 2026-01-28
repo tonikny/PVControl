@@ -3,7 +3,17 @@ Description=FV Telegram bot
 After=mysql.service
 
 [Service]
-ExecStart=/usr/bin/python3 /home/pi/PVControl+/fvbot.py
+SyslogIdentifier=%N
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+Environment=XDG_SESSION_TYPE=x11
+Environment=PATH=/home/pi/PVControl+/env/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:
+
+User=pi
+Group=pi
+ExecStartPre=/bin/sleep 1
+WorkingDirectory=/home/pi/PVControl+
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fvbot.py
 Restart=always
 RestartSec=600
 

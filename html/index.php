@@ -1,17 +1,27 @@
 <?php
 
-//error_reporting(E_ALL ^ E_NOTICE);
-// Lo mismo que error_reporting(E_ALL);
 ini_set('error_reporting', E_ALL);
 
-include_once("version.inc");
-switch ($version) {
-    case "CC":  $i = "inicio_con_celdas.php";
-                break;
-    case "RD":  $i = "inicio_red.php";
-                break;
-    default:    $i = "inicio_sin_celdas.php";
-                break;
+if (!include_once "version.inc") {
+    echo "Error: Falta el archivo de configuración html/version.inc";
+    exit(1);
 }
-include ($i);
-?>
+if (!$version) {
+    echo "Error: versión no definida en html/version.inc!";
+}
+if (!$archivo_inicio) {
+    switch ($version) {
+        case "CC":
+            $i = "inicio_con_celdas.php";
+            break;
+        case "RD":
+            $i = "inicio_red.php";
+            break;
+        default:
+            $i = "inicio_sin_celdas.php";
+            break;
+    }
+} else {
+    $i = $archivo_inicio;
+}
+include_once $i;

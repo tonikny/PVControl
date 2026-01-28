@@ -6,6 +6,7 @@
 import sys, time, MySQLdb
 
 #Parametros Instalacion FV
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 #print (servidor, usuario,clave,basedatos)

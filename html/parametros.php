@@ -1,141 +1,194 @@
-<!--
-<div><?php include 'Parametros_Web.js'; ?></div>
--->
-
 <?php
-$titulo="Inicio";
-include("cabecera.inc");
+//$titulo = "Parametros";
 
-require('conexion.php');
+session_start();
+require_once __DIR__ . '/includes/cabecera.php';
+require_once __DIR__ . '/includes/conexion.php';
+$seguridad = include __DIR__ . '/includes/seguridad.php';
 
-$sql = "SELECT * FROM parametros";
-
-if($result = mysqli_query($link, $sql)){
-    $i=0;
-    while ($row = mysqli_fetch_array($result)){
-        $rawdata[$i]=$row;
-        $i++;
+// 1. Procesar formulario de autenticaci贸n
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['password'])) {
+    if (password_verify($_POST['password'], $seguridad['clave_hash'])) {
+        $_SESSION['modo_edicion'] = true;
+        header("Location: parametros.php");
+        exit;
+    } else {
+        $error_clave = "Clave incorrecta";
     }
-} else {
-    echo "ERROR: No se puede ejecutar $sql. " . mysqli_error($link);
-    }
-mysqli_close($link);
-
-$columnas = (isset($rawdata[0])) ? count($rawdata[0])/2 : 0;
-$filas = count($rawdata);
-
-?>
-
-
-<?php
-/**
- * Oculta parte de un string
- * @param  string  $str   Texto a ocultar
- * @param  integer $start Cuantos caracteres dejar sin ocultar al inicio
- * @param  integer $end   Cuantos caracteres dejar sin ocultar al final
- * @author Jodacame
- * @return string
- */
-function hiddenString($str, $start = 1, $end = 1)
-{
-    $len = strlen($str);
-    return substr($str, 0, $start) . str_repeat('*', $len - ($start + $end)) . substr($str, $len - $end, $end);
 }
-//echo hiddenString("123456789");
-// Salida 1*******9
- 
-//echo hiddenString("123456789",5);
-// Salida 12345***9
- 
-//echo hiddenString("123456789",5,0);
-// Salida 12345****
- 
-//echo hiddenString("123456789",0,5);
-// Salida ****56789
+
+// 2. Procesar cierre de sesi贸n
+if (isset($_GET['cerrar_edicion'])) {
+    unset($_SESSION['modo_edicion']);
+    header("Location: parametros.php");
+    exit;
+}
 ?>
-<!--
-<textarea id="areadetexto" rows="10" cols="50">
-  <pre>
-  <?php include "Parametros_Web.js"; ?>
-  </pre>
-</textarea>
--->
 
-<div id="jst"  style="width: 47%; height: 50px; margin-left: 2%; float: left ">
-  <h1 style="text-align: center;"><span style="background-color: #ffff99;"><strong>Parametros_Web.js</strong></h1>	
-</div>	
-
-<div id="pyt"  style="width: 47%; height: 50px; margin-right: 2%; float: right ">
-  <h1 style="text-align: center;"><span style="background-color: #ffff99;"><strong>Parametros_FV.py</strong></h1>	
-</div>	
-
-<div id="js"  style="width: 47%; height: 500px; overflow:scroll; margin-left: 2%; float: left ">
-  <?php
-  $file = fopen("Parametros_Web.js", "r") or exit("Unable to open file!"); //Output a line of the file until the end is reached 
-  while(!feof($file)) 
-    { echo fgets($file);
-	  echo "<br>";  } 
-  fclose($file); 
-  ?>
-
+<div class="container mt-3" style="position: relative; z-index: 1;">
+    <!-- -->
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <?php if (!isset($_SESSION['modo_edicion'])): ?>
+            <button class="btn btn-primary" id="btnLoginManual">
+                <i class="bi bi-lock-fill"></i> Editar Configuraci贸n
+            </button>
+        <?php else: ?>
+            <div>
+                <a href="?cerrar_edicion=1" class="btn btn-danger">
+                    <i class="bi bi-unlock-fill"></i> Cerrar edici贸n
+                </a>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Modal de Login Personalizado -->
+    <div id="customModal" class="custom-modal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h5>Autenticaci贸n requerida</h5>
+                <button type="button" class="custom-modal-close">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <?php if(isset($error_clave)): ?>
+                    <div class="custom-alert-danger"><?= $error_clave ?></div>
+                <?php endif; ?>
+                <form method="post">
+                    <div class="custom-form-group">
+                        <label>Contrase帽a:</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <button type="submit" class="custom-btn-primary">Acceder</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div id="py"  style="width: 47%; height: 500px; overflow:scroll; margin-right: 2%; float: right">
+<h2 style="margin-left: 5px;">Archivos de configuraci贸n</h2>
+<?php if (isset ($_SESSION['modo_edicion'])) { ?>
+  <div style="font-size: small; font-style: italic">
+    Para poder guardar los cambios hay que poner los archivos en el grupo www-data
+    y tener permiso de escritura al grupo:
+    <br>
+    <strong>chmod 664 archivo</strong> <br>
+    <strong>sudo chown pi:www-data archivo</strong>
+  </div>
+<?php } ?>
+<br />
+<h3 style="margin-left: 10px;">Parametros_FV.py</h3>
+<div id="fv" style="height: 400px; width: 70%; margin-left: 20px;"></div>
+<?php if (isset ($_SESSION['modo_edicion'])) { ?><button onclick="send('FV',fv.session.getValue())">Guardar</button>
+<?php } ?><br />
+<h3 style="margin-left: 10px;">Parametros_Web.js</h3>
+<div id="web" style="height: 400px; width: 70%; margin-left: 20px;"></div>
+<?php if (isset ($_SESSION['modo_edicion'])) { ?><button onclick="send('Web',web.session.getValue())">Guardar</button>
+<?php } ?>
 
 
+<h3 style="margin-left: 10px;">Configuracion Dibujo - Archivo activo ==>
 <?php
-  $file = fopen("../Parametros_FV.py", "r") or exit("Unable to open file!"); //Output a line of the file until the end is reached 
-  while(!feof($file)) 
-    {$a = fgets($file);
-	 $pos = strpos($a, "***"); 
-	 if ($pos === false) {
-	   echo $a; 
-	 }else{
-	   echo hiddenString($a,10,0);
-	  }  
-	 echo "<br>"; 
-    } 
-  
-  fclose($file); 
-  echo "<br>"; 
+// Lee el contenido de configuracion_activa.txt
+$configFile = file_get_contents('configuracion_activa.txt');
 
+// Aseg煤rate de eliminar cualquier espacio o salto de l铆nea no deseado
+$configFile = trim($configFile);
+echo $configFile;
 ?>
-</div>
+</h3>
+<div id="dib" style="height: 400px; width: 70%; margin-left: 20px;"></div>
+<?php if (isset ($_SESSION['modo_edicion'])) { ?><button onclick="send('Dib',dib.session.getValue())">Guardar</button>
+<?php } ?>
 
 
-<div id="div1" style="width: 98%; height: 100px; margin-left: 2%; float: left">
-  <hr />
-  <h1 style="text-align: center;"><span style="background-color: #ffff99;"><strong>Tabla parametros</strong></h1>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.8/ace.min.js" type="text/javascript"
+  charset="utf-8"></script>
+<script>
+
+//JavaScript para manejar el modal personalizado
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal personalizado
+    const btnLogin = document.getElementById('btnLoginManual');
+    const modal = document.getElementById('customModal');
+    const closeBtn = document.querySelector('.custom-modal-close');
+    
+    if (btnLogin && modal) {
+        // Abrir modal
+        btnLogin.addEventListener('click', function() {
+            modal.style.display = 'flex';
+            document.querySelector('#customModal input[name="password"]').focus();
+        });
+        
+        // Cerrar modal
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        // Cerrar al hacer clic fuera
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Cerrar con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                modal.style.display = 'none';
+            }
+        });
+    }
+});
+
+
+
+
+  const logged = "<?php echo isset ($_SESSION['modo_edicion']); ?>" ? true : false;
+
+  const fv = ace.edit("fv");
+  fv.setTheme("ace/theme/monokai");
+  fv.session.setMode("ace/mode/python");
   
-  <table width="100%" border="1" style="text-align:center;">	
-	<tr>
-	<?php
-       //A馻dimos los titulos
-       for($i=0;$i<$columnas-1;$i++){
-         next($rawdata[0]);
-         echo "<th><b>".key($rawdata[0])."</b></th>";
-         next($rawdata[0]);
-       }
-    ?>                
-	</tr>  
-	<tbody>
-        <?php
-          for($i=0;$i<$filas;$i++){
-            echo "<tr>";
-            for($j=0;$j<$columnas-1;$j++){
-              echo "<td>".$rawdata[$i][$j]."</td>";
-               }
-           echo "</tr>";
-           }
-         ?> 
-            
-      </tbody>
-      
-  </table>
-  	  
- 
-  </table>
+  const web = ace.edit("web");
+  web.setTheme("ace/theme/monokai");
+  web.session.setMode("ace/mode/javascript");
+  
+  const dib = ace.edit("dib");
+  dib.setTheme("ace/theme/monokai");
+  dib.session.setMode("ace/mode/javascript");
+  
+  if (!logged) {
+    fv.setReadOnly(true);
+    web.setReadOnly(true);
+	dib.setReadOnly(true);
+	
+  }
 
-</div>
+  (async function () {
+    const endpoint = (logged) ? "/api/parametros.php?logged=true" : "/api/parametros.php";
+    const response = await fetch(endpoint);
+    const result = await response.json();
+    if (result.success) {
+      fv.setValue(result.data.FV);
+      web.setValue(result.data.Web);
+	  dib.setValue(result.data.Dib);
+	  
+    }
+  }())
 
+  function send(file, data) {
+    fetch('/api/parametros.php', {
+      method: 'POST',
+      body: JSON.stringify({ file, data }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+</script>
 
+<br /><br />
+<?php include __DIR__ . '/includes/footer.php'; ?>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# 2022-11-02  Manda un mensaje de informacion al Telegram
+# 2022-11-08  Manda un mensaje de informacion al Telegram
 #... uso habitual con crontab configurando el archivo..... /home/pi/PVControl+/etc/cron.d/pvcontrol
 #....el archivo pvcontrol debe ser root luego hay que editarlo con .... sudo nano /home/pi/PVControl+/etc/cron.d/pvcontrol
 
@@ -11,29 +11,23 @@
 #        -no_imagen (fuerza no enviar imagen)
 #        -imagen (fuerza enviar imagen)
 #        -coordenadas  (Activa ayuda para definir zona a capturar de la pantalla
-#                      indica el valor a definir en Parameros_FV.py en la variable ...region_captura_pantalla)       
+#                      indica el valor a definir en Parameros_FV.py en la variable ...region_captura_pantalla)      
+#        -cidXXXX : manda el mensaje al Id de Telegrag que se indique 
 
 import time, datetime,sys
+
+sys.path.append("/home/pi/PVControl+/env/lib/python3.11/site-packages")
+
 import MySQLdb,json 
 import subprocess
 import glob
 import telebot # Librería de la API del bot.
 import requests # consulta ip publica
 
-try:
-    import pyautogui # captura zona pantalla
-except:
-    res = subprocess.run('sudo pip3 install pyautogui' , shell=True)
-    if res.returncode == 0:
-        import pyautogui
-    else:
-        print ('Error en instalacion libreria pyautogui')
-        sys.exit()
-
 # Mensaje por defecto si no se especifica en Parametros_FV.py
 msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
                 "     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
-                #"     \U0001F4CA {L_celdas}",
+                #"    {L_celdas}",
 
                 "\U0001F31E <b><u>Placas</u></b>:",
                 "     \U000024C5 <b>{d_['FV']['Wplaca']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vplaca']:.0f}</b>V",
@@ -63,8 +57,9 @@ msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}
 unicode_reles_telegram = [('ñññ###','\U0001F6A6'),('luz','\U0001F526'),('termo','\U0001F525')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
 
 # zona de pantalla a capturar por defecto si no se define en en Parametros_FV.py
-region_captura_pantalla = (0, 0, 0, 0, 0) #(Activar, X, Y, Ancho, Alto)
-
+region_captura_pantalla = [0, 0, 0, 0, 0] #(Activar, X, Y, Ancho, Alto)
+acciones_mouse =[''] # permite usar expresiones de la libreria pyautogui para tratamiento mouse, teclas, etc
+from Parametros_FV_DIST import *
 from Parametros_FV import *
 
 DEBUG= False
@@ -74,19 +69,43 @@ if '-m' in sys.argv: msg_periodico_telegram = 1
 if '-no_imagen' in sys.argv: imagen = False
 if '-imagen' in sys.argv: region_captura_pantalla[0] = 1
 
+for i in  sys.argv: # asignacion del cid de Telegram si se ha pasado por linea de comando ....-cidXXXXXX
+    if len(i)>3:
+        if i[:4].upper() == '-CID':
+            cid = int(i[4:])
+
+
+
+if region_captura_pantalla[0] == 1: 
+    try:
+        import pyautogui # captura zona pantalla
+    except:
+        res = subprocess.run('pip3 install pyautogui' , shell=True)
+        if res.returncode == 0:
+            try:
+                import pyautogui
+            except:
+                print ('Error en instalacion libreria pyautogui')
+                imagen = False
+                #sys.exit()
+
 if '-coordenadas' in sys.argv: # ayuda definicion zona a capturar
     try:
         import pynput # gestion click raton
     except:
-        res = subprocess.run('sudo pip3 install pynput' , shell=True)
+        res = subprocess.run('pip3 install pynput' , shell=True)
         if res.returncode == 0:
             import pynput
         else:
             print ('Error en instalacion libreria pynput')
-            sys.exit()
-    
-    from pynput.mouse import Listener
-    
+            imagen = False
+            #sys.exit()
+    try:
+        from pynput.mouse import Listener
+    except:
+        print ('Error en importacion libreria pynput')
+        imagen = False
+        
     def on_click(x, y, button, pressed):
         global nc, x1, y1
         if pressed:
@@ -121,7 +140,7 @@ bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
 bot.skip_pending=True # Skip the pending messages
 
 try:
-    cid = m.chat.id #variable m si viene desde fvbot.py
+    cid = cid #variable -cid si viene desde linea de comando
 except:
     cid=Aut[0] # pone el primer usuario donde queremos mandar el msg definido en Parametros_FV.py
 
@@ -163,22 +182,65 @@ try:
     cursor = db.cursor()
     
     d_={}
-    sql = 'SELECT * FROM equipos'
+    L_celdas = '\U0001F4CA <b><u>BMS:</u></b>\n'
+    Nespacios = 4
+    TC = []
+    
+    sql = 'SELECT * FROM equipos ORDER BY id_equipo'
     nequipos = int(cursor.execute(sql))
+    Nbms = 0 # nº de BMS
     for row in cursor.fetchall(): 
         d_[row[0]] = json.loads(row[2])
         if row[0] == 'FV': fecha = row[1] # fecha del registro FV en BD
+        
+        elif row[0][:3] == 'BMS': 
+            Nbms += 1
+            try:
+                ee = 100
+                if datetime.datetime.timestamp(row[1]) < time.time() - 60:
+                    L_celdas += f'{" " * Nespacios}\U000026A0 <b><i> {row[0][4:]} **Celdas desactualizadas**</i></b>\n' # añade ERROR si los datos son mas antiguos de 60sg
+                           
+                #print(d_[row[0]]['Vceldas'])
+                TC = d_[row[0]]['Vceldas']
+                Cmax = max(TC)
+                Imax = TC.index(Cmax)
+                Cmin = min(TC)
+                Imin = TC.index(Cmin)
+                ee = 120
+                try:
+                    I_bms = d_[row[0]]['Ibat']
+                except:
+                    I_bms = 0
+                ee = 130    
+                try:
+                    SOC_bms = d_[row[0]]['SOC']
+                except:
+                    SOC_bms = 0
+                ee = 140    
+                try:
+                    AH_p_bms = d_[row[0]]['AH_p']
+                except:
+                    AH_p_bms = 0
+                ee = 150
+                try:
+                    AH_n_bms = d_[row[0]]['AH_n']
+                except:
+                    AH_n_bms = 0
+                    
+                ee = 160
+                L_celdas += f'{" " * Nespacios}<code>{row[0][4:]}:C{Imax+1}={Cmax:.2f}V-C{Imin+1}={Cmin:.2f}V {(Cmax -Cmin)*1000:.0f}mV</code>\n'
+                ee = 170
+                #BMS_DiY no tiene estos datos; otros BMS quizás si. A pulir o globalizar más adelante mediante flag
+                if row[0] != 'BMS_DIY':
+                    ee = 172
+                    L_celdas += f'{" " * (Nespacios + 6)}'
+                    L_celdas += f'<code>{SOC_bms:.0f}%/{I_bms:.0f}A/ {AH_p_bms:.0f}-{AH_n_bms:.0f}={AH_p_bms - AH_n_bms:.0f}Ah</code>\n'
+
+            except:
+                L_celdas = f'{" " * Nespacios}Error L_celdas {ee}'
     
-    ### CELDAS
-    sql='SELECT * FROM datos_celdas ORDER BY id_celda DESC LIMIT 1'
-    TC1 = []
-    try:
-        nparametros=cursor.execute(sql)
-        columns = [column[0] for column in cursor.description]      
-        for row in cursor.fetchall(): TC1.append(dict(zip(columns, row)))
-    except:
-        pass      
-    
+    if L_celdas[-1:] == '\n' : L_celdas = L_celdas[:-1]
+        
 except Exception as e:
     pass
 
@@ -257,6 +319,8 @@ try:
 except:
     L_reles_unicode = 'Error L_reles_unicode'
 
+if L_reles_unicode[-1:] == '\n' : L_reles_unicode = L_reles_unicode[:-1]
+
 try:
     Temperaturas = ''
     for sensor in sensores_temp:
@@ -270,9 +334,12 @@ try:
         #print ("sensor", sensor, "=", temp_s, " grados.")
     
     temp_cpu = 0.0
-    with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-        temp_cpu = float(f.read())/1000
-        
+    try:
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            temp_cpu = float(f.read())/1000
+    except:
+        pass
+    
     L_temp = f'{temp_cpu:.1f} {Temperaturas}'
 
 except:
@@ -291,6 +358,7 @@ try:
 except Exception as e:
     L_ip_local = 'Error L_ip_local'
 
+"""
 try:
     #### CELDAS
     L_celdas = ''
@@ -309,19 +377,21 @@ try:
 
 except:
     L_celdas = 'Error L_celdas'
-
+"""
 
 try:
     ### Composicion mensaje
     tg_msg = ''
     for l in msg_telegram:
-        ee = l
-        if DEBUG:
-            print (f'{l}')
-            print(eval(f'f"{l}"'))
-            print('-' * 50)
-        tg_msg += eval(f'f"{l}"')+ '\n'
-
+        try:
+            ee = l
+            if DEBUG:
+                print (f'{l}')
+                print(eval(f'f"{l}"'))
+                print('-' * 50)
+            tg_msg += eval(f'f"{l}"')+ '\n'
+        except:
+             tg_msg += f'Error en linea {ee}' + '\n'
 except:
     tg_msg = f'Error en mensaje {ee}'
 
@@ -338,7 +408,18 @@ while salir!=True and N<Nmax:
         if region_captura_pantalla[0] == 1 and imagen:
             # -------------------------------- CAPTURA PANTALLA RPi --------------------------------------
             try:
+                for i in acciones_mouse: # acciones mouse definidas en Parametros_FV
+                    if DEBUG: print(f'ejecutando accion {i}', end='')
+                    eval(i)
+                    if DEBUG: print ('... OK')
+                    time.sleep(0.5)
+            except:
+                print(f'... error en accion {i}')
+                
+            try:
+                ee = 1000
                 captura_region = pyautogui.screenshot(region=region_captura_pantalla[1:])
+                ee = 1010
                 bot.send_photo(
                     cid, 
                     photo=captura_region, 
@@ -346,7 +427,7 @@ while salir!=True and N<Nmax:
                     parse_mode="HTML"
                 )
             except:
-                bot.send_message( cid, 'ERROR IMAGEN\n'+tg_msg, parse_mode="HTML")
+                bot.send_message( cid, f'ERROR IMAGEN {ee}\n'+tg_msg, parse_mode="HTML")
         else:
             bot.send_message( cid, tg_msg, parse_mode="HTML")
         
