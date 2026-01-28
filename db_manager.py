@@ -45,21 +45,48 @@ class DatabaseManager:
     Manages database operations for PVControl+ equipment data.
     
     Provides safe, parameterized database access with automatic connection handling.
+    Configuration can be passed explicitly or imported from Parametros_FV.py globals.
     """
     
-    def __init__(self, host: str, user: str, passwd: str, db: str):
+    def __init__(self, host: Optional[str] = None, user: Optional[str] = None, 
+                 passwd: Optional[str] = None, db: Optional[str] = None):
         """
         Initialize database connection.
         
         Args:
-            host: Database server hostname or IP
-            user: Database username
-            passwd: Database password
-            db: Database name
+            host: Database server hostname or IP (default: from Parametros_FV.py 'servidor')
+            user: Database username (default: from Parametros_FV.py 'usuario')
+            passwd: Database password (default: from Parametros_FV.py 'clave')
+            db: Database name (default: from Parametros_FV.py 'basedatos')
+        
+        If parameters are not provided, attempts to import from global namespace
+        (Parametros_FV.py variables: servidor, usuario, clave, basedatos).
         
         Raises:
             MySQLdb.Error: If connection fails
+            NameError: If parameters not provided and globals not available
         """
+        # Try to get from globals if not provided
+        if host is None:
+            import sys
+            frame = sys._getframe(1)
+            host = frame.f_globals.get('servidor')
+        if user is None:
+            import sys
+            frame = sys._getframe(1)
+            user = frame.f_globals.get('usuario')
+        if passwd is None:
+            import sys
+            frame = sys._getframe(1)
+            passwd = frame.f_globals.get('clave')
+        if db is None:
+            import sys
+            frame = sys._getframe(1)
+            db = frame.f_globals.get('basedatos')
+        
+        if not all([host, user, passwd, db]):
+            raise ValueError("Database parameters must be provided or available in global namespace")
+        
         self.host = host
         self.user = user
         self.passwd = passwd

@@ -57,17 +57,14 @@ if DEBUG > 0:
     print(EQUIPO)
     print('-' * 40)
 
-# Initialize Telegram notifier
+# Initialize Telegram notifier (auto-imports from Parametros_FV.py globals)
 telegram_notifier = None
 cid = None  # Initialize cid for backward compatibility
 if usar_telegram == 1:
     try:
         cid = Aut[0]  # Set cid from Aut list
-        telegram_notifier = TelegramNotifier(
-            token=TOKEN,
-            chat_id=cid,
-            use_telegram=True
-        )
+        # Parameters auto-imported from globals (TOKEN, Aut, usar_telegram)
+        telegram_notifier = TelegramNotifier()
         telegram_notifier.send_startup_message(NEQUIPO)
     except Exception as e:
         print(f'Error inicializando Telegram notifier: {e}')
@@ -91,14 +88,11 @@ def on_message_received(equipo, comando):
         print(Fore.CYAN + f'MQTT .... Comando {comando} en equipo {equipo} recibido')
     comando_mqtt = {'equipo': equipo, 'comando': comando}
 
-# Initialize MQTT handler
+# Initialize MQTT handler (auto-imports from Parametros_FV.py globals)
 mqtt_handler = None
 try:
+    # Parameters auto-imported from globals (mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave)
     mqtt_handler = MQTTHandler(
-        broker=mqtt_broker,
-        puerto=mqtt_puerto,
-        usuario=mqtt_usuario,
-        clave=mqtt_clave,
         on_message_callback=on_message_received,
         debug=(DEBUG > 0)
     )
@@ -553,11 +547,12 @@ wh_placa = {}     # sin uso actualmente
 wh_consumo = {}   # sin uso actualmente
 flag_lectura = {} # Flag de lectura para evitar conflicto con lectura desde Telegram
 
-# Conexion BD
+# Conexion BD (auto-imports from Parametros_FV.py globals)
 try:
     ee = '1'
     # Initialize DatabaseManager with parameterized queries
-    db_manager = DatabaseManager(host=servidor, user=usuario, passwd=clave, db=basedatos)
+    # Parameters auto-imported from globals (servidor, usuario, clave, basedatos)
+    db_manager = DatabaseManager()
     
     # Keep legacy db and cursor for backward compatibility with existing code
     db = db_manager.connection

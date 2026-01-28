@@ -53,22 +53,48 @@ class MQTTHandler:
     Manages MQTT connections and message handling for PVControl+ equipment.
     
     Provides thread-safe command queue and automatic reconnection.
+    Configuration can be passed explicitly or imported from Parametros_FV.py globals.
     """
     
-    def __init__(self, broker: str, puerto: int, usuario: str, clave: str,
+    def __init__(self, broker: Optional[str] = None, puerto: Optional[int] = None, 
+                 usuario: Optional[str] = None, clave: Optional[str] = None,
                  on_message_callback: Optional[Callable[[str, str], None]] = None,
                  debug: bool = False):
         """
         Initialize MQTT handler.
         
         Args:
-            broker: MQTT broker hostname or IP
-            puerto: MQTT broker port (typically 1883)
-            usuario: MQTT username
-            clave: MQTT password
+            broker: MQTT broker hostname or IP (default: from Parametros_FV.py 'mqtt_broker')
+            puerto: MQTT broker port (default: from Parametros_FV.py 'mqtt_puerto', typically 1883)
+            usuario: MQTT username (default: from Parametros_FV.py 'mqtt_usuario')
+            clave: MQTT password (default: from Parametros_FV.py 'mqtt_clave')
             on_message_callback: Optional callback function(equipo, comando)
             debug: Enable debug output
+        
+        If parameters are not provided, attempts to import from global namespace
+        (Parametros_FV.py variables: mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave).
         """
+        # Try to get from globals if not provided
+        if broker is None:
+            import sys
+            frame = sys._getframe(1)
+            broker = frame.f_globals.get('mqtt_broker')
+        if puerto is None:
+            import sys
+            frame = sys._getframe(1)
+            puerto = frame.f_globals.get('mqtt_puerto')
+        if usuario is None:
+            import sys
+            frame = sys._getframe(1)
+            usuario = frame.f_globals.get('mqtt_usuario')
+        if clave is None:
+            import sys
+            frame = sys._getframe(1)
+            clave = frame.f_globals.get('mqtt_clave')
+        
+        if not all([broker, puerto, usuario, clave]):
+            raise ValueError("MQTT parameters must be provided or available in global namespace")
+        
         self.broker = broker
         self.puerto = puerto
         self.usuario = usuario

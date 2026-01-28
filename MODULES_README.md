@@ -93,6 +93,10 @@ db_manager.save_equipment_data(equipo, tiempo, salida)
 ```python
 from db_manager import DatabaseManager
 
+# Option 1: Auto-import from Parametros_FV.py globals (servidor, usuario, clave, basedatos)
+db_mgr = DatabaseManager()
+
+# Option 2: Explicit parameters
 db_mgr = DatabaseManager(
     host='localhost',
     user='pvcontrol',
@@ -155,6 +159,13 @@ from mqtt_handler import MQTTHandler
 def handle_command(equipo, comando):
     print(f"Received: {equipo} -> {comando}")
 
+# Option 1: Auto-import from Parametros_FV.py globals (mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave)
+mqtt = MQTTHandler(
+    on_message_callback=handle_command,
+    debug=True
+)
+
+# Option 2: Explicit parameters
 mqtt = MQTTHandler(
     broker='localhost',
     puerto=1883,
@@ -215,6 +226,10 @@ Provides safe Telegram bot interface with timeout protection and error handling.
 ```python
 from telegram_notifier import TelegramNotifier
 
+# Option 1: Auto-import from Parametros_FV.py globals (TOKEN, Aut, usar_telegram)
+notifier = TelegramNotifier()
+
+# Option 2: Explicit parameters
 notifier = TelegramNotifier(
     token='123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
     chat_id=12345678,
@@ -269,10 +284,10 @@ from db_manager import DatabaseManager
 from mqtt_handler import MQTTHandler
 from telegram_notifier import TelegramNotifier
 
-# Initialize modules
-db_manager = DatabaseManager(host=servidor, user=usuario, passwd=clave, db=basedatos)
-mqtt_handler = MQTTHandler(broker=mqtt_broker, puerto=mqtt_puerto, ...)
-telegram_notifier = TelegramNotifier(token=TOKEN, chat_id=Aut[0], ...)
+# Initialize modules (auto-import from Parametros_FV.py globals)
+db_manager = DatabaseManager()  # Uses servidor, usuario, clave, basedatos
+mqtt_handler = MQTTHandler()    # Uses mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave
+telegram_notifier = TelegramNotifier()  # Uses TOKEN, Aut, usar_telegram
 
 # Use in conversion logic
 voltage = convert_u16(raw_value, decimales=1, offset=0)
