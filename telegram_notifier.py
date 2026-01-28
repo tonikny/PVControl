@@ -6,16 +6,22 @@ This module provides a safe, reusable Telegram bot interface for PVControl+ noti
 It handles message sending with timeout protection, error handling, and graceful degradation
 when Telegram is disabled or unavailable.
 
+Configuration is automatically imported from Parametros_FV.py (or Parametros_FV_DIST.py as fallback).
+
 Key Features:
 - Timeout protection for send operations
 - Automatic error handling and logging
 - Optional enable/disable functionality
 - HTML parse mode support
+- Auto-imports configuration from Parametros_FV.py
 
 Usage:
     from telegram_notifier import TelegramNotifier
     
-    # Initialize with bot token and chat ID
+    # Initialize with auto-imported config from Parametros_FV.py
+    notifier = TelegramNotifier()
+    
+    # Or override with explicit parameters
     notifier = TelegramNotifier(
         token='123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
         chat_id=12345678,
@@ -36,13 +42,26 @@ import telebot
 import timeout_decorator
 from typing import Optional, Union
 
+# Import Telegram configuration from Parametros_FV.py
+# Falls back to Parametros_FV_DIST.py if Parametros_FV.py doesn't exist
+try:
+    from Parametros_FV import TOKEN, Aut, usar_telegram
+except ImportError:
+    try:
+        from Parametros_FV_DIST import TOKEN, Aut, usar_telegram
+    except ImportError:
+        # If neither file exists, set to None (will require explicit parameters)
+        TOKEN = None
+        Aut = []
+        usar_telegram = 0
+
 
 class TelegramNotifier:
     """
     Manages Telegram bot notifications with timeout and error handling.
     
     Provides safe message sending with automatic error recovery.
-    Configuration can be passed explicitly or imported from Parametros_FV.py globals.
+    Configuration is automatically imported from Parametros_FV.py at module level.
     """
     
     def __init__(self, token: Optional[str] = None, chat_id: Optional[Union[int, str]] = None, 
@@ -51,43 +70,36 @@ class TelegramNotifier:
         Initialize Telegram notifier.
         
         Args:
-            token: Telegram bot token from BotFather (default: from Parametros_FV.py 'TOKEN')
-            chat_id: Chat ID or username (default: from Parametros_FV.py 'Aut[0]')
-            use_telegram: Enable/disable Telegram (default: from Parametros_FV.py 'usar_telegram')
+            token: Telegram bot token from BotFather (default: auto-imported 'TOKEN' from Parametros_FV.py)
+            chat_id: Chat ID or username (default: auto-imported 'Aut[0]' from Parametros_FV.py)
+            use_telegram: Enable/disable Telegram (default: auto-imported 'usar_telegram' from Parametros_FV.py)
             timeout: Timeout in seconds for send operations (default: 20)
         
-        If parameters are not provided, attempts to import from global namespace
-        (Parametros_FV.py variables: TOKEN, Aut, usar_telegram).
+        Configuration is imported from Parametros_FV.py at module level.
+        Parameters can be explicitly provided to override the imported defaults.
         
         Raises:
             Exception: If bot initialization fails (only when use_telegram=True)
         """
-        # Try to get from globals if not provided
-        if token is None:
-            import sys
-            frame = sys._getframe(1)
-            token = frame.f_globals.get('TOKEN')
-        if chat_id is None:
-            import sys
-            frame = sys._getframe(1)
-            aut = frame.f_globals.get('Aut')
-            if aut and len(aut) > 0:
-                chat_id = aut[0]
+        # Use provided parameters or fall back to module-level imported config
+        self.token = token or TOKEN
+        self.chat_id = chat_id or (Aut[0] if Aut and len(Aut) > 0 else None)
+        
+        # Handle use_telegram conversion (1 -> True, 0 -> False)
         if use_telegram is None:
-            import sys
-            frame = sys._getframe(1)
-            usar = frame.f_globals.get('usar_telegram', 0)
-            use_telegram = (usar == 1)
+            self.use_telegram = (usar_telegram == 1)
+        else:
+            self.use_telegram = use_telegram
         
-        # Validate required parameters
-        if use_telegram and not token:
-            raise ValueError("Telegram token must be provided or available in global namespace when use_telegram=True")
-        
-        self.token = token
-        self.chat_id = chat_id
-        self.use_telegram = use_telegram if use_telegram is not None else False
         self.timeout_seconds = timeout
         self.bot: Optional[telebot.TeleBot] = None
+        
+        # Validate required parameters when Telegram is enabled
+        if self.use_telegram and not self.token:
+            raise ValueError(
+                "Telegram token must be provided explicitly or imported from Parametros_FV.py "
+                "when use_telegram=True"
+            )
         
         if self.use_telegram and self.token:
             self._initialize_bot()

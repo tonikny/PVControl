@@ -6,16 +6,22 @@ This module provides a safe, reusable database interface for PVControl+ equipmen
 It uses parameterized queries to prevent SQL injection vulnerabilities and provides proper
 connection management.
 
+Configuration is automatically imported from Parametros_FV.py (or Parametros_FV_DIST.py as fallback).
+
 Key Features:
 - SQL injection protection through parameterized queries
 - Automatic connection retry on failure
 - Thread-safe operations
 - Proper resource cleanup
+- Auto-imports configuration from Parametros_FV.py
 
 Usage:
     from db_manager import DatabaseManager
     
-    # Initialize connection
+    # Initialize with auto-imported config from Parametros_FV.py
+    db_mgr = DatabaseManager()
+    
+    # Or override with explicit parameters
     db_mgr = DatabaseManager(
         host='localhost',
         user='pvcontrol',
@@ -39,13 +45,27 @@ import json
 from typing import Dict, Any, Optional
 import time
 
+# Import database configuration from Parametros_FV.py
+# Falls back to Parametros_FV_DIST.py if Parametros_FV.py doesn't exist
+try:
+    from Parametros_FV import servidor, usuario, clave, basedatos
+except ImportError:
+    try:
+        from Parametros_FV_DIST import servidor, usuario, clave, basedatos
+    except ImportError:
+        # If neither file exists, set to None (will require explicit parameters)
+        servidor = None
+        usuario = None
+        clave = None
+        basedatos = None
+
 
 class DatabaseManager:
     """
     Manages database operations for PVControl+ equipment data.
     
     Provides safe, parameterized database access with automatic connection handling.
-    Configuration can be passed explicitly or imported from Parametros_FV.py globals.
+    Configuration is automatically imported from Parametros_FV.py at module level.
     """
     
     def __init__(self, host: Optional[str] = None, user: Optional[str] = None, 
@@ -54,43 +74,30 @@ class DatabaseManager:
         Initialize database connection.
         
         Args:
-            host: Database server hostname or IP (default: from Parametros_FV.py 'servidor')
-            user: Database username (default: from Parametros_FV.py 'usuario')
-            passwd: Database password (default: from Parametros_FV.py 'clave')
-            db: Database name (default: from Parametros_FV.py 'basedatos')
+            host: Database server hostname or IP (default: auto-imported 'servidor' from Parametros_FV.py)
+            user: Database username (default: auto-imported 'usuario' from Parametros_FV.py)
+            passwd: Database password (default: auto-imported 'clave' from Parametros_FV.py)
+            db: Database name (default: auto-imported 'basedatos' from Parametros_FV.py)
         
-        If parameters are not provided, attempts to import from global namespace
-        (Parametros_FV.py variables: servidor, usuario, clave, basedatos).
+        Configuration is imported from Parametros_FV.py at module level.
+        Parameters can be explicitly provided to override the imported defaults.
         
         Raises:
             MySQLdb.Error: If connection fails
-            NameError: If parameters not provided and globals not available
+            ValueError: If parameters not provided and not imported from Parametros_FV.py
         """
-        # Try to get from globals if not provided
-        if host is None:
-            import sys
-            frame = sys._getframe(1)
-            host = frame.f_globals.get('servidor')
-        if user is None:
-            import sys
-            frame = sys._getframe(1)
-            user = frame.f_globals.get('usuario')
-        if passwd is None:
-            import sys
-            frame = sys._getframe(1)
-            passwd = frame.f_globals.get('clave')
-        if db is None:
-            import sys
-            frame = sys._getframe(1)
-            db = frame.f_globals.get('basedatos')
+        # Use provided parameters or fall back to module-level imported config
+        self.host = host or servidor
+        self.user = user or usuario
+        self.passwd = passwd or clave
+        self.db_name = db or basedatos
         
-        if not all([host, user, passwd, db]):
-            raise ValueError("Database parameters must be provided or available in global namespace")
+        if not all([self.host, self.user, self.passwd, self.db_name]):
+            raise ValueError(
+                "Database parameters must be provided explicitly or imported from Parametros_FV.py. "
+                f"Missing: host={self.host}, user={self.user}, db={self.db_name}"
+            )
         
-        self.host = host
-        self.user = user
-        self.passwd = passwd
-        self.db_name = db
         self.connection: Optional[MySQLdb.Connection] = None
         self.cursor: Optional[MySQLdb.cursors.Cursor] = None
         

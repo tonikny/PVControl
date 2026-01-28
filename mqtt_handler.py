@@ -6,11 +6,14 @@ This module provides a clean interface for MQTT communication in PVControl+ appl
 It handles connection management, topic subscription, and thread-safe command queue
 management for equipment control.
 
+Configuration is automatically imported from Parametros_FV.py (or Parametros_FV_DIST.py as fallback).
+
 Key Features:
 - Automatic reconnection handling
 - Thread-safe command queue using queue.Queue
 - Equipment-specific topic subscription
 - Customizable message callbacks
+- Auto-imports configuration from Parametros_FV.py
 
 Usage:
     from mqtt_handler import MQTTHandler
@@ -18,7 +21,10 @@ Usage:
     def handle_message(equipo, comando):
         print(f"Received command '{comando}' for equipment '{equipo}'")
     
-    # Initialize handler
+    # Initialize with auto-imported config from Parametros_FV.py
+    mqtt = MQTTHandler(on_message_callback=handle_message)
+    
+    # Or override with explicit parameters
     mqtt = MQTTHandler(
         broker='localhost',
         puerto=1883,
@@ -47,13 +53,27 @@ from typing import Optional, List, Callable, Dict
 import queue
 import time
 
+# Import MQTT configuration from Parametros_FV.py
+# Falls back to Parametros_FV_DIST.py if Parametros_FV.py doesn't exist
+try:
+    from Parametros_FV import mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave
+except ImportError:
+    try:
+        from Parametros_FV_DIST import mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave
+    except ImportError:
+        # If neither file exists, set to None (will require explicit parameters)
+        mqtt_broker = None
+        mqtt_puerto = None
+        mqtt_usuario = None
+        mqtt_clave = None
+
 
 class MQTTHandler:
     """
     Manages MQTT connections and message handling for PVControl+ equipment.
     
     Provides thread-safe command queue and automatic reconnection.
-    Configuration can be passed explicitly or imported from Parametros_FV.py globals.
+    Configuration is automatically imported from Parametros_FV.py at module level.
     """
     
     def __init__(self, broker: Optional[str] = None, puerto: Optional[int] = None, 
@@ -64,43 +84,29 @@ class MQTTHandler:
         Initialize MQTT handler.
         
         Args:
-            broker: MQTT broker hostname or IP (default: from Parametros_FV.py 'mqtt_broker')
-            puerto: MQTT broker port (default: from Parametros_FV.py 'mqtt_puerto', typically 1883)
-            usuario: MQTT username (default: from Parametros_FV.py 'mqtt_usuario')
-            clave: MQTT password (default: from Parametros_FV.py 'mqtt_clave')
+            broker: MQTT broker hostname or IP (default: auto-imported 'mqtt_broker' from Parametros_FV.py)
+            puerto: MQTT broker port (default: auto-imported 'mqtt_puerto' from Parametros_FV.py)
+            usuario: MQTT username (default: auto-imported 'mqtt_usuario' from Parametros_FV.py)
+            clave: MQTT password (default: auto-imported 'mqtt_clave' from Parametros_FV.py)
             on_message_callback: Optional callback function(equipo, comando)
             debug: Enable debug output
         
-        If parameters are not provided, attempts to import from global namespace
-        (Parametros_FV.py variables: mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave).
+        Configuration is imported from Parametros_FV.py at module level.
+        Parameters can be explicitly provided to override the imported defaults.
         """
-        # Try to get from globals if not provided
-        if broker is None:
-            import sys
-            frame = sys._getframe(1)
-            broker = frame.f_globals.get('mqtt_broker')
-        if puerto is None:
-            import sys
-            frame = sys._getframe(1)
-            puerto = frame.f_globals.get('mqtt_puerto')
-        if usuario is None:
-            import sys
-            frame = sys._getframe(1)
-            usuario = frame.f_globals.get('mqtt_usuario')
-        if clave is None:
-            import sys
-            frame = sys._getframe(1)
-            clave = frame.f_globals.get('mqtt_clave')
-        
-        if not all([broker, puerto, usuario, clave]):
-            raise ValueError("MQTT parameters must be provided or available in global namespace")
-        
-        self.broker = broker
-        self.puerto = puerto
-        self.usuario = usuario
-        self.clave = clave
+        # Use provided parameters or fall back to module-level imported config
+        self.broker = broker or mqtt_broker
+        self.puerto = puerto or mqtt_puerto
+        self.usuario = usuario or mqtt_usuario
+        self.clave = clave or mqtt_clave
         self.debug = debug
         self.on_message_callback = on_message_callback
+        
+        if not all([self.broker, self.puerto, self.usuario, self.clave]):
+            raise ValueError(
+                "MQTT parameters must be provided explicitly or imported from Parametros_FV.py. "
+                f"Missing: broker={self.broker}, puerto={self.puerto}, usuario={self.usuario}"
+            )
         
         # Thread-safe command queue (replaces global comando_mqtt)
         self.command_queue: queue.Queue = queue.Queue()
