@@ -708,6 +708,55 @@ def Hibrido_lectura(NHIBRIDO):
 
     client.loop_start()  
           
+    def open_and_verify_port(device_path, baud_rate=2400, timeout=1, max_retries=3):
+        """
+        Helper function to open and verify a serial port connection.
+        
+        Args:
+            device_path: Path to the serial device (e.g., /dev/ttyUSB2)
+            baud_rate: Baud rate for serial communication (default: 2400)
+            timeout: Timeout in seconds for serial operations (default: 1)
+            max_retries: Maximum number of connection attempts (default: 3)
+            
+        Returns:
+            Open serial port object or None if connection fails
+        """
+        for attempt in range(max_retries):
+            try:
+                if not os.path.exists(device_path):
+                    if DEBUG >= 1:
+                        print(f'{Fore.RED}Port {device_path} does not exist (attempt {attempt+1}/{max_retries}){Fore.RESET}')
+                    time.sleep(0.5)
+                    continue
+                    
+                # Open the port with specified parameters
+                port = serial.Serial(device_path, baud_rate, timeout=timeout)
+                
+                # Verify port is actually open and ready
+                if port.is_open:
+                    if DEBUG == 100:
+                        print(f'{Fore.GREEN}Successfully opened port {device_path} on attempt {attempt+1}{Fore.RESET}')
+                    time.sleep(0.15)  # Give the device time to stabilize
+                    return port
+                else:
+                    if DEBUG >= 1:
+                        print(f'{Fore.YELLOW}Port {device_path} opened but not ready (attempt {attempt+1}/{max_retries}){Fore.RESET}')
+                    port.close()
+                    time.sleep(0.5)
+                    
+            except serial.SerialException as e:
+                if DEBUG >= 1:
+                    print(f'{Fore.RED}SerialException opening {device_path} (attempt {attempt+1}/{max_retries}): {e}{Fore.RESET}')
+                time.sleep(0.5)
+            except Exception as e:
+                if DEBUG >= 1:
+                    print(f'{Fore.RED}Error opening {device_path} (attempt {attempt+1}/{max_retries}): {e}{Fore.RESET}')
+                time.sleep(0.5)
+        
+        # All retries failed
+        if DEBUG >= 1:
+            print(f'{Fore.RED}Failed to open {device_path} after {max_retries} attempts{Fore.RESET}')
+        return None
         
     @timeout_decorator.timeout(15, use_signals=False)
     def comando(cmd,I_Hibrido):
@@ -749,51 +798,132 @@ def Hibrido_lectura(NHIBRIDO):
                 if DEBUG == 100:
                         print(f'Mandando comando {cmd_crc} al Hibrido {dev_hibrido[I_Hibrido]}')
                 
-                if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB         
+                if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB": # Hibridos con puerto tipo /dev/ttyUSB
+                    # Open port fresh for each command to ensure clean state
                     err=21
                     t1 = time.time()
-                    #ser = serial.Serial(dev_hibrido[I_Hibrido], 2400, timeout = 0.1) 
-                    err=22
-                    t2 = time.time()
                     
-                    time.sleep(.15)
-                    ser.write(bytes(cmd_crc)) # Envio comando al Hibrido
-                    err=30
-                    t3 = time.time()
-                    #r = ser.readline()  # lectura respuesta Hibrido
-                    r = ser.read(5)
-                    while r.find(b'\r') == -1 :
-                        time.sleep(.004) # 0.02
-                        r = r + ser.read(1)
-                    t4 = time.time()
+                    local_ser = None
+                    try:
+                        # Open port with retry logic
+                        local_ser = open_and_verify_port(dev_hibrido[I_Hibrido], 2400, timeout=1)
+                        
+                        if local_ser is None:
+                            raise serial.SerialException(f"Failed to open {dev_hibrido[I_Hibrido]} - check USB connection")
+                        
+                        err=22
+                        t2 = time.time()
+                        
+                        # Clear any stale data in buffers before sending command
+                        if DEBUG == 100:
+                            print(f'{Fore.CYAN}Flushing RX/TX buffers for {dev_hibrido[I_Hibrido]}{Fore.RESET}')
+                        local_ser.reset_input_buffer()
+                        local_ser.reset_output_buffer()
+                        
+                        # Send command to inverter
+                        local_ser.write(bytes(cmd_crc))
+                        
+                        err=30
+                        t3 = time.time()
+                        
+                        # Read response
+                        r = local_ser.read(5)
+                        while r.find(b'\r') == -1:
+                            time.sleep(.004)
+                            r = r + local_ser.read(1)
+                        
+                        t4 = time.time()
+                        
+                        if DEBUG == 100:
+                            print(f'{Fore.GREEN}Command successful - closing port {dev_hibrido[I_Hibrido]}{Fore.RESET}')
+                        
+                    except serial.SerialTimeoutException as e:
+                        err = 31
+                        error_msg = f"Serial timeout on {dev_hibrido[I_Hibrido]}: {e}"
+                        if DEBUG >= 1:
+                            print(f'{Fore.RED}{error_msg}{Fore.RESET}')
+                        raise Exception(error_msg)
+                        
+                    except serial.SerialException as e:
+                        err = 32
+                        error_msg = f"Serial port error on {dev_hibrido[I_Hibrido]}: {e}"
+                        if DEBUG >= 1:
+                            print(f'{Fore.RED}{error_msg}{Fore.RESET}')
+                        raise Exception(error_msg)
+                        
+                    finally:
+                        # Always close the port to free up the resource
+                        if local_ser is not None and local_ser.is_open:
+                            try:
+                                local_ser.flush()
+                                local_ser.close()
+                                if DEBUG == 100:
+                                    print(f'{Fore.CYAN}Port {dev_hibrido[I_Hibrido]} closed successfully{Fore.RESET}')
+                            except Exception as e:
+                                if DEBUG >= 1:
+                                    print(f'{Fore.YELLOW}Warning: Error closing port {dev_hibrido[I_Hibrido]}: {e}{Fore.RESET}')
                     
                 else:   # Hibridos con puerto tipo  /dev/hidraw
                     err=21
                     t1 = time.time()
-                    #fd = open(dev_hibrido[I_Hibrido],'rb+')
-                    err=22
-                    t2 = time.time()
-                    fd.write(cmd_crc[:8])
                     
-                    if len(cmd_crc) > 8:
-                        fd.flush()
-                        fd.write(cmd_crc[8:16])
-                        err=21
-                        if (cmd1 == b"PBEQA1") or (cmd1 == b"PBEQA0"):
-                            fd.write(cmd_crc[8:16]) ######
-                            err = 22
-                    if len(cmd_crc) > 16:
-                        fd.flush()
-                        fd.write(cmd_crc[16:])        
-                    time.sleep(.1) # 0.5 
+                    local_fd = None
+                    try:
+                        # Open device fresh for each command
+                        res = subprocess.run(['sudo','chown', 'pi:pi', dev_hibrido[I_Hibrido]])
+                        local_fd = open(dev_hibrido[I_Hibrido],'rb+')
+                        
+                        err=22
+                        t2 = time.time()
+                        
+                        # Write command in chunks with explicit flush
+                        if DEBUG == 100:
+                            print(f'{Fore.CYAN}Writing command to hidraw device{Fore.RESET}')
+                        
+                        local_fd.write(cmd_crc[:8])
+                        
+                        if len(cmd_crc) > 8:
+                            local_fd.flush()
+                            local_fd.write(cmd_crc[8:16])
+                            err=21
+                            if (cmd1 == b"PBEQA1") or (cmd1 == b"PBEQA0"):
+                                local_fd.write(cmd_crc[8:16]) ######
+                                err = 22
+                        if len(cmd_crc) > 16:
+                            local_fd.flush()
+                            local_fd.write(cmd_crc[16:])
+                        
+                        local_fd.flush()  # Final flush before reading
+                        time.sleep(.1) # 0.5 
+                        
+                        err=30
+                        t3 = time.time()
+                        r = local_fd.read(5)
+                        while r.find(b'\r') == -1:
+                            time.sleep(.004) # 0.02
+                            r = r + local_fd.read(1)
+                        t4 = time.time()
+                        
+                        if DEBUG == 100:
+                            print(f'{Fore.GREEN}hidraw command successful - closing device{Fore.RESET}')
                     
-                    err=30
-                    t3 = time.time()
-                    r = fd.read(5)
-                    while r.find(b'\r') == -1 :
-                        time.sleep(.004) # 0.02
-                        r = r + fd.read(1)
-                    t4 = time.time()
+                    except Exception as e:
+                        err = 33
+                        error_msg = f"hidraw device error on {dev_hibrido[I_Hibrido]}: {e}"
+                        if DEBUG >= 1:
+                            print(f'{Fore.RED}{error_msg}{Fore.RESET}')
+                        raise Exception(error_msg)
+                        
+                    finally:
+                        # Always close the device to free up the resource
+                        if local_fd is not None:
+                            try:
+                                local_fd.close()
+                                if DEBUG == 100:
+                                    print(f'{Fore.CYAN}hidraw device {dev_hibrido[I_Hibrido]} closed successfully{Fore.RESET}')
+                            except Exception as e:
+                                if DEBUG >= 1:
+                                    print(f'{Fore.YELLOW}Warning: Error closing hidraw device {dev_hibrido[I_Hibrido]}: {e}{Fore.RESET}')
                 #print(f'Respuesta Hibrido={r}')
                 
                 if usar_crc[I_Hibrido] == 1:
@@ -867,31 +997,23 @@ def Hibrido_lectura(NHIBRIDO):
                      b'10',b'11',b'12',b'13',b'14',b'15',b'16',b'17',b'18',b'19',
                      b'20',b'21',b'22',b'23',b'24',b'25',b'26',b'27',b'28']
                 """       
-        except:
-            print('Error Comando ',err,sys.exc_info([0]))
+        except Exception as e:
+            if DEBUG >= 1:
+                print(f'{Fore.RED}Error Comando {err}: {e}{Fore.RESET}')
             
             s = f'Error Hibrido{I_Hibrido}'+str(err)
             time.sleep(12)
             
         finally:
-            #print ('finally')
-            
-            if dev_hibrido[I_Hibrido][-7:-1] == "ttyUSB":
-                ser.flush() #limpia el buffer
-                #ser.close()
-            """
-            else:
-                try:
-                    fd.close()
-                except:
-                    pass
-            """
+            # Port/device closing is now handled in the try-finally blocks above
+            # No need to close global ser/fd here since we use local variables
             try:
                 i = s
             except:
                 s= 'Error en respuesta del Hibrido'
             
-            #print (f't_open<=,{round(t1-t0,2)} -t_open=,{round(t2-t1,1)} -t_write={round(t3-t2,1)} -t_read={round(t4-t3,1)}-- Total={round(time.time()-t0,1)}')
+            if DEBUG == 100 and 't1' in locals() and 't2' in locals() and 't3' in locals() and 't4' in locals():
+                print(f't_open<=,{round(t1-t0,2)} -t_open=,{round(t2-t1,1)} -t_write={round(t3-t2,1)} -t_read={round(t4-t3,1)}-- Total={round(time.time()-t0,1)}')
             pass
             
             
