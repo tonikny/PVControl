@@ -33,6 +33,9 @@ import click
 
 import multiprocessing
 
+from db_manager import DatabaseManager
+from telegram_notifier import TelegramNotifier
+
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
 colorama.init()
@@ -181,18 +184,9 @@ if TEST == 1:
 
 n_muestras_contador = [1 for i in range(len(usar_hibrido))] # contadores grabacion BD
 
-@timeout_decorator.timeout(5, use_signals=False)
-def bot_enviar_mensaje(cid, msg):
-    bot.send_message(cid, msg)
-
-if usar_telegram == 1:
-    try:
-        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
-        bot.skip_pending = True # Skip the pending messages
-        cid = Aut[0]
-        bot_enviar_mensaje(cid, f'Arrancando Programa Control Hibrido')
-    except:
-        print ('Error en envio de mensaje Telegram')
+# Initialize Telegram notifier at module level
+notifier = TelegramNotifier()
+notifier.send_startup_message('Control Hibrido')
         
 
 def Hibrido_lectura(NHIBRIDO):
@@ -200,8 +194,7 @@ def Hibrido_lectura(NHIBRIDO):
     
     print(f"Iniciando Hibrido{NHIBRIDO} ..PID: {multiprocessing.current_process().pid}")
     
-    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
-    cursor = db.cursor()
+    db = DatabaseManager()
 
     def on_connect(client, userdata, flags, rc):
         
@@ -594,10 +587,9 @@ def Hibrido_lectura(NHIBRIDO):
                         salida = json.dumps(Datos)
                         
                         ee = '42'
-                        sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'HIBRIDO{N_Hibrido}'") # grabacion en BD RAM
-                        #print (Fore.RED+sql)
-                        cursor.execute(sql)
-                        db.commit()
+                        # Use parameterized query via save_equipment_data method
+                        #print (Fore.RED+f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'HIBRIDO{N_Hibrido}'")
+                        db.save_equipment_data(f'HIBRIDO{N_Hibrido}', tiempo, salida)
                     except:
                         print(Fore.RED+f'error {ee}, Grabacion tabla RAM equipos en HIBRIDO{N_Hibrido}')
                             
@@ -650,10 +642,13 @@ def Hibrido_lectura(NHIBRIDO):
                                 if 'Ibat' in Datos_BD: del Datos_BD['Ibat']
                                 
                                 campos = ",".join(Datos_BD.keys())
-                                valores = "','".join(str(v) for v in Datos_BD.values())
-                                Sql = f"INSERT INTO hibrido{N_Hibrido} ("+campos+") VALUES ('"+valores+"')"
-                                #print (Fore.RESET+Sql)
-                                cursor.execute(Sql)
+                                # Create parameterized query with %s placeholders
+                                placeholders = ",".join(["%s"] * len(Datos_BD))
+                                Sql = f"INSERT INTO hibrido{N_Hibrido} ("+campos+") VALUES ("+placeholders+")"
+                                # Get values in the same order as keys
+                                valores = tuple(Datos_BD.values())
+                                #print (Fore.RESET+Sql, valores)
+                                db.cursor.execute(Sql, valores)
                                 if DEBUG >= 1: print (COLOR[I_Hibrido+1]+'G'+N_Hibrido,end='/',flush=True)
                                 db.commit()
                                 ee = '50d'
@@ -679,14 +674,14 @@ def Hibrido_lectura(NHIBRIDO):
                     print (Fore.CYAN,r, len(r)) 
                     if 'Error' not in r:
                         client.publish(f"PVControl/Hibrido{N_Hibrido}/Respuesta",str(r))
-                        if usar_telegram == 1: 
+                        if usar_telegram == 1:
                             L1 = f'Comando Hibrido{N_Hibrido}= '+ str(cmd)[2:-1]
                             L2 = str(r)
                             tg_msg = L1+'\n'+L2
-                            print (tg_msg) 
-                            bot_enviar_mensaje(cid, tg_msg)
-                    else:
-                        bot_enviar_mensaje(cid, 'Error en repuesta...' + str(r))
+                            print (tg_msg)
+                            notifier.send_message_safe(tg_msg)
+                        else:
+                            notifier.send_message_safe('Error en repuesta...' + str(r))
                 
         except Exception as e:
             print("Exception", e)
