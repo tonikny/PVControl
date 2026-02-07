@@ -24,8 +24,7 @@ def cargar_parametros(*params):
     try:
         user_vars = vars(_cargar_archivo(RUTA_USER))
     except (FileNotFoundError, ImportError):
-        # El archivo de usuario es opcional, si no existe no se hace nada
-        pass
+        print(f"Archivo usuario {RUTA_USER} no encontrado, usando solo defaults")
     
     # Crear el diccionario con los parámetros solicitados
     # PRIORIDAD: El valor de USER (user_vars) prevalece sobre DIST (dist_vars)
