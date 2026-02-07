@@ -165,7 +165,8 @@ def test_cargar_parametros():
         print(f"[INFO] Archivo USER eliminado: {user_path}")
         
         # Cargar variable que estaba en USER (ahora debe tomar valor de DIST)
-        var_sobre = cargar_parametros.cargar_parametros('variable_sobreescrita')
+        # Usamos recargar=True porque hemos eliminado el archivo físicamente
+        var_sobre = cargar_parametros.cargar_parametros('variable_sobreescrita', recargar=True)
         print(f"Resultado: variable_sobreescrita = '{var_sobre}'")
         assert var_sobre == "valor_original_dist", f"Error: debería usar valor de DIST"
         

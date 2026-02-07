@@ -9,7 +9,7 @@ import Adafruit_ADS1x15  # Import the ADS1x15 module.
 
 import colorama  # colores en ventana Terminal
 from colorama import Fore, Style
-from helpers.cargar_parametros import cargar_parametros
+from helpers.cargar_parametros import cargar_parametros, obtener_mtime_user
 from helpers.gestor_bd import GestorBD
 from fv_control_servicio import controlar_servicio
 
@@ -24,10 +24,7 @@ print(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_ads.py")
 # Load Parametros_FV.py
 # --------------------------------------------------
 
-parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
-
 ads_config = cargar_parametros("ADS")
-t_cambio_parametros = os.path.getmtime(parametros_FV)
 
 # --------------------------------------------------
 # Control Ejecucion Servicio
@@ -90,7 +87,7 @@ def ADS_captura(ads_name, ads_idx):
     adc = Adafruit_ADS1x15.ADS1115(address=ads_actual["direccion"], busnum=1)
 
     d_ads = {}
-    t_cambio_parametros_local = os.path.getmtime(parametros_FV) - 100
+    t_cambio_parametros_local = obtener_mtime_user() - 100
     ADS_modo = "Disparado"
 
     while True:
@@ -102,7 +99,7 @@ def ADS_captura(ads_name, ads_idx):
             ee = "11"
             # ---------------- Reload config ----------------
             if (
-                os.path.getmtime(parametros_FV) != t_cambio_parametros_local
+                obtener_mtime_user() != t_cambio_parametros_local
             ):  # recargo Parametros_FV.py si hay cambios
                 ee = "20"
                 if DEBUG >= 1:
@@ -112,10 +109,10 @@ def ADS_captura(ads_name, ads_idx):
                     )
                 Ncapturas = 0
                 try:
-                    ADS = cargar_parametros("ADS")
+                    ADS = cargar_parametros("ADS", recargar=True)
 
                     ads_actual = ADS[ads_name]
-                    t_cambio_parametros_local = os.path.getmtime(parametros_FV)
+                    t_cambio_parametros_local = obtener_mtime_user()
                 except:
                     print("Error en Parametros_FV.py")
 
