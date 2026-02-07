@@ -33,7 +33,7 @@ import click
 
 import multiprocessing
 
-from db_manager import DatabaseManager
+from helpers.gestor_bd import GestorBD
 from telegram_notifier import TelegramNotifier
 
 import colorama # colores en ventana Terminal
@@ -194,7 +194,7 @@ def Hibrido_lectura(NHIBRIDO):
     
     print(f"Iniciando Hibrido{NHIBRIDO} ..PID: {multiprocessing.current_process().pid}")
     
-    db = DatabaseManager()
+    gestor_bd = GestorBD()
 
     def on_connect(client, userdata, flags, rc):
         
@@ -587,9 +587,9 @@ def Hibrido_lectura(NHIBRIDO):
                         salida = json.dumps(Datos)
                         
                         ee = '42'
-                        # Use parameterized query via save_equipment_data method
+                        # Usar consulta parametrizada via método guardar_datos_equipo
                         #print (Fore.RED+f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = 'HIBRIDO{N_Hibrido}'")
-                        db.save_equipment_data(f'HIBRIDO{N_Hibrido}', tiempo, salida)
+                        gestor_bd.guardar_datos_equipo(f'HIBRIDO{N_Hibrido}', tiempo, salida)
                     except:
                         print(Fore.RED+f'error {ee}, Grabacion tabla RAM equipos en HIBRIDO{N_Hibrido}')
                             
@@ -645,12 +645,12 @@ def Hibrido_lectura(NHIBRIDO):
                                 # Create parameterized query with %s placeholders
                                 placeholders = ",".join(["%s"] * len(Datos_BD))
                                 Sql = f"INSERT INTO hibrido{N_Hibrido} ("+campos+") VALUES ("+placeholders+")"
-                                # Get values in the same order as keys
+                                # Obtener valores en el mismo orden que las claves
                                 valores = tuple(Datos_BD.values())
                                 #print (Fore.RESET+Sql, valores)
-                                db.cursor.execute(Sql, valores)
+                                gestor_bd.cursor.execute(Sql, valores)
                                 if DEBUG >= 1: print (COLOR[I_Hibrido+1]+'G'+N_Hibrido,end='/',flush=True)
-                                db.commit()
+                                gestor_bd.confirmar()
                                 ee = '50d'
                             
                             if n_muestras_contador[I_Hibrido] >= n_muestras_hibrido[I_Hibrido]:
@@ -658,11 +658,11 @@ def Hibrido_lectura(NHIBRIDO):
                             else:
                                 n_muestras_contador[I_Hibrido] +=1                   
                         except:
-                            db.rollback()
+                            gestor_bd.revertir()
                             print (f'Error {ee} grabacion tabla hibrido{N_Hibrido}')
                             print (tiempo, r)
                         
-                    db.commit()
+                    gestor_bd.confirmar()
                         
                 elif cmd == b'QPIGSBD': # Existe error en CRC
                     ee = '70'
@@ -1064,8 +1064,7 @@ def Hibrido_lectura(NHIBRIDO):
                         if DEBUG == 100:
                             print (Fore.RESET,time.strftime("%Y-%m-%d %H:%M:%S"),f'-- Publico PVControl/Hibrido{N_Hibrido} QPIGSBD')
             else:
-                cursor.close()
-                db.close()
+                gestor_bd.cerrar()
                 print (f'Abortando lectura Hibrido{N_Hibrido}.....') 
                 time.sleep(5)
                 sys.exit()

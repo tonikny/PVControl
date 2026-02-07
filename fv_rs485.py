@@ -34,7 +34,7 @@ import minimalmodbus
 
 # Import new helper modules
 from modbus_utils import convert_u16, convert_s16, convert_u32, apply_byte_order
-from db_manager import DatabaseManager
+from helpers.gestor_bd import GestorBD
 from mqtt_handler import MQTTHandler
 from telegram_notifier import TelegramNotifier
     
@@ -470,8 +470,8 @@ def leer_equipo(equipo):
             datos['Nfallos'] = n_fallos_captura[equipo]
             salida = json.dumps(datos)
             ee = 304
-            # Use parameterized query via db_manager to prevent SQL injection
-            db_manager.save_equipment_data(nombre_equipo, tiempo, salida)
+            # Usar consulta parametrizada via gestor_bd para prevenir inyección SQL
+            gestor_bd.guardar_datos_equipo(nombre_equipo, tiempo, salida)
             if DEBUG == 100: print(f"{nombre_equipo} - Guardado: {salida} 👌")
             if DEBUG == 0:
                 print(f"{nombre_equipo[-1]}", end="", flush=True)
@@ -527,8 +527,8 @@ def _grabar_en_bd(equipo, datos, error):
         if not error:
             datos['Nfallos'] = n_fallos_captura[equipo]
             salida = json.dumps(datos)
-            # Use parameterized query via db_manager to prevent SQL injection
-            db_manager.save_equipment_data(equipo.upper(), tiempo, salida)
+            # Usar consulta parametrizada via gestor_bd para prevenir inyección SQL
+            gestor_bd.guardar_datos_equipo(equipo.upper(), tiempo, salida)
             if DEBUG == 0: print(f'{equipo[-1]}', end='', flush=True)
         else:
             print(f'{tiempo} - Error en captura equipo {equipo.upper()}')
@@ -550,13 +550,13 @@ flag_lectura = {} # Flag de lectura para evitar conflicto con lectura desde Tele
 # Conexion BD (auto-imports from Parametros_FV.py globals)
 try:
     ee = '1'
-    # Initialize DatabaseManager with parameterized queries
-    # Parameters auto-imported from globals (servidor, usuario, clave, basedatos)
-    db_manager = DatabaseManager()
+    # Inicializar GestorBD con consultas parametrizadas
+    # Parámetros auto-importados de Parametros_FV.py (servidor, usuario, clave, basedatos)
+    gestor_bd = GestorBD()
     
-    # Keep legacy db and cursor for backward compatibility with existing code
-    db = db_manager.connection
-    cursor = db_manager.cursor
+    # Mantener db y cursor para compatibilidad con código existente
+    db = gestor_bd.conexion
+    cursor = gestor_bd.cursor
 except Exception as e:
     print(Fore.RED, f'ERROR - inicializando BD RAM: {e}')
     sys.exit()
@@ -644,8 +644,8 @@ while True:
                         ee = '10h'
                         nombre_equipo = e.upper()
                         
-                        # Use db_manager to insert equipment if missing
-                        db_manager.insert_equipment_if_missing(nombre_equipo)
+                        # Usar gestor_bd para insertar equipo si falta
+                        gestor_bd.insertar_equipo_si_falta(nombre_equipo)
                     except:
                         pass    
                    

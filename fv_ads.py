@@ -10,7 +10,8 @@ import Adafruit_ADS1x15  # Import the ADS1x15 module.
 import colorama  # colores en ventana Terminal
 from colorama import Fore, Style
 from helpers.cargar_parametros import cargar_parametros
-from helpers.db_manager import DatabaseManager
+from helpers.gestor_bd import GestorBD
+from fv_control_servicio import controlar_servicio
 
 colorama.init()
 
@@ -32,9 +33,9 @@ t_cambio_parametros = os.path.getmtime(parametros_FV)
 # Control Ejecucion Servicio
 # --------------------------------------------------
 
-servicio = "fv_ads"
-control = 'sum(1 for v in ADS.values() if v.get("usar"))'
-exec(open("/home/pi/PVControl+/fv_control_servicio.py").read())
+# Verificar si hay ADS activos - pasar booleano en lugar del dict completo
+hay_ads_activas = sum(1 for v in ads_config.values() if v.get("usar", False)) > 0
+controlar_servicio("fv_ads", hay_ads_activas)
 
 # --------------------------------------------------
 # Comprobacion argumentos en comando
@@ -70,8 +71,8 @@ def leer_adc(callable_fn, ads_name, delay=0.005):
 # --------------------------------------------------
 
 
-def ADS_captura(ads_actual, ads_idx):
-    # ads_actual = ADS[ads_name]
+def ADS_captura(ads_name, ads_idx):
+    ads_actual = ads_config[ads_name]
     Ncapturas = 0
     ee = 0
     
@@ -80,8 +81,8 @@ def ADS_captura(ads_actual, ads_idx):
     if DEBUG >= 1:
         print(Fore.BLUE + "=" * 40, "Proceso", ads_name, "=" * 40)
 
-    db_mgr = DatabaseManager()
-    existe = not db_mgr.insert_equipment_if_missing(ads_name)
+    gestor = GestorBD()
+    existe = not gestor.insertar_equipo_si_falta(ads_name)
     if existe:
         print(Fore.RED + f"Registro RAM - clave = {ads_name} ya creado")
 
@@ -89,7 +90,7 @@ def ADS_captura(ads_actual, ads_idx):
     adc = Adafruit_ADS1x15.ADS1115(address=ads_actual["direccion"], busnum=1)
 
     d_ads = {}
-    t_cambio_parametros = os.path.getmtime(parametros_FV) - 100
+    t_cambio_parametros_local = os.path.getmtime(parametros_FV) - 100
     ADS_modo = "Disparado"
 
     while True:
@@ -101,7 +102,7 @@ def ADS_captura(ads_actual, ads_idx):
             ee = "11"
             # ---------------- Reload config ----------------
             if (
-                os.path.getmtime(parametros_FV) != t_cambio_parametros
+                os.path.getmtime(parametros_FV) != t_cambio_parametros_local
             ):  # recargo Parametros_FV.py si hay cambios
                 ee = "20"
                 if DEBUG >= 1:
@@ -114,7 +115,7 @@ def ADS_captura(ads_actual, ads_idx):
                     ADS = cargar_parametros("ADS")
 
                     ads_actual = ADS[ads_name]
-                    t_cambio_parametros = os.path.getmtime(parametros_FV)
+                    t_cambio_parametros_local = os.path.getmtime(parametros_FV)
                 except:
                     print("Error en Parametros_FV.py")
 
@@ -263,7 +264,7 @@ def ADS_captura(ads_actual, ads_idx):
             ee = "60"
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
 
-            db_mgr.save_equipment_data_dict(ads_name, tiempo, d_ads)
+            gestor.guardar_datos_equipo_dict(ads_name, tiempo, d_ads)
 
             t2 = (time.perf_counter() - t0) * 1000
             tp2 = (time.process_time() - tp0) * 1000
