@@ -13,15 +13,14 @@ Se ha rediseñado el módulo para centralizar la lógica de rutas y permitir rec
 
 ### Ejemplo de uso en servicios:
 ```python
-from helpers.cargar_parametros import cargar_parametros, han_cambiado_parametros
+from helpers.cargar_parametros import cargar_parametros
 
 # En el bucle principal
-primera_vez = True
 while True:
-    if han_cambiado_parametros() or primera_vez:
-        primera_vez = False
-        config = cargar_parametros("MI_SECCION")
-        # lógica de reinicialización aquí
+    config = cargar_parametros("ADS", solo_si_cambio=True)
+    if config:
+        # lógica de reinicialización aquí, se ejecuta en la 1ª iteración y tras cambios
+        ads_actual = config["ADS1"]
     ...
 ```
 

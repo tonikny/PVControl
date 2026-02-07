@@ -8,7 +8,7 @@ import Adafruit_ADS1x15  # Import the ADS1x15 module.
 
 import colorama  # colores en ventana Terminal
 from colorama import Fore, Style
-from helpers.cargar_parametros import cargar_parametros, han_cambiado_parametros
+from helpers.cargar_parametros import cargar_parametros
 from helpers.gestor_bd import GestorBD
 from fv_control_servicio import controlar_servicio
 
@@ -87,7 +87,6 @@ def ADS_captura(ads_name, ads_idx):
 
     d_ads = {}
     ADS_modo = "Disparado"
-    primera_ejecucion = True
 
     while True:
         try:
@@ -97,7 +96,8 @@ def ADS_captura(ads_name, ads_idx):
             ERR_ADS = [0, 0, 0, 0]  # Error bruto capturas ADS
             ee = "11"
             # ---------------- Reload config ----------------
-            if han_cambiado_parametros() or primera_ejecucion:  # recargo Parametros_FV.py si hay cambios o es la primera vez
+            ads_config_v = cargar_parametros("ADS", solo_si_cambio=True)
+            if ads_config_v:  # recargo Parametros_FV.py si hay cambios (o es la primera vez)
                 ee = "20"
                 if DEBUG >= 1:
                     print(
@@ -105,13 +105,7 @@ def ADS_captura(ads_name, ads_idx):
                         f" -- Leyendo Parametros_FV.py para {ads_name} - Capturas={Ncapturas}",
                     )
                 Ncapturas = 0
-                try:
-                    ads_config_v = cargar_parametros("ADS")
-                    ads_actual = ads_config_v[ads_name]
-                except:
-                    print("Error en Parametros_FV.py")
-
-                primera_ejecucion = False
+                ads_actual = ads_config_v[ads_name]
                 ee = "20a"
 
                 ADS_modo = "Disparado"  # valor por defecto

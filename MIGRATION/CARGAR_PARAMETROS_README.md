@@ -31,21 +31,25 @@ from helpers.cargar_parametros import cargar_parametros
 servidor = cargar_parametros("servidor")
 ```
 
-### Detección de cambios para lógica adicional
-Si necesitas ejecutar código especial cuando los parámetros cambian (como reiniciar un hardware):
+### Uso avanzado en bucles (Auto-gestión de cambios)
+Si necesitas ejecutar código especial solo cuando los parámetros cambian (como reiniciar un hardware), puedes usar `solo_si_cambio=True`. Esto devuelve los parámetros solo si han cambiado desde la última llamada en el proceso actual.
 
 ```python
-from helpers.cargar_parametros import cargar_parametros, han_cambiado_parametros
+from helpers.cargar_parametros import cargar_parametros
 
-primera_vez = True
 while True:
-    if han_cambiado_parametros() or primera_vez:
-        primera_vez = False
-        config = cargar_parametros("ADS")
+    config = cargar_parametros("ADS", solo_si_cambio=True)
+    if config:
+        # Esto solo se ejecutará la primera vez y cada vez que el archivo cambie
+        print("Configuración cargada o actualizada")
+        ads_actual = config["ADS1"]
         # ... lógica de reinicialización ...
+    
+    # ... resto del bucle ...
 ```
 
 ## Prioridad de Carga
 1. Se cargan los valores de `Parametros_FV_DIST.py`.
 2. Si existe `Parametros_FV.py`, se cargan sus valores y estos **sobreescriben** a los anteriores.
 3. Se filtran las variables internas de Python (aquellas que empiezan por `__`).
+4. **Gestión Multiproceso**: Cada proceso (PID) mantiene su propio seguimiento de cambios, asegurando que todos los procesos detecten las actualizaciones de forma independiente.
