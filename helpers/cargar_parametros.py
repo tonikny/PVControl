@@ -3,117 +3,122 @@ from pathlib import Path
 import os
 
 # Rutas por defecto en la Raspberry Pi
-RUTA_DIST = '/home/pi/PVControl+/Parametros_FV_DIST.py'
-RUTA_USER = '/home/pi/PVControl+/Parametros_FV.py'
+BASE_PATH = '/home/pi/PVControl+'
+RUTA_DIST = os.path.join(BASE_PATH, 'Parametros_FV_DIST.py')
+RUTA_USER = os.path.join(BASE_PATH, 'Parametros_FV.py')
 
-# Caché global: guarda el módulo y el mtime de los archivos
-_cache_modulos = {}
+# Diccionario para almacenar los parámetros cargados (caché en memoria)
+_parametros_cache = {}
+# mtime por proceso (PID) para asegurar que cada proceso detecte el cambio de forma independiente
+_mtime_cache_por_pid = {}
+# Seguimiento de si el proceso ha obtenido los parámetros con el flag solo_si_cambio
+_visto_con_cambio_por_pid = set()
 
-def cargar_parametros(*params):
+def cargar_parametros(*params, recargar=False, solo_si_cambio=False):
     """
-    Carga DIST primero, luego USER (sobreescribe) y devuelve las variables solicitadas.
+    Carga los parámetros desde los archivos DIST y USER.
+    Si el archivo USER ha cambiado en el disco, se recarga automáticamente.
     
-    Implementa caché basado en mtime (modification time) para evitar recargas innecesarias.
-    Si los archivos no han cambiado desde la última carga, se devuelven los valores
-    del caché en lugar de recargar los archivos.
-
     Args:
-        *params: Las variables que se solicitan.
-
+        *params: Nombres de los parámetros a obtener.
+        recargar: Si es True, fuerza la recarga desde los archivos ignorando el mtime.
+        solo_si_cambio: Si es True, solo devuelve valores si se ha producido una recarga
+                        O si es la primera vez que se solicita con este flag en el proceso actual.
+                        En caso contrario devuelve None.
+        
     Returns:
-        El valor de la variable (si es una) o una tupla con los valores. 
-        Si se solicita una variable que no existe, devuelve None.
+        Si solo_si_cambio=True y no hay cambios/no es la primera vez: None.
+        Si se pide un solo parámetro: su valor.
+        Si se piden varios: una tupla con los valores.
+        Si no se piden parámetros: el diccionario completo.
     """
-    global _cache_modulos
+    pid = os.getpid()
+    ha_recaragado = False
     
-    # Obtener mtime de los archivos
-    mtime_dist = _obtener_mtime(RUTA_DIST)
-    mtime_user = _obtener_mtime(RUTA_USER)
-    
-    # Clave de caché basada en los mtime
-    clave_cache = (mtime_dist, mtime_user)
-    
-    # Verificar si el caché está actualizado
-    if clave_cache in _cache_modulos:
-        vars_combinadas = _cache_modulos[clave_cache]
-    else:
-        # Cargar DIST y convertir a diccionario de variables
-        dist_vars = vars(_cargar_archivo(RUTA_DIST))
+    # Comprobar si hay que recargar
+    if not _parametros_cache or han_cambiado_parametros() or recargar:
+        recargar_parametros()
+        ha_recaragado = True
+        # Si hay recarga, reseteamos el visto para todos los procesos que heredaron
+        # (aunque en la práctica esto solo afectará al proceso actual ya que el set no es compartido)
+        if ha_recaragado and pid in _visto_con_cambio_por_pid:
+            _visto_con_cambio_por_pid.remove(pid)
         
-        # Cargar USER si existe (opcional)
-        user_vars = {}
-        try:
-            user_vars = vars(_cargar_archivo(RUTA_USER))
-        except (FileNotFoundError, ImportError):
-            print(f"Archivo usuario {RUTA_USER} no encontrado, usando solo defaults")
+    if solo_si_cambio:
+        if ha_recaragado or pid not in _visto_con_cambio_por_pid:
+            _visto_con_cambio_por_pid.add(pid)
+        else:
+            return None
+
+    if not params:
+        return _parametros_cache
         
-        # Combinar variables: USER prevalece sobre DIST
-        # Filtrar variables privadas (que empiezan con _)
-        vars_combinadas = {
-            k: v for k, v in dist_vars.items() 
-            if not k.startswith('_')
-        }
-        vars_combinadas.update({
-            k: v for k, v in user_vars.items() 
-            if not k.startswith('_')
-        })
-        
-        # Guardar en caché
-        _cache_modulos[clave_cache] = vars_combinadas
+    resultado = [_parametros_cache.get(p) for p in params]
     
-    # Crear el diccionario con los parámetros solicitados
-    # PRIORIDAD: El valor de USER (user_vars) prevalece sobre DIST (dist_vars)
-    resultado = {param: vars_combinadas.get(param, None) for param in params}
-    
-    # Si se pide solo un parámetro, devolver el valor directamente
     if len(params) == 1:
-        return list(resultado.values())[0]
-        
-    # Si se piden varios, devolver la tupla
-    return tuple(resultado.values())
+        return resultado[0]
+    return tuple(resultado)
 
-def _obtener_mtime(ruta):
+def han_cambiado_parametros():
     """
-    Obtiene el mtime (modification time) de un archivo.
+    Comprueba si el archivo de parámetros del usuario ha cambiado desde la última carga
+    para el proceso actual.
+    """
+    pid = os.getpid()
+    return obtener_mtime_user() != _mtime_cache_por_pid.get(pid, -1)
+
+def recargar_parametros():
+    """
+    Lee los archivos de parámetros y devuelve un diccionario con la combinación de ambos.
+    También puede ser llamada externamente para forzar la actualización.
+    Actualiza el mtime_cache para el proceso actual.
+    """
+    global _parametros_cache
     
-    Args:
-        ruta: Ruta del archivo
-        
-    Returns:
-        El mtime del archivo, o 0 si el archivo no existe
+    # Cargar DIST (valores por defecto)
+    dist_vars = _cargar_archivo_py(RUTA_DIST)
+    
+    # Cargar USER si existe (valores de usuario que sobreescriben DIST)
+    user_vars = {}
+    if os.path.exists(RUTA_USER):
+        user_vars = _cargar_archivo_py(RUTA_USER)
+    
+    # Combinar (USER prevalece sobre DIST)
+    # Filtramos para no incluir variables internas de Python
+    combinados = {k: v for k, v in dist_vars.items() if not k.startswith('__')}
+    combinados.update({k: v for k, v in user_vars.items() if not k.startswith('__')})
+    
+    _parametros_cache = combinados
+    
+    # Sincronizar mtime para este proceso
+    pid = os.getpid()
+    _mtime_cache_por_pid[pid] = obtener_mtime_user()
+    
+    return _parametros_cache
+
+def _cargar_archivo_py(ruta):
+    """Carga un archivo Python dinámicamente y devuelve sus variables."""
+    try:
+        spec = importlib.util.spec_from_file_location(Path(ruta).stem, ruta)
+        if spec is None or spec.loader is None:
+            return {}
+        modulo = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modulo)
+        return vars(modulo)
+    except Exception as e:
+        print(f"Error cargando archivo de parámetros {ruta}: {e}")
+        return {}
+
+def obtener_mtime_user():
+    """
+    Obtiene la fecha de modificación del archivo de parámetros de usuario.
+    Permite a los scripts externos decidir cuándo recargar.
     """
     try:
-        return os.path.getmtime(ruta)
-    except (FileNotFoundError, OSError):
+        return os.path.getmtime(RUTA_USER)
+    except OSError:
         return 0
-    
-def _cargar_archivo(ruta):
-    """
-    Carga un archivo .py dinámicamente como un módulo.
-    
-    Args:
-        ruta: Ruta del archivo .py a cargar
-        
-    Returns:
-        El módulo cargado
-        
-    Raises:
-        FileNotFoundError: Si el archivo no existe
-    """
-    if not Path(ruta).exists():
-        raise FileNotFoundError(f"No se encuentra el archivo de parámetros: {ruta}")
-        
-    spec = importlib.util.spec_from_file_location(Path(ruta).stem, str(ruta))
-    modulo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(modulo)
-    return modulo
 
-def limpiar_cache():
-    """
-    Limpia el caché de módulos cargados.
-    
-    Útil para forzar la recarga de parámetros incluso si los archivos
-    no han cambiado según su mtime.
-    """
-    global _cache_modulos
-    _cache_modulos.clear()
+def obtener_ruta_user():
+    """Devuelve la ruta al archivo de parámetros del usuario."""
+    return RUTA_USER

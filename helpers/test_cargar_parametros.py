@@ -8,6 +8,7 @@ import sys
 import os
 import tempfile
 import shutil
+import time
 from pathlib import Path
 
 # Agregar el directorio raíz al path para importar el módulo
@@ -165,7 +166,8 @@ def test_cargar_parametros():
         print(f"[INFO] Archivo USER eliminado: {user_path}")
         
         # Cargar variable que estaba en USER (ahora debe tomar valor de DIST)
-        var_sobre = cargar_parametros.cargar_parametros('variable_sobreescrita')
+        # Usamos recargar=True porque hemos eliminado el archivo físicamente
+        var_sobre = cargar_parametros.cargar_parametros('variable_sobreescrita', recargar=True)
         print(f"Resultado: variable_sobreescrita = '{var_sobre}'")
         assert var_sobre == "valor_original_dist", f"Error: debería usar valor de DIST"
         
@@ -174,6 +176,39 @@ def test_cargar_parametros():
         assert usuario == "rpi_dist", f"Error: debería usar valor de DIST"
         print("✓ PASADO")
         
+        # --- TEST 10: solo_si_cambio ---
+        print("\n" + "-" * 70)
+        print("TEST 10: Uso de solo_si_cambio=True")
+        print("-" * 70)
+        
+        # 1. Primera llamada con solo_si_cambio=True (debe devolver valores)
+        # Note: we already called it before, but since we deleted the USER file 
+        # and we are calling it now, it should reload.
+        res = cargar_parametros.cargar_parametros('servidor', solo_si_cambio=True)
+        print(f"Primera llamada: {res}")
+        assert res == "localhost", "Debería devolver valor en la primera llamada de recarga"
+        
+        # 2. Segunda llamada sin cambios (debe devolver None)
+        res = cargar_parametros.cargar_parametros('servidor', solo_si_cambio=True)
+        print(f"Segunda llamada (sin cambios): {res}")
+        assert res is None, "Debería devolver None porque no ha habido cambios"
+        
+        # 3. Forzar recarga (debe devolver valores)
+        res = cargar_parametros.cargar_parametros('servidor', recargar=True, solo_si_cambio=True)
+        print(f"Tercera llamada (recargar=True): {res}")
+        assert res == "localhost", "Debería devolver valor porque se forzó recarga"
+        
+        # 4. Crear archivo USER y llamar (debe devolver valores)
+        print("Creando Parametros_FV.py...")
+        time.sleep(0.1) 
+        with open(user_path, 'w') as f:
+            f.write("servidor = '192.168.1.100'\n")
+        
+        res = cargar_parametros.cargar_parametros('servidor', solo_si_cambio=True)
+        print(f"Llamada tras cambio en disco: {res}")
+        assert res == "192.168.1.100", "Debería detectar el cambio y devolver el nuevo valor"
+        print("✓ PASADO")
+
         print("\n" + "=" * 70)
         print("✓✓✓ TODOS LOS TESTS PASARON CORRECTAMENTE ✓✓✓")
         print("=" * 70)

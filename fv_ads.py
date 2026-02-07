@@ -1,6 +1,5 @@
 import time
 import sys
-import os
 import multiprocessing
 
 # from smbus import SMBus
@@ -24,10 +23,7 @@ print(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_ads.py")
 # Load Parametros_FV.py
 # --------------------------------------------------
 
-parametros_FV = "/home/pi/PVControl+/Parametros_FV.py"
-
 ads_config = cargar_parametros("ADS")
-t_cambio_parametros = os.path.getmtime(parametros_FV)
 
 # --------------------------------------------------
 # Control Ejecucion Servicio
@@ -90,7 +86,6 @@ def ADS_captura(ads_name, ads_idx):
     adc = Adafruit_ADS1x15.ADS1115(address=ads_actual["direccion"], busnum=1)
 
     d_ads = {}
-    t_cambio_parametros_local = os.path.getmtime(parametros_FV) - 100
     ADS_modo = "Disparado"
 
     while True:
@@ -101,9 +96,8 @@ def ADS_captura(ads_name, ads_idx):
             ERR_ADS = [0, 0, 0, 0]  # Error bruto capturas ADS
             ee = "11"
             # ---------------- Reload config ----------------
-            if (
-                os.path.getmtime(parametros_FV) != t_cambio_parametros_local
-            ):  # recargo Parametros_FV.py si hay cambios
+            ads_config_v = cargar_parametros("ADS", solo_si_cambio=True)
+            if ads_config_v:  # recargo Parametros_FV.py si hay cambios (o es la primera vez)
                 ee = "20"
                 if DEBUG >= 1:
                     print(
@@ -111,14 +105,7 @@ def ADS_captura(ads_name, ads_idx):
                         f" -- Leyendo Parametros_FV.py para {ads_name} - Capturas={Ncapturas}",
                     )
                 Ncapturas = 0
-                try:
-                    ADS = cargar_parametros("ADS")
-
-                    ads_actual = ADS[ads_name]
-                    t_cambio_parametros_local = os.path.getmtime(parametros_FV)
-                except:
-                    print("Error en Parametros_FV.py")
-
+                ads_actual = ads_config_v[ads_name]
                 ee = "20a"
 
                 ADS_modo = "Disparado"  # valor por defecto
