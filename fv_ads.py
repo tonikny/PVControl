@@ -8,7 +8,7 @@ import Adafruit_ADS1x15  # Import the ADS1x15 module.
 
 import colorama  # colores en ventana Terminal
 from colorama import Fore, Style
-from helpers.cargar_parametros import cargar_parametros
+from helpers.cargar_parametros import cargar_parametros, recargar_parametros
 from helpers.gestor_bd import GestorBD
 from fv_control_servicio import controlar_servicio
 
@@ -62,12 +62,78 @@ def leer_adc(callable_fn, ads_name, delay=0.005):
         time.sleep(delay)
 
 
-# --------------------------------------------------
-# Captura ADS
-# --------------------------------------------------
+def preparar_lista_ads():
+    """Prepara la lista de ADS activos según los argumentos proporcionados."""
+    if "-ADS1" in sys.argv:  # fuerzo solo ADS1
+        for name, cfg in ads_config.items():
+            cfg["usar"] = name == "ADS1"
+    elif "-ADS4" in sys.argv:  # fuerzo solo ADS4
+        for name, cfg in ads_config.items():
+            cfg["usar"] = name == "ADS4"
+    
+    ADS_activos = [name for name, cfg in ads_config.items() if cfg.get("usar")]
+    
+    print(Fore.RESET + "=" * 50)
+    print(Fore.BLUE + "ADS_activos=")
+    for name in ADS_activos:
+        cfg = ads_config[name]
+        print(
+            Fore.RED
+            + f" -{name} "
+            + Fore.BLUE
+            + f"direc={cfg['direccion']} vars={cfg['vars']} modo={cfg['modo']}"
+        )
+    print(Fore.RESET + "=" * 50)
+    
+    return ADS_activos
+
+
+def iniciar_procesos(ADS_activos):
+    """Inicia los procesos de captura para cada ADS activo."""
+    procesos = []
+    for idx, name in enumerate(ADS_activos):
+        proceso = multiprocessing.Process(
+            target=ADS_captura, args=(name, idx), name=f"p_{name}"
+        )
+        proceso.start()
+        procesos.append(proceso)
+    
+    print("Procesos activos=", procesos)
+    return procesos
+
+
+def vigilar_procesos(Procesos, ADS_activos):
+    """Vigila los procesos activos y reinicia los que han terminado."""
+    while True:
+        try:
+            for p in Procesos:
+                if not p.is_alive():
+                    print(f"Proceso {p} parado {p.name}")
+                    time.sleep(3)
+                    ads_name = p.name[2:]
+                    idx = ADS_activos.index(ads_name)
+                    nuevo_proceso = multiprocessing.Process(
+                        target=ADS_captura, args=(ads_name, idx), name=f"p_{ads_name}"
+                    )
+                    nuevo_proceso.start()
+                    Procesos = multiprocessing.active_children()
+
+            time.sleep(1)
+
+        except KeyboardInterrupt:
+            time.sleep(1)
+            print()
+            print(Fore.RED + "=" * 50)
+            print("Finalizando fv_ads.py...")
+            for p in Procesos:
+                print(f"     ....Terminando hilo..{p}")
+                p.terminate()
+                time.sleep(1)
+            sys.exit()
 
 
 def ADS_captura(ads_name, ads_idx):
+    """Captura datos del ADS especificado."""
     ads_actual = ads_config[ads_name]
     Ncapturas = 0
     ee = 0
@@ -96,7 +162,7 @@ def ADS_captura(ads_name, ads_idx):
             ERR_ADS = [0, 0, 0, 0]  # Error bruto capturas ADS
             ee = "11"
             # ---------------- Reload config ----------------
-            ads_config_v = cargar_parametros("ADS", solo_si_cambio=True)
+            ads_config_v = recargar_parametros()
             if ads_config_v:  # recargo Parametros_FV.py si hay cambios (o es la primera vez)
                 ee = "20"
                 if DEBUG >= 1:
@@ -292,65 +358,17 @@ def ADS_captura(ads_name, ads_idx):
             sys.exit(1)
 
 
+def main():
+    """Función principal que ejecuta el flujo del programa."""
+    time.sleep(5)
+    
+    ADS_activos = preparar_lista_ads()
+    Procesos = iniciar_procesos(ADS_activos)
+    vigilar_procesos(Procesos, ADS_activos)
+
+
 # --------------------------------------------------
 # Main
 # --------------------------------------------------
 if __name__ == "__main__":
-    if "-ADS1" in sys.argv:  # fuerzo solo ADS1
-        for name, cfg in ads_config.items():
-            cfg["usar"] = name == "ADS1"
-    elif "-ADS4" in sys.argv:  # fuerzo solo ADS4
-        for name, cfg in ads_config.items():
-            cfg["usar"] = name == "ADS4"
-
-    ADS_activos = [name for name, cfg in ads_config.items() if cfg.get("usar")]
-
-    print(Fore.RESET + "=" * 50)
-    print(Fore.BLUE + "ADS_activos=")
-    for name in ADS_activos:
-        cfg = ads_config[name]
-        print(
-            Fore.RED
-            + f" -{name} "
-            + Fore.BLUE
-            + f"direc={cfg['direccion']} vars={cfg['vars']} modo={cfg['modo']}"
-        )
-    print(Fore.RESET + "=" * 50)
-
-    time.sleep(5)
-
-    # Arrancando procesos
-    for idx, name in enumerate(ADS_activos):
-        multiprocessing.Process(
-            target=ADS_captura, args=(name, idx), name=f"p_{name}"
-        ).start()
-
-    Procesos = multiprocessing.active_children()
-    print("Procesos activos=", Procesos)
-
-    # Bucle
-    while True:
-        try:
-            for p in Procesos:
-                if not p.is_alive():
-                    print(f"Proceso {p} parado {p.name}")
-                    time.sleep(3)
-                    ads_name = p.name[2:]
-                    idx = ADS_activos.index(ads_name)
-                    multiprocessing.Process(
-                        target=ADS_captura, args=(ads_name, idx), name=f"p_{ads_name}"
-                    ).start()
-                    Procesos = multiprocessing.active_children()
-
-            time.sleep(1)
-
-        except KeyboardInterrupt:
-            time.sleep(1)
-            print()
-            print(Fore.RED + "=" * 50)
-            print("Finalizando fv_ads.py...")
-            for p in Procesos:
-                print(f"     ....Terminando hilo..{p}")
-                p.terminate()
-                time.sleep(1)
-            sys.exit()
+    main()
