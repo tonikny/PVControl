@@ -6,43 +6,43 @@ El módulo `cargar_parametros.py` gestiona la carga de configuración de PVContr
 ## Funciones Principales
 
 ### `cargar_parametros(*params, recargar=False)`
-Obtiene uno o varios parámetros.
+Obtiene uno o varios parámetros. 
+- **Auto-recarga**: Comprueba automáticamente si `Parametros_FV.py` ha cambiado en el disco y recarga si es necesario.
 - `params`: Nombres de las variables deseadas.
-- `recargar`: Si es `True`, fuerza la relectura de los archivos desde el disco.
+- `recargar`: Si es `True`, fuerza la relectura de los archivos desde el disco ignorando si han cambiado o no.
+
+### `han_cambiado_parametros()`
+Devuelve `True` si el archivo de parámetros del usuario ha sido modificado desde la última vez que se cargaron. Útil para disparar lógica adicional tras una recarga.
 
 ### `recargar_parametros()`
-Fuerza la recarga de todos los parámetros en el caché interno y devuelve el diccionario completo.
+Fuerza la recarga de todos los parámetros en el caché interno, actualiza el mtime de referencia y devuelve el diccionario completo.
 
 ### `obtener_mtime_user()`
-Devuelve el tiempo de última modificación de `Parametros_FV.py`. Útil para detectar cambios externos.
-
-### `obtener_ruta_user()`
-Devuelve la ruta absoluta al archivo de parámetros de usuario.
+Devuelve el tiempo de última modificación de `Parametros_FV.py` en el disco.
 
 ## Ejemplos de Uso
 
-### Carga básica
+### Carga básica (con auto-recarga automática)
 ```python
 from helpers.cargar_parametros import cargar_parametros
 
-# Un solo valor
+# En cada llamada, cargar_parametros comprueba si hay cambios en el archivo
+# y se actualiza solo si es necesario.
 servidor = cargar_parametros("servidor")
-
-# Múltiples valores
-usuario, clave = cargar_parametros("usuario", "clave")
 ```
 
-### Detección de cambios y recarga
+### Detección de cambios para lógica adicional
+Si necesitas ejecutar código especial cuando los parámetros cambian (como reiniciar un hardware):
+
 ```python
-from helpers.cargar_parametros import cargar_parametros, obtener_mtime_user
+from helpers.cargar_parametros import cargar_parametros, han_cambiado_parametros
 
-mtime_anterior = obtener_mtime_user()
-
-# ... más tarde en un bucle ...
-if obtener_mtime_user() != mtime_anterior:
-    # Algo ha cambiado, recargamos
-    ADS = cargar_parametros("ADS", recargar=True)
-    mtime_anterior = obtener_mtime_user()
+primera_vez = True
+while True:
+    if han_cambiado_parametros() or primera_vez:
+        primera_vez = False
+        config = cargar_parametros("ADS")
+        # ... lógica de reinicialización ...
 ```
 
 ## Prioridad de Carga

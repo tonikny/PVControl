@@ -8,23 +8,20 @@ Se ha rediseñado el módulo para centralizar la lógica de rutas y permitir rec
 
 ### Cambios principales:
 - **Rutas centralizadas**: El módulo conoce la ubicación de `Parametros_FV.py` y `Parametros_FV_DIST.py`.
-- **Caché en memoria**: Los parámetros se cargan una vez y se mantienen en memoria dentro del proceso.
-- **Recarga explícita**: Para actualizar los parámetros (por ejemplo, tras un cambio en el archivo), se debe llamar a `cargar_parametros(..., recargar=True)`.
-- **Verificación de cambios**: Se proporciona `obtener_mtime_user()` para que los procesos de larga duración puedan comprobar si el archivo de parámetros ha sido modificado en el disco.
+- **Caché en memoria con Auto-recarga**: Los parámetros se cargan en memoria y se recargan automáticamente si el archivo en disco cambia.
+- **Verificación de cambios simplificada**: Se proporciona `han_cambiado_parametros()` para que los procesos puedan detectar cambios y ejecutar lógica adicional.
 
 ### Ejemplo de uso en servicios:
 ```python
-from helpers.cargar_parametros import cargar_parametros, obtener_mtime_user
-
-# Carga inicial
-config = cargar_parametros("MI_SECCION")
-mtime_local = obtener_mtime_user()
+from helpers.cargar_parametros import cargar_parametros, han_cambiado_parametros
 
 # En el bucle principal
+primera_vez = True
 while True:
-    if obtener_mtime_user() != mtime_local:
-        config = cargar_parametros("MI_SECCION", recargar=True)
-        mtime_local = obtener_mtime_user()
+    if han_cambiado_parametros() or primera_vez:
+        primera_vez = False
+        config = cargar_parametros("MI_SECCION")
+        # lógica de reinicialización aquí
     ...
 ```
 

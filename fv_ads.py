@@ -1,6 +1,5 @@
 import time
 import sys
-import os
 import multiprocessing
 
 # from smbus import SMBus
@@ -9,7 +8,7 @@ import Adafruit_ADS1x15  # Import the ADS1x15 module.
 
 import colorama  # colores en ventana Terminal
 from colorama import Fore, Style
-from helpers.cargar_parametros import cargar_parametros, obtener_mtime_user
+from helpers.cargar_parametros import cargar_parametros, han_cambiado_parametros
 from helpers.gestor_bd import GestorBD
 from fv_control_servicio import controlar_servicio
 
@@ -87,8 +86,8 @@ def ADS_captura(ads_name, ads_idx):
     adc = Adafruit_ADS1x15.ADS1115(address=ads_actual["direccion"], busnum=1)
 
     d_ads = {}
-    t_cambio_parametros_local = obtener_mtime_user() - 100
     ADS_modo = "Disparado"
+    primera_ejecucion = True
 
     while True:
         try:
@@ -98,9 +97,7 @@ def ADS_captura(ads_name, ads_idx):
             ERR_ADS = [0, 0, 0, 0]  # Error bruto capturas ADS
             ee = "11"
             # ---------------- Reload config ----------------
-            if (
-                obtener_mtime_user() != t_cambio_parametros_local
-            ):  # recargo Parametros_FV.py si hay cambios
+            if han_cambiado_parametros() or primera_ejecucion:  # recargo Parametros_FV.py si hay cambios o es la primera vez
                 ee = "20"
                 if DEBUG >= 1:
                     print(
@@ -109,13 +106,12 @@ def ADS_captura(ads_name, ads_idx):
                     )
                 Ncapturas = 0
                 try:
-                    ADS = cargar_parametros("ADS", recargar=True)
-
-                    ads_actual = ADS[ads_name]
-                    t_cambio_parametros_local = obtener_mtime_user()
+                    ads_config_v = cargar_parametros("ADS")
+                    ads_actual = ads_config_v[ads_name]
                 except:
                     print("Error en Parametros_FV.py")
 
+                primera_ejecucion = False
                 ee = "20a"
 
                 ADS_modo = "Disparado"  # valor por defecto

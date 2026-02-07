@@ -22,16 +22,15 @@
 - ✅ Consultas parametrizadas para seguridad contra inyección SQL.
 
 ### 3. Rediseño de `helpers/cargar_parametros.py`
-- ✅ Eliminación de caché automática por mtime para evitar efectos colaterales.
-- ✅ Nueva lógica de recarga explícita: `cargar_parametros(..., recargar=True)`.
-- ✅ Función `recargar_parametros()` disponible para forzar la actualización del caché en memoria.
+- ✅ **Auto-recarga inteligente**: `cargar_parametros()` comprueba automáticamente el `mtime` del archivo de usuario y recarga si es necesario.
+- ✅ Nueva función `han_cambiado_parametros()` para facilitar la detección de cambios desde scripts de larga duración.
+- ✅ Función `recargar_parametros()` disponible para forzar la actualización del caché y sincronizar el `mtime`.
 - ✅ Centralización de rutas: Las rutas a `Parametros_FV.py` y `Parametros_FV_DIST.py` están ahora definidas dentro del módulo.
-- ✅ Función `obtener_mtime_user()` para que los scripts externos verifiquen si el archivo ha cambiado.
 
 ### 4. Actualización de `fv_ads.py`
 - ✅ Pasa booleano a `controlar_servicio()` basándose en la configuración cargada.
-- ✅ Usa `obtener_mtime_user()` de `helpers.cargar_parametros` para detectar cambios en el archivo de configuración.
-- ✅ Llama a `cargar_parametros(..., recargar=True)` solo cuando detecta un cambio.
+- ✅ Usa `han_cambiado_parametros()` de `helpers.cargar_parametros` para detectar cambios de forma sencilla.
+- ✅ Confía en la auto-recarga de `cargar_parametros()`.
 - ✅ Usa `GestorBD` para todas las operaciones de base de datos.
 - ✅ Sin código `exec()` o rutas hardcoded al archivo de parámetros.
 

@@ -9,24 +9,24 @@ RUTA_USER = os.path.join(BASE_PATH, 'Parametros_FV.py')
 
 # Diccionario para almacenar los parámetros cargados (caché en memoria)
 _parametros_cache = {}
+_mtime_cache = 0
 
 def cargar_parametros(*params, recargar=False):
     """
     Carga los parámetros desde los archivos DIST y USER.
+    Si el archivo USER ha cambiado en el disco, se recarga automáticamente.
     
     Args:
         *params: Nombres de los parámetros a obtener.
-        recargar: Si es True, fuerza la recarga desde los archivos.
+        recargar: Si es True, fuerza la recarga desde los archivos ignorando el mtime.
         
     Returns:
         Si se pide un solo parámetro, su valor.
         Si se piden varios, una tupla con los valores.
         Si no se piden parámetros, el diccionario completo.
     """
-    global _parametros_cache
-    
-    if not _parametros_cache or recargar:
-        _parametros_cache = recargar_parametros()
+    if not _parametros_cache or han_cambiado_parametros() or recargar:
+        recargar_parametros()
         
     if not params:
         return _parametros_cache
@@ -37,12 +37,19 @@ def cargar_parametros(*params, recargar=False):
         return resultado[0]
     return tuple(resultado)
 
+def han_cambiado_parametros():
+    """
+    Comprueba si el archivo de parámetros del usuario ha cambiado desde la última carga.
+    """
+    return obtener_mtime_user() != _mtime_cache
+
 def recargar_parametros():
     """
     Lee los archivos de parámetros y devuelve un diccionario con la combinación de ambos.
     También puede ser llamada externamente para forzar la actualización.
+    Actualiza el mtime_cache para sincronizar con el disco.
     """
-    global _parametros_cache
+    global _parametros_cache, _mtime_cache
     
     # Cargar DIST (valores por defecto)
     dist_vars = _cargar_archivo_py(RUTA_DIST)
@@ -58,6 +65,7 @@ def recargar_parametros():
     combinados.update({k: v for k, v in user_vars.items() if not k.startswith('__')})
     
     _parametros_cache = combinados
+    _mtime_cache = obtener_mtime_user()
     return _parametros_cache
 
 def _cargar_archivo_py(ruta):
