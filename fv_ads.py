@@ -10,28 +10,9 @@ import colorama  # colores en ventana Terminal
 from colorama import Fore, Style
 from helpers.cargar_parametros import cargar_parametros, recargar_parametros
 from helpers.gestor_bd import GestorBD
-from fv_control_servicio import controlar_servicio
+from helpers.fv_control_servicio import controlar_servicio
 
-colorama.init()
-
-print(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_ads.py")
-
-##### Parametros_FV.py (lo que se indique en el archivo Parametros.py tiene prevalencia sobre lo aqui indicado) ################
 ###
-
-# --------------------------------------------------
-# Load Parametros_FV.py
-# --------------------------------------------------
-
-ads_config = cargar_parametros("ADS")
-
-# --------------------------------------------------
-# Control Ejecucion Servicio
-# --------------------------------------------------
-
-# Verificar si hay ADS activos - pasar booleano en lugar del dict completo
-hay_ads_activas = sum(1 for v in ads_config.values() if v.get("usar", False)) > 0
-controlar_servicio("fv_ads", hay_ads_activas)
 
 # --------------------------------------------------
 # Comprobacion argumentos en comando
@@ -61,102 +42,29 @@ def leer_adc(callable_fn, ads_nombre, delay=0.005):
         print(f"Error lectura {ads_nombre}")
         time.sleep(delay)
 
-
-def preparar_lista_ads():
-    """Prepara la lista de ADS activos según los argumentos proporcionados."""
-    if "-ADS1" in sys.argv:  # fuerzo solo ADS1
-        for name, cfg in ads_config.items():
-            cfg["usar"] = name == "ADS1"
-    elif "-ADS4" in sys.argv:  # fuerzo solo ADS4
-        for name, cfg in ads_config.items():
-            cfg["usar"] = name == "ADS4"
-    
-    ADS_activos = [name for name, cfg in ads_config.items() if cfg.get("usar")]
-    
-    print(Fore.RESET + "=" * 50)
-    print(Fore.BLUE + "ADS_activos=")
-    for name in ADS_activos:
-        cfg = ads_config[name]
-        print(
-            Fore.RED
-            + f" -{name} "
-            + Fore.BLUE
-            + f"direc={cfg['direccion']} vars={cfg['vars']} modo={cfg['modo']}"
-        )
-    print(Fore.RESET + "=" * 50)
-    
-    return ADS_activos
-
-
-def iniciar_procesos(ADS_activos):
-    """Inicia los procesos de captura para cada ADS activo."""
-    procesos = []
-    for idx, name in enumerate(ADS_activos):
-        ads_actual = ads_config[name]
-        proceso = multiprocessing.Process(
-            target=ADS_captura, args=((name, ads_actual), idx), name=f"p_{name}"
-        )
-        proceso.start()
-        procesos.append(proceso)
-    
-    print("Procesos activos=", procesos)
-    return procesos
-
-
-def vigilar_procesos(Procesos, ADS_activos):
-    """Vigila los procesos activos y reinicia los que han terminado."""
-    while True:
-        try:
-            for p in Procesos:
-                if not p.is_alive():
-                    print(f"Proceso {p} parado {p.name}")
-                    time.sleep(3)
-                    ads_nombre = p.name[2:]
-                    idx = ADS_activos.index(ads_nombre)
-                    ads_actual = ads_config[ads_nombre]
-                    nuevo_proceso = multiprocessing.Process(
-                        target=ADS_captura, args=((ads_nombre, ads_actual), idx), name=f"p_{ads_nombre}"
-                    )
-                    nuevo_proceso.start()
-                    Procesos = multiprocessing.active_children()
-
-            time.sleep(1)
-
-        except KeyboardInterrupt:
-            time.sleep(1)
-            print()
-            print(Fore.RED + "=" * 50)
-            print("Finalizando fv_ads.py...")
-            for p in Procesos:
-                print(f"     ....Terminando hilo..{p}")
-                p.terminate()
-                time.sleep(1)
-            sys.exit()
-
-
-def ADS_captura(ads_params, ads_idx):
+def ADS_captura(ads_actual, ads_idx):
     """Captura datos del ADS especificado.
     
     Args:
-        ads_params: Tupla (ads_nombre, ads_actual) con el nombre y configuración del ADS
+        ads_actual: Diccionario con la configuración del ADS
         ads_idx: Índice del ADS para multiplexación
     """
-    ads_nombre, ads_actual = ads_params
     Ncapturas = 0
     ee = 0
     
     time.sleep(0.02 * ads_idx)  # multiplexo un poco los distintos procesos
 
     if DEBUG >= 1:
-        print(Fore.BLUE + "=" * 40, "Proceso", ads_nombre, "=" * 40)
+        print(Fore.BLUE + "=" * 40, "Proceso", ads_actual["id"], "=" * 40)
 
+    ads_nombre = ads_actual["id"]
     gestor = GestorBD()
     existe = not gestor.insertar_equipo_si_falta(ads_nombre)
     if existe:
         print(Fore.RED + f"Registro RAM - clave = {ads_nombre} ya creado")
 
-    print(f"Activando ADS en direccion {ads_actual['direccion']}")
-    adc = Adafruit_ADS1x15.ADS1115(address=ads_actual["direccion"], busnum=1)
+    print(f"Activando ADS en direccion {ads_actual.get('direccion')}")
+    adc = Adafruit_ADS1x15.ADS1115(address=ads_actual.get("direccion"), busnum=1)
 
     d_ads = {}
     ADS_modo = "Disparado"
@@ -178,7 +86,7 @@ def ADS_captura(ads_params, ads_idx):
                         f" -- Leyendo Parametros_FV.py para {ads_nombre} - Capturas={Ncapturas}",
                     )
                 Ncapturas = 0
-                ads_actual = ads_config_v[ads_nombre]
+                # ads_actual = ads_config_v[ads_nombre]
                 ee = "20a"
 
                 ADS_modo = "Disparado"  # valor por defecto
@@ -364,12 +272,105 @@ def ADS_captura(ads_params, ads_idx):
             print(f"{ads_nombre}....se reinicia el proceso de captura del {ads_nombre}")
             sys.exit(1)
 
+def preparar_lista_ads(config):
+    """Prepara la lista de ADS activos según los argumentos proporcionados."""
+    # if "-ADS1" in sys.argv:  # fuerzo solo ADS1
+    #     for name, cfg in config.items():
+    #         cfg["usar"] = name == "ADS1"
+    # elif "-ADS4" in sys.argv:  # fuerzo solo ADS4
+    #     for name, cfg in config.items():
+    #         cfg["usar"] = name == "ADS4"
+    
+    ADS_activos = [cfg for  cfg in config if cfg.get("usar")]
+    
+    print(Fore.RESET + "=" * 50)
+    print(Fore.BLUE + "ADS_activos=")
+    for cfg in ADS_activos:
+        print(
+            Fore.RED
+            + f" -{cfg['id']} "
+            + Fore.BLUE
+            + f"direc={cfg['direccion']} vars={cfg['vars']} modo={cfg['modo']}"
+        )
+    print(Fore.RESET + "=" * 50)
+    
+    return ADS_activos
+
+
+def iniciar_procesos(ADS_activos):
+    """Inicia los procesos de captura para cada ADS activo."""
+    procesos = []
+    for idx, actual in enumerate(ADS_activos):
+        print(f"Activando ADS: {actual['id']}")
+        proceso = multiprocessing.Process(
+            target=ADS_captura, args=(actual, idx), name=f"p_{actual['id']}"
+        )
+        proceso.start()
+        procesos.append(proceso)
+    
+    print("Procesos activos=", procesos)
+    return procesos
+
+
+def vigilar_procesos(Procesos, ADS_activos):
+    """Vigila los procesos activos y reinicia los que han terminado."""
+    while True:
+        try:
+            for p in Procesos:
+                if not p.is_alive():
+                    print(f"Proceso {p} parado {p.name}")
+                    time.sleep(3)
+                    ads_nombre = p.name[2:]
+                    actual = None
+                    for obj,idx in ADS_activos:
+                        if obj.id == ads_nombre:
+                            actual = obj
+                            break
+                    if not actual:
+                        print(f"Error: ADS {ads_nombre} no encontrado")
+                        continue
+                    print('Actual:: ', actual)
+                    # idx = ADS_activos.index(ads_nombre)
+                    # ads_actual = ADS_activos[idx]
+                    nuevo_proceso = multiprocessing.Process(
+                        target=ADS_captura, args=(actual, idx), name=f"p_{ads_nombre}"
+                    )
+                    nuevo_proceso.start()
+                    Procesos = multiprocessing.active_children()
+
+            time.sleep(1)
+
+        except KeyboardInterrupt:
+            time.sleep(1)
+            print()
+            print(Fore.RED + "=" * 50)
+            print("Finalizando fv_ads.py...")
+            for p in Procesos:
+                print(f"     ....Terminando hilo..{p}")
+                p.terminate()
+                time.sleep(1)
+            sys.exit()
 
 def main():
     """Función principal que ejecuta el flujo del programa."""
+    colorama.init()
     time.sleep(5)
+
+    print(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_ads.py")
+
+    # --------------------------------------------------
+    # Cargar desde Parametros_FV.py
+    # --------------------------------------------------
+    ads_config = cargar_parametros("ADS")
+
+    # --------------------------------------------------
+    # Control Ejecucion Servicio
+    # --------------------------------------------------
+    # Verificar si hay ADS activos - pasar booleano en lugar del dict completo
+    hay_ads_activos = sum(1 for v in ads_config if v.get("usar", False)) > 0
+    controlar_servicio("fv_ads", hay_ads_activos)
     
-    ADS_activos = preparar_lista_ads()
+    ADS_activos = preparar_lista_ads(ads_config)
     Procesos = iniciar_procesos(ADS_activos)
     vigilar_procesos(Procesos, ADS_activos)
 
