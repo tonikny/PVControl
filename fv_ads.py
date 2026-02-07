@@ -3,7 +3,6 @@ import sys
 import multiprocessing
 
 # from smbus import SMBus
-import smbus
 import Adafruit_ADS1x15  # Import the ADS1x15 module.
 
 import colorama  # colores en ventana Terminal
@@ -29,7 +28,7 @@ elif "-p2" in sys.argv:
 elif "-p" in sys.argv:
     DEBUG = 100
 
-bus = smbus.SMBus(1)  # Activo Bus I2C para ADS o PCF
+# bus = SMBus(1)  # Activo Bus I2C para ADS o PCF
 
 
 def leer_adc(callable_fn, ads_nombre, delay=0.005):
@@ -42,14 +41,14 @@ def leer_adc(callable_fn, ads_nombre, delay=0.005):
         print(f"Error lectura {ads_nombre}")
         time.sleep(delay)
 
-def ADS_captura(ads_actual, ads_idx):
+def captura_ads(ads_actual, ads_idx):
     """Captura datos del ADS especificado.
     
     Args:
         ads_actual: Diccionario con la configuración del ADS
         ads_idx: Índice del ADS para multiplexación
     """
-    Ncapturas = 0
+    n_capturas = 0
     ee = 0
     
     time.sleep(0.02 * ads_idx)  # multiplexo un poco los distintos procesos
@@ -67,14 +66,14 @@ def ADS_captura(ads_actual, ads_idx):
     adc = Adafruit_ADS1x15.ADS1115(address=ads_actual.get("direccion"), busnum=1)
 
     d_ads = {}
-    ADS_modo = "Disparado"
+    modo_ads = "Disparado"
 
     while True:
         try:
             ee = "10"
             t0 = time.perf_counter()
             tp0 = time.process_time()
-            ERR_ADS = [0, 0, 0, 0]  # Error bruto capturas ADS
+            err_ads = [0, 0, 0, 0]  # Error bruto capturas ADS
             ee = "11"
             # ---------------- Reload config ----------------
             ads_config_v = recargar_parametros()
@@ -83,13 +82,12 @@ def ADS_captura(ads_actual, ads_idx):
                 if DEBUG >= 1:
                     print(
                         Fore.CYAN + time.strftime("%Y-%m-%d %H:%M:%S"),
-                        f" -- Leyendo Parametros_FV.py para {ads_nombre} - Capturas={Ncapturas}",
+                        f" -- Leyendo Parametros_FV.py para {ads_nombre} - Capturas={n_capturas}",
                     )
-                Ncapturas = 0
-                # ads_actual = ads_config_v[ads_nombre]
+                n_capturas = 0
                 ee = "20a"
 
-                ADS_modo = "Disparado"  # valor por defecto
+                modo_ads = "Disparado"  # valor por defecto
                 if DEBUG >= 1:
                     print(Fore.BLUE + f"Modo {ads_nombre} = " + Fore.GREEN, end="")
 
@@ -99,7 +97,7 @@ def ADS_captura(ads_actual, ads_idx):
                         ee = "20c"
                         adc.start_adc(i, gain=ads_actual["gain"][i], data_rate=ads_actual["rate"][i])
                         ee = "20d"
-                        ADS_modo = "Continuo"
+                        modo_ads = "Continuo"
                         if DEBUG >= 1:
                             print(f"entrada A{i} : ", end="")
                         break
@@ -109,25 +107,20 @@ def ADS_captura(ads_actual, ads_idx):
                         adc.start_adc_difference(
                             diff, gain=ads_actual["gain"][i], data_rate=ads_actual["rate"][i]
                         )
-                        ADS_modo = "Continuo_Diferencial"
+                        modo_ads = "Continuo_Diferencial"
                         if DEBUG >= 1:
                             print(f"entrada A{i} : ", end="")
                         break
 
-            ee = 30.1
-            ee = 30.2
+            ee = "30.0"
 
             # ---------------- Captura ----------------
-            if ADS_modo == "Disparado":
+            if modo_ads == "Disparado":
                 ee = "30"
                 for i, modo in enumerate(ads_actual["modo"]):
-                    L_ADS = []
+                    capturas = []
                     if modo == 1:
                         ee = "30a"
-                        # L_ADS = [
-                        #     adc.read_adc(i, gain=ads_actual['gain'][i], data_rate=ads_actual['rate'][i])
-                        #     for _ in range(ads_actual['bucles'][i])
-                        # ]
                         for _ in range(ads_actual["bucles"][i]):
                             val = leer_adc(
                                 lambda: adc.read_adc(
@@ -136,14 +129,10 @@ def ADS_captura(ads_actual, ads_idx):
                                 ads_nombre,
                             )
                             if val is not None:
-                                L_ADS.append(val)
+                                capturas.append(val)
                     elif modo == 3:  # Diferencial
                         ee = "30b"
                         diff = 0 if i == 0 else 3
-                        # L_ADS = [
-                        #     adc.read_adc_difference(diff, gain=ads_actual['gain'][i], data_rate=ads_actual['rate'][i])
-                        #     for _ in range(ads_actual['bucles'][i])
-                        # ]
                         for _ in range(ads_actual["bucles"][i]):
                             val = leer_adc(
                                 lambda: adc.read_adc_difference(
@@ -152,17 +141,16 @@ def ADS_captura(ads_actual, ads_idx):
                                 ads_nombre,
                             )
                             if val is not None:
-                                L_ADS.append(val)
+                                capturas.append(val)
 
                     else:
                         continue
                     ee = "30c"
-                    # print (f'{L_ADS}', end='')
 
                     if modo != 0:
                         ee = "30d"
-                        # MED_ADS = sum(L_ADS) / len(L_ADS) if len(L_ADS) > 0 else 0 # Media
-                        MED_ADS = sorted(L_ADS)[len(L_ADS) // 2]  # Mediana
+                        # media = sum(capturas) / len(capturas) if len(capturas) > 0 else 0 # Media
+                        mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
                         ee = "31"
 
                         var_name = ads_actual["vars"][i]
@@ -170,15 +158,15 @@ def ADS_captura(ads_actual, ads_idx):
                             continue
                         ee = 32
                         d_ads[var_name] = round(
-                            MED_ADS * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
+                            mediana * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
                         )
                         ee = 33
-                        ERR_ADS[i] = max(L_ADS) - min(L_ADS)
+                        err_ads[i] = max(capturas) - min(capturas)
                         ee = 34
                         if DEBUG >= 100:
                             print(
-                                f"L_ADS-A{i}={L_ADS} - {MED_ADS} "
-                                f"Err:{ERR_ADS[i]}- {var_name}={d_ads[var_name]}"
+                                f"capturas-A{i}={capturas} - {mediana} "
+                                f"Err:{err_ads[i]}- {var_name}={d_ads[var_name]}"
                             )
 
             else:  # Continuo o continuo diferencial
@@ -187,27 +175,27 @@ def ADS_captura(ads_actual, ads_idx):
                     n = ads_actual["bucles"][i]
                     rate = ads_actual["rate"][i]
 
-                    L_ADS = [0.0] * n
+                    capturas = [0.0] * n
                     for i in range(n):
-                        L_ADS[i] = adc.get_last_result()
+                        capturas[i] = adc.get_last_result()
                         time.sleep(1 / rate)
 
-                    MED_ADS = sum(L_ADS) / n
+                    mediana = sum(capturas) / n
 
                     var_name = ads_actual["vars"][i]
                     if not var_name:
                         continue
 
                     d_ads[var_name] = round(
-                        MED_ADS * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
+                        mediana * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
                     )
 
-                    ERR_ADS[i] = max(L_ADS) - min(L_ADS)
+                    err_ads[i] = max(capturas) - min(capturas)
 
                     if DEBUG >= 100:
                         print(
-                            f"L_ADS-A{i}={L_ADS}-{MED_ADS} "
-                            f"Err:{ERR_ADS} - {var_name}={d_ads[var_name]}"
+                            f"capturas-A{i}={capturas}-{mediana} "
+                            f"Err:{err_ads} - {var_name}={d_ads[var_name]}"
                         )
 
             ee = "50"
@@ -225,7 +213,7 @@ def ADS_captura(ads_actual, ads_idx):
                     print(Fore.RED, end="")
 
                 print(
-                    f"{t[-6:]}: {ads_nombre}-Modo={ads_actual['modo']} {str(ERR_ADS):16}-Captura = ",
+                    f"{t[-6:]}: {ads_nombre}-Modo={ads_actual['modo']} {str(err_ads):16}-Captura = ",
                     d_ads,
                 )
 
@@ -262,7 +250,7 @@ def ADS_captura(ads_actual, ads_idx):
             # ---------------- Timing ----------------
             t3 = time.perf_counter() - t0
             time.sleep(max(ads_actual["tmuestra"] - t3, 0))
-            Ncapturas += 1
+            n_capturas += 1
 
         except Exception as e:
             print(
@@ -272,20 +260,20 @@ def ADS_captura(ads_actual, ads_idx):
             print(f"{ads_nombre}....se reinicia el proceso de captura del {ads_nombre}")
             sys.exit(1)
 
-def preparar_lista_ads(config):
+def preparar_lista_ads_activos(config):
     """Prepara la lista de ADS activos según los argumentos proporcionados."""
-    # if "-ADS1" in sys.argv:  # fuerzo solo ADS1
-    #     for name, cfg in config.items():
-    #         cfg["usar"] = name == "ADS1"
-    # elif "-ADS4" in sys.argv:  # fuerzo solo ADS4
-    #     for name, cfg in config.items():
-    #         cfg["usar"] = name == "ADS4"
-    
-    ADS_activos = [cfg for  cfg in config if cfg.get("usar")]
-    
+    if "-ADS1" in sys.argv:  # fuerzo solo ADS1
+        for cfg in config:
+            cfg["usar"] = cfg["id"] == "ADS1"
+    elif "-ADS4" in sys.argv:  # fuerzo solo ADS4
+        for cfg in config:
+            cfg["usar"] = cfg["id"] == "ADS4"
+
+    activos = [cfg for  cfg in config if cfg.get("usar")]
+
     print(Fore.RESET + "=" * 50)
-    print(Fore.BLUE + "ADS_activos=")
-    for cfg in ADS_activos:
+    print(Fore.BLUE + "activos=")
+    for cfg in activos:
         print(
             Fore.RED
             + f" -{cfg['id']} "
@@ -293,50 +281,47 @@ def preparar_lista_ads(config):
             + f"direc={cfg['direccion']} vars={cfg['vars']} modo={cfg['modo']}"
         )
     print(Fore.RESET + "=" * 50)
-    
-    return ADS_activos
+
+    return activos
 
 
-def iniciar_procesos(ADS_activos):
+def iniciar_procesos(activos):
     """Inicia los procesos de captura para cada ADS activo."""
     procesos = []
-    for idx, actual in enumerate(ADS_activos):
+    for idx, actual in enumerate(activos):
         print(f"Activando ADS: {actual['id']}")
         proceso = multiprocessing.Process(
-            target=ADS_captura, args=(actual, idx), name=f"p_{actual['id']}"
+            target=captura_ads, args=(actual, idx), name=f"p_{actual['id']}"
         )
         proceso.start()
         procesos.append(proceso)
-    
+
     print("Procesos activos=", procesos)
     return procesos
 
 
-def vigilar_procesos(Procesos, ADS_activos):
+def vigilar_procesos(procesos, activos):
     """Vigila los procesos activos y reinicia los que han terminado."""
     while True:
         try:
-            for p in Procesos:
+            for p in procesos:
                 if not p.is_alive():
                     print(f"Proceso {p} parado {p.name}")
                     time.sleep(3)
                     ads_nombre = p.name[2:]
                     actual = None
-                    for obj,idx in ADS_activos:
+                    for obj,idx in activos:
                         if obj.id == ads_nombre:
                             actual = obj
                             break
                     if not actual:
                         print(f"Error: ADS {ads_nombre} no encontrado")
                         continue
-                    print('Actual:: ', actual)
-                    # idx = ADS_activos.index(ads_nombre)
-                    # ads_actual = ADS_activos[idx]
                     nuevo_proceso = multiprocessing.Process(
-                        target=ADS_captura, args=(actual, idx), name=f"p_{ads_nombre}"
+                        target=captura_ads, args=(actual, idx), name=f"p_{ads_nombre}"
                     )
                     nuevo_proceso.start()
-                    Procesos = multiprocessing.active_children()
+                    procesos = multiprocessing.active_children()
 
             time.sleep(1)
 
@@ -345,7 +330,7 @@ def vigilar_procesos(Procesos, ADS_activos):
             print()
             print(Fore.RED + "=" * 50)
             print("Finalizando fv_ads.py...")
-            for p in Procesos:
+            for p in procesos:
                 print(f"     ....Terminando hilo..{p}")
                 p.terminate()
                 time.sleep(1)
@@ -369,10 +354,10 @@ def main():
     # Verificar si hay ADS activos - pasar booleano en lugar del dict completo
     hay_ads_activos = sum(1 for v in ads_config if v.get("usar", False)) > 0
     controlar_servicio("fv_ads", hay_ads_activos)
-    
-    ADS_activos = preparar_lista_ads(ads_config)
-    Procesos = iniciar_procesos(ADS_activos)
-    vigilar_procesos(Procesos, ADS_activos)
+
+    ads_activos = preparar_lista_ads_activos(ads_config)
+    procesos = iniciar_procesos(ads_activos)
+    vigilar_procesos(procesos, ads_activos)
 
 
 # --------------------------------------------------
