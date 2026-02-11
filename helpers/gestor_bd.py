@@ -44,7 +44,7 @@ Uso:
 from typing import Dict, Any, Optional
 import json
 import MySQLdb
-from helpers.cargar_parametros import cargar_parametros
+from helpers.gestor_parametros import GestorParametros
 
 
 class GestorBD:
@@ -52,7 +52,7 @@ class GestorBD:
     Gestiona operaciones de base de datos para datos de equipos de PVControl+.
     
     Proporciona acceso seguro y parametrizado a la base de datos con gestión automática
-    de conexiones. La configuración se importa automáticamente desde Parametros_FV.py.
+    de conexiones. La configuración se importa automáticamente.
     """
     
     def __init__(self, servidor: Optional[str] = None, usuario: Optional[str] = None, 
@@ -61,24 +61,22 @@ class GestorBD:
         Inicializa la conexión a la base de datos.
         
         Args:
-            servidor: Nombre del servidor o IP (por defecto: auto-importado 'servidor' de Parametros_FV.py)
-            usuario: Usuario de base de datos (por defecto: auto-importado 'usuario' de Parametros_FV.py)
-            clave: Contraseña de base de datos (por defecto: auto-importado 'clave' de Parametros_FV.py)
-            basedatos: Nombre de base de datos (por defecto: auto-importado 'basedatos' de Parametros_FV.py)
-        
-        La configuración se importa desde Parametros_FV.py.
+            servidor: Nombre del servidor o IP (por defecto: auto-importado de parametros de PVControl+)
+            usuario: Usuario de base de datos (por defecto: auto-importado de parametros de PVControl+)
+            clave: Contraseña de base de datos (por defecto: auto-importado de parametros de PVControl+)
+            basedatos: Nombre de base de datos (por defecto: auto-importado de parametros de PVControl+)
+
         Los parámetros pueden proporcionarse explícitamente para sobreescribir los valores por defecto.
         
         Raises:
             MySQLdb.Error: Si la conexión falla
-            ValueError: Si no se proporcionan parámetros y no se importan desde Parametros_FV.py
+            ValueError: Si no se proporcionan parámetros y no existen en los parametros de PVControl+
         """
 
-        # Importar configuración de base de datos desde Parametros_FV.py
-        servidor_cfg, usuario_cfg, clave_cfg, basedatos_cfg = cargar_parametros(
-            "servidor", "usuario", "clave", "basedatos"
-        )
-
+        # Importar configuración de base de datos
+        gestor = GestorParametros()
+        servidor_cfg, usuario_cfg, clave_cfg, basedatos_cfg = gestor.leer_parametros("servidor", "usuario", "clave", "basedatos")
+        
         # Usar parámetros proporcionados o valores importados como respaldo
         self.servidor = servidor or servidor_cfg
         self.usuario = usuario or usuario_cfg
@@ -87,7 +85,7 @@ class GestorBD:
         
         if not all([self.servidor, self.usuario, self.clave, self.nombre_bd]):
             raise ValueError(
-                "Los parámetros de base de datos deben proporcionarse explícitamente o importarse desde Parametros_FV.py. "
+                "Los parámetros de base de datos deben proporcionarse explícitamente o existir en los parámetros de PVControl+"
                 f"Faltan: servidor={self.servidor}, usuario={self.usuario}, basedatos={self.nombre_bd}"
             )
         
@@ -110,6 +108,8 @@ class GestorBD:
             db=self.nombre_bd
         )
         self.cursor = self.conexion.cursor()
+        if not self.conexion or not self.cursor:
+            raise MySQLdb.Error("No se pudo conectar a la base de datos")
     
     def _asegurar_conexion(self) -> None:
         """
@@ -166,7 +166,7 @@ class GestorBD:
     def guardar_datos_equipo_dict(self, id_equipo: str, tiempo: str, 
                                   sensores_dict: Dict[str, Any]) -> bool:
         """
-        Guarda datos de equipo desde un diccionario (wrapper de conveniencia).
+        Guarda datos de equipo desde un diccionario (wrapper de guardar_datos_equipo).
         
         Args:
             id_equipo: Identificador del equipo
@@ -195,7 +195,7 @@ class GestorBD:
             id_equipo: Identificador del equipo a insertar
         
         Returns:
-            True si se insertó exitosamente, False si ya existe o hay error
+            True si se inserta correctamente, False si ya existe o hay error
         
         Ejemplo:
             >>> gestor.insertar_equipo_si_falta('INVERTER1')
@@ -209,7 +209,7 @@ class GestorBD:
                 INSERT INTO equipos (id_equipo, sensores) 
                 VALUES (%s, %s)
             """
-            
+            #  
             self.cursor.execute(sql, (id_equipo, '{}'))
             self.conexion.commit()
             return True
