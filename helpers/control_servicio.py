@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Módulo de Control de Ejecución de Servicios
 
@@ -23,6 +21,9 @@ Uso:
 import sys
 import subprocess
 
+from helpers.gestor_logs import Logger
+
+log = Logger(name=__name__)
 
 def controlar_servicio(nombre_servicio: str, debe_ejecutarse: bool) -> None:
     """
@@ -51,12 +52,12 @@ def parar_servicio(nombre_servicio: str) -> None:
     Args:
         nombre_servicio: Nombre del servicio systemd a detener
     """
-    print(f'Se ejecuta ... sudo systemctl stop {nombre_servicio} ... parada servicio {nombre_servicio}')
+    log.info(f'Se ejecuta ... sudo systemctl stop {nombre_servicio} ... parada servicio {nombre_servicio}')
     try:
         resultado = subprocess.getoutput(f'sudo systemctl stop {nombre_servicio}')
-        print(resultado)
+        log.info(resultado)
     except Exception as e:
-        print(f"Error deteniendo servicio {nombre_servicio}: {e}")
+        log.error(f"Error deteniendo servicio {nombre_servicio}: {e}")
     finally:
         sys.exit(0)
 

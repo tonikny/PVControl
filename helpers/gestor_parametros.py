@@ -6,14 +6,6 @@ import logging
 
 from helpers.gestor_logs import Logger
 
-# from helpers.gestor_logs import Logger
-
-# logging.basicConfig(level=logging.INFO)
-# log = logging.getLogger("config")
-# log.setLevel(logging.DEBUG)
-# log.propagate = False
-log = Logger(name=__name__, level=logging.DEBUG)
-
 # Rutas por defecto en la Raspberry Pi
 BASE_PATH = '/home/pi/PVControl+'
 RUTA_DIST = os.path.join(BASE_PATH, 'Parametros_FV_DIST.py')
@@ -31,7 +23,7 @@ class GestorParametros:
         ADS, ANENJI = gestor.leer_parametros("ADS", "ANENJI")
     """
 
-    def __init__(self, check_interval=5):
+    def __init__(self, check_interval=5, debug_level=logging.ERROR):
         self.check_interval = check_interval
         self._dist = None
         self._user = None
@@ -39,7 +31,8 @@ class GestorParametros:
         self._size = 0
         self._last_check = 0
         self._version = 0
-        log.info("Iniciando Gestor de Parámetros")
+        self._log = Logger(debug_level, __name__)
+        self._log.debug("Iniciando Gestor de Parámetros")
 
     def _cargar_modulo(self, ruta):
         # evitar cache .pyc
@@ -74,14 +67,14 @@ class GestorParametros:
             self._mtime = os.path.getmtime(RUTA_USER)
             self._size = os.path.getsize(RUTA_USER)
         except FileNotFoundError:
-            log.warning("Archivo de usuario no encontrado, usando solo DIST")
+            self._log.warning("Archivo de usuario no encontrado, usando solo DIST")
             self._user = None
             self._mtime = 0
             self._size = 0
 
         self._last_check = time.monotonic()
         self._version = 1
-        log.info("Configuración cargada")
+        self._log.info("Configuración cargada")
 
 
     def _recargar_si_es_necesario(self):
@@ -97,7 +90,7 @@ class GestorParametros:
             mtime = os.path.getmtime(RUTA_USER)
             size = os.path.getsize(RUTA_USER)
         except FileNotFoundError:
-            log.error("Archivo no encontrado: %s", RUTA_USER)
+            self._log.error("Archivo no encontrado: %s", RUTA_USER)
             return
 
         # sin cambios
@@ -106,13 +99,13 @@ class GestorParametros:
 
         # ignorar archivo vacio
         if size == 0:
-            log.warning("Archivo vacío; se mantiene configuración anterior")
+            self._log.error("Archivo vacío; se mantiene configuración anterior")
             return
 
         try:
             nuevo_user = self._cargar_modulo(RUTA_USER)
         except Exception:
-            log.exception("Error recargando configuración; se mantiene la anterior")
+            self._log.error("Error recargando configuración; se mantiene la anterior")
             return
 
         self._user = nuevo_user
@@ -120,7 +113,7 @@ class GestorParametros:
         self._size = size
         self._version += 1
 
-        log.info(f"Configuración recargada (v%s) {self._version}")
+        self._log.info(f"Configuración recargada (v%s) {self._version}")
         
     # ---------- API pública ----------
 
@@ -132,7 +125,7 @@ class GestorParametros:
         ADS, ANENJI = gestor.leer_parametros("ADS", "ANENJI)
         ```
         """
-        log.info(f"Parámetros solicitados: {nombres}")
+        self._log.debug(f"Parámetros solicitados: {' '.join(nombres)}")
 
         if self._user is None:
             self._carga_inicial()
@@ -140,6 +133,8 @@ class GestorParametros:
             self._recargar_si_es_necesario()
 
         valores = [self._obtener(nombre) for nombre in nombres]
+
+        self._log.debug(f"Parámetros obtenidos: {valores}")
 
         return valores[0] if len(valores) == 1 else tuple(valores)
 
