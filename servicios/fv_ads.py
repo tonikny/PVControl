@@ -25,18 +25,18 @@ def leer_adc(callable_fn, ads_nombre, delay=0.005):
         log.error(f"Error lectura {ads_nombre}")
         time.sleep(delay)
 
-def captura_ads(ads_actual, ads_idx):
+def captura_ads(ads_actual, indice_ads):
     """Captura datos del ADS especificado.
-    
+
     Args:
-        ads_actual: Diccionario con la configuración del ADS
-        ads_idx: Índice del ADS para multiplexación
+        ads_actual: Diccionario con la configuración del ADS.
+        indice_ads: Índice del ADS para multiplexación.
     """
     global gp
     n_capturas = 0
     ee = 0
-    
-    time.sleep(0.02 * ads_idx)  # multiplexo un poco los distintos procesos
+
+    time.sleep(0.02 * indice_ads)  # multiplexo un poco los distintos procesos
 
     log.info(Fore.BLUE + "=" * 40 + "Proceso" + ads_actual["id"] + "=" * 40)
 
@@ -51,6 +51,7 @@ def captura_ads(ads_actual, ads_idx):
 
     d_ads = {}
     modo_ads = "Disparado"
+    version_parametros = 0
 
     while True:
         try:
@@ -59,19 +60,28 @@ def captura_ads(ads_actual, ads_idx):
             tp0 = time.process_time()
             err_ads = [0, 0, 0, 0]  # Error bruto capturas ADS
             ee = "11"
-            # ---------------- Reload config ----------------
-            ads_config_v = gp.leer_parametros("ADS")
-            if ads_config_v:  # recargo Parametros_FV.py si hay cambios (o es la primera vez)
+            # ---------------- Recargar configuración ----------------
+            ads_config = gp.leer_parametros("ADS")
+            if gp.version() != version_parametros:
+                version_parametros = gp.version()
                 ee = "20"
                 log.info(
-                        Fore.CYAN + time.strftime("%Y-%m-%d %H:%M:%S")+
-                        f" -- Leyendo Parametros_FV.py para {ads_nombre} - Capturas={n_capturas}"
-                    )
+                    Fore.CYAN + time.strftime("%Y-%m-%d %H:%M:%S") +
+                    f" -- Leyendo Parametros_FV.py para {ads_nombre} - Capturas={n_capturas}"
+                )
                 n_capturas = 0
                 ee = "20a"
 
                 modo_ads = "Disparado"  # valor por defecto
-                log.info(Fore.BLUE + f"Modo {ads_nombre} = " + Fore.GREEN)
+                ads_config_lista = gp.convertir_dict_a_list(ads_config)
+                nuevo_ads = next(
+                    (ads for ads in ads_config_lista if ads["id"] == ads_nombre),
+                    None,
+                )
+                if nuevo_ads:
+                    ads_actual = nuevo_ads
+                else:
+                    log.warning(f"No se encontró configuración para {ads_nombre}")
 
                 for i, modo in enumerate(ads_actual["modo"]):
                     ee = "20b"
@@ -92,9 +102,11 @@ def captura_ads(ads_actual, ads_idx):
                         log.info(f"entrada A{i} : ")
                         break
 
+                log.info(Fore.BLUE + f"Modo {ads_nombre} = " + Fore.GREEN + modo_ads)
+
             ee = "30.0"
 
-            # ---------------- Captura ----------------
+            # ---------------- Captura de datos ----------------
             if modo_ads == "Disparado":
                 ee = "30"
                 for i, modo in enumerate(ads_actual["modo"]):
@@ -129,8 +141,12 @@ def captura_ads(ads_actual, ads_idx):
 
                     if modo != 0:
                         ee = "30d"
-                        # media = sum(capturas) / len(capturas) if len(capturas) > 0 else 0 # Media
-                        mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                        if capturas:
+                            mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                            err_ads[i] = max(capturas) - min(capturas)
+                        else:
+                            mediana = 0
+                            err_ads[i] = 0
                         ee = "31"
 
                         var_name = ads_actual["vars"][i]
@@ -141,12 +157,11 @@ def captura_ads(ads_actual, ads_idx):
                             mediana * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
                         )
                         ee = 33
-                        err_ads[i] = max(capturas) - min(capturas)
                         ee = 34
                         log.debug(
-                                f"capturas-A{i}={capturas} - {mediana} " +
-                                f"Err:{err_ads[i]}- {var_name}={d_ads[var_name]}"
-                            )
+                            f"capturas-A{i}={capturas} - {mediana} "
+                            f"Err:{err_ads[i]}- {var_name}={d_ads[var_name]}"
+                        )
 
             else:  # Continuo o continuo diferencial
                 ee = "40"
@@ -154,18 +169,21 @@ def captura_ads(ads_actual, ads_idx):
                     n = ads_actual["bucles"][i]
                     rate = ads_actual["rate"][i]
 
-                    capturas = [0.0] * n
-                    for i in range(n):
+                    capturas = []
+                    for _ in range(n):
                         val = leer_adc(
                             lambda: adc.get_last_result(), ads_nombre,
                         )
                         if val is not None:
                             capturas.append(val)
-                        # capturas[i] = adc.get_last_result()
                         time.sleep(1 / rate)
 
-                    # media = sum(capturas) / n
-                    mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                    if capturas:
+                        mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                        err_ads[i] = max(capturas) - min(capturas)
+                    else:
+                        mediana = 0
+                        err_ads[i] = 0
 
                     var_name = ads_actual["vars"][i]
                     if not var_name:
@@ -175,12 +193,10 @@ def captura_ads(ads_actual, ads_idx):
                         mediana * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
                     )
 
-                    err_ads[i] = max(capturas) - min(capturas)
-
                     log.debug(
-                            f"capturas-A{i}={capturas}-{mediana} "
-                            f"Err:{err_ads} - {var_name}={d_ads[var_name]}"
-                        )
+                        f"capturas-A{i}={capturas}-{mediana} "
+                        f"Err:{err_ads[i]} - {var_name}={d_ads[var_name]}"
+                    )
 
             ee = "50"
             t1 = (time.perf_counter() - t0) * 1000
@@ -188,11 +204,11 @@ def captura_ads(ads_actual, ads_idx):
             if log.es_debug():
                 t = str(round(time.time(), 3))
                 datos_log = f"{t[-6:]}: {ads_nombre}-Modo={ads_actual['modo']} {str(err_ads):16}-Captura = {d_ads}"
-                if ads_idx == 0:
+                if indice_ads == 0:
                     log.debug(Fore.RESET + datos_log)
-                elif ads_idx == 1:
+                elif indice_ads == 1:
                     log.debug(Fore.GREEN + datos_log)
-                elif ads_idx == 2:
+                elif indice_ads == 2:
                     log.debug(Fore.CYAN + datos_log)
                 else:
                     log.debug(Fore.RED + datos_log)
@@ -209,15 +225,15 @@ def captura_ads(ads_actual, ads_idx):
 
             if log.es_info():
                 log.info(
-                    f"{time.time():.5f} / {ads_nombre}: " +
+                    f"{time.time():.5f} / {ads_nombre}: "
                     f"t1={t1:6.1f}-t2={t2:6.1f} --tp={tp2:5.2f} -- Rate:"
                 )
-                if ads_actual["modo"] == "Disparado":
-                    log.info(f"{ads_actual["rate"]} Bucles: {ads_actual["bucles"]}")
+                if modo_ads == "Disparado":
+                    log.info(f"{ads_actual['rate']} Bucles: {ads_actual['bucles']}")
                 else:
                     log.info(
-                        f"{ads_actual["rate"]} Bucles: {ads_actual["bucles"]} "
-                        f"- {ads_actual['modo']} entrada {ads_nombre}"
+                        f"{ads_actual['rate']} Bucles: {ads_actual['bucles']} "
+                        f"- {modo_ads} entrada {ads_nombre}"
                     )
 
             ee = "80"
@@ -281,7 +297,7 @@ def main():
         debug_level = logging.ERROR
 
     global log
-    log = GestorLogs(__name__, debug_level)
+    log = GestorLogs(nombre=__name__, nivel=debug_level)
     log.info(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_ads.py")
 
     # --------------------------------------------------
