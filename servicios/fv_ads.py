@@ -143,7 +143,7 @@ def captura_ads(ads_actual, ads_idx):
                         ee = 33
                         err_ads[i] = max(capturas) - min(capturas)
                         ee = 34
-                        log.depurar(
+                        log.debug(
                                 f"capturas-A{i}={capturas} - {mediana} " +
                                 f"Err:{err_ads[i]}- {var_name}={d_ads[var_name]}"
                             )
@@ -177,7 +177,7 @@ def captura_ads(ads_actual, ads_idx):
 
                     err_ads[i] = max(capturas) - min(capturas)
 
-                    log.depurar(
+                    log.debug(
                             f"capturas-A{i}={capturas}-{mediana} "
                             f"Err:{err_ads} - {var_name}={d_ads[var_name]}"
                         )
@@ -185,17 +185,17 @@ def captura_ads(ads_actual, ads_idx):
             ee = "50"
             t1 = (time.perf_counter() - t0) * 1000
 
-            if log.es_depuracion():
+            if log.es_debug():
                 t = str(round(time.time(), 3))
                 datos_log = f"{t[-6:]}: {ads_nombre}-Modo={ads_actual['modo']} {str(err_ads):16}-Captura = {d_ads}"
                 if ads_idx == 0:
-                    log.depurar(Fore.RESET + datos_log)
+                    log.debug(Fore.RESET + datos_log)
                 elif ads_idx == 1:
-                    log.depurar(Fore.GREEN + datos_log)
+                    log.debug(Fore.GREEN + datos_log)
                 elif ads_idx == 2:
-                    log.depurar(Fore.CYAN + datos_log)
+                    log.debug(Fore.CYAN + datos_log)
                 else:
-                    log.depurar(Fore.RED + datos_log)
+                    log.debug(Fore.RED + datos_log)
 
             ee = "60"
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -221,8 +221,8 @@ def captura_ads(ads_actual, ads_idx):
                     )
 
             ee = "80"
-            log.depurar(Fore.CYAN + "*" * 80)
-            log.depurar("*" * 80 + Fore.RESET)
+            log.debug(Fore.CYAN + "*" * 80)
+            log.debug("*" * 80 + Fore.RESET)
             # ---------------- Timing ----------------
             t3 = time.perf_counter() - t0
             time.sleep(max(ads_actual["tmuestra"] - t3, 0))

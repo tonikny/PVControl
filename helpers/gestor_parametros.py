@@ -31,7 +31,7 @@ class GestorParametros:
         self._last_check = 0
         self._version = 0
         self._log = GestorLogs(__name__)
-        self._log.depurar("Iniciando Gestor de Parámetros")
+        self._log.debug("Iniciando Gestor de Parámetros")
 
     def _cargar_modulo(self, ruta):
         # evitar cache .pyc
@@ -66,7 +66,7 @@ class GestorParametros:
             self._mtime = os.path.getmtime(RUTA_USER)
             self._size = os.path.getsize(RUTA_USER)
         except FileNotFoundError:
-            self._log.advertencia("Archivo de usuario no encontrado, usando solo DIST")
+            self._log.warning("Archivo de usuario no encontrado, usando solo DIST")
             self._user = None
             self._mtime = 0
             self._size = 0
@@ -124,7 +124,7 @@ class GestorParametros:
         ADS, ANENJI = gestor.leer_parametros("ADS", "ANENJI)
         ```
         """
-        self._log.depurar(f"Parámetros solicitados: {' '.join(nombres)}")
+        self._log.debug(f"Parámetros solicitados: {' '.join(nombres)}")
 
         if self._user is None:
             self._carga_inicial()
@@ -132,7 +132,7 @@ class GestorParametros:
             self._recargar_si_es_necesario()
 
         valores = [self._obtener(nombre) for nombre in nombres]
-        self._log.depurar(f"Parámetros obtenidos: {valores}")
+        self._log.debug(f"Parámetros obtenidos: {valores}")
 
         return valores[0] if len(valores) == 1 else tuple(valores)
 

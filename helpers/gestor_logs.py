@@ -29,13 +29,13 @@ class GestorLogs:
         self._log.handlers.clear()
         self._log.addHandler(handler)
 
-    def depurar(self, *msg):
+    def debug(self, *msg):
         self._log.debug(" ".join(msg))
 
     def info(self, *msg):
         self._log.info(" ".join(msg))
 
-    def advertencia(self, *msg):
+    def warning(self, *msg):
         self._log.warning(" ".join(msg))
 
     def error(self, *msg):
@@ -49,7 +49,7 @@ class GestorLogs:
         self._log.critical(" ".join(msg))
         formatter._style._fmt = formato_original
 
-    def es_depuracion(self):
+    def es_debug(self):
         return self._log.isEnabledFor(logging.DEBUG)
 
     def es_info(self):
