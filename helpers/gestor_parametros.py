@@ -2,7 +2,6 @@ import os
 import sys
 import time
 import importlib.util
-import logging
 
 from helpers.gestor_logs import Logger
 
@@ -23,7 +22,7 @@ class GestorParametros:
         ADS, ANENJI = gestor.leer_parametros("ADS", "ANENJI")
     """
 
-    def __init__(self, check_interval=5, debug_level=logging.ERROR):
+    def __init__(self, check_interval=5):
         self.check_interval = check_interval
         self._dist = None
         self._user = None
@@ -31,7 +30,7 @@ class GestorParametros:
         self._size = 0
         self._last_check = 0
         self._version = 0
-        self._log = Logger(debug_level, __name__)
+        self._log = Logger(__name__)
         self._log.debug("Iniciando Gestor de Parámetros")
 
     def _cargar_modulo(self, ruta):
@@ -133,7 +132,6 @@ class GestorParametros:
             self._recargar_si_es_necesario()
 
         valores = [self._obtener(nombre) for nombre in nombres]
-
         self._log.debug(f"Parámetros obtenidos: {valores}")
 
         return valores[0] if len(valores) == 1 else tuple(valores)

@@ -23,7 +23,7 @@ import subprocess
 
 from helpers.gestor_logs import Logger
 
-log = Logger(name=__name__)
+log = Logger(__name__)
 
 def controlar_servicio(nombre_servicio: str, debe_ejecutarse: bool) -> None:
     """
@@ -60,55 +60,3 @@ def parar_servicio(nombre_servicio: str) -> None:
         log.error(f"Error deteniendo servicio {nombre_servicio}: {e}")
     finally:
         sys.exit(0)
-
-
-def verificar_equipos_activos(config_dict: dict, clave_usar: str = "usar") -> bool:
-    """
-    Verifica si hay equipos activos en un diccionario de configuración.
-    
-    Args:
-        config_dict: Diccionario de configuración (ej. ADS, RS485)
-        clave_usar: Clave que indica si el equipo está activo (por defecto "usar")
-        
-    Returns:
-        True si hay al menos un equipo activo, False en caso contrario
-        
-    Ejemplo:
-        >>> ADS = {"ADS1": {"usar": True}, "ADS2": {"usar": False}}
-        >>> verificar_equipos_activos(ADS)
-        True
-    """
-    try:
-        return sum(1 for v in config_dict.values() if v.get(clave_usar, False)) > 0
-    except (AttributeError, TypeError):
-        # Si config_dict no es un dict o no tiene el método get
-        return False
-
-
-def verificar_parametro_boolean(valor) -> bool:
-    """
-    Verifica si un parámetro booleano es verdadero.
-    
-    Args:
-        valor: Valor a verificar (puede ser bool, int, str, etc.)
-        
-    Returns:
-        True si el valor es verdadero, False en caso contrario
-        
-    Ejemplo:
-        >>> verificar_parametro_boolean(True)
-        True
-        >>> verificar_parametro_boolean(1)
-        True
-        >>> verificar_parametro_boolean("True")
-        True
-        >>> verificar_parametro_boolean(False)
-        False
-    """
-    if isinstance(valor, bool):
-        return valor
-    if isinstance(valor, (int, float)):
-        return valor > 0
-    if isinstance(valor, str):
-        return valor.lower() in ('true', '1', 'yes', 'si', 'sí')
-    return False

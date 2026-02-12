@@ -5,7 +5,7 @@ from colorama import Fore
 
 from helpers.gestor_logs import Logger
 
-log = Logger(name=__name__)
+log = Logger(__name__)
 
 def iniciar_procesos(activos, ejecucion):
     """Inicia los procesos de captura para cada equipo activo."""

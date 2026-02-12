@@ -14,8 +14,8 @@ EQUIPO = eval(NEQUIPO)
 try: 
     if orden_bytes == 1: orden_bytes = 1 #en hibrido Powmr inverten el ordes de los bytes 
 except:
-    orden_bytes = 0 
-    
+	orden_bytes = 0 
+	
 try:
     comandos = EQUIPO['COMANDOS']
     del EQUIPO['COMANDOS']
@@ -31,12 +31,6 @@ import telebot # Librería de la API del bot.
 import timeout_decorator
 
 import minimalmodbus
-
-# Import new helper modules
-from modbus_utils import convert_u16, convert_s16, convert_u32, apply_byte_order
-from helpers.gestor_bd import GestorBD
-from mqtt_handler import MQTTHandler
-from telegram_notifier import TelegramNotifier
     
 import colorama # colores en ventana Terminal
 from colorama import Fore, Back, Style
@@ -50,66 +44,30 @@ narg = len(sys.argv)
 if '-p' in sys.argv: DEBUG = 1 # para desarrollo permite print en distintos sitios
 if '-s' in sys.argv: simular_datos = 1 # para desarrollo permite print en distintos sitios
 
-comando_mqtt = {} # 'equipo', 'comando'   para uso de comandos Telegram o MQTT (legacy, replaced by mqtt_handler)
+comando_mqtt = {} # 'equipo', 'comando'   para uso de comandos Telegram o MQTT
 if DEBUG > 0:
     print()
     print (Fore.CYAN+ '------- Parametros -------')
     print(EQUIPO)
     print('-' * 40)
 
-# Initialize Telegram notifier (auto-imports from Parametros_FV.py globals)
-telegram_notifier = None
-cid = None  # Initialize cid for backward compatibility
-if usar_telegram == 1:
-    try:
-        cid = Aut[0]  # Set cid from Aut list
-        # Parameters auto-imported from globals (TOKEN, Aut, usar_telegram)
-        telegram_notifier = TelegramNotifier()
-        telegram_notifier.send_startup_message(NEQUIPO)
-    except Exception as e:
-        print(f'Error inicializando Telegram notifier: {e}')
-        telegram_notifier = None
-        cid = None
-
-# Legacy bot_enviar_mensaje function for backward compatibility
 @timeout_decorator.timeout(20, use_signals=False)
 def bot_enviar_mensaje(cid, msg):
-    if telegram_notifier and telegram_notifier.is_enabled():
-        telegram_notifier.send_message(msg, chat_id=cid)
-    else:
-        print(f'[Telegram disabled] Would send: {msg}')
+    bot.send_message(cid, msg, parse_mode="HTML")
+
+if usar_telegram == 1:
+    try:
+        bot = telebot.TeleBot(TOKEN) # Creamos el objeto de nuestro bot.
+        bot.skip_pending = True # Skip the pending messages
+        cid = Aut[0]
+        bot_enviar_mensaje(cid, f'Arrancando Programa Control {NEQUIPO}')
+    except:
+        print ('Error en envio de mensaje Telegram')
 
 
  ##### MQTT ###########################################
-# MQTT message callback for legacy compatibility
-def on_message_received(equipo, comando):
-    global comando_mqtt
-    if DEBUG == 1:
-        print(Fore.CYAN + f'MQTT .... Comando {comando} en equipo {equipo} recibido')
-    comando_mqtt = {'equipo': equipo, 'comando': comando}
-
-# Initialize MQTT handler (auto-imports from Parametros_FV.py globals)
-mqtt_handler = None
-try:
-    # Parameters auto-imported from globals (mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave)
-    mqtt_handler = MQTTHandler(
-        on_message_callback=on_message_received,
-        debug=(DEBUG > 0)
-    )
-    
-    # Subscribe to equipment topics
-    equipos_list = [e for e in EQUIPO if e != 'COMANDOS']
-    mqtt_handler.subscribe_equipment(equipos_list)
-    
-    # Connect to broker
-    mqtt_handler.connect()
-    
-except Exception as e:
-    print(f'Error inicializando MQTT handler: {e}')
-    mqtt_handler = None
-
-# Legacy MQTT client callbacks (kept for reference, but not used with mqtt_handler)
 def on_connect(client, userdata, flags, rc):
+
     for e in EQUIPO:
         client.subscribe(f"PVControl/{e}")
         if DEBUG > 0: print(f'{e}....MQTT Conectado.... Topic =  PVControl/{e}')
@@ -122,12 +80,19 @@ def on_disconnect(client, userdata, rc):
         client.disconnect()
 
 def on_message(client, userdata, msg):
-    global comando_mqtt
-    topic = msg.topic.upper()[10:]
+    global comando_mqtt #flag_lectura , 
+    
+    ee = 10
+    topic = msg.topic.upper()[10:] # quito PVControl/
     mensaje = msg.payload.decode().strip()
+    
+    #flag_lectura[topic] = 1
+    ee = 20
     if DEBUG == 1:
         print (Fore.CYAN + f'MQTT .... Comando {mensaje} en equipo {topic} recibido')
+    
     comando_mqtt = {'equipo': topic, 'comando': mensaje}
+    
     return
 
 def listar_parametros(equipo):
@@ -255,27 +220,24 @@ def escribir_registro(equipo, mensaje):
         print(f'Error {ee} en comando MQTT')
     
     #flag_lectura[topic] = 0
+    
+        
+client = mqtt.Client(f"{NEQUIPO}")
+client.on_connect = on_connect
+client.on_disconnect = on_disconnect
+client.on_message = on_message
+client.reconnect_delay_set(3,15)
+client.username_pw_set(mqtt_usuario, password=mqtt_clave)
+try:
+    client.connect(mqtt_broker, mqtt_puerto) #conectar al broker: url, puerto
+except:
+    print(f'Error de conexion al servidor MQTT en {NEQUIPO}')
+time.sleep(.2)
 
-# Legacy MQTT client initialization (commented out, replaced by mqtt_handler)
-# client = mqtt.Client(f"{NEQUIPO}")
-# client.on_connect = on_connect
-# client.on_disconnect = on_disconnect
-# client.on_message = on_message
-# client.reconnect_delay_set(3,15)
-# client.username_pw_set(mqtt_usuario, password=mqtt_clave)
-# try:
-#     client.connect(mqtt_broker, mqtt_puerto)
-# except:
-#     print(f'Error de conexion al servidor MQTT en {NEQUIPO}')
-# time.sleep(.2)
-# client.loop_start()
+client.loop_start()  
 #######################################################
 
 def leer_registros(equipo):
-    """
-    Lee varios registros de un equipo usando la funcionalidad de lectura múltiple.
-    Devuelve un diccionario comando: valor
-    """
     global n_fallos_captura
     ee = 1000
     lectura = {}  # diccionario registro: valor..... ejemplo... {102: 5655, 103: 200}
@@ -287,254 +249,194 @@ def leer_registros(equipo):
             #print (f'rango = {reg_ini},{reg_fin}')
             ee = 1015
             nreg = reg_fin - reg_ini + 1
-            registros = list(range(reg_ini, reg_fin + 1)) # lista de numeros de registros
-
+            registros = list(range(reg_ini,reg_fin + 1)) # lista de numeros de registros
+            #print (f'leyendo registros: {registros}')
+            
             try:
                 ee = 1020
-                # Lectura de todos los registros del rango
-                if simular_datos: d = [9999] * nreg
-                else: d = modbus[equipo].read_registers(reg_ini, nreg, 3)
-                
-                # Construir diccionario raw lectura {registro: valor}
-                lectura.update({registros[i]: d[i] for i in range(nreg)})
-
-            except Exception as e:
+                d = modbus[equipo].read_registers(reg_ini, nreg, 3) if simular_datos == 0 else [9999] * nreg 
+                #print(f'lista raw capturada.. d={d}')
+            except:
                 ee = 1030
-                print(f'Error lectura múltiple {equipo} reg_ini:{reg_ini} reg_fin:{reg_fin} -> {e}')
-                raise
-            time.sleep(0.1)
-
-        # Interpretar cada registro leído
-        for reg, valor in lectura.items():
-            if reg not in reg_to_comando:
-                continue
-
-            comando = reg_to_comando[reg]
-            params = get_command_params(comando)
-            if not params['grabar']:
-                continue
-
-            try:
-                # Manejo de orden de bytes
-                if orden_bytes == 1:
-                    valor = apply_byte_order(valor, orden_bytes)
-
-                tipo = params['tipo']
-                dec = params['dec']
-                offset = params['offset']
-
-                if tipo == 'u16':
-                    d = convert_u16(valor, dec, offset)
-                elif tipo == 's16':
-                    d = convert_s16(valor, dec, offset)
-                elif tipo == 'u32':
-                    valor_alto = lectura.get(reg + 1, 0)
-                    d = convert_u32(valor, valor_alto, dec, offset)
-                elif tipo == 'adaptar' and params['adaptar']:
-                    ee = 1050
-                    d = valor
-                    ejecutar = '\n'.join(params['adaptar'])
-                    ee = 1060
-                    exec(ejecutar)
-                    # 'adaptar' commands usually write directly to datos inside exec
-                    continue
-                else:
-                    ee = 1070
+                print(f'Error lectura multiple reg_ini:{reg_ini},reg_fin:{reg_fin} -> nreg:{nreg}')
+                error = True
+                n_fallos_captura[equipo] += 1
+            
+            for i in range(nreg): 
+                lectura[registros[i]] = d[i]
+            #print(f'diccionario raw capturado.. lectura={lectura}')
+            
+            # interpretar lectura
+            cmd = {} # diccionario registro: clave en comandos,,ejem   {102: 'Vbat', 103: 'Ibat'}
+            for c in comandos: 
+                if 'reg' in comandos[c]: cmd[comandos[c]['reg']] = c
+            
+            for r in lectura:
+                try:
+                    if r not in cmd: continue 
+                    comando = cmd[r]
+                    grabar = comandos[comando]['grabar'] if 'grabar' in comandos[comando] else True
+                    if not grabar: continue # no se calcula ...se pasa al siguiente
+                
+                    valor = lectura[r] # valor lectura en bruto
+                    if orden_bytes == 1: valor= int.from_bytes(valor.to_bytes(2, byteorder='little'))
+                    
+                    dec = comandos[comando]['dec'] if 'dec' in comandos[comando] else 0
+                    tipo = comandos[comando]['tipo'] if 'tipo' in comandos[comando] else 'u16'
+                    offset = comandos[comando]['offset'] if 'offset' in comandos[comando] else 0
+        
                     d = -9999
-
-                datos[comando] = d
-
-            except Exception as e:
-                print(f"Error {ee} en leer_registros({equipo}) comando={comando} -> {type(e).__name__}: {e}")
-                datos[comando] = -9999
-                raise
-
-    except Exception as e:
-        print(f"Error general en leer_registros({equipo}): {e}")
-        raise
-
-    return datos
-
-def leer_registro(equipo, comando, datos=None):
-    """
-    Lee un registro de un equipo según la configuración de comandos.
-    Retorna None si la lectura falla.
-    """
-    params = get_command_params(comando)
-    reg = params['reg']
-    dec = params['dec']
-    tipo = params['tipo']
-    offset = params['offset']
-    fc = params['fc']
-
-    if datos is None:
-        datos = {}
-
-    d = -9999
-
-    try:
-        # Lectura de Modbus
-        if tipo in ('u16', 's16', 'u32', 'adaptar'):
-            d = modbus[equipo].read_register(reg, dec if tipo != 'u16' else 0, fc,
-                                            signed=(tipo == 's16'))
-
-        # Interpretación según tipo
-        if tipo == 'u16':
-            if orden_bytes == 1:
-                d = apply_byte_order(d, orden_bytes)
-            d = convert_u16(d, dec, offset)
-
-        elif tipo == 's16':
-            d = convert_s16(d, dec, offset)
-
-        elif tipo == 'u32':
-            valor_alto = modbus[equipo].read_register(reg + 1, 0, fc)
-            d = convert_u32(d, valor_alto, dec, offset)
-
-        elif tipo == 'adaptar' and params.get('adaptar'):
-            ee = 110
-            for line in params['adaptar']:
-                exec(line, {}, {"datos": datos, "d": d})
-            return None
-
-        return d
-
-    except Exception as e:
-        print(f"Error leyendo {comando} en {equipo}: {type(e).__name__} - {e}")
-        return None  # Signal failure to caller
-
-
+                    if tipo == 'u16':
+                        d = round(valor * 10**-dec,dec)
+                    elif tipo == 's16':
+                        d = valor if valor < 32767 else valor - 65536
+                        d = round(d * 10**-dec,dec)
+                    elif tipo == 'u32':
+                        valor_alto =  lectura[r+1] 
+                        d = round((lectura[r+1] * 65536 + valor) * 10**-dec,dec)  
+                    
+                    if tipo == 'adaptar':
+                        ee = 1050
+                        d = valor
+                        ejecutar = '\n'.join(comandos[comando]['adaptar'])
+                        ee = 1060
+                        exec(ejecutar)
+                        
+                    else:
+                        ee = 1070
+                        d += offset
+                        datos[comando] = d
+                        
+                except Exception as error1:
+                    print(f"Error {ee} en leer_registros({equipo})..comando={comando} ", type(error1).__name__, "–", error1) 
+                    datos[comando] = -9999
+                            
+                
+            
+    except:
+        print(f'Equipo {equipo}: error {ee}...rango de lectura de registros mal definido en Parametros_fy.py')
     
-def leer_equipo(equipo):
+    return datos
+    
+def leer_registro(equipo, comando): #lectura de comando en equipo
+    reg = comandos[comando]['reg']
+    dec = comandos[comando]['dec'] if 'dec' in comandos[comando] else 0
+    tipo = comandos[comando]['tipo'] if 'tipo' in comandos[comando] else 'u16'
+    offset = comandos[comando]['offset'] if 'offset' in comandos[comando] else 0
+    fc = comandos[comando]['fc'] if 'fc' in comandos[comando] else 3
+    
+    d = -9999
+    if tipo == 'u16':
+        #print(f'Reg..{reg}', end='')
+        d = modbus[equipo].read_register(reg, 0, fc)
+        #print(f'd_ini..{d}', end='')
+        if orden_bytes == 1: d= int.from_bytes(d.to_bytes(2, byteorder='little'))
+        d = round(d * 10**-dec,dec)
+        #print(f'd..{d}')
+        
+        
+    elif tipo == 's16': # pendiente tema de powmr de orden de bytes
+        d = modbus[equipo].read_register(reg, dec, fc ,True)
+    elif tipo == 'u32': # pendiente tema de powmr de orden de bytes
+        d = modbus[equipo].read_long(reg, fc, False, 0)
+        d = round(d * 10**-dec,dec)
+        
+    #time.sleep(0.3)
+    
+    if tipo == 'adaptar':
+        d = modbus[equipo].read_register(reg, dec, fc)
+    else:
+        d += offset
+    
+    return d
+    
+def leer_equipo(equipo): # bucle de lectura de cada equipo
     global n_fallos_captura
-    t0 = time.time()
+        
+    t0= time.time()
     nombre_equipo = equipo.upper()
-    datos = {}
-    read_failed = False  # Track any failed read
-
+    datos= {} # inicializo diccionario
+    error = False
+    
     try:
         ee = 100
-        lectura_multiple = comandos.get('lectura_multiple', {}).get('usar', 0)
-
-        if lectura_multiple:
-            # lectura múltiple: if any read fails, mark read_failed
-            datos = leer_registros(equipo)
-            if any(v == -9999 for v in datos.values()):
-                read_failed = True
+        lectura_multiple = comandos['lectura_multiple']['usar'] if 'lectura_multiple' in comandos else 0
+        
+        if lectura_multiple == 1:
+            datos = leer_registros(equipo)        
         else:
             for c in comandos:
                 if c == 'ayuda' : continue
-                if c in ('ayuda', 'lectura_multiple'):
-                    continue
-                params = get_command_params(c)
-                if not params['grabar']:
-                    continue
-
-                ee = 120
-                valor = leer_registro(equipo, c, datos)
-                if params['tipo'] != 'adaptar':
-                    if valor is None:  # read failed
-                        read_failed = True
-                        datos[c] = -9999
-                    else:
-                        datos[c] = valor
-
-        datos['tcaptura'] = round(time.time() - t0, 2)
-
-    except Exception as e:
-        n_fallos_captura[equipo] += 1
-        print(f"Error general leyendo equipo {equipo} Fallos: {n_fallos_captura[equipo]}: {type(e).__name__} - {e}")
-        read_failed = True
-
+                if c == 'lectura_multiple': continue
+                
+                grabar = comandos[c]['grabar'] if 'grabar' in comandos[c] else True
+                if not grabar: continue
+                
+                reg = comandos[c]['reg']
+                dec = comandos[c]['dec'] if 'dec' in comandos[c] else 0
+                tipo = comandos[c]['tipo'] if 'tipo' in comandos[c] else 'u16'
+                offset = comandos[c]['offset'] if 'offset' in comandos[c] else 0
+                fc = comandos[c]['fc'] if 'fc' in comandos[c] else 3
+               
+                ee = 110
+                
+                if tipo == 'adaptar':
+                    ee = 120
+                    d = modbus[equipo].read_register(reg, dec, fc)
+                    ejecutar = '\n'.join(comandos[c]['adaptar'])
+                    ee = 122
+                    exec(ejecutar)            
+                else:
+                    ee = 130
+                    datos[c] = leer_registro(equipo, c)
+                
+                #print(f"reg:({comandos[c]['reg']}) -> {c} = {d}")
+        
+        #print (f'Datos Capturados = {datos}')
+        t1= time.time()
+        datos['tcaptura']= round(t1-t0,2)
+        
+    except Exception as error1:
+        print(f"Error {ee} en leer_equipo({equipo})..comando={c} ", type(error1).__name__, "–", error1) 
+        error = True
+    
     t2= time.time()
     ee = 200
-
-    # Logging en debug
-    # if DEBUG:
-    #     color = {
-    #         '1': Style.BRIGHT + Fore.GREEN,
-    #         '2': Style.BRIGHT + Fore.YELLOW,
-    #         '3': Style.BRIGHT + Fore.MAGENTA
-    #     }.get(equipo[-1], Fore.RESET)
-    #     print(Fore.RESET + time.strftime("%Y-%m-%d %H:%M:%S") + color + f" -- {equipo}: {datos}")
-    #     print("-" * 70)
-
-    _log_debug(equipo, datos)
-
-    # Guardar en BD solo si todas las lecturas fueron correctas
-    ee = 300
-    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-    if not read_failed:
-        ee = 302
-        try:
+    if DEBUG == 1:
+        #print(equipo, equipo[-1])
+        if equipo[-1] == '1': color = Style.BRIGHT + Fore.GREEN
+        elif equipo[-1] == '2': color = Style.BRIGHT + Fore.YELLOW
+        elif equipo[-1] == '3': color = Style.BRIGHT + Fore.MAGENTA
+        else: color = Fore.RESET
+        
+        print(Fore.RESET+time.strftime("%Y-%m-%d %H:%M:%S")+ color + f' -- {equipo}: {datos}') # print del diccionario que estoy creando
+        print('-' * 70)
+    
+    try:####  ARCHIVOS RAM en BD ############ 
+        ee = 300
+        tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+        if not error:
+            ee = 302
             datos['Nfallos'] = n_fallos_captura[equipo]
+            
             salida = json.dumps(datos)
             ee = 304
-            # Usar consulta parametrizada via gestor_bd para prevenir inyección SQL
-            gestor_bd.guardar_datos_equipo(nombre_equipo, tiempo, salida)
-            if DEBUG == 100: print(f"{nombre_equipo} - Guardado: {salida} 👌")
-            if DEBUG == 0:
-                print(f"{nombre_equipo[-1]}", end="", flush=True)
+            sql = (f"UPDATE equipos SET `tiempo` = '{tiempo}',sensores = '{salida}' WHERE id_equipo = '{nombre_equipo}'") # grabacion en BD RAM
+            #print (Fore.RED+sql)
+            cursor.execute(sql)
+            ee = 310
+            db.commit()
             
-        except Exception as e:
-            print(Fore.RED + f"Error {ee} guardando datos en BD para {nombre_equipo}: {type(e).__name__} - {e}")
-        ee = 330
-    else:
-        print(f"{tiempo} - Error {ee} {nombre_equipo} - Lectura fallida, no se guardan datos en BD.")
-
-    return datos
-
-
-
-def get_command_params(c):
-    cmd = comandos[c]
-    return {
-        'reg': cmd['reg'],
-        'dec': cmd.get('dec', 0),
-        'tipo': cmd.get('tipo', 'u16'),
-        'offset': cmd.get('offset', 0),
-        'fc': cmd.get('fc', 3),
-        'grabar': cmd.get('grabar', True),
-        'adaptar': cmd.get('adaptar', None)
-    }
-
-def build_reg_to_comando_map():
-    """Build mapping from register number to command name."""
-    reg_map = {}
-    for cmd_name in comandos:
-        if cmd_name in ('ayuda', 'lectura_multiple'):
-            continue
-        if 'reg' in comandos[cmd_name]:
-            reg_map[comandos[cmd_name]['reg']] = cmd_name
-    return reg_map
-
-# Build the register to command mapping
-reg_to_comando = build_reg_to_comando_map()
-
-def _log_debug(equipo, datos):
-    if DEBUG:
-        color = {
-            '1': Fore.GREEN + Style.BRIGHT,
-            '2': Fore.YELLOW + Style.BRIGHT,
-            '3': Fore.MAGENTA + Style.BRIGHT
-        }.get(equipo[-1], Fore.RESET)
-        print(Fore.RESET + time.strftime("%Y-%m-%d %H:%M:%S") + color + f' -- {equipo}: {datos}')
-        print('-'*70)
-
-def _grabar_en_bd(equipo, datos, error):
-    tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-    try:
-        if not error:
-            datos['Nfallos'] = n_fallos_captura[equipo]
-            salida = json.dumps(datos)
-            # Usar consulta parametrizada via gestor_bd para prevenir inyección SQL
-            gestor_bd.guardar_datos_equipo(equipo.upper(), tiempo, salida)
-            if DEBUG == 0: print(f'{equipo[-1]}', end='', flush=True)
+            if DEBUG == 0: 
+                print(f'{nombre_equipo[-1]}', flush= True, end='')
+                #print(f'{time.time():.1f}') 
+            ee = 330
         else:
-            print(f'{tiempo} - Error en captura equipo {equipo.upper()}')
-    except Exception as e:
-        print(Fore.RED + f'Error grabando en BD equipo {equipo.upper()}: {e}')
-
+            print(f'{tiempo} - Error {ee} en captura equipo {nombre_equipo}')
+            
+    except:
+        print(Fore.RED+f'error {ee}, Grabacion tabla RAM equipos en {nombre_equipo}')
+    
     
 # Bucle para llamada a funcion leer_equipo
 
@@ -547,25 +449,33 @@ wh_placa = {}     # sin uso actualmente
 wh_consumo = {}   # sin uso actualmente
 flag_lectura = {} # Flag de lectura para evitar conflicto con lectura desde Telegram
 
-# Conexion BD (auto-imports from Parametros_FV.py globals)
+# Conexion BD
 try:
     ee = '1'
-    # Inicializar GestorBD con consultas parametrizadas
-    # Parámetros auto-importados de Parametros_FV.py (servidor, usuario, clave, basedatos)
-    gestor_bd = GestorBD()
-    
-    # Mantener db y cursor para compatibilidad con código existente
-    db = gestor_bd.conexion
-    cursor = gestor_bd.cursor
-except Exception as e:
-    print(Fore.RED, f'ERROR - inicializando BD RAM: {e}')
+    db = MySQLdb.connect(host = servidor, user = usuario, passwd = clave, db = basedatos)
+    cursor = db.cursor()  
+except:
+    print (Fore.RED,f'ERROR - inicializando BD RAM ')
     sys.exit()
 
 
 #Apertura Puertos y control registro
 modbus={}
-      
+"""
+for e in EQUIPO:
+    if EQUIPO[e]['usar'] == 1 and e != 'COMANDOS':
+        modbus[e] = minimalmodbus.Instrument(EQUIPO[e]['dev'], EQUIPO[e]['id_modbus'])
+        modbus[e].serial.baudrate = EQUIPO[e]['baudrate'] if 'baudrate' in EQUIPO[e] else 9600
+        modbus[e].serial.bytesize = 8
+        modbus[e].serial.parity = minimalmodbus.serial.PARITY_NONE
+        modbus[e].serial.stopbits = 1
+        modbus[e].serial.timeout = 3
+        modbus[e].debug = False
+        modbus[e].mode = minimalmodbus.MODE_RTU
+"""
+            
 ######### BUCLE PRINCIPAL ############### 
+
  
 while True:
     ee = '10a'
@@ -604,7 +514,7 @@ while True:
                     modbus[e].debug = False
                     modbus[e].mode = minimalmodbus.MODE_RTU
                     if DEBUG >= 1 : print('.... OK')
-                n_fallos_captura[e] = n_fallos_captura[e] if e in n_fallos_captura else 0
+                n_fallos_captura[e] = 0
                 
                 #flag_lectura[e] = 0 if e not in flag_lectura else flag_lectura[e]
                 ee = '10e_10'
@@ -644,13 +554,14 @@ while True:
                         ee = '10h'
                         nombre_equipo = e.upper()
                         
-                        # Usar gestor_bd para insertar equipo si falta
-                        gestor_bd.insertar_equipo_si_falta(nombre_equipo)
+                        cursor.execute("""INSERT INTO equipos (id_equipo,sensores) VALUES (%s,%s)""",
+                                      (nombre_equipo,'{}'))   
+                        db.commit()
                     except:
                         pass    
                    
     except Exception as error1:
-        print(f"Error {ee} en bucle principal", type(error1).__name__, "-", error1) 
+        print(f"Error {ee} en bucle principal", type(error1).__name__, "–", error1) 
         print ('.... se reinicia')
         cursor.close()
         db.close()

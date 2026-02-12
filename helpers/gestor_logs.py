@@ -13,7 +13,7 @@ class Logger:
         Logger name, default is "pvcontrol".
     """
 
-    def __init__(self, level=logging.ERROR, name="pvcontrol"):
+    def __init__(self, name="pvcontrol", level=logging.ERROR):
         """
         Simple per-script logger.
 
