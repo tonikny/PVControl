@@ -27,11 +27,6 @@
 # }
 
 import sys
-import os
-
-# Añadir directorio del proyecto al path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + '/..')
-
 from servicios.fv_rs485 import iniciar_captura
 
 if __name__ == "__main__":
