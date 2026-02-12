@@ -28,28 +28,99 @@ from helpers.control_servicio import controlar_servicio
 
 colorama.init()
 
+# Cargar configuración del equipo desde globals (NEQUIPO debe estar definido)
+EQUIPO = eval(NEQUIPO)
 
-# Variables globales que se inicializarán en main()
-log = None
-gp = None
-gestor_bd = None
-gestor_mqtt = None
-gestor_telegram = None
+try:
+    if orden_bytes == 1:
+        orden_bytes = 1  # en hibrido Powmr inverten el orden de los bytes
+except:
+    orden_bytes = 0
 
-# Variables de configuración (se cargarán desde parámetros)
-EQUIPO = {}
-comandos = {}
-orden_bytes = 0
-simular_datos = 0
+try:
+    comandos = EQUIPO['COMANDOS']
+    del EQUIPO['COMANDOS']
+except:
+    pass
+
+# Comprobacion argumentos en comando
+simular_datos = DEBUG = 0
+narg = len(sys.argv)
+if '-p' in sys.argv:
+    DEBUG = 1  # para desarrollo permite print en distintos sitios
+if '-s' in sys.argv:
+    simular_datos = 1  # para desarrollo permite print en distintos sitios
+
+# Configurar nivel de logging según argumentos
+if '-p1' in sys.argv:
+    debug_level = logging.WARNING
+elif '-p2' in sys.argv:
+    debug_level = logging.INFO
+elif '-p' in sys.argv:
+    debug_level = logging.DEBUG
+else:
+    debug_level = logging.ERROR
+
+log = GestorLogs(__name__, debug_level)
+
+print(Style.BRIGHT + Fore.YELLOW + 'Arrancando ' + Fore.GREEN + sys.argv[0])
+
+if DEBUG > 0:
+    log.manual(Fore.CYAN + '------- Parametros -------')
+    log.manual(str(EQUIPO))
+    log.manual('-' * 40)
+
+# Inicializar gestores
+gp = GestorParametros(check_interval=300)
+gestor_bd = GestorBD()
+
+try:
+    gestor_telegram = GestorTelegram()
+except Exception as e:
+    log.warning(f"No se pudo inicializar Telegram: {e}")
+    gestor_telegram = GestorTelegram(usar_telegram=False)
+
+try:
+    gestor_mqtt = GestorMQTT(depurar=(DEBUG == 1))
+except Exception as e:
+    log.warning(f"No se pudo inicializar MQTT: {e}")
+    gestor_mqtt = None
+
+# Enviar mensaje de inicio
+if gestor_telegram.esta_habilitado():
+    gestor_telegram.enviar_mensaje_inicio(NEQUIPO)
 
 # Variables de estado
 modbus = {}
-t_recarga_parametros = 0
-t_ultima_captura = {}
-n_fallos_captura = {}
-wh_placa = {}
-wh_consumo = {}
-flag_lectura = {}
+t_recarga_parametros = time.time()
+t_ultima_captura = {}  # marca temporal de la ultima captura de datos de cada equipo
+n_fallos_captura = {}  # numero de fallos diario en la captura de datos de cada equipo
+wh_placa = {}     # sin uso actualmente
+wh_consumo = {}   # sin uso actualmente
+flag_lectura = {} # Flag de lectura para evitar conflicto con lectura desde Telegram
+
+# Control Ejecucion Servicio
+equipos_activos = [e for e in EQUIPO if EQUIPO[e].get('usar', 0) == 1 and e != 'COMANDOS']
+hay_activos = len(equipos_activos) > 0
+
+# Inicializar contadores de fallos para equipos activos
+for e in equipos_activos:
+    n_fallos_captura[e] = 0
+
+if DEBUG >= 1:
+    log.manual(Fore.RESET + "=" * 50)
+    log.manual(Fore.BLUE + "Equipos activos:")
+    for eq in equipos_activos:
+        log.manual(Fore.RED + f" - {eq}")
+    log.manual(Fore.RESET + "=" * 50)
+
+controlar_servicio("fv_rs485", hay_activos)
+
+# Configurar MQTT
+if gestor_mqtt:
+    gestor_mqtt.suscribir_equipos(equipos_activos)
+    if not gestor_mqtt.conectar():
+        log.warning("No se pudo conectar al broker MQTT")
 
 
 def leer_registro(equipo, comando):
@@ -231,7 +302,7 @@ def escribir_registro(equipo, mensaje):
                 ee = 60
                 registro = comandos[c]['reg']
                 msg = f'Valor registro {registro}...{variable}= {d} '
-                if log.es_debug():
+                if DEBUG == 1:
                     log.debug(msg)
                 ee = 70
                 
@@ -244,7 +315,7 @@ def escribir_registro(equipo, mensaje):
                     if valor_n < comandos[c]['rango'][0] or valor_n > comandos[c]['rango'][1]:
                         escritura = False
                         msg += f'\n Error en valor {valor_n} fuera de rango admitido'
-                        if log.es_debug():
+                        if DEBUG == 1:
                             log.debug(msg)
                         
                 ee = 80
@@ -253,7 +324,7 @@ def escribir_registro(equipo, mensaje):
                     modbus[equipo].write_register(registro, valor_n, decimales)
                      
                     msg += f'\nNuevo Valor-->{registro}...{variable}= {valor_n} '
-                    if log.es_debug():
+                    if DEBUG == 1:
                         log.debug(msg)
                 
                 ee = 90
@@ -330,7 +401,7 @@ def leer_equipo(equipo):
     
     t2 = time.time()
     ee = 200
-    if log.es_debug():
+    if DEBUG == 1:
         if equipo[-1] == '1':
             color = Style.BRIGHT + Fore.GREEN
         elif equipo[-1] == '2':
@@ -353,7 +424,7 @@ def leer_equipo(equipo):
             gestor_bd.guardar_datos_equipo_dict(nombre_equipo, tiempo, datos)
             ee = 330
             
-            if not log.es_debug():
+            if DEBUG == 0:
                 print(f'{nombre_equipo[-1]}', flush=True, end='')
         else:
             log.error(f'{tiempo} - Error {ee} en captura equipo {nombre_equipo}')
@@ -362,262 +433,127 @@ def leer_equipo(equipo):
         log.error(Fore.RED + f'error {ee}, Grabacion tabla RAM equipos en {nombre_equipo}')
 
 
-def main():
-    """Función principal que ejecuta el flujo del programa."""
-    global log, gp, gestor_bd, gestor_mqtt, gestor_telegram
-    global modbus, t_recarga_parametros, t_ultima_captura
-    global n_fallos_captura, wh_placa, wh_consumo, flag_lectura
-    global nombre_equipo_rs485, EQUIPO, comandos, orden_bytes, simular_datos
+######### BUCLE PRINCIPAL ############### 
+
+
+dia = time.strftime("%Y-%m-%d")
+
+while True:
+    ee = '10a'
     
-    colorama.init(autoreset=True)
-    time.sleep(2)
-    
-    # --------------------------------------------------
-    # Comprobacion argumentos en comando
-    # --------------------------------------------------
-    global simular
-    simular = 0
-    if "-s" in sys.argv:
-        simular = 1  # para desarrollo permite simular respuesta
-    if "-p1" in sys.argv:
-        debug_level = logging.WARNING
-    elif "-p2" in sys.argv:
-        debug_level = logging.INFO
-    elif "-p" in sys.argv:
-        debug_level = logging.DEBUG
-    else:
-        debug_level = logging.ERROR
-    
-    log = GestorLogs(__name__, debug_level)
-    log.info(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_rs485.py")
-    
-    # --------------------------------------------------
-    # Inicializar gestores
-    # --------------------------------------------------
-    gp = GestorParametros(check_interval=300)
-    gestor_bd = GestorBD()
-    
-    try:
-        gestor_telegram = GestorTelegram()
-    except Exception as e:
-        log.warning(f"No se pudo inicializar Telegram: {e}")
-        gestor_telegram = GestorTelegram(usar_telegram=False)
-    
-    try:
-        gestor_mqtt = GestorMQTT(depurar=log.es_debug())
-    except Exception as e:
-        log.warning(f"No se pudo inicializar MQTT: {e}")
-        gestor_mqtt = None
-    
-    # --------------------------------------------------
-    # Cargar configuración de equipos
-    # --------------------------------------------------
-    # Buscar argumento -NEQUIPO=<nombre_equipo> o usar valor por defecto
-    nombre_equipo_rs485 = None
-    for arg in sys.argv:
-        if arg.startswith("-NEQUIPO="):
-            nombre_equipo_rs485 = arg.split("=")[1]
-            break
-    
-    if nombre_equipo_rs485 is None:
-        log.error("Debe especificar el tipo de equipo con -NEQUIPO=<nombre>")
-        log.error("Ejemplo: python3 fv_rs485.py -NEQUIPO=ANENJI")
-        sys.exit(1)
-    
-    # Cargar configuración del equipo especificado
-    try:
-        EQUIPO = gp.leer_parametros(nombre_equipo_rs485)
-        log.info(f"Configuración cargada para equipo: {nombre_equipo_rs485}")
-    except Exception as e:
-        log.error(f"No se encontró configuración para equipo '{nombre_equipo_rs485}': {e}")
-        sys.exit(1)
-    
-    # Extraer comandos
-    try:
-        comandos = EQUIPO['COMANDOS']
-        del EQUIPO['COMANDOS']
-    except:
-        log.warning("No se encontraron COMANDOS en la configuración del equipo")
-        comandos = {}
-    
-    # Configurar orden de bytes
-    try:
-        orden_bytes_config = gp.leer_parametros("orden_bytes")
-        orden_bytes = 1 if orden_bytes_config == 1 else 0
-    except:
-        orden_bytes = 0
-    
-    # Configurar simulación
-    simular_datos = 1 if simular == 1 else 0
-    
-    if log.es_debug():
-        log.debug(f"EQUIPO: {EQUIPO}")
-        log.debug(f"orden_bytes: {orden_bytes}")
-        log.debug(f"simular_datos: {simular_datos}")
-    
-    # Enviar mensaje de inicio
-    if gestor_telegram.esta_habilitado():
-        gestor_telegram.enviar_mensaje_inicio(nombre_equipo_rs485)
-    
-    # --------------------------------------------------
-    # Control Ejecucion Servicio
-    # --------------------------------------------------
-    # Verificar si hay equipos activos
-    equipos_activos = [e for e in EQUIPO if EQUIPO[e].get('usar', 0) == 1]
-    hay_activos = len(equipos_activos) > 0
-    
-    log.info(f"Equipos RS485 activos: {len(equipos_activos)}")
-    for eq in equipos_activos:
-        log.info(f"  - {eq}")
-    
-    controlar_servicio("fv_rs485", hay_activos)
-    
-    # --------------------------------------------------
-    # Configurar MQTT
-    # --------------------------------------------------
-    if gestor_mqtt:
-        gestor_mqtt.suscribir_equipos(equipos_activos)
-        if not gestor_mqtt.conectar():
-            log.warning("No se pudo conectar al broker MQTT")
-    
-    # --------------------------------------------------
-    # Bucle principal
-    # --------------------------------------------------
-    dia = time.strftime("%Y-%m-%d")
-    t_recarga_parametros = time.time()
-    t_ultima_captura = {}
-    n_fallos_captura = {}
-    wh_placa = {}
-    wh_consumo = {}
-    flag_lectura = {}
-    
-    # Inicializar contadores de fallos para equipos activos
-    for e in equipos_activos:
-        n_fallos_captura[e] = 0
-    
-    while True:
-        ee = '10a'
-        
-        # Recargar parámetros periódicamente
-        if time.time() - t_recarga_parametros > 300:
-            t_recarga_parametros = time.time()
-            if log.es_debug():
-                log.debug(Fore.RED + 'recarga Parametros')
-            try:
-                # Recargar configuración del equipo
-                equipo_nuevo = gp.leer_parametros(nombre_equipo_rs485)
-                if equipo_nuevo:
-                    global EQUIPO, comandos
-                    EQUIPO = equipo_nuevo
-                    try:
-                        comandos = EQUIPO['COMANDOS']
-                        del EQUIPO['COMANDOS']
-                    except:
-                        pass
-                    
-                    # Actualizar orden de bytes si cambió
-                    global orden_bytes
-                    try:
-                        orden_bytes_config = gp.leer_parametros("orden_bytes")
-                        orden_bytes = 1 if orden_bytes_config == 1 else 0
-                    except:
-                        orden_bytes = 0
-                    
-                    # Actualizar lista de equipos activos
-                    equipos_activos = [e for e in EQUIPO if EQUIPO[e].get('usar', 0) == 1]
-                    if gestor_mqtt:
-                        gestor_mqtt.suscribir_equipos(equipos_activos)
-                    
-                    log.info("Configuración recargada exitosamente")
-            except Exception as e:
-                log.error(Fore.RED + f'ERROR en recarga Parametros: {e}')
-        
-        ee = '10b'
-        dia_anterior = dia
-        dia = time.strftime("%Y-%m-%d")
-        
-        if dia_anterior != dia:  # cambio de dia
-            n_fallos_captura = {}
-            for e in equipos_activos:
-                n_fallos_captura[e] = 0
-            wh_placa = {}
-            wh_consumo = {}
-        
-        ee = '10c'
+    # Recargar parámetros periódicamente
+    if time.time() - t_recarga_parametros > 300:
+        t_recarga_parametros = time.time()
+        if DEBUG == 1:
+            log.debug(Fore.RED + 'recarga Parametros')
         try:
-            for e in EQUIPO:
-                ee = '10d'
-                if EQUIPO[e]['usar'] == 1:
-                    ee = '10e'
-                    
-                    # Abrir conexión Modbus si aún no existe
-                    if e not in modbus:
-                        if log.es_debug():
-                            log.debug(f"Abriendo conexion Modbus en {EQUIPO[e]['dev']} con id: {EQUIPO[e]['id_modbus']}")
-                        modbus[e] = minimalmodbus.Instrument(EQUIPO[e]['dev'], EQUIPO[e]['id_modbus'])
-                        modbus[e].serial.baudrate = EQUIPO[e]['baudrate'] if 'baudrate' in EQUIPO[e] else 9600
-                        modbus[e].serial.bytesize = 8
-                        modbus[e].serial.parity = minimalmodbus.serial.PARITY_NONE
-                        modbus[e].serial.stopbits = 1
-                        modbus[e].serial.timeout = 3
-                        modbus[e].debug = False
-                        modbus[e].mode = minimalmodbus.MODE_RTU
-                        if log.es_debug():
-                            log.debug('.... OK')
-                    
-                    n_fallos_captura[e] = 0
-                    
-                    # Procesar comandos MQTT pendientes
-                    ee = '10e_10'
-                    if gestor_mqtt and gestor_mqtt.hay_comandos_pendientes():
-                        c_mqtt = gestor_mqtt.obtener_comando_pendiente()
-                        ee = '10e_20'
-                        if c_mqtt['comando'] in comandos['ayuda']:
-                            ee = '10e_30'
-                            if log.es_debug():
-                                log.debug(f"Ejecutando Listar Parametros de equipo {c_mqtt['equipo']}")
-                            listar_parametros(c_mqtt['equipo'])
-                        else:
-                            ee = '10e_40'
-                            if log.es_debug():
-                                log.debug(f"Ejecutando Lectura/Escritura {c_mqtt['comando']} en equipo {c_mqtt['equipo']}")
-                            escribir_registro(c_mqtt['equipo'], c_mqtt['comando'])
-                    
-                    ee = '10e_50'
-                    if e in t_ultima_captura.keys():
-                        if time.time() - t_ultima_captura[e] > EQUIPO[e]['tiempo_captura']:
-                            ee = '10f'
-                            try:
-                                leer_equipo(e)
-                                t_ultima_captura[e] = time.time()
-                            except Exception as error:
-                                log.error(Fore.RED + f"Error {ee} en Bucle Principal... equipo {e}: {type(error).__name__} - {error}")
-                                time.sleep(1)
-                                continue
+            # Recargar configuración del equipo usando GestorParametros
+            global EQUIPO, comandos, orden_bytes
+            EQUIPO_nuevo = gp.leer_parametros(NEQUIPO)
+            
+            if EQUIPO_nuevo:
+                EQUIPO = EQUIPO_nuevo
+                try:
+                    comandos = EQUIPO['COMANDOS']
+                    del EQUIPO['COMANDOS']
+                except:
+                    pass
+                
+                # Actualizar orden de bytes
+                try:
+                    if orden_bytes == 1:
+                        orden_bytes = 1
+                except:
+                    orden_bytes = 0
+                
+                # Actualizar lista de equipos activos
+                equipos_activos = [e for e in EQUIPO if EQUIPO[e].get('usar', 0) == 1 and e != 'COMANDOS']
+                if gestor_mqtt:
+                    gestor_mqtt.suscribir_equipos(equipos_activos)
+                
+                log.info("Configuración recargada exitosamente")
+        except Exception as e:
+            log.error(Fore.RED + f'ERROR en recarga Parametros: {e}')
+    
+    ee = '10b'
+    dia_anterior = dia
+    dia = time.strftime("%Y-%m-%d")
+    
+    if dia_anterior != dia:  # cambio de dia
+        n_fallos_captura = {}
+        for e in equipos_activos:
+            n_fallos_captura[e] = 0
+        wh_placa = {}  # Ya veremos si se usa
+        wh_consumo = {}  # Ya veremos si se usa
+    
+    ee = '10c'
+    try:
+        for e in EQUIPO:
+            ee = '10d'
+            if EQUIPO[e]['usar'] == 1 and e != 'COMANDOS':
+                ee = '10e'
+                
+                # Abrir conexión Modbus si aún no existe
+                if e not in modbus:
+                    if DEBUG >= 1:
+                        log.debug(f"Abriendo conexion Modbus en {EQUIPO[e]['dev']} con id: {EQUIPO[e]['id_modbus']}")
+                    modbus[e] = minimalmodbus.Instrument(EQUIPO[e]['dev'], EQUIPO[e]['id_modbus'])
+                    modbus[e].serial.baudrate = EQUIPO[e]['baudrate'] if 'baudrate' in EQUIPO[e] else 9600
+                    modbus[e].serial.bytesize = 8
+                    modbus[e].serial.parity = minimalmodbus.serial.PARITY_NONE
+                    modbus[e].serial.stopbits = 1
+                    modbus[e].serial.timeout = 3
+                    modbus[e].debug = False
+                    modbus[e].mode = minimalmodbus.MODE_RTU
+                    if DEBUG >= 1:
+                        log.debug('.... OK')
+                
+                n_fallos_captura[e] = 0
+                
+                # Procesar comandos MQTT pendientes
+                ee = '10e_10'
+                if gestor_mqtt and gestor_mqtt.hay_comandos_pendientes():
+                    c_mqtt = gestor_mqtt.obtener_comando_pendiente()
+                    ee = '10e_20'
+                    if c_mqtt['comando'] in comandos['ayuda']:
+                        ee = '10e_30'
+                        if DEBUG >= 1:
+                            log.debug(f"Ejecutando Listar Parametros de equipo {c_mqtt['equipo']}")
+                        listar_parametros(c_mqtt['equipo'])
                     else:
-                        t_ultima_captura[e] = time.time()
-                        
-                        # Comprobación que existe registro en tabla equipos
-                        ee = '10g'
-                        
+                        ee = '10e_40'
+                        if DEBUG >= 1:
+                            log.debug(f"Ejecutando Lectura/Escritura {c_mqtt['comando']} en equipo {c_mqtt['equipo']}")
+                        escribir_registro(c_mqtt['equipo'], c_mqtt['comando'])
+                
+                ee = '10e_50'
+                if e in t_ultima_captura.keys():
+                    if time.time() - t_ultima_captura[e] > EQUIPO[e]['tiempo_captura']:
+                        ee = '10f'
                         try:
-                            ee = '10h'
-                            nombre_equipo = e.upper()
-                            gestor_bd.insertar_equipo_si_falta(nombre_equipo)
-                        except Exception as ex:
-                            log.warning(f"Error insertando equipo {e}: {ex}")
+                            leer_equipo(e)
+                            t_ultima_captura[e] = time.time()
+                        except Exception as error:
+                            log.error(Fore.RED + f"Error {ee} en Bucle Principal... equipo {e}: {type(error).__name__} - {error}")
+                            time.sleep(1)
+                            continue
+                else:
+                    t_ultima_captura[e] = time.time()
+                    
+                    # Comprobación que existe registro en tabla equipos
+                    ee = '10g'
+                    
+                    try:
+                        ee = '10h'
+                        nombre_equipo = e.upper()
+                        gestor_bd.insertar_equipo_si_falta(nombre_equipo)
+                    except Exception as ex:
+                        log.warning(f"Error insertando equipo {e}: {ex}")
                    
-        except Exception as error1:
-            log.error(f"Error {ee} en bucle principal {type(error1).__name__} - {error1}")
-            log.error('.... se reinicia')
-            gestor_bd.cerrar()
-            sys.exit(1)
-        
-        time.sleep(0.1)
-
-
-# --------------------------------------------------
-# Main
-# --------------------------------------------------
-if __name__ == "__main__":
-    main()
+    except Exception as error1:
+        log.error(f"Error {ee} en bucle principal {type(error1).__name__} - {error1}")
+        log.error('.... se reinicia')
+        gestor_bd.cerrar()
+        sys.exit(1)
+    
+    time.sleep(0.1)
