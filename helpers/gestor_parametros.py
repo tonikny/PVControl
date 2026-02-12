@@ -3,10 +3,10 @@ import sys
 import time
 import importlib.util
 
-from helpers.gestor_logs import Logger
+from helpers.gestor_logs import GestorLogs
 
-# Rutas por defecto en la Raspberry Pi
-BASE_PATH = '/home/pi/PVControl+'
+# Rutas por defecto basadas en la ubicación del proyecto
+BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 RUTA_DIST = os.path.join(BASE_PATH, 'Parametros_FV_DIST.py')
 RUTA_USER = os.path.join(BASE_PATH, 'Parametros_FV.py')
 
@@ -30,8 +30,8 @@ class GestorParametros:
         self._size = 0
         self._last_check = 0
         self._version = 0
-        self._log = Logger(__name__)
-        self._log.debug("Iniciando Gestor de Parámetros")
+        self._log = GestorLogs(__name__)
+        self._log.depurar("Iniciando Gestor de Parámetros")
 
     def _cargar_modulo(self, ruta):
         # evitar cache .pyc
@@ -48,7 +48,7 @@ class GestorParametros:
             sys.dont_write_bytecode = old_flag
 
     def _obtener(self, nombre):
-        """USER override → DIST fallback"""
+        """Prioriza valores del usuario y usa DIST como respaldo."""
         if hasattr(self._user, nombre):
             return getattr(self._user, nombre)
 
@@ -66,7 +66,7 @@ class GestorParametros:
             self._mtime = os.path.getmtime(RUTA_USER)
             self._size = os.path.getsize(RUTA_USER)
         except FileNotFoundError:
-            self._log.warning("Archivo de usuario no encontrado, usando solo DIST")
+            self._log.advertencia("Archivo de usuario no encontrado, usando solo DIST")
             self._user = None
             self._mtime = 0
             self._size = 0
@@ -89,7 +89,7 @@ class GestorParametros:
             mtime = os.path.getmtime(RUTA_USER)
             size = os.path.getsize(RUTA_USER)
         except FileNotFoundError:
-            self._log.error("Archivo no encontrado: %s", RUTA_USER)
+            self._log.error(f"Archivo no encontrado: {RUTA_USER}")
             return
 
         # sin cambios
@@ -112,7 +112,7 @@ class GestorParametros:
         self._size = size
         self._version += 1
 
-        self._log.info(f"Configuración recargada (v%s) {self._version}")
+        self._log.info(f"Configuración recargada (v{self._version})")
         
     # ---------- API pública ----------
 
@@ -124,7 +124,7 @@ class GestorParametros:
         ADS, ANENJI = gestor.leer_parametros("ADS", "ANENJI)
         ```
         """
-        self._log.debug(f"Parámetros solicitados: {' '.join(nombres)}")
+        self._log.depurar(f"Parámetros solicitados: {' '.join(nombres)}")
 
         if self._user is None:
             self._carga_inicial()
@@ -132,7 +132,7 @@ class GestorParametros:
             self._recargar_si_es_necesario()
 
         valores = [self._obtener(nombre) for nombre in nombres]
-        self._log.debug(f"Parámetros obtenidos: {valores}")
+        self._log.depurar(f"Parámetros obtenidos: {valores}")
 
         return valores[0] if len(valores) == 1 else tuple(valores)
 
@@ -140,7 +140,7 @@ class GestorParametros:
 
     def version(self):
         """
-        Retorna la versión actualde la configuración.
+        Retorna la versión actual de la configuración.
 
         Ejemplo:
             ```

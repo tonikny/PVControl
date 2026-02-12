@@ -3,9 +3,9 @@ import time
 import sys
 from colorama import Fore
 
-from helpers.gestor_logs import Logger
+from helpers.gestor_logs import GestorLogs
 
-log = Logger(__name__)
+log = GestorLogs(__name__)
 
 def iniciar_procesos(activos, ejecucion):
     """Inicia los procesos de captura para cada equipo activo."""

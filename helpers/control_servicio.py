@@ -21,9 +21,9 @@ Uso:
 import sys
 import subprocess
 
-from helpers.gestor_logs import Logger
+from helpers.gestor_logs import GestorLogs
 
-log = Logger(__name__)
+log = GestorLogs(__name__)
 
 def controlar_servicio(nombre_servicio: str, debe_ejecutarse: bool) -> None:
     """

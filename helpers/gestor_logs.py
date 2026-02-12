@@ -1,28 +1,26 @@
 import logging
 import os
 
-class Logger:
-    """
-    Logger class.
 
-    Parameters:
-    
-    level : int, optional
-        Logging level, default is logging.ERROR or environment variable LOGLEVEL
-    name : str, optional
-        Logger name, default is "pvcontrol".
+class GestorLogs:
+    """
+    Gestor de logs sencillo por script.
+
+    Parámetros:
+        nivel: nivel de logging (por defecto logging.ERROR o variable LOGLEVEL)
+        nombre: nombre del logger (por defecto "pvcontrol")
     """
 
-    def __init__(self, name="pvcontrol", level=logging.ERROR):
+    def __init__(self, nombre="pvcontrol", nivel=logging.ERROR):
         """
-        Simple per-script logger.
+        Inicializa un logger básico para el módulo.
 
         Args:
-            level: logging level
-            name: optional string name for the logger
+            nivel: nivel de logging
+            nombre: nombre del logger
         """
-        self._log = logging.getLogger(name)
-        self._log.setLevel(level=os.getenv('LOGLEVEL', str(level)).upper())
+        self._log = logging.getLogger(nombre)
+        self._log.setLevel(level=os.getenv("LOGLEVEL", str(nivel)).upper())
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
             "[%(levelname)s] [%(processName)s] %(name)s: %(message)s"
@@ -30,15 +28,14 @@ class Logger:
         handler.setFormatter(formatter)
         self._log.handlers.clear()
         self._log.addHandler(handler)
-        # self._log.propagate = False
 
-    def debug(self, *msg):
+    def depurar(self, *msg):
         self._log.debug(" ".join(msg))
 
     def info(self, *msg):
         self._log.info(" ".join(msg))
 
-    def warning(self, *msg):
+    def advertencia(self, *msg):
         self._log.warning(" ".join(msg))
 
     def error(self, *msg):
@@ -47,14 +44,13 @@ class Logger:
     def manual(self, *msg):
         formatter = self._log.handlers[0].formatter
         assert isinstance(formatter, logging.Formatter)
-        orig = formatter._style._fmt
+        formato_original = formatter._style._fmt
         formatter._style._fmt = "[MANUAL] [%(processName)s] %(name)s: %(message)s"
         self._log.critical(" ".join(msg))
-        formatter._style._fmt = orig
+        formatter._style._fmt = formato_original
 
-    # helpers
-    def is_debug(self):
+    def es_depuracion(self):
         return self._log.isEnabledFor(logging.DEBUG)
 
-    def is_info(self):
+    def es_info(self):
         return self._log.isEnabledFor(logging.INFO)
