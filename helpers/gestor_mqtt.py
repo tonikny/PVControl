@@ -1,290 +1,173 @@
 """
-MQTT Handler Module
+Módulo de gestión MQTT.
 
-This module provides a clean interface for MQTT communication in PVControl+ applications.
-It handles connection management, topic subscription, and thread-safe command queue
-management for equipment control.
+Este módulo proporciona una interfaz sencilla para comunicación MQTT en PVControl+.
+Incluye gestión de conexión, suscripciones por equipo y una cola segura de comandos.
 
-Configuration is automatically imported from Parametros_FV.py (or Parametros_FV_DIST.py as fallback).
-
-Key Features:
-- Automatic reconnection handling
-- Thread-safe command queue using queue.Queue
-- Equipment-specific topic subscription
-- Customizable message callbacks
-- Auto-imports configuration from Parametros_FV.py
-
-Usage:
-    from mqtt_handler import MQTTHandler
-    
-    def handle_message(equipo, comando):
-        print(f"Received command '{comando}' for equipment '{equipo}'")
-    
-    # Initialize with auto-imported config from Parametros_FV.py
-    mqtt = MQTTHandler(on_message_callback=handle_message)
-    
-    # Or override with explicit parameters
-    mqtt = MQTTHandler(
-        broker='localhost',
-        puerto=1883,
-        usuario='mqtt_user',
-        clave='mqtt_pass',
-        on_message_callback=handle_message
-    )
-    
-    # Subscribe to equipment topics
-    mqtt.subscribe_equipment(['INVERTER1', 'ANENJI1'])
-    
-    # Start listening
-    mqtt.connect()
-    
-    # Check for pending commands (non-blocking)
-    cmd = mqtt.get_pending_command()
-    if cmd:
-        print(f"Processing: {cmd['equipo']} -> {cmd['comando']}")
-    
-    # Cleanup
-    mqtt.disconnect()
+La configuración se lee desde Parametros_FV.py (o Parametros_FV_DIST.py como respaldo)
+a través de GestorParametros.
 """
 
-import paho.mqtt.client as mqtt
 from typing import Optional, List, Callable, Dict
 import queue
 import time
 
-# Import MQTT configuration from Parametros_FV.py
-# Falls back to Parametros_FV_DIST.py if Parametros_FV.py doesn't exist
-try:
-    from Parametros_FV import mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave
-except ImportError:
-    try:
-        from Parametros_FV_DIST import mqtt_broker, mqtt_puerto, mqtt_usuario, mqtt_clave
-    except ImportError:
-        # If neither file exists, set to None (will require explicit parameters)
-        mqtt_broker = None
-        mqtt_puerto = None
-        mqtt_usuario = None
-        mqtt_clave = None
+import paho.mqtt.client as mqtt
+
+from helpers.gestor_parametros import GestorParametros
 
 
-class MQTTHandler:
+class GestorMQTT:
     """
-    Manages MQTT connections and message handling for PVControl+ equipment.
-    
-    Provides thread-safe command queue and automatic reconnection.
-    Configuration is automatically imported from Parametros_FV.py at module level.
+    Gestiona la conexión MQTT y el enrutado de mensajes para equipos de PVControl+.
     """
-    
-    def __init__(self, broker: Optional[str] = None, puerto: Optional[int] = None, 
-                 usuario: Optional[str] = None, clave: Optional[str] = None,
-                 on_message_callback: Optional[Callable[[str, str], None]] = None,
-                 debug: bool = False):
+
+    def __init__(
+        self,
+        broker: Optional[str] = None,
+        puerto: Optional[int] = None,
+        usuario: Optional[str] = None,
+        clave: Optional[str] = None,
+        al_recibir: Optional[Callable[[str, str], None]] = None,
+        depurar: bool = False,
+    ):
         """
-        Initialize MQTT handler.
-        
+        Inicializa el gestor MQTT.
+
         Args:
-            broker: MQTT broker hostname or IP (default: auto-imported 'mqtt_broker' from Parametros_FV.py)
-            puerto: MQTT broker port (default: auto-imported 'mqtt_puerto' from Parametros_FV.py)
-            usuario: MQTT username (default: auto-imported 'mqtt_usuario' from Parametros_FV.py)
-            clave: MQTT password (default: auto-imported 'mqtt_clave' from Parametros_FV.py)
-            on_message_callback: Optional callback function(equipo, comando)
-            debug: Enable debug output
-        
-        Configuration is imported from Parametros_FV.py at module level.
-        Parameters can be explicitly provided to override the imported defaults.
+            broker: servidor MQTT (por defecto auto-importado desde parámetros)
+            puerto: puerto del broker (por defecto auto-importado)
+            usuario: usuario MQTT (por defecto auto-importado)
+            clave: contraseña MQTT (por defecto auto-importada)
+            al_recibir: callback opcional (equipo, comando)
+            depurar: habilita mensajes de depuración
         """
-        # Use provided parameters or fall back to module-level imported config
-        self.broker = broker or mqtt_broker
-        self.puerto = puerto or mqtt_puerto
-        self.usuario = usuario or mqtt_usuario
-        self.clave = clave or mqtt_clave
-        self.debug = debug
-        self.on_message_callback = on_message_callback
-        
+        gestor = GestorParametros()
+        try:
+            broker_cfg, puerto_cfg, usuario_cfg, clave_cfg = gestor.leer_parametros(
+                "mqtt_broker", "mqtt_puerto", "mqtt_usuario", "mqtt_clave"
+            )
+        except (AttributeError, FileNotFoundError):
+            broker_cfg = puerto_cfg = usuario_cfg = clave_cfg = None
+
+        self.broker = broker or broker_cfg
+        self.puerto = puerto or puerto_cfg
+        self.usuario = usuario or usuario_cfg
+        self.clave = clave or clave_cfg
+        self.depurar = depurar
+        self.al_recibir = al_recibir
+
         if not all([self.broker, self.puerto, self.usuario, self.clave]):
             raise ValueError(
-                "MQTT parameters must be provided explicitly or imported from Parametros_FV.py. "
-                f"Missing: broker={self.broker}, puerto={self.puerto}, usuario={self.usuario}"
+                "Parámetros MQTT incompletos. Proporcione valores explícitos "
+                "o defínalos en Parametros_FV.py."
             )
-        
-        # Thread-safe command queue (replaces global comando_mqtt)
-        self.command_queue: queue.Queue = queue.Queue()
-        
-        # Equipment list for subscriptions
+
+        self.cola_comandos: queue.Queue = queue.Queue()
         self.equipos: List[str] = []
-        
-        # Create MQTT client
-        self.client: Optional[mqtt.Client] = None
-        self._setup_client()
-    
-    def _setup_client(self) -> None:
-        """
-        Setup MQTT client with callbacks.
-        """
-        # Use a unique client ID based on timestamp to avoid conflicts
-        client_id = f"PVControl_{int(time.time())}"
-        self.client = mqtt.Client(client_id)
-        
-        # Set callbacks
-        self.client.on_connect = self._on_connect
-        self.client.on_disconnect = self._on_disconnect
-        self.client.on_message = self._on_message
-        
-        # Set reconnection parameters
-        self.client.reconnect_delay_set(min_delay=3, max_delay=15)
-        
-        # Set credentials
-        self.client.username_pw_set(self.usuario, password=self.clave)
-    
-    def _on_connect(self, client, userdata, flags, rc) -> None:
-        """
-        Internal callback for MQTT connection.
-        
-        Automatically subscribes to all registered equipment topics.
-        """
+        self.cliente: Optional[mqtt.Client] = None
+        self._configurar_cliente()
+
+    def _configurar_cliente(self) -> None:
+        cliente_id = f"PVControl_{int(time.time())}"
+        self.cliente = mqtt.Client(cliente_id)
+        self.cliente.on_connect = self._al_conectar
+        self.cliente.on_disconnect = self._al_desconectar
+        self.cliente.on_message = self._al_mensaje
+        self.cliente.reconnect_delay_set(min_delay=3, max_delay=15)
+        self.cliente.username_pw_set(self.usuario, password=self.clave)
+
+    def _al_conectar(self, client, userdata, flags, rc) -> None:
         if rc == 0:
-            if self.debug:
-                print(f"MQTT Connected to {self.broker}:{self.puerto}")
-            
-            # Subscribe to all equipment topics
+            if self.depurar:
+                print(f"MQTT conectado a {self.broker}:{self.puerto}")
             for equipo in self.equipos:
                 topic = f"PVControl/{equipo}"
                 client.subscribe(topic)
-                if self.debug:
-                    print(f"Subscribed to topic: {topic}")
+                if self.depurar:
+                    print(f"Suscrito a tópico: {topic}")
         else:
-            print(f"MQTT Connection failed with code {rc}")
-    
-    def _on_disconnect(self, client, userdata, rc) -> None:
-        """
-        Internal callback for MQTT disconnection.
-        
-        Handles automatic reconnection.
-        """
+            print(f"Conexión MQTT fallida con código {rc}")
+
+    def _al_desconectar(self, client, userdata, rc) -> None:
         if rc != 0:
-            print(f"MQTT Disconnected unexpectedly (rc={rc}), will attempt reconnection")
+            print(f"MQTT desconectado inesperadamente (rc={rc}), reintentando")
         else:
-            # Clean disconnect
             client.loop_stop()
-    
-    def _on_message(self, client, userdata, msg) -> None:
-        """
-        Internal callback for received MQTT messages.
-        
-        Extracts equipment ID and command, adds to queue, and calls user callback.
-        """
+
+    def _al_mensaje(self, client, userdata, msg) -> None:
         try:
-            # Extract equipment from topic (format: "PVControl/EQUIPMENT")
-            topic_parts = msg.topic.split('/')
-            if len(topic_parts) >= 2:
-                equipo = topic_parts[1].upper()
-            else:
-                equipo = msg.topic.upper()
-            
-            # Decode message
+            partes_topic = msg.topic.split("/")
+            equipo = partes_topic[1].upper() if len(partes_topic) >= 2 else msg.topic.upper()
             comando = msg.payload.decode().strip()
-            
-            if self.debug:
-                print(f"MQTT Message: {equipo} -> {comando}")
-            
-            # Add to command queue
-            command_dict = {'equipo': equipo, 'comando': comando}
-            self.command_queue.put(command_dict)
-            
-            # Call user callback if provided
-            if self.on_message_callback:
-                self.on_message_callback(equipo, comando)
-                
+
+            if self.depurar:
+                print(f"MQTT mensaje: {equipo} -> {comando}")
+
+            self.cola_comandos.put({"equipo": equipo, "comando": comando})
+
+            if self.al_recibir:
+                self.al_recibir(equipo, comando)
         except Exception as e:
-            print(f"Error processing MQTT message: {e}")
-    
-    def subscribe_equipment(self, equipos: List[str]) -> None:
+            print(f"Error procesando mensaje MQTT: {e}")
+
+    def suscribir_equipos(self, equipos: List[str]) -> None:
         """
-        Register equipment list for topic subscription.
-        
-        Topics will be subscribed in format: PVControl/{equipo}
-        
-        Args:
-            equipos: List of equipment identifiers (e.g., ['INVERTER1', 'ANENJI1'])
+        Registra la lista de equipos para suscripción de tópicos.
         """
         self.equipos = equipos
-    
-    def connect(self) -> bool:
+
+    def conectar(self) -> bool:
         """
-        Connect to MQTT broker and start message loop.
-        
-        Returns:
-            True if connection successful, False otherwise
+        Conecta al broker MQTT e inicia el loop de mensajes.
         """
         try:
-            self.client.connect(self.broker, self.puerto)
-            time.sleep(0.2)  # Allow connection to establish
-            self.client.loop_start()
+            self.cliente.connect(self.broker, self.puerto)
+            time.sleep(0.2)
+            self.cliente.loop_start()
             return True
         except Exception as e:
-            print(f"Error connecting to MQTT broker at {self.broker}:{self.puerto}: {e}")
+            print(f"Error conectando a MQTT en {self.broker}:{self.puerto}: {e}")
             return False
-    
-    def get_pending_command(self) -> Optional[Dict[str, str]]:
+
+    def obtener_comando_pendiente(self) -> Optional[Dict[str, str]]:
         """
-        Get next pending command from queue (non-blocking).
-        
-        Returns:
-            Dictionary with 'equipo' and 'comando' keys, or None if queue empty
-        
-        Example:
-            >>> cmd = mqtt.get_pending_command()
-            >>> if cmd:
-            ...     print(f"{cmd['equipo']}: {cmd['comando']}")
+        Devuelve el siguiente comando pendiente (no bloqueante).
         """
         try:
-            return self.command_queue.get_nowait()
+            return self.cola_comandos.get_nowait()
         except queue.Empty:
             return None
-    
-    def has_pending_commands(self) -> bool:
+
+    def hay_comandos_pendientes(self) -> bool:
         """
-        Check if command queue has pending items.
-        
-        Returns:
-            True if commands are waiting, False otherwise
+        Indica si hay comandos pendientes en la cola.
         """
-        return not self.command_queue.empty()
-    
-    def publish(self, topic: str, payload: str, qos: int = 0, retain: bool = False) -> bool:
+        return not self.cola_comandos.empty()
+
+    def publicar(self, topic: str, payload: str, qos: int = 0, retain: bool = False) -> bool:
         """
-        Publish message to MQTT topic.
-        
-        Args:
-            topic: MQTT topic string
-            payload: Message payload
-            qos: Quality of Service level (0, 1, or 2)
-            retain: Whether broker should retain message
-        
-        Returns:
-            True if publish successful, False otherwise
+        Publica un mensaje en el broker MQTT.
         """
         try:
-            result = self.client.publish(topic, payload, qos=qos, retain=retain)
+            result = self.cliente.publish(topic, payload, qos=qos, retain=retain)
             return result.rc == mqtt.MQTT_ERR_SUCCESS
         except Exception as e:
-            print(f"Error publishing to {topic}: {e}")
+            print(f"Error publicando en {topic}: {e}")
             return False
-    
-    def disconnect(self) -> None:
+
+    def desconectar(self) -> None:
         """
-        Disconnect from MQTT broker and stop message loop.
+        Desconecta del broker y detiene el loop.
         """
-        if self.client:
-            self.client.loop_stop()
-            self.client.disconnect()
-    
+        if self.cliente:
+            self.cliente.loop_stop()
+            self.cliente.disconnect()
+
     def __enter__(self):
-        """Context manager entry."""
-        self.connect()
+        self.conectar()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit with automatic cleanup."""
-        self.disconnect()
+        self.desconectar()
         return False

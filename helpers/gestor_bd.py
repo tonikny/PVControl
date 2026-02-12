@@ -12,7 +12,7 @@ como respaldo).
 Características principales:
 - Protección contra inyección SQL mediante consultas parametrizadas
 - Reintento automático de conexión en caso de fallo
-- Operaciones thread-safe
+- Operaciones seguras para hilos
 - Limpieza adecuada de recursos
 - Importación automática de configuración desde Parametros_FV.py
 
