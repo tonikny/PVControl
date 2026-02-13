@@ -7,20 +7,20 @@ class GestorLogs:
     Gestor de logs sencillo por script.
 
     Parámetros:
-        nivel: nivel de logging (por defecto logging.ERROR o variable LOGLEVEL)
+        level: nivel de logging (por defecto logging.ERROR o variable LOGLEVEL)
         nombre: nombre del logger (por defecto "pvcontrol")
     """
 
-    def __init__(self, nombre="pvcontrol", nivel=logging.ERROR):
+    def __init__(self, nombre="pvcontrol", level=logging.ERROR):
         """
         Inicializa un logger básico para el módulo.
 
         Args:
-            nivel: nivel de logging
+            level: nivel de logging
             nombre: nombre del logger
         """
         self._log = logging.getLogger(nombre)
-        self._log.setLevel(level=os.getenv("LOGLEVEL", str(nivel)).upper())
+        self._log.setLevel(level=os.getenv("LOGLEVEL", str(level)).upper())
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
             "[%(levelname)s] [%(processName)s] %(name)s: %(message)s"

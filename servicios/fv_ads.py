@@ -311,6 +311,7 @@ def main():
 
     # filtrar ADS activos
     ads_activos = preparar_lista_ads_activos(ads_config)
+    print("ads_activos=", ads_activos)
 
     # --------------------------------------------------
     # Control Ejecucion Servicio
