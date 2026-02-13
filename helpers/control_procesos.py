@@ -35,8 +35,8 @@ def vigilar_procesos(procesos, activos, ejecucion):
                     nombre = p.name[2:]
                     actual = None
                     indice = None
-                    for obj,idx in activos:
-                        if obj.id == nombre:
+                    for idx, obj in enumerate(activos):
+                        if obj['id'] == nombre:
                             actual = obj
                             indice = idx
                             break

@@ -20,7 +20,23 @@ class GestorLogs:
             nombre: nombre del logger
         """
         self._log = logging.getLogger(nombre)
-        self._log.setLevel(level=os.getenv("LOGLEVEL", str(level)).upper())
+
+        # Coger el nivel de logging de la variable de entorno LOGLEVEL
+        env_level = os.getenv("LOGLEVEL")
+        if env_level:
+            try:
+                level_value = getattr(logging, env_level.upper())
+                self._log.setLevel(level_value)
+            except AttributeError:
+                self._log.warning(
+                    f"Nivel de logging no reconocido: {env_level}, "
+                    f"usando valor por defecto: {level}"
+                )
+                self._log.setLevel(level)
+        else:
+            # Use the default level if no environment variable is set
+            self._log.setLevel(level)
+
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
             "[%(levelname)s] [%(processName)s] %(name)s: %(message)s"

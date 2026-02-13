@@ -297,7 +297,7 @@ def main():
         debug_level = logging.ERROR
 
     global log
-    log = GestorLogs(nombre=__name__, nivel=debug_level)
+    log = GestorLogs(nombre=__name__, level=debug_level)
     log.info(Style.BRIGHT + Fore.YELLOW + "Arrancando" + Fore.GREEN + " fv_ads.py")
 
     # --------------------------------------------------
