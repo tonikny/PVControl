@@ -6,6 +6,8 @@ import atexit
 from logging.handlers import QueueHandler, QueueListener
 from typing import Protocol
 
+from colorama import Fore
+
 
 class LoggerProtocol(Protocol):
     """
@@ -92,7 +94,9 @@ class GestorLogsDI:
 
             # Crear un manejador para el logger principal (consola, archivo, etc.)
             handler = logging.StreamHandler(sys.stdout)
-            formatter = logging.Formatter('[%(levelname)s] [%(processName)s] %(name)s: %(message)s')
+            formatter = logging.Formatter(
+                Fore.LIGHTWHITE_EX + '[%(levelname)s] [%(processName)s] %(name)s: %(message)s' + Fore.RESET
+            )
             handler.setFormatter(formatter)
             cls._main_logger.addHandler(handler)
 

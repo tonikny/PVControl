@@ -25,6 +25,7 @@ def leer_adc(callable_fn, ads_nombre, delay=0.005, logger_obj=None):
             raise
         logger_used.error(f"Error lectura {ads_nombre}")
         time.sleep(delay)
+        return None  # Return None to indicate failure
 
 def captura_ads(ads_actual, indice_ads):
     """Captura datos del ADS especificado.
@@ -54,15 +55,45 @@ def captura_ads(ads_actual, indice_ads):
     if existe:
         logger_local.manual(Fore.RED + f"Registro RAM - clave = {ads_nombre} ya creado")
 
-    logger_local.manual(f"Activando ADS en direccion {ads_actual.get('direccion')}")
-    adc = Adafruit_ADS1x15.ADS1115(address=ads_actual.get("direccion"), busnum=1)
+    # Inicializar ADC con reintento
+    adc = None
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries and adc is None:
+        try:
+            logger_local.manual(f"Activando ADS en direccion {ads_actual.get('direccion')}, intento {retry_count + 1}")
+            adc = Adafruit_ADS1x15.ADS1115(address=ads_actual.get("direccion"), busnum=1)
+        except Exception as e:
+            retry_count += 1
+            logger_local.error(f"Error al inicializar ADS en dirección {ads_actual.get('direccion')}, intento {retry_count}/3: {e}")
+            time.sleep(1)  # Esperar antes de reintentar
+    
+    if adc is None:
+        logger_local.error(f"No se pudo inicializar el ADS {ads_nombre} después de {max_retries} intentos. Terminando proceso.")
+        sys.exit(1)
 
     d_ads = {}
     modo_ads = "Disparado"
     version_parametros = 0
 
+    # Variable para controlar si necesitamos reiniciar el ADC
+    necesita_reiniciar_adc = False
+
     while True:
         try:
+            # Reiniciar el ADC si es necesario
+            if necesita_reiniciar_adc:
+                logger_local.warning(f"Reiniciando conexión con ADS {ads_nombre}")
+                try:
+                    adc = Adafruit_ADS1x15.ADS1115(address=ads_actual.get("direccion"), busnum=1)
+                    necesita_reiniciar_adc = False
+                    logger_local.info(f"ADS {ads_nombre} reiniciado correctamente")
+                except Exception as e:
+                    logger_local.error(f"Error al reiniciar ADS {ads_nombre}: {e}")
+                    time.sleep(5)  # Esperar antes de volver a intentar
+                    continue  # Volver al inicio del bucle
+
             ee = "10"
             t0 = time.perf_counter()
             tp0 = time.process_time()
@@ -131,6 +162,12 @@ def captura_ads(ads_actual, indice_ads):
                             )
                             if val is not None:
                                 capturas.append(val)
+                            else:
+                                # Si falla la lectura, marcar para reiniciar el ADC
+                                necesita_reiniciar_adc = True
+                                break  # Salir del bucle interno para reiniciar el ADC
+                        if necesita_reiniciar_adc:
+                            break  # Salir del bucle externo también
                     elif modo == 3:  # Diferencial
                         ee = "30b"
                         diff = 0 if i == 0 else 3
@@ -144,12 +181,18 @@ def captura_ads(ads_actual, indice_ads):
                             )
                             if val is not None:
                                 capturas.append(val)
+                            else:
+                                # Si falla la lectura, marcar para reiniciar el ADC
+                                necesita_reiniciar_adc = True
+                                break  # Salir del bucle interno para reiniciar el ADC
+                        if necesita_reiniciar_adc:
+                            break  # Salir del bucle externo también
 
                     else:
                         continue
                     ee = "30c"
 
-                    if modo != 0:
+                    if modo != 0 and not necesita_reiniciar_adc:  # Solo procesar si no hay error
                         ee = "30d"
                         if capturas:
                             mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
@@ -174,80 +217,98 @@ def captura_ads(ads_actual, indice_ads):
                         )
 
             else:  # Continuo o continuo diferencial
-                ee = "40"
-                for i, modo in enumerate(ads_actual["modo"]):
-                    n = ads_actual["bucles"][i]
-                    rate = ads_actual["rate"][i]
+                # Solo continuar si no hay necesidad de reiniciar el ADC
+                if not necesita_reiniciar_adc:
+                    ee = "40"
+                    for i, modo in enumerate(ads_actual["modo"]):
+                        # Skip if modo is 0 (not active)
+                        if modo == 0:
+                            continue
+                            
+                        n = ads_actual["bucles"][i]
+                        rate = ads_actual["rate"][i]
 
-                    capturas = []
-                    for _ in range(n):
-                        val = leer_adc(
-                            lambda: adc.get_last_result(), ads_nombre,
-                            logger_obj=logger_local  # Pasar logger al leer_adc
+                        capturas = []
+                        for _ in range(n):
+                            val = leer_adc(
+                                lambda: adc.get_last_result(), ads_nombre,
+                                logger_obj=logger_local  # Pasar logger al leer_adc
+                            )
+                            if val is not None:
+                                capturas.append(val)
+                            else:
+                                # Si falla la lectura, marcar para reiniciar el ADC
+                                necesita_reiniciar_adc = True
+                                logger_local.error(f"Lectura fallida en canal {i} del ADS {ads_nombre}, marcando para reiniciar ADC")
+                                break  # Salir del bucle interno para reiniciar el ADC
+                            
+                            time.sleep(1 / rate)
+
+                        if necesita_reiniciar_adc:
+                            break  # Salir del bucle externo también
+                        
+                        if capturas:
+                            mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                            err_ads[i] = max(capturas) - min(capturas)
+                        else:
+                            mediana = 0
+                            err_ads[i] = 0
+
+                        var_name = ads_actual["vars"][i]
+                        if not var_name:
+                            continue
+
+                        d_ads[var_name] = round(
+                            mediana * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
                         )
-                        if val is not None:
-                            capturas.append(val)
-                        time.sleep(1 / rate)
 
-                    if capturas:
-                        mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
-                        err_ads[i] = max(capturas) - min(capturas)
+                        logger_local.debug(
+                            f"capturas-A{i}={capturas}-{mediana} "
+                            f"Err:{err_ads[i]} - {var_name}={d_ads[var_name]}"
+                        )
+
+            # Solo guardar datos si no hay error
+            if not necesita_reiniciar_adc:
+                ee = "50"
+                t1 = (time.perf_counter() - t0) * 1000
+
+                if logger_local.es_debug():
+                    t = str(round(time.time(), 3))
+                    datos_log = f"{t[-6:]}: {ads_nombre}-Modo={ads_actual['modo']} {str(err_ads):16}-Captura = {d_ads}"
+                    if indice_ads == 0:
+                        logger_local.debug(Fore.RESET + datos_log)
+                    elif indice_ads == 1:
+                        logger_local.debug(Fore.GREEN + datos_log)
+                    elif indice_ads == 2:
+                        logger_local.debug(Fore.CYAN + datos_log)
                     else:
-                        mediana = 0
-                        err_ads[i] = 0
+                        logger_local.debug(Fore.RED + datos_log)
 
-                    var_name = ads_actual["vars"][i]
-                    if not var_name:
-                        continue
+                ee = "60"
+                tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
 
-                    d_ads[var_name] = round(
-                        mediana * 0.000125 * ads_actual["res"][i] / ads_actual["gain"][i], 3
-                    )
+                gestor_bd.guardar_datos_equipo_dict(ads_nombre, tiempo, d_ads)
 
-                    logger_local.debug(
-                        f"capturas-A{i}={capturas}-{mediana} "
-                        f"Err:{err_ads[i]} - {var_name}={d_ads[var_name]}"
-                    )
+                t2 = (time.perf_counter() - t0) * 1000
+                tp2 = (time.process_time() - tp0) * 1000
 
-            ee = "50"
-            t1 = (time.perf_counter() - t0) * 1000
+                ee = "70"
 
-            if logger_local.es_debug():
-                t = str(round(time.time(), 3))
-                datos_log = f"{t[-6:]}: {ads_nombre}-Modo={ads_actual['modo']} {str(err_ads):16}-Captura = {d_ads}"
-                if indice_ads == 0:
-                    logger_local.debug(Fore.RESET + datos_log)
-                elif indice_ads == 1:
-                    logger_local.debug(Fore.GREEN + datos_log)
-                elif indice_ads == 2:
-                    logger_local.debug(Fore.CYAN + datos_log)
-                else:
-                    logger_local.debug(Fore.RED + datos_log)
+                if logger_local.es_info():
+                    msg =f"{time.time():.5f} / {ads_nombre}: "
+                    msg += f"t1={t1:6.1f}-t2={t2:6.1f} --tp={tp2:5.2f} -- Rate:"
 
-            ee = "60"
-            tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
+                    if modo_ads == "Disparado":
+                        msg += f"{ads_actual['rate']} Bucles: {ads_actual['bucles']}"
+                    else:
+                        msg += f"{ads_actual['rate']} Bucles: {ads_actual['bucles']} "
+                        msg += f"- {modo_ads} entrada {ads_nombre}"
+                    logger_local.info(msg)
 
-            gestor_bd.guardar_datos_equipo_dict(ads_nombre, tiempo, d_ads)
-
-            t2 = (time.perf_counter() - t0) * 1000
-            tp2 = (time.process_time() - tp0) * 1000
-
-            ee = "70"
-
-            if logger_local.es_info():
-                msg =f"{time.time():.5f} / {ads_nombre}: "
-                msg += f"t1={t1:6.1f}-t2={t2:6.1f} --tp={tp2:5.2f} -- Rate:"
-
-                if modo_ads == "Disparado":
-                    msg += f"{ads_actual['rate']} Bucles: {ads_actual['bucles']}"
-                else:
-                    msg += f"{ads_actual['rate']} Bucles: {ads_actual['bucles']} "
-                    msg += f"- {modo_ads} entrada {ads_nombre}"
-                logger_local.info(msg)
-
-            ee = "80"
-            logger_local.debug(Fore.CYAN + "*" * 80)
-            logger_local.debug("*" * 80 + Fore.RESET)
+                ee = "80"
+                logger_local.debug(Fore.CYAN + "*" * 80)
+                logger_local.debug("*" * 80 + Fore.RESET)
+                
             # ---------------- Timing ----------------
             t3 = time.perf_counter() - t0
             time.sleep(max(ads_actual["tmuestra"] - t3, 0))
@@ -262,8 +323,8 @@ def captura_ads(ads_actual, indice_ads):
                 Fore.RED
                 + f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Error {ee} en {ads_nombre}: {repr(e)}"
             )
-            logger_local.error(f"{ads_nombre}....se reinicia el proceso de captura del {ads_nombre}")
-            sys.exit(1)
+            logger_local.error(f"{ads_nombre}....se intentará reiniciar la conexión con el dispositivo")
+            necesita_reiniciar_adc = True  # Marcar para reiniciar el ADC
 
 def preparar_lista_ads_activos(config, logger_obj):
     """Prepara la lista de ADS activos según los argumentos proporcionados."""
