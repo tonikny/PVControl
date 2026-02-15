@@ -53,11 +53,9 @@ def vigilar_procesos(procesos, activos, ejecucion):
 
         except KeyboardInterrupt:
             time.sleep(1)
-            log.error()
-            log.error(Fore.RED + "=" * 50)
             log.error("Finalizando proceso...", proceso.name if proceso else "desconocido")
             for p in procesos:
-                log.error(f"     ....Terminando hilo..{p}")
+                log.error(f"{Fore.RED}     ....Terminando hilo..{p}{Fore.RESET}")
                 p.terminate()
                 time.sleep(1)
             sys.exit()

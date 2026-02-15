@@ -38,7 +38,7 @@ The system is built using Python and integrates with various hardware components
 
 ## Refactored Architecture
 
-The project is undergoing a refactoring effort to improve modularity and maintainability. The new architecture includes:
+The project is undergoing a refactoring effort to improve modularity and maintainability. The refactored code must have exactly the same behaviour. The new architecture includes:
 
 ### Services (`servicios/` folder)
 - New modular service implementations replacing older scripts
@@ -89,12 +89,6 @@ python3 PVControl_Configuracion_Inicial.py
 python3 Arrancar_servicios_PVControl+.py
 ```
 
-### Service Management
-
-- Start services: `python3 Arrancar_servicios_PVControl+.py`
-- Stop services: `python3 Parar_Servicios_PVControl+.py`
-- View running processes: `bash Ver_Programas_en_Ejecucion_PVControl+.sh`
-
 ## Development Conventions
 
 ### Code Structure
@@ -104,6 +98,13 @@ python3 Arrancar_servicios_PVControl+.py
 - Web interface files are in the `html/` directory
 - Configuration files are typically named `Parametros_FV*.py`
 - Service files in `etc/systemd/system/` for systemd integration
+
+### Language Requirements
+
+- All code comments must be written in Spanish
+- File names should be in Spanish when appropriate
+- Variable names should be in Spanish following the project's naming conventions
+- Documentation and log messages should be in Spanish
 
 ### Configuration Files
 

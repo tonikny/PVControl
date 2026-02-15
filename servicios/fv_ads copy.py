@@ -235,15 +235,17 @@ def captura_ads(ads_actual, indice_ads):
             ee = "70"
 
             if logger_local.es_info():
-                msg =f"{time.time():.5f} / {ads_nombre}: "
-                msg += f"t1={t1:6.1f}-t2={t2:6.1f} --tp={tp2:5.2f} -- Rate:"
-                
+                logger_local.info(
+                    f"{time.time():.5f} / {ads_nombre}: "
+                    f"t1={t1:6.1f}-t2={t2:6.1f} --tp={tp2:5.2f} -- Rate:"
+                )
                 if modo_ads == "Disparado":
-                    msg += f"{ads_actual['rate']} Bucles: {ads_actual['bucles']}"
+                    logger_local.info(f"{ads_actual['rate']} Bucles: {ads_actual['bucles']}")
                 else:
-                    msg += f"{ads_actual['rate']} Bucles: {ads_actual['bucles']} "
-                    msg += f"- {modo_ads} entrada {ads_nombre}"
-                logger_local.info(msg)
+                    logger_local.info(
+                        f"{ads_actual['rate']} Bucles: {ads_actual['bucles']} "
+                        f"- {modo_ads} entrada {ads_nombre}"
+                    )
 
             ee = "80"
             logger_local.debug(Fore.CYAN + "*" * 80)
