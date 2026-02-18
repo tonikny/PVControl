@@ -1,12 +1,19 @@
+"""
+Gestor de Parámetros con Inyección de Dependencias para PVControl+
+
+Este módulo proporciona una clase GestorParametrosDI que está diseñada específicamente
+para manejar la carga de parámetros en entornos multiproceso como los usados en PVControl+.
+"""
+
 import os
 import sys
 import time
 import threading
 import importlib.util
 from collections import OrderedDict
-from typing import Optional, List, Tuple, Any, Dict
+from typing import Optional, List, Any, Dict
 
-from helpers.gestor_logs_DI import GestorLogsDI
+from helpers.logger_multiprocessing import LoggerMultiprocessing
 
 # Rutas por defecto basadas en la ubicación del proyecto
 BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -27,12 +34,12 @@ class GestorParametrosDI:
         check_interval (int): Intervalo de verificación de cambios en el archivo de parámetros (en segundos).
 
     Ejemplo:
-        logger = GestorLogsDI(__name__)
+        logger = LoggerMultiprocessing(__name__)
         gestor = GestorParametrosDI(logger=logger, check_interval=10)
         ADS, ANENJI = gestor.leer_parametros("ADS", "ANENJI")
     """
 
-    def __init__(self, logger: Optional[GestorLogsDI] = None, check_interval=5):
+    def __init__(self, logger: Optional[LoggerMultiprocessing] = None, check_interval=5):
         self.check_interval = check_interval
         self._dist = None
         self._user = None
@@ -41,7 +48,7 @@ class GestorParametrosDI:
         self._last_check = 0
         self._version = 0
         # Usar el logger inyectado o crear uno por defecto
-        self._log = logger if logger is not None else GestorLogsDI(__name__)
+        self._log = logger if logger is not None else LoggerMultiprocessing(__name__)
         self._lock = threading.Lock()
         self._module_cache = OrderedDict()  # Caché para prevenir fugas de memoria
         self._load_initial_configs()
