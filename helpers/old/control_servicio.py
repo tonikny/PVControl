@@ -11,8 +11,8 @@ Características:
 - Comentarios en español
 
 Uso:
-    from helpers.control_servicio import controlar_servicio
-
+    from fv_control_servicio import controlar_servicio
+    
     # En fv_ads.py: verificar si hay ADS activos
     hay_ads_activas = sum(1 for v in ADS.values() if v.get("usar")) > 0
     controlar_servicio("fv_ads", hay_ads_activas)
@@ -21,22 +21,21 @@ Uso:
 import sys
 import subprocess
 
-from helpers.logger_multiprocessing import LoggerMultiprocessing
+from helpers.gestor_logs import GestorLogs
 
-log = LoggerMultiprocessing(nombre=__name__)
-
+log = GestorLogs(__name__)
 
 def controlar_servicio(nombre_servicio: str, debe_ejecutarse: bool) -> None:
     """
     Controla la ejecución de un servicio basándose en una condición booleana.
-
+    
     Si debe_ejecutarse es False, el servicio se detiene mediante systemctl
     y el script sale con sys.exit().
-
+    
     Args:
         nombre_servicio: Nombre del servicio systemd (ej. "fv_ads", "fv_rs485")
         debe_ejecutarse: True si el servicio debe continuar, False para detenerlo
-
+        
     Ejemplo:
         >>> # Detener si no hay ADS activos
         >>> hay_ads = sum(1 for v in ADS.values() if v.get("usar")) > 0
@@ -49,7 +48,7 @@ def controlar_servicio(nombre_servicio: str, debe_ejecutarse: bool) -> None:
 def parar_servicio(nombre_servicio: str) -> None:
     """
     Detiene un servicio mediante systemctl y termina la ejecución del script.
-
+    
     Args:
         nombre_servicio: Nombre del servicio systemd a detener
     """

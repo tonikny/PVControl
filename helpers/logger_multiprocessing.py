@@ -32,6 +32,7 @@ class LoggerMultiprocessing:
     _main_logger: Optional[logging.Logger] = None
     _initialized = False
     _lock = multiprocessing.Lock()  # Bloqueo para inicialización segura en hilos
+    _init_pid: Optional[int] = None  # PID donde se inicializó
 
     def __init__(self, nombre: str = "pvcontrol", nivel: Optional[int] = None):
         """
@@ -75,6 +76,15 @@ class LoggerMultiprocessing:
     @classmethod
     def _initialize_multiprocess_logging(cls):
         """Inicializa el sistema de logging multiproceso seguro."""
+        current_pid = os.getpid()
+        
+        # Detectar si estamos en un proceso forked
+        if cls._initialized and cls._init_pid != current_pid:
+            # Estamos en un proceso hijo después de un fork
+            # Necesitamos re-inicializar para evitar deadlocks
+            cls._initialized = False
+            cls._lock = multiprocessing.Lock()
+        
         with cls._lock:
             if cls._initialized:
                 return
@@ -97,6 +107,7 @@ class LoggerMultiprocessing:
             cls._log_listener.start()
 
             cls._initialized = True
+            cls._init_pid = current_pid
 
     def _get_level_from_cmd_args(self) -> int:
         """Determina el nivel de logging basado en los argumentos de línea de comandos."""

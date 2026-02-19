@@ -52,9 +52,40 @@ def cargar_parametros() -> dict:
 
 
 def obtener_parametro(nombre: str, default=None):
-    """Obtiene un único parámetro"""
+    """
+    Obtiene un único parámetro.
+    
+    Args:
+        nombre: Nombre del parámetro a obtener
+        default: Valor por defecto si no existe
+        
+    Returns:
+        El valor del parámetro o el valor por defecto
+    """
     params = cargar_parametros()
     return params.get(nombre, default)
+
+
+def obtener_parametros(*nombres: str) -> dict:
+    """
+    Obtiene múltiples parámetros en una sola llamada.
+    
+    Carga los parámetros una sola vez y devuelve solo los solicitados,
+    evitando múltiples cargas innecesarias del archivo de configuración.
+    
+    Args:
+        *nombres: Nombres de los parámetros a obtener
+        
+    Returns:
+        Diccionario con los parámetros solicitados
+        
+    Example:
+        >>> params = obtener_parametros('servidor', 'usuario', 'clave', 'basedatos')
+        >>> params['servidor']
+        'localhost'
+    """
+    todos_los_parametros = cargar_parametros()
+    return {nombre: todos_los_parametros.get(nombre) for nombre in nombres}
 
 
 def recargar_si_cambiaron(ultima_version: float):
