@@ -25,9 +25,9 @@ from helpers.cargador_parametros import cargar_parametros, obtener_ads_activos
 # CONFIGURACIÓN
 # =============================================================================
 MAX_STARTUP_RETRIES = 5          # Máximo número de reintentos al iniciar
-HEALTH_CHECK_TIMEOUT = 10        # Segundos sin datos antes de reiniciar
-I2C_STARTUP_DELAY = 3            # Segundos para inicializar I2C
-I2C_BETWEEN_DELAY = 2            # Segundos entre inicio de procesos
+HEALTH_CHECK_TIMEOUT = 15        # Segundos sin datos antes de reiniciar
+I2C_STARTUP_DELAY = 0            # Segundos para inicializar I2C
+I2C_BETWEEN_DELAY = 12           # Segundos entre inicio de procesos (muy aumentado para evitar contención I2C)
 
 log_local = LoggerMultiprocessing(nombre=__name__)
 log_local.info(Style.BRIGHT + Fore.YELLOW + 'Arrancando' + Fore.GREEN + ' fv_ads_import.py')
@@ -46,7 +46,7 @@ elif '-p' in sys.argv: DEBUG = 100
 elif '-p3' in sys.argv: DEBUG = 3
 
 
-def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, heartbeat_dict=None):
+def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, heartbeat_value=None):
     """
     Captura datos para un ADS específico - SIN recarga interna
 
@@ -56,47 +56,78 @@ def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, 
         ads_name: Nombre del ADS (ej: 'ADS4')
         ads_config: Configuración completa del ADS
         startup_pipe: Pipe para confirmar inicio exitoso
-        heartbeat_dict: Dict compartido para health check
+        heartbeat_value: multiprocessing.Value para health check
     """
     import sys
+    import traceback
 
-    # 1. Initialize logger FIRST (before any pipe operations)
-    # Esto evita problemas con la cola de logging después del fork
+    # Top-level exception handler to catch ANY error in subprocess
     try:
-        logger_local = LoggerMultiprocessing(f"{__name__}-{ads_name}")
-        logger_local.info(f'[{ads_name}] Subproceso iniciando...')
-    except Exception as e:
-        print(f'[ERROR {ads_name}] Failed to initialize logger: {e}', flush=True)
-        # Fallback to basic logging
-        logger_local = None
+        # 1. Signal successful startup BEFORE any imports that might hang
+        if startup_pipe:
+            try:
+                startup_pipe[1].send(True)
+                startup_pipe[1].close()
+                print(f'[INFO {ads_name}] Startup confirmed', flush=True)
+            except Exception as e:
+                print(f'[ERROR {ads_name}] Failed to send startup: {e}', flush=True)
+                return  # Exit subprocess
 
-    # 2. Signal successful startup BEFORE any hardware initialization
-    if startup_pipe:
-        try:
-            startup_pipe[1].send(True)
-            startup_pipe[1].close()
-            print(f'[INFO {ads_name}] Startup confirmed', flush=True)
-            if logger_local:
-                logger_local.info(f'[{ads_name}] Startup confirmado enviado')
-        except Exception as e:
-            print(f'[ERROR {ads_name}] Failed to send startup: {e}', flush=True)
-            if logger_local:
-                logger_local.error(f'[{ads_name}] Error enviando startup confirmation: {e}')
+        # 2. Print startup message
+        msg = f'### {ads_name} STARTING ###'
+        print(msg, flush=True)
+        print(msg, file=sys.stderr, flush=True)
 
-    # 3. Print startup message
-    msg = f'### {ads_name} STARTING ###'
-    print(msg, flush=True)
-    print(msg, file=sys.stderr, flush=True)
-
-    try:
-        if logger_local:
-            logger_local.info(f'Iniciando captura para {ads_name}')
-        
-        from helpers.gestor_bd import GestorBD
-
-        # Extraer configuración
+        # 3. Extraer configuración primero
         nombre_ADS_local = ads_config['id']
         direccion_ADS = ads_config['direccion']
+        
+        # Random delay before ADC init to avoid I2C contention with other ADS
+        import random
+        delay = random.uniform(0.1, 0.5)
+        time.sleep(delay)
+        
+        # 4. Initialize ADC BEFORE logger with retry (I2C contention handling)
+        adc = None
+        for adc_attempt in range(3):
+            print(f'[INFO {ads_name}] Initializing ADC at address {direccion_ADS} (intento {adc_attempt+1}/3)...', flush=True)
+            try:
+                adc = Adafruit_ADS1x15.ADS1115(address=direccion_ADS, busnum=1)
+                # Test ADC with a quick read
+                test_val = adc.read_adc(0, gain=2)
+                print(f'[INFO {ads_name}] ADC initialized successfully (test read: {test_val})', flush=True)
+                break  # Success!
+            except Exception as adc_error:
+                print(f'[WARN {ads_name}] ADC init failed (intento {adc_attempt+1}): {adc_error}', flush=True)
+                adc = None
+                if adc_attempt < 2:
+                    time.sleep(2.0)  # Wait longer before retry
+        
+        if adc is None:
+            print(f'[ERROR {ads_name}] Failed to initialize ADC after 3 attempts', flush=True)
+            raise RuntimeError(f'ADC init failed for {ads_name}')
+        
+        # 5. Initialize database
+        try:
+            from helpers.gestor_bd import GestorBD
+            gestor_bd = GestorBD()
+            print(f'[INFO {ads_name}] Database connected', flush=True)
+        except Exception as db_error:
+            print(f'[ERROR {ads_name}] Database init failed: {db_error}', flush=True)
+            raise
+        
+        # 6. Force logger reinitialization for this subprocess (avoid fork corruption)
+        # Reset class state before creating logger
+        LoggerMultiprocessing._initialized = False
+        LoggerMultiprocessing._init_pid = None
+        
+        print(f'[INFO {ads_name}] About to initialize logger...', flush=True)
+        logger_local = LoggerMultiprocessing(f"{__name__}-{ads_name}")
+        print(f'[INFO {ads_name}] Logger created, sending first info...', flush=True)
+        logger_local.info(f'Iniciando captura para {ads_name}')
+        logger_local.info(f'ADS en direccion {direccion_ADS} inicializado correctamente')
+        print(f'[INFO {ads_name}] Logger initialized successfully', flush=True)
+
         var_ADS = ads_config['vars']
         tmuestra_ADS = ads_config['tmuestra']
         rate_ADS = ads_config['rate']
@@ -110,7 +141,10 @@ def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, 
         basedatos = ads_params['basedatos']
 
         Ncapturas = 0
-        time.sleep(0.02 * ADS_index)
+        
+        # Multiplexar lecturas entre diferentes ADS para evitar contención I2C
+        # ADS con mayor índice espera un poco más antes de empezar a leer
+        time.sleep(0.1 * ADS_index)
 
         if DEBUG >= 1:
             print()
@@ -124,17 +158,8 @@ def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, 
             logger_local.manual(Fore.RED + f'Registro RAM - clave = {nombre_ADS_local} ya creado')
 
         logger_local.manual(f'Activando ADS en direccion {direccion_ADS}')
-        
-        # Initialize ADC with error handling
-        try:
-            adc = Adafruit_ADS1x15.ADS1115(address=direccion_ADS, busnum=1)
-            logger_local.info(f'ADS en direccion {direccion_ADS} inicializado correctamente')
-        except Exception as e:
-            logger_local.error(f'Error FATAL inicializando ADS en direccion {direccion_ADS}: {e}')
-            import traceback
-            logger_local.error(f'Traza: {traceback.format_exc()}')
-            sys.exit(1)
 
+        # ADC ya está inicializado antes del logger
         d_ads = {}
         ADS_modo = 'Disparado'
 
@@ -145,9 +170,12 @@ def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, 
                 ERR_ADS = [0, 0, 0, 0]
                 ee = '11'
 
-                # Update heartbeat
-                if heartbeat_dict is not None:
-                    heartbeat_dict[ads_name] = time.time()
+                # Update heartbeat - CRITICAL for health monitoring
+                if heartbeat_value is not None:
+                    try:
+                        heartbeat_value.value = time.time()
+                    except Exception as hb_error:
+                        logger_local.error(f'Error updating heartbeat: {hb_error}')
 
                 ee = 30.2
 
@@ -249,7 +277,7 @@ def ADS_captura(ADS_index, ads_params, ads_name, ads_config, startup_pipe=None, 
                 import traceback
                 logger_local.error(f"Traza: {traceback.format_exc()}")
                 sys.exit(1)
-    
+
     except Exception as e:
         print(f'[ERROR {ads_name}] Fatal error: {e}', flush=True)
         import traceback
@@ -281,14 +309,12 @@ if __name__ == '__main__':
         log_local.manual(Fore.RED + f' -{ads["id"]}=' + Fore.BLUE +
                     f' direc={ads["direccion"]} - var= {ads["vars"]} - modo={ads["modo"]}')
     log_local.info(Fore.RESET + '=' * 50)
-    time.sleep(5)
 
-    # Track active processes: {ads_name: (process, config_hash)}
+    # Track active processes: {ads_name: (process, config_hash, heartbeat_value)}
     procesos_dict = {}
-    
-    # Create manager for heartbeat tracking
-    manager = multiprocessing.Manager()
-    heartbeat_dict = manager.dict()
+
+    # Use individual Value for each process heartbeat - more reliable than Manager dict
+    heartbeat_values = {}
 
     # Start initial processes with retry - staggered to avoid I2C contention
     # Start ADS with higher addresses first (they tend to have more I2C issues)
@@ -308,6 +334,10 @@ if __name__ == '__main__':
             'basedatos': params['basedatos']
         }
         
+        # Create a Value for this process's heartbeat
+        heartbeat_value = multiprocessing.Value('d', time.time())
+        heartbeat_values[ads_name] = heartbeat_value
+
         # Retry loop with exponential backoff
         started = False
         for attempt in range(MAX_STARTUP_RETRIES):
@@ -316,23 +346,38 @@ if __name__ == '__main__':
 
             p = multiprocessing.Process(
                 target=ADS_captura,
-                args=(i, ads_params, ads_name, ads, startup_pipe, heartbeat_dict),
+                args=(i, ads_params, ads_name, ads, startup_pipe, heartbeat_value),
                 name=f'p_{ads_name}'
             )
             p.start()
+            
+            # Wait a tiny bit for fork to complete
+            time.sleep(0.2)
+            
+            # Check if process died immediately (common with I2C issues)
+            if not p.is_alive():
+                log_local.warning(f'{ads_name} proceso murió inmediatamente después del start')
+                p.join(timeout=1)
+                # Continue to retry loop
+                startup_success = False
+            else:
+                # Wait for startup confirmation (max 10 seconds)
+                startup_success = False
+                for _ in range(100):  # 10 seconds total, checking every 0.1s
+                    if startup_pipe[0].poll(0.1):
+                        try:
+                            startup_success = startup_pipe[0].recv()
+                        except Exception as e:
+                            log_local.warning(f'{ads_name} error receiving startup: {e}')
+                        break
 
-            # Wait for startup confirmation (max 5 seconds)
-            startup_success = False
-            for _ in range(50):  # 5 seconds total, checking every 0.1s
-                if startup_pipe[0].poll(0.1):
-                    try:
-                        startup_success = startup_pipe[0].recv()
-                    except Exception as e:
-                        log_local.warning(f'{ads_name} error receiving startup: {e}')
-                    break
-
-            # Close parent's end of the pipe immediately after receiving
-            startup_pipe[0].close()
+                # Close parent's end of the pipe immediately after receiving
+                startup_pipe[0].close()
+                
+                # Double-check process is still alive after confirmation
+                if startup_success and not p.is_alive():
+                    log_local.warning(f'{ads_name} murió justo después de confirmar startup')
+                    startup_success = False
 
             if startup_success and p.is_alive():
                 log_local.info(f'{ads_name} confirmó inicio correctamente')
@@ -348,8 +393,7 @@ if __name__ == '__main__':
                     time.sleep(backoff)
         
         if started:
-            procesos_dict[ads_name] = (p, config_hash)
-            heartbeat_dict[ads_name] = time.time()
+            procesos_dict[ads_name] = (p, config_hash, heartbeat_value)
             log_local.info(f'Proceso {p.name} iniciado correctamente')
             # Small delay before starting next process to avoid I2C contention
             if i < len(lista_ads_sorted) - 1:
@@ -371,14 +415,14 @@ if __name__ == '__main__':
             
             # Check for processes that should be stopped (disabled, changed, or stuck)
             for ads_name in list(procesos_dict.keys()):
-                p, old_hash = procesos_dict[ads_name]
-                
+                p, old_hash, heartbeat_value = procesos_dict[ads_name]
+
                 # Check if process died
                 if not p.is_alive():
                     log_local.info(f'Proceso {p} parado {p.name}')
                     del procesos_dict[ads_name]
                     continue
-                
+
                 # Check if ADS was disabled (no longer in active list)
                 if ads_name not in current_ads_names:
                     log_local.info(f'ADS {ads_name} desactivado, terminando proceso...')
@@ -389,7 +433,7 @@ if __name__ == '__main__':
                         p.join(timeout=1)
                     del procesos_dict[ads_name]
                     continue
-                
+
                 # Check if config changed
                 for ads in lista_ads:
                     if ads['id'] == ads_name:
@@ -403,22 +447,22 @@ if __name__ == '__main__':
                                 p.join(timeout=1)
                             del procesos_dict[ads_name]
                         break
-                
+
                 # Health check: no data for HEALTH_CHECK_TIMEOUT seconds
-                if ads_name in heartbeat_dict:
-                    last_heartbeat = heartbeat_dict[ads_name]
-                    elapsed = time.time() - last_heartbeat
-                    if elapsed > HEALTH_CHECK_TIMEOUT:
-                        log_local.warning(f'{ads_name} no produce datos desde hace {elapsed:.1f}s, reiniciando...')
-                        p.terminate()
-                        p.join(timeout=3)
-                        if p.is_alive():
-                            p.kill()
-                            p.join(timeout=1)
-                        del procesos_dict[ads_name]
-                    elif elapsed > 5:
-                        # Log warning if no data for 5 seconds (but don't restart yet)
-                        log_local.debug(f'{ads_name} sin datos desde hace {elapsed:.1f}s')
+                # Use Value.value to get the timestamp
+                last_heartbeat = heartbeat_value.value
+                elapsed = time.time() - last_heartbeat
+                if elapsed > HEALTH_CHECK_TIMEOUT:
+                    log_local.warning(f'{ads_name} no produce datos desde hace {elapsed:.1f}s, reiniciando...')
+                    p.terminate()
+                    p.join(timeout=3)
+                    if p.is_alive():
+                        p.kill()
+                        p.join(timeout=1)
+                    del procesos_dict[ads_name]
+                elif elapsed > 5:
+                    # Log warning if no data for 5 seconds (but don't restart yet)
+                    log_local.debug(f'{ads_name} sin datos desde hace {elapsed:.1f}s')
             
             # Start processes for active ADS that don't have a process
             for i, ads in enumerate(lista_ads):
@@ -426,7 +470,7 @@ if __name__ == '__main__':
                 if ads_name not in procesos_dict:
                     config_hash = get_ads_config_hash(ads)
                     log_local.info(f'Iniciando proceso para {ads_name}')
-                    
+
                     ads_params = {
                         'servidor': params['servidor'],
                         'usuario': params['usuario'],
@@ -434,23 +478,42 @@ if __name__ == '__main__':
                         'basedatos': params['basedatos']
                     }
                     
+                    # Create Value for heartbeat
+                    heartbeat_value = multiprocessing.Value('d', time.time())
+                    heartbeat_values[ads_name] = heartbeat_value
+
                     # Retry loop for restart
                     started = False
                     for attempt in range(MAX_STARTUP_RETRIES):
                         startup_pipe = multiprocessing.Pipe()
                         p = multiprocessing.Process(
-                            target=ADS_captura, 
-                            args=(i, ads_params, ads_name, ads, startup_pipe, heartbeat_dict), 
+                            target=ADS_captura,
+                            args=(i, ads_params, ads_name, ads, startup_pipe, heartbeat_value),
                             name=f'p_{ads_name}'
                         )
                         p.start()
+
+                        # Give fork time to complete
+                        time.sleep(0.2)
                         
-                        startup_success = False
-                        for _ in range(50):
-                            if startup_pipe[0].poll(0.1):
-                                startup_success = startup_pipe[0].recv()
-                                break
-                        
+                        # Check if process died immediately
+                        if not p.is_alive():
+                            log_local.warning(f'{ads_name} (restart) murió inmediatamente')
+                            startup_success = False
+                        else:
+                            startup_success = False
+                            for _ in range(100):  # 10 seconds total
+                                if startup_pipe[0].poll(0.1):
+                                    startup_success = startup_pipe[0].recv()
+                                    break
+
+                            startup_pipe[0].close()
+                            
+                            # Double-check process is still alive
+                            if startup_success and not p.is_alive():
+                                log_local.warning(f'{ads_name} (restart) murió después de confirmar')
+                                startup_success = False
+
                         if startup_success and p.is_alive():
                             started = True
                             break
@@ -459,10 +522,9 @@ if __name__ == '__main__':
                             p.join(timeout=1)
                             if attempt < MAX_STARTUP_RETRIES - 1:
                                 time.sleep(2 ** attempt)
-                    
+
                     if started:
-                        procesos_dict[ads_name] = (p, config_hash)
-                        heartbeat_dict[ads_name] = time.time()
+                        procesos_dict[ads_name] = (p, config_hash, heartbeat_value)
                         log_local.info(f'Proceso {p.name} iniciado correctamente')
                         consecutive_errors = 0
                     else:
