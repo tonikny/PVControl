@@ -44,7 +44,9 @@ Uso:
 from typing import Dict, Any, Optional
 import json
 import MySQLdb
-from helpers.cargador_parametros import obtener_parametros
+
+from helpers.gestor_parametros import GestorParametros
+from helpers.logger import Logger
 
 
 class GestorBD:
@@ -52,11 +54,16 @@ class GestorBD:
     Gestiona operaciones de base de datos para datos de equipos de PVControl+.
 
     Proporciona acceso seguro y parametrizado a la base de datos con gestión automática
-    de conexiones. La configuración se importa automáticamente usando cargador_parametros.
+    de conexiones. La configuración se importa automáticamente usando GestorParametros.
     """
 
-    def __init__(self, servidor: Optional[str] = None, usuario: Optional[str] = None,
-                 clave: Optional[str] = None, basedatos: Optional[str] = None):
+    def __init__(
+        self,
+        servidor: Optional[str] = None,
+        usuario: Optional[str] = None,
+        clave: Optional[str] = None,
+        basedatos: Optional[str] = None
+    ):
         """
         Inicializa la conexión a la base de datos.
 
@@ -72,13 +79,19 @@ class GestorBD:
             MySQLdb.Error: Si la conexión falla
             ValueError: Si no se proporcionan parámetros y no existen en Parametros_FV.py
         """
-        # Importar solo los parámetros necesarios de base de datos en una sola llamada
-        params = obtener_parametros('servidor', 'usuario', 'clave', 'basedatos')
-        
-        self.servidor = servidor or params['servidor']
-        self.usuario = usuario or params['usuario']
-        self.clave = clave or params['clave']
-        self.nombre_bd = basedatos or params['basedatos']
+        self.log = Logger(__name__)
+
+        # Importar parámetros de base de datos desde GestorParametros
+        gestor = GestorParametros()
+        servidor_cfg, usuario_cfg, clave_cfg, basedatos_cfg = gestor.obtener(
+            'servidor', 'usuario', 'clave', 'basedatos'
+        )
+
+        # Usar parámetros proporcionados o valores importados como respaldo
+        self.servidor = servidor or servidor_cfg
+        self.usuario = usuario or usuario_cfg
+        self.clave = clave or clave_cfg
+        self.nombre_bd = basedatos or basedatos_cfg
 
         if not all([self.servidor, self.usuario, self.clave, self.nombre_bd]):
             raise ValueError(
@@ -90,6 +103,7 @@ class GestorBD:
         self.cursor: Optional[MySQLdb.cursors.Cursor] = None
 
         self._conectar()
+        self.log.debug(f"Conexión a BD establecida: {self.servidor}/{self.nombre_bd}")
 
     def _conectar(self) -> None:
         """
@@ -98,6 +112,7 @@ class GestorBD:
         Raises:
             MySQLdb.Error: Si la conexión falla
         """
+        self.log.debug(f"Intentando conectar a BD: {self.servidor}/{self.nombre_bd}")
         self.conexion = MySQLdb.connect(
             host=self.servidor,
             user=self.usuario,
@@ -107,6 +122,7 @@ class GestorBD:
         self.cursor = self.conexion.cursor()
         if not self.conexion or not self.cursor:
             raise MySQLdb.Error("No se pudo conectar a la base de datos")
+        self.log.info(f"Conexión exitosa a BD: {self.servidor}/{self.nombre_bd}")
 
     def _asegurar_conexion(self) -> None:
         """
@@ -116,6 +132,7 @@ class GestorBD:
             if self.conexion:
                 self.conexion.ping()
         except MySQLdb.MySQLError:
+            self.log.warning("Desconexión de la base de datos. Reconectando")
             self._conectar()
 
     def guardar_datos_equipo(self, id_equipo: str, tiempo: str,
@@ -151,13 +168,13 @@ class GestorBD:
                 SET tiempo = %s, sensores = %s
                 WHERE id_equipo = %s
             """
-
             self.cursor.execute(sql, (tiempo, sensores_json, id_equipo))
             self.conexion.commit()
+            self.log.debug(f"Datos guardados para {id_equipo}: {tiempo}")
             return True
 
         except MySQLdb.MySQLError as e:
-            print(f"Error guardando datos para {id_equipo}: {type(e).__name__} - {e}")
+            self.log.error(f"Error guardando datos para {id_equipo}: {type(e).__name__} - {e}")
             return False
 
     def guardar_datos_equipo_dict(self, id_equipo: str, tiempo: str,
@@ -175,9 +192,10 @@ class GestorBD:
         """
         try:
             sensores_json = json.dumps(sensores_dict)
+            self.log.debug(f"Guardando {id_equipo} con {len(sensores_dict)} valores: {list(sensores_dict.keys())}")
             return self.guardar_datos_equipo(id_equipo, tiempo, sensores_json)
         except (TypeError, ValueError) as e:
-            print(f"Error serializando datos de sensores: {e}")
+            self.log.error(f"Error serializando datos de sensores: {e}")
             return False
 
     def insertar_equipo_si_falta(self, id_equipo: str) -> bool:
@@ -208,10 +226,12 @@ class GestorBD:
             """
             self.cursor.execute(sql, (id_equipo, '{}'))
             self.conexion.commit()
+            self.log.debug(f"Equipo registrado en BD: {id_equipo}")
             return True
 
         except MySQLdb.Error:
             # El equipo probablemente ya existe (error de clave duplicada)
+            self.log.debug(f"Equipo ya existe en BD: {id_equipo}")
             return False
 
     def obtener_datos_equipo(self, id_equipo: str) -> Optional[Dict[str, Any]]:
@@ -239,14 +259,17 @@ class GestorBD:
             if resultado:
                 tiempo, sensores_json = resultado
                 sensores = json.loads(sensores_json) if sensores_json else {}
+                self.log.debug(f"Datos recuperados para {id_equipo}: {tiempo}")
                 return {
                     'tiempo': tiempo,
                     'sensores': sensores
                 }
+            
+            self.log.debug(f"Equipo no encontrado: {id_equipo}")
             return None
 
         except MySQLdb.Error as e:
-            print(f"Error recuperando datos para {id_equipo}: {e}")
+            self.log.error(f"Error recuperando datos para {id_equipo}: {e}")
             return None
 
     def confirmar(self) -> None:
@@ -271,8 +294,10 @@ class GestorBD:
         """
         if self.cursor:
             self.cursor.close()
+            self.log.debug("Cursor de BD cerrado")
         if self.conexion:
             self.conexion.close()
+            self.log.info(f"Conexión a BD cerrada: {self.servidor}/{self.nombre_bd}")
         self.cursor = None
         self.conexion = None
 

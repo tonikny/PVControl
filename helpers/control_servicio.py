@@ -21,9 +21,9 @@ Uso:
 import sys
 import subprocess
 
-from helpers.logger_multiprocessing import LoggerMultiprocessing
+from helpers.logger import Logger
 
-log = LoggerMultiprocessing(nombre=__name__)
+log = Logger(nombre=__name__)
 
 
 def controlar_servicio(nombre_servicio: str, debe_ejecutarse: bool) -> None:
