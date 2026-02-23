@@ -3,18 +3,13 @@
 """
 fv_rs485.py - Captura de datos RS485 Modbus RTU para PVControl+
 
-Versión 2024-05-26
-
-Script principal para captura de datos de dispositivos RS485 (SRNE, ANENJI, etc.)
-usando Modbus RTU.
-
 Características:
 - Logger para mensajes de depuración
 - GestorBD para acceso a base de datos
 - GestorProcesos para gestión de procesos
 - Gestión de servicios externa
 - Clase CapturadorRS485 específica para dispositivos RS485
-- Soporte para múltiples equipos configurados en Parametros_FV.py
+- Soporte para múltiples equipos (SRNE, ANENJI, etc.)
 - MQTT para comandos remotos
 - Telegram para notificaciones
 
@@ -23,31 +18,13 @@ Uso:
     python3 fv_rs485.py                # Normal
     LOGLEVEL=INFO python3 fv_rs485.py  # Via env
 
-La configuración del equipo se define en Parametros_FV.py bajo una variable
-(ej. SRNE, ANENJI) con la siguiente estructura:
-
-Ejemplo de configuración en Parametros_FV.py:
-    SRNE = {
-        'SRNE1': {
-            'usar': 1,
-            'dev': '/dev/ttyUSB0',
-            'baudrate': 9600,
-            'id_modbus': 1,
-            'tiempo_captura': 5,
-        },
-        'COMANDOS': {
-            'SOC': {'reg': 0x0100, 'tipo': 'u16'},
-            'Vbat': {'reg': 0x0101, 'dec': 1, 'tipo': 'u16'},
-            'Ibat': {'reg': 0x0102, 'dec': 2, 'tipo': 's16'},
-            # ... más comandos
-        }
-    }
+Para un equipo específico (ej. SRNE):
+    python3 fv_srne.py -p              # Wrapper para SRNE
 """
 
 import sys
 import time
 import os
-import json
 from typing import Dict, List, Optional, Any
 
 import minimalmodbus
@@ -63,34 +40,6 @@ from helpers.gestor_procesos import GestorProcesos
 
 
 # =============================================================================
-# FUNCIONES DE UTILIDAD PARA CONVERSION MODBUS
-# =============================================================================
-
-def convert_u16(valor: int, decimales: int = 0, offset: float = 0) -> float:
-    """Convert unsigned 16-bit register value to float with scaling and offset."""
-    return round(valor * 10 ** -decimales, decimales) + offset
-
-
-def convert_s16(valor: int, decimales: int = 0, offset: float = 0) -> float:
-    """Convert signed 16-bit register value (two's complement) to float."""
-    signed_valor = valor if valor < 32768 else valor - 65536
-    return round(signed_valor * 10 ** -decimales, decimales) + offset
-
-
-def convert_u32(valor_bajo: int, valor_alto: int, decimales: int = 0, offset: float = 0) -> float:
-    """Convert unsigned 32-bit value from two 16-bit registers to float."""
-    combined_value = valor_alto * 65536 + valor_bajo
-    return round(combined_value * 10 ** -decimales, decimales) + offset
-
-
-def apply_byte_order(valor: int, orden_bytes: int) -> int:
-    """Apply byte order correction for devices that reverse byte order."""
-    if orden_bytes == 1:
-        return int.from_bytes(valor.to_bytes(2, 'little'), 'big')
-    return valor
-
-
-# =============================================================================
 # CLASE ESPECÍFICA PARA CAPTURA RS485
 # =============================================================================
 
@@ -102,19 +51,20 @@ class CapturadorRS485:
     variable (ej. SRNE, ANENJI). Cada equipo puede tener múltiples registros
     Modbus configurados.
 
-    Atributos:
-        nombre_equipo: Nombre del tipo de equipo (ej. 'SRNE', 'ANENJI')
-        config: Configuración completa desde Parametros_FV.py
-        log: Logger para este capturador
-        modbus: Diccionario de conexiones Modbus por equipo
-        comandos: Diccionario de comandos configurados
-        orden_bytes: Configuración de orden de bytes (0=normal, 1=invertido)
-        equipos_activos: Lista de equipos activos
-        n_fallos_captura: Contador de fallos por equipo
-        t_ultima_captura: Marca de tiempo de última captura por equipo
-        gestor_bd: Gestor de base de datos
-        gestor_mqtt: Gestor MQTT
-        gestor_telegram: Gestor Telegram
+    Config dict esperado (desde Parametros_FV.py):
+        {
+            'id': 'SRNE1',
+            'usar': 1,
+            'dev': '/dev/ttyUSB0',
+            'baudrate': 9600,
+            'id_modbus': 1,
+            'tiempo_captura': 5,
+            'COMANDOS': {
+                'Vbat': {'reg': 0x0101, 'dec': 1, 'tipo': 'u16'},
+                'Ibat': {'reg': 0x0102, 'dec': 2, 'tipo': 's16'},
+                # ... más comandos
+            }
+        }
     """
 
     def __init__(self, nombre_equipo: str, config: dict):
@@ -122,7 +72,7 @@ class CapturadorRS485:
         Inicializa el capturador RS485.
 
         Args:
-            nombre_equipo: Nombre del tipo de equipo (ej. 'SRNE', 'ANENJI')
+            nombre_equipo: Nombre del equipo (ej. 'SRNE', 'ANENJI')
             config: Configuración completa del equipo desde Parametros_FV.py
         """
         self.nombre_equipo = nombre_equipo
@@ -136,10 +86,10 @@ class CapturadorRS485:
         self.equipos_activos: List[str] = []
         self.n_fallos_captura: Dict[str, int] = {}
         self.t_ultima_captura: Dict[str, float] = {}
-        self.reg_to_comando: Dict[int, str] = {}
+        self.t_recarga_parametros: float = 0
 
-        # Gestores - BD se inicializa aquí, MQTT y Telegram en inicializar()
-        self.gestor_bd: GestorBD = GestorBD()
+        # Gestores
+        self.gestor_bd: Optional[GestorBD] = None
         self.gestor_mqtt: Optional[GestorMQTT] = None
         self.gestor_telegram: Optional[GestorTelegram] = None
 
@@ -168,40 +118,14 @@ class CapturadorRS485:
             self.n_fallos_captura[e] = 0
             self.t_ultima_captura[e] = 0
 
-        # Construir mapeo registro -> comando
-        self._construir_reg_to_comando()
-
         self.log.info(f"Equipos activos: {self.equipos_activos}")
-
-    def _construir_reg_to_comando(self) -> None:
-        """Construye mapeo de registro a nombre de comando."""
-        self.reg_to_comando = {}
-        for cmd_name in self.comandos:
-            if cmd_name in ('ayuda', 'lectura_multiple'):
-                continue
-            if 'reg' in self.comandos[cmd_name]:
-                self.reg_to_comando[self.comandos[cmd_name]['reg']] = cmd_name
-
-    def _get_command_params(self, comando: str) -> dict:
-        """Obtiene parámetros de un comando."""
-        cmd = self.comandos.get(comando, {})
-        return {
-            'reg': cmd.get('reg', 0),
-            'dec': cmd.get('dec', 0),
-            'tipo': cmd.get('tipo', 'u16'),
-            'offset': cmd.get('offset', 0),
-            'fc': cmd.get('fc', 3),
-            'grabar': cmd.get('grabar', True),
-            'adaptar': cmd.get('adaptar', None),
-            'escritura': cmd.get('escritura', False),
-            'rango': cmd.get('rango', [0, 65535])
-        }
 
     def inicializar(self) -> None:
         """Inicializa gestores y conexión Modbus."""
         self.log.info(f"Inicializando {self.nombre_equipo}...")
 
-        # Registrar equipos en BD (gestor_bd ya está inicializado en __init__)
+        # Inicializar GestorBD
+        self.gestor_bd = GestorBD()
         for e in self.equipos_activos:
             self.gestor_bd.insertar_equipo_si_falta(e.upper())
 
@@ -250,81 +174,45 @@ class CapturadorRS485:
         except Exception as e:
             raise Exception(f"No se pudo abrir conexión Modbus para {equipo}: {e}")
 
-    def _incrementar_fallo(self, equipo: str) -> None:
-        """Incrementa el contador de fallos de comunicación para un equipo."""
-        self.n_fallos_captura[equipo] = self.n_fallos_captura.get(equipo, 0) + 1
-        self.log.warning(f"Fallo de comunicación en {equipo}. Total fallos: {self.n_fallos_captura[equipo]}")
-
-    def leer_registro(self, equipo: str, comando: str, datos: Optional[dict] = None) -> Optional[float]:
+    def leer_registro(self, equipo: str, comando: str) -> float:
         """
         Lee un registro individual de un equipo.
 
         Args:
             equipo: Nombre del equipo (ej. 'SRNE1')
             comando: Nombre del comando (ej. 'Vbat')
-            datos: Diccionario opcional para datos adicionales (usado en 'adaptar')
 
         Returns:
-            Valor leído del registro, o None si falló la lectura (error de comunicación)
+            Valor leído del registro
         """
-        params = self._get_command_params(comando)
-        reg = params['reg']
-        dec = params['dec']
-        tipo = params['tipo']
-        offset = params['offset']
-        fc = params['fc']
+        cmd = self.comandos[comando]
+        reg = cmd['reg']
+        dec = cmd.get('dec', 0)
+        tipo = cmd.get('tipo', 'u16')
+        offset = cmd.get('offset', 0)
+        fc = cmd.get('fc', 3)
 
-        if datos is None:
-            datos = {}
+        d = -9999
 
-        try:
-            # Lectura de Modbus
-            if tipo in ('u16', 's16', 'adaptar'):
-                d = self.modbus[equipo].read_register(
-                    reg,
-                    dec if tipo != 'u16' else 0,
-                    fc,
-                    signed=(tipo == 's16')
-                )
-            elif tipo == 'u32':
-                # Para u32 necesitamos leer dos registros
-                d_bajo = self.modbus[equipo].read_register(reg, 0, fc, signed=False)
-                d_alto = self.modbus[equipo].read_register(reg + 1, 0, fc, signed=False)
-                d = convert_u32(d_bajo, d_alto, dec, offset)
-                return d
+        if tipo == 'u16':
+            d = self.modbus[equipo].read_register(reg, 0, fc)
+            if self.orden_bytes == 1:
+                d = int.from_bytes(d.to_bytes(2, byteorder='little'))
+            d = round(d * 10**-dec, dec)
+        elif tipo == 's16':
+            d = self.modbus[equipo].read_register(reg, dec, fc, True)
+        elif tipo == 'u32':
+            d = self.modbus[equipo].read_long(reg, fc, False, 0)
+            d = round(d * 10**-dec, dec)
+        elif tipo == 'adaptar':
+            d = self.modbus[equipo].read_register(reg, dec, fc)
 
-            # Interpretación según tipo
-            if tipo == 'u16':
-                if self.orden_bytes == 1:
-                    d = apply_byte_order(d, self.orden_bytes)
-                d = convert_u16(d, dec, offset)
+        if tipo != 'adaptar':
+            d += offset
 
-            elif tipo == 's16':
-                d = convert_s16(d, dec, offset)
+        return d
 
-            elif tipo == 'adaptar' and params.get('adaptar'):
-                # Ejecutar todo el código adaptar junto (no línea por línea)
-                # para soportar if/elif/else correctamente
-                ejecutar = '\n'.join(params['adaptar'])
-                exec(ejecutar, {}, {"datos": datos, "d": d})
-                return None
-
-            return d
-
-        except minimalmodbus.NoResponseError:
-            self.log.error(f"Timeout/CRC leyendo {comando} en {equipo}: No hay respuesta del dispositivo")
-            self._incrementar_fallo(equipo)
-            return None
-        except minimalmodbus.InvalidResponseError:
-            self.log.error(f"CRC incorrecto leyendo {comando} en {equipo}: Respuesta inválida")
-            self._incrementar_fallo(equipo)
-            return None
-        except Exception as e:
-            self.log.error(f"Error leyendo {comando} en {equipo}: {type(e).__name__} - {e}")
-            self._incrementar_fallo(equipo)
-            return None
-
-    def leer_registros(self, equipo: str) -> tuple[Dict[str, float], bool]:
+    def leer_registros(self, equipo: str) -> Dict[str, float]:
         """
         Lee múltiples registros usando rangos (lectura múltiple).
 
@@ -332,89 +220,86 @@ class CapturadorRS485:
             equipo: Nombre del equipo
 
         Returns:
-            Tupla (diccionario {comando: valor}, hay_error_comunicacion)
-            hay_error_comunicacion = True si hubo algún fallo de comunicación
+            Diccionario {comando: valor}
         """
+        ee = 1000
         lectura = {}  # {registro: valor}
         datos = {}    # {comando: valor}
-        hay_error_comunicacion = False
 
-        if 'lectura_multiple' not in self.comandos:
-            return datos, False
+        try:
+            if 'lectura_multiple' not in self.comandos:
+                return datos
 
-        for reg_ini, reg_fin in self.comandos['lectura_multiple']['rangos']:
-            nreg = reg_fin - reg_ini + 1
-            registros = list(range(reg_ini, reg_fin + 1))
+            for reg_ini, reg_fin in self.comandos['lectura_multiple']['rangos']:
+                ee = 1010
+                nreg = reg_fin - reg_ini + 1
+                registros = list(range(reg_ini, reg_fin + 1))
 
-            try:
-                # Lectura múltiple de registros
-                d = self.modbus[equipo].read_registers(reg_ini, nreg, 3)
+                try:
+                    ee = 1020
+                    d = self.modbus[equipo].read_registers(reg_ini, nreg, 3)
+                except Exception as e:
+                    ee = 1030
+                    self.log.error(f'Error lectura multiple reg_ini:{reg_ini},reg_fin:{reg_fin} -> nreg:{nreg}')
+                    self.n_fallos_captura[equipo] += 1
+                    continue
 
-                # Construir diccionario raw lectura {registro: valor}
                 for i in range(nreg):
                     lectura[registros[i]] = d[i]
 
-            except minimalmodbus.NoResponseError:
-                self.log.error(f"Timeout/CRC en lectura múltiple {equipo} reg_ini:{reg_ini},reg_fin:{reg_fin}")
-                self._incrementar_fallo(equipo)
-                hay_error_comunicacion = True
-                continue
-            except minimalmodbus.InvalidResponseError:
-                self.log.error(f"CRC incorrecto en lectura múltiple {equipo} reg_ini:{reg_ini},reg_fin:{reg_fin}")
-                self._incrementar_fallo(equipo)
-                hay_error_comunicacion = True
-                continue
-            except Exception as e:
-                self.log.error(f'Error lectura múltiple {equipo} reg_ini:{reg_ini},reg_fin:{reg_fin} -> {type(e).__name__}: {e}')
-                self._incrementar_fallo(equipo)
-                hay_error_comunicacion = True
-                continue
+                # Interpretar lectura
+                cmd = {}  # {registro: clave_comando}
+                for c in self.comandos:
+                    if 'reg' in self.comandos[c]:
+                        cmd[self.comandos[c]['reg']] = c
 
-            # Interpretar cada registro leído
-            for reg, valor in lectura.items():
-                if reg not in self.reg_to_comando:
-                    continue
+                for r in lectura:
+                    try:
+                        if r not in cmd:
+                            continue
+                        comando = cmd[r]
+                        grabar = self.comandos[comando].get('grabar', True)
+                        if not grabar:
+                            continue
 
-                comando = self.reg_to_comando[reg]
-                params = self._get_command_params(comando)
+                        valor = lectura[r]
+                        if self.orden_bytes == 1:
+                            valor = int.from_bytes(valor.to_bytes(2, byteorder='little'))
 
-                if not params['grabar']:
-                    continue
+                        dec = self.comandos[comando].get('dec', 0)
+                        tipo = self.comandos[comando].get('tipo', 'u16')
+                        offset = self.comandos[comando].get('offset', 0)
 
-                try:
-                    # Manejo de orden de bytes
-                    if self.orden_bytes == 1:
-                        valor = apply_byte_order(valor, self.orden_bytes)
+                        d = -9999
+                        if tipo == 'u16':
+                            d = round(valor * 10**-dec, dec)
+                        elif tipo == 's16':
+                            d = valor if valor < 32767 else valor - 65536
+                            d = round(d * 10**-dec, dec)
+                        elif tipo == 'u32':
+                            d = round((lectura[r+1] * 65536 + valor) * 10**-dec, dec)
 
-                    tipo = params['tipo']
-                    dec = params['dec']
-                    offset = params['offset']
+                        if tipo == 'adaptar':
+                            ee = 1050
+                            d = valor
+                            ejecutar = '\n'.join(self.comandos[comando]['adaptar'])
+                            ee = 1060
+                            exec(ejecutar)
+                        else:
+                            ee = 1070
+                            d += offset
+                            datos[comando] = d
 
-                    if tipo == 'u16':
-                        d = convert_u16(valor, dec, offset)
-                    elif tipo == 's16':
-                        d = convert_s16(valor, dec, offset)
-                    elif tipo == 'u32':
-                        valor_alto = lectura.get(reg + 1, 0)
-                        d = convert_u32(valor, valor_alto, dec, offset)
-                    elif tipo == 'adaptar' and params['adaptar']:
-                        d = valor
-                        ejecutar = '\n'.join(params['adaptar'])
-                        exec(ejecutar)
-                        # 'adaptar' commands write directly to datos inside exec
-                        continue
-                    else:
-                        continue
+                    except Exception as error1:
+                        self.log.error(f"Error {ee} en leer_registros({equipo})..comando={comando} {type(error1).__name__} - {error1}")
+                        datos[comando] = -9999
 
-                    datos[comando] = d
+        except Exception as e:
+            self.log.error(f'Equipo {equipo}: error {ee}...rango de lectura de registros mal definido en Parametros_FV.py')
 
-                except Exception as e:
-                    self.log.error(f"Error procesando {comando} en leer_registros({equipo}) -> {type(e).__name__}: {e}")
-                    # Error de procesamiento de datos, NO de comunicación - no incrementamos Nfallos
+        return datos
 
-        return datos, hay_error_comunicacion
-
-    def leer_datos(self, equipo: str) -> tuple[Dict[str, float], bool]:
+    def leer_datos(self, equipo: str) -> Dict[str, float]:
         """
         Lee todos los datos de un equipo.
 
@@ -422,67 +307,58 @@ class CapturadorRS485:
             equipo: Nombre del equipo
 
         Returns:
-            Tupla (diccionario {comando: valor}, hay_error_comunicacion)
-            hay_error_comunicacion = True si hubo algún fallo de comunicación
+            Diccionario con todos los datos leídos
         """
         t0 = time.time()
         datos = {}
-        hay_error_comunicacion = False
+        error = False
 
-        lectura_multiple = self.comandos.get('lectura_multiple', {}).get('usar', 0)
+        try:
+            ee = 100
+            lectura_multiple = self.comandos.get('lectura_multiple', {}).get('usar', 0)
 
-        if lectura_multiple:
-            datos, hay_error_comunicacion = self.leer_registros(equipo)
-        else:
-            # Lectura individual de cada comando
-            for c in self.comandos:
-                if c in ('ayuda', 'lectura_multiple'):
-                    continue
+            if lectura_multiple == 1:
+                datos = self.leer_registros(equipo)
+            else:
+                for c in self.comandos:
+                    if c in ['ayuda', 'lectura_multiple']:
+                        continue
 
-                params = self._get_command_params(c)
-                if not params['grabar']:
-                    continue
+                    grabar = self.comandos[c].get('grabar', True)
+                    if not grabar:
+                        continue
 
-                valor = self.leer_registro(equipo, c, datos)
-                if params['tipo'] != 'adaptar':
-                    if valor is None:
-                        # Error de comunicación - ya se incrementó Nfallos en leer_registro
-                        hay_error_comunicacion = True
-                    else:
-                        datos[c] = valor
+                    ee = 110
+                    datos[c] = self.leer_registro(equipo, c)
 
-        datos['tcaptura'] = round(time.time() - t0, 2)
+            t1 = time.time()
+            datos['tcaptura'] = round(t1 - t0, 2)
 
-        return datos, hay_error_comunicacion
+        except Exception as error1:
+            self.log.error(f"Error {ee} en leer_datos({equipo})..comando={c} {type(error1).__name__} - {error1}")
+            error = True
 
-    def guardar_datos(self, equipo: str, datos: Dict[str, float], hay_error: bool = False) -> bool:
+        # Añadir Nfallos
+        datos['Nfallos'] = self.n_fallos_captura.get(equipo, 0)
+
+        if error:
+            datos['error'] = True
+
+        return datos
+
+    def guardar_datos(self, equipo: str, datos: Dict[str, float]) -> None:
         """
         Guarda datos en base de datos.
 
         Args:
             equipo: Nombre del equipo
             datos: Diccionario con datos a guardar
-            hay_error: True si hubo error de comunicación
-
-        Returns:
-            True si se guardó correctamente, False en caso contrario
         """
-        # Añadir Nfallos a los datos
-        datos['Nfallos'] = self.n_fallos_captura.get(equipo, 0)
-
-        if hay_error:
-            self.log.warning(f"{equipo} - Lectura fallida (Nfallos={datos['Nfallos']}), no se guardan datos en BD")
-            return False
-
         try:
             tiempo = time.strftime("%Y-%m-%d %H:%M:%S")
-            salida = json.dumps(datos)
-            self.gestor_bd.guardar_datos_equipo(equipo.upper(), tiempo, salida)
-            self.log.debug(f"{equipo.upper()} - Guardado: {salida}")
-            return True
+            self.gestor_bd.guardar_datos_equipo_dict(equipo.upper(), tiempo, datos)
         except Exception as e:
-            self.log.error(f"Error guardando datos en BD para {equipo.upper()}: {type(e).__name__} - {e}")
-            return False
+            self.log.error(f"Error guardando datos de {equipo}: {e}")
 
     def listar_parametros(self, equipo: str) -> None:
         """Lista los parámetros del equipo y los envía por Telegram."""
@@ -501,23 +377,22 @@ class CapturadorRS485:
 
             msg += f'\U0001F6A6<b>{c}</b> : {comandos1}\n'
             if c in ['ayuda', 'lectura_multiple']:
-                msg += "\n"
+                msg += f"\n"
                 continue
 
             try:
                 d = self.leer_registro(equipo, c)
-                params = self._get_command_params(c)
-                tipo = params['tipo']
+                tipo = self.comandos[c].get('tipo', 'u16')
 
                 if tipo == 'adaptar':
                     datos = {}
-                    ejecutar = '\n'.join(params['adaptar'])
+                    ejecutar = '\n'.join(self.comandos[c]['adaptar'])
                     exec(ejecutar)
-                    d = datos.get(c, d)
+                    d = datos[c]
 
                 msg += f"    ..... Valor Actual de <b>{c}={d}</b>\n\n"
                 time.sleep(0.05)
-            except Exception:
+            except Exception as e:
                 self.log.error(f'Error en leer_registro({equipo},{c})')
                 time.sleep(1)
                 msg += f'<b>...error lectura de {c}</b>\n'
@@ -567,19 +442,19 @@ class CapturadorRS485:
                         self.log.debug(msg)
 
                     ee = 70
-                    params = self._get_command_params(c)
-                    if not params['escritura']:
+                    if not self.comandos[c].get('escritura', False):
                         escritura = False
                         msg += f'\n Error {variable} no admite escritura'
                     elif escritura:
-                        rango = params['rango']
-                        if valor_n < rango[0] or valor_n > rango[1]:
+                        if 'rango' not in self.comandos[c]:
+                            self.comandos[c]['rango'] = [0, 65535]
+                        if valor_n < self.comandos[c]['rango'][0] or valor_n > self.comandos[c]['rango'][1]:
                             escritura = False
                             msg += f'\n Error en valor {valor_n} fuera de rango admitido'
 
                     ee = 80
                     if escritura:
-                        decimales = params['dec']
+                        decimales = self.comandos[c].get('dec', 0)
                         self.modbus[equipo].write_register(registro, valor_n, decimales)
                         msg += f'\nNuevo Valor-->{registro}...{variable}= {valor_n} '
 
@@ -607,12 +482,10 @@ class CapturadorRS485:
 
     def procesar_comandos_mqtt(self) -> None:
         """Procesa comandos MQTT pendientes."""
-        if not self.gestor_mqtt:
+        if not self.gestor_mqtt or not self.gestor_mqtt.hay_comandos_pendientes():
             return
 
         c_mqtt = self.gestor_mqtt.obtener_comando_pendiente()
-        if c_mqtt is None:
-            return  # No hay comandos pendientes
 
         if c_mqtt['comando'] in self.comandos.get('ayuda', []):
             if self.log.es_debug():
@@ -643,14 +516,11 @@ def proceso_captura(indice: int, config_equipo: dict, args_extra: dict):
 
     Args:
         indice: Índice del equipo (para multiplexación)
-        config_equipo: Configuración del equipo individual (incluye 'id')
-        args_extra: Argumentos extra (nombre_equipo, config_completa con COMANDOS)
+        config_equipo: Configuración del equipo (incluye 'id' y configuración completa)
+        args_extra: Argumentos extra (nombre_equipo para el tipo de dispositivo)
     """
     nombre_equipo = args_extra.get('nombre_equipo', 'RS485')
     equipo_id = config_equipo['id']
-
-    # Obtener la configuración completa (incluyendo COMANDOS)
-    config_completa = args_extra.get('config_completa', {})
 
     log = Logger(f'proceso.{nombre_equipo}.{equipo_id}')
 
@@ -660,8 +530,8 @@ def proceso_captura(indice: int, config_equipo: dict, args_extra: dict):
 
         log.info(f"Iniciando captura para {nombre_equipo}.{equipo_id}")
 
-        # Crear capturador RS485 con la configuración completa
-        capturador = CapturadorRS485(nombre_equipo, config_completa)
+        # Crear capturador RS485
+        capturador = CapturadorRS485(nombre_equipo, config_equipo)
 
         # Inicializar
         capturador.inicializar()
@@ -680,6 +550,8 @@ def proceso_captura(indice: int, config_equipo: dict, args_extra: dict):
 
         while True:
             try:
+                t0 = time.perf_counter()
+
                 # Verificar cambios en Parametros_FV.py (hot-reload)
                 try:
                     actual_mtime = os.path.getmtime(ruta_parametros)
@@ -691,9 +563,7 @@ def proceso_captura(indice: int, config_equipo: dict, args_extra: dict):
                         gestor_global.recargar()
                         t_cambio_parametros = actual_mtime
                         # Recargar configuración
-                        nuevo_config = gestor_global.obtener(nombre_equipo)
-                        if nuevo_config:
-                            capturador._extraer_configuracion(nuevo_config)
+                        capturador._extraer_configuracion(gestor_global.obtener(nombre_equipo))
                 except Exception as e:
                     log.debug(f"Error verificando cambios en parámetros: {e}")
 
@@ -717,19 +587,25 @@ def proceso_captura(indice: int, config_equipo: dict, args_extra: dict):
                     tiempo_captura = capturador.config[equipo].get('tiempo_captura', 5)
                     if time.time() - capturador.t_ultima_captura.get(equipo, 0) >= tiempo_captura:
                         try:
-                            datos, hay_error = capturador.leer_datos(equipo)
-                            capturador.guardar_datos(equipo, datos, hay_error)
+                            datos = capturador.leer_datos(equipo)
+                            capturador.guardar_datos(equipo, datos)
                             capturador.t_ultima_captura[equipo] = time.time()
 
                             # Debug output
                             if log.es_debug():
-                                estado = "ERROR" if hay_error else "OK"
-                                log.info(f"-- {equipo} [{estado}]: Nfallos={datos.get('Nfallos', 0)} - {datos}")
+                                log.info(f"-- {equipo}: {datos}")
                         except Exception as e:
                             log.error(f"Error leyendo {equipo}: {e}")
+                            capturador.n_fallos_captura[equipo] += 1
                             time.sleep(1)
 
+                # Timing
+                t_transcurrido = time.perf_counter() - t0
+
                 # Esperar hasta siguiente ciclo
+                if log.es_debug():
+                    log.debug(f"{nombre_equipo}.{equipo_id}: t={t_transcurrido*1000:.1f}ms")
+
                 time.sleep(0.1)
 
             except Exception as e:
@@ -770,18 +646,8 @@ def main(nombre_equipo: str = 'RS485'):
     # Obtener gestor de parámetros
     gestor_params = GestorParametros()
 
-    # Obtener configuración COMPLETA (incluyendo COMANDOS)
-    config_completa = gestor_params.obtener(nombre_equipo)
-
     # Obtener equipos activos
     lista_equipos_activos = gestor_params.obtener_equipos_activos(nombre_equipo)
-
-    # Verificar si hay equipos activos
-    if not lista_equipos_activos:
-        log.error(f"No hay equipos activos configurados para {nombre_equipo}")
-        log.error(f"Revise la configuración en Parametros_FV.py - variable {nombre_equipo}")
-        log.error("Asegúrese de que al menos un equipo tenga 'usar': 1")
-        sys.exit(1)
 
     # Control de ejecución del servicio
     controlar_servicio(SERVICIO, len(lista_equipos_activos) > 0)
@@ -799,14 +665,36 @@ def main(nombre_equipo: str = 'RS485'):
     log.manual('=' * 50)
 
     # Crear y ejecutar gestor de procesos
-    # Pasamos la configuración completa (incluyendo COMANDOS) a cada proceso
     gestor = GestorProcesos(
         nombre=SERVICIO,
         funcion_captura=proceso_captura,
         lista_equipos=lista_equipos_activos,
-        args_extra={'nombre_equipo': nombre_equipo, 'config_completa': config_completa},
+        args_extra={'nombre_equipo': nombre_equipo},
         tiempo_entre_procesos=TIEMPO_ENTRE_PROCESOS
     )
 
     # Ejecutar (bloqueante hasta KeyboardInterrupt)
     gestor.ejecutar()
+
+
+def iniciar_captura(nombre_equipo: str, debug: bool = False) -> None:
+    """
+    Inicia la captura de datos RS485 para un equipo específico.
+
+    Esta función es un wrapper para compatibilidad con scripts antiguos.
+    Se usa desde scripts como fv_srne.py.
+
+    Args:
+        nombre_equipo: Nombre del equipo en Parametros_FV.py (ej. 'SRNE', 'ANENJI')
+        debug: Si es True, activa modo debug (también se puede pasar -p en línea de comandos)
+
+    Ejemplo:
+        from servicios.fv_rs485 import iniciar_captura
+        iniciar_captura('SRNE')
+    """
+    # Comprobación argumentos en comando
+    if '-p' in sys.argv:
+        debug = True
+
+    # Ejecutar main
+    main(nombre_equipo)

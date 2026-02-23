@@ -15,6 +15,7 @@ import time
 import paho.mqtt.client as mqtt
 
 from helpers.gestor_parametros import GestorParametros
+from helpers.logger import Logger
 
 
 class GestorMQTT:
@@ -42,9 +43,11 @@ class GestorMQTT:
             al_recibir: callback opcional (equipo, comando)
             depurar: habilita mensajes de depuración
         """
+        self.log = Logger(__name__)
+        
         gestor = GestorParametros()
         try:
-            broker_cfg, puerto_cfg, usuario_cfg, clave_cfg = gestor.leer_parametros(
+            broker_cfg, puerto_cfg, usuario_cfg, clave_cfg = gestor.obtener(
                 "mqtt_broker", "mqtt_puerto", "mqtt_usuario", "mqtt_clave"
             )
         except (AttributeError, FileNotFoundError):
@@ -57,6 +60,8 @@ class GestorMQTT:
         self.depurar = depurar
         self.al_recibir = al_recibir
 
+        self.log.debug(f"MQTT config: broker={self.broker}, puerto={self.puerto}, usuario={self.usuario}")
+
         if not all([self.broker, self.puerto, self.usuario, self.clave]):
             raise ValueError(
                 "Parámetros MQTT incompletos. Proporcione valores explícitos "
@@ -65,12 +70,13 @@ class GestorMQTT:
 
         self.cola_comandos: queue.Queue = queue.Queue()
         self.equipos: List[str] = []
-        self.cliente: Optional[mqtt.Client] = None
+        # Crear cliente MQTT - siempre se inicializa en __init__
+        cliente_id = f"PVControl_{int(time.time())}"
+        self.cliente: mqtt.Client = mqtt.Client(cliente_id)
         self._configurar_cliente()
 
     def _configurar_cliente(self) -> None:
-        cliente_id = f"PVControl_{int(time.time())}"
-        self.cliente = mqtt.Client(cliente_id)
+        """Configurar callbacks y credenciales del cliente MQTT."""
         self.cliente.on_connect = self._al_conectar
         self.cliente.on_disconnect = self._al_desconectar
         self.cliente.on_message = self._al_mensaje
@@ -79,19 +85,17 @@ class GestorMQTT:
 
     def _al_conectar(self, client, userdata, flags, rc) -> None:
         if rc == 0:
-            if self.depurar:
-                print(f"MQTT conectado a {self.broker}:{self.puerto}")
+            self.log.debug(f"MQTT conectado a {self.broker}:{self.puerto}")
             for equipo in self.equipos:
                 topic = f"PVControl/{equipo}"
                 client.subscribe(topic)
-                if self.depurar:
-                    print(f"Suscrito a tópico: {topic}")
+                self.log.debug(f"Suscrito a tópico: {topic}")
         else:
-            print(f"Conexión MQTT fallida con código {rc}")
+            self.log.error(f"Conexión MQTT fallida con código {rc}")
 
     def _al_desconectar(self, client, userdata, rc) -> None:
         if rc != 0:
-            print(f"MQTT desconectado inesperadamente (rc={rc}), reintentando")
+            self.log.warning(f"MQTT desconectado inesperadamente (rc={rc}), reintentando")
         else:
             client.loop_stop()
 
@@ -101,15 +105,14 @@ class GestorMQTT:
             equipo = partes_topic[1].upper() if len(partes_topic) >= 2 else msg.topic.upper()
             comando = msg.payload.decode().strip()
 
-            if self.depurar:
-                print(f"MQTT mensaje: {equipo} -> {comando}")
+            self.log.debug(f"MQTT mensaje: {equipo} -> {comando}")
 
             self.cola_comandos.put({"equipo": equipo, "comando": comando})
 
             if self.al_recibir:
                 self.al_recibir(equipo, comando)
         except Exception as e:
-            print(f"Error procesando mensaje MQTT: {e}")
+            self.log.error(f"Error procesando mensaje MQTT: {e}")
 
     def suscribir_equipos(self, equipos: List[str]) -> None:
         """
@@ -127,7 +130,7 @@ class GestorMQTT:
             self.cliente.loop_start()
             return True
         except Exception as e:
-            print(f"Error conectando a MQTT en {self.broker}:{self.puerto}: {e}")
+            self.log.error(f"Error conectando a MQTT en {self.broker}:{self.puerto}: {e}")
             return False
 
     def obtener_comando_pendiente(self) -> Optional[Dict[str, str]]:
@@ -153,7 +156,7 @@ class GestorMQTT:
             result = self.cliente.publish(topic, payload, qos=qos, retain=retain)
             return result.rc == mqtt.MQTT_ERR_SUCCESS
         except Exception as e:
-            print(f"Error publicando en {topic}: {e}")
+            self.log.error(f"Error publicando en {topic}: {e}")
             return False
 
     def desconectar(self) -> None:

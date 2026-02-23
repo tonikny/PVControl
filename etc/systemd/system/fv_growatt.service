@@ -7,7 +7,8 @@ SyslogIdentifier=%N
 User=pi
 Group=pi
 ExecStartPre=/bin/sleep 1
-ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_growatt.py
+Environment="PYTHONPATH=/home/pi/PVControl+"
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/servicios/fv_growatt.py
 Restart=always
 RestartSec=60
 

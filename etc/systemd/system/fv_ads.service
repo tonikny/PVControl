@@ -1,5 +1,5 @@
 [Unit]
-Description=FV lectura ADS
+Description=FV lectura ADS1115
 After=mysql.service
 
 [Service]
@@ -7,7 +7,8 @@ SyslogIdentifier=%N
 User=pi
 Group=pi
 ExecStartPre=/bin/sleep 1
-ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/fv_ads.py
+Environment="PYTHONPATH=/home/pi/PVControl+"
+ExecStart=/home/pi/PVControl+/env/bin/python3 /home/pi/PVControl+/servicios/fv_ads.py
 Restart=always
 RestartSec=60
 

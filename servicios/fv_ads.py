@@ -99,6 +99,10 @@ class CapturadorADS1115:
         Inicia el modo continuo para el primer canal activo encontrado.
         Soporta modo=2 (continuo) y modo=4 (diferencial continuo).
         """
+        if self._adc is None:
+            self.log.error("No se ha inicializado el ADC o ha habido un problema en la inicialización.")
+            return
+        
         for indice, modo in enumerate(self.config['modo']):
             if modo == 2:  # Continuo single-ended
                 self.log.debug(f"Iniciando modo continuo en canal {indice}")
@@ -139,7 +143,9 @@ class CapturadorADS1115:
         - Incrementa Nfallos si hay error de lectura
         """
         if self._adc is None:
-            raise ErrorLectura("ADC no inicializado", self.nombre)
+            self.log.error("No se ha inicializado el ADC o ha habido un problema en la inicialización.")
+            self.Nfallos += 1
+            return {}
 
         datos = {}
 

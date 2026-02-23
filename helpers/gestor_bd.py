@@ -127,13 +127,19 @@ class GestorBD:
     def _asegurar_conexion(self) -> None:
         """
         Verifica que la conexión esté activa, reconecta si es necesario.
+        
+        Raises:
+            MySQLdb.Error: Si no se puede establecer la conexión
         """
         try:
             if self.conexion:
                 self.conexion.ping()
-        except MySQLdb.MySQLError:
-            self.log.warning("Desconexión de la base de datos. Reconectando")
-            self._conectar()
+            else:
+                # No hay conexión, intentar reconectar
+                self._conectar()
+        except MySQLdb.MySQLError as e:
+            self.log.warning(f"Desconexión de la base de datos. Reconectando: {e}")
+            self._conectar()  # Puede lanzar MySQLdb.Error si falla
 
     def guardar_datos_equipo(self, id_equipo: str, tiempo: str,
                             sensores_json: str) -> bool:
@@ -161,6 +167,8 @@ class GestorBD:
         """
         try:
             self._asegurar_conexion()
+            assert self.cursor is not None
+            assert self.conexion is not None
 
             # Usar consulta parametrizada para prevenir inyección SQL
             sql = """
@@ -218,6 +226,8 @@ class GestorBD:
         """
         try:
             self._asegurar_conexion()
+            assert self.cursor is not None
+            assert self.conexion is not None
 
             # Usar consulta parametrizada
             sql = """
@@ -246,6 +256,10 @@ class GestorBD:
         """
         try:
             self._asegurar_conexion()
+            
+            # _asegurar_conexion() garantiza que self.cursor no es None
+            # o lanza MySQLdb.Error
+            assert self.cursor is not None
 
             sql = """
                 SELECT tiempo, sensores
