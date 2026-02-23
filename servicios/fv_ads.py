@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-fv_ads_nuevo.py - Captura de datos ADS1115 para PVControl+
-
-Versión refactorizada con arquitectura limpia.
+fv_ads.py - Captura de datos ADS1115 para PVControl+
 
 Características:
-- Sin LoggerMultiprocessing (usa logger fork-safe)
-- Sin Manager().dict() (sin estado compartido complejo)
-- Sin Pipe para startup (simple is_alive() check)
+- Logger para mensajes de depuración
 - GestorBD para acceso a base de datos
 - GestorProcesos para gestión de procesos
-- Clase ADS específica inline (no separada)
+- Gestión de servicios externa
+- Clase ADS específica inline
 
 Uso:
-    python3 fv_ads_nuevo.py -p      # Con debug
-    python3 fv_ads_nuevo.py          # Normal
-    LOGLEVEL=INFO python3 fv_ads_nuevo.py  # Via env
+    python3 fv_ads.py -p             # Con debug
+    python3 fv_ads.py                # Normal
+    LOGLEVEL=INFO python3 fv_ads.py  # Via env
 """
 
 import sys
@@ -71,6 +68,7 @@ class CapturadorADS1115:
         # Estado para modo continuo
         self._modo_continuo = False
         self._indice_canal_continuo = 0
+        self.Nfallos = 0  # Contador de errores acumulados
 
     def inicializar(self):
         """Inicializa hardware ADS1115."""
@@ -127,12 +125,18 @@ class CapturadorADS1115:
     def leer_datos(self) -> Dict[str, float]:
         """
         Lee datos de todos los canales configurados.
-        
+
         Soporta:
         - modo=1: Disparado (lee y convierte)
         - modo=2: Continuo (usa get_last_result)
         - modo=3: Diferencial disparado
         - modo=4: Diferencial continuo
+
+        Para cada canal:
+        - Almacena lecturas en lista 'capturas'
+        - Calcula 'mediana' (valor central de lista ordenada)
+        - Calcula error como max(capturas) - min(capturas)
+        - Incrementa Nfallos si hay error de lectura
         """
         if self._adc is None:
             raise ErrorLectura("ADC no inicializado", self.nombre)
@@ -148,31 +152,38 @@ class CapturadorADS1115:
             indice = self._indice_canal_continuo
             modo = self.config['modo'][indice]
             nombre_var = self.config['vars'][indice]
-            
+
             if modo in [2, 4]:  # Continuo o diferencial continuo
                 try:
-                    # Leer múltiples muestras para promediar
-                    lecturas = []
+                    # Leer múltiples muestras
+                    capturas = []
                     for i in range(self.config['bucles'][indice]):
-                        lecturas.append(self._adc.get_last_result())
+                        val = self._adc.get_last_result()
+                        if val is not None:
+                            capturas.append(val)
                         # Esperar según el data rate
                         if self.config['rate'][indice] > 0:
                             time.sleep(1.0 / self.config['rate'][indice])
-                    
-                    # Calcular promedio y convertir a valor físico
-                    if lecturas:
-                        promedio = sum(lecturas) / len(lecturas)
+
+                    # Calcular mediana y error
+                    if capturas:
+                        mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                        error = max(capturas) - min(capturas)
+
                         valor = round(
-                            promedio * 0.000125 * self.config['res'][indice] / self.config['gain'][indice],
+                            mediana * 0.000125 * self.config['res'][indice] / self.config['gain'][indice],
                             3
                         )
                         datos[nombre_var] = valor
+
                         self.log.debug(
-                            f"Canal {indice} ({nombre_var}): modo={'continuo' if modo==2 else 'diferencial_continuo'}, "
-                            f"lecturas={len(lecturas)}, valor={valor}"
+                            f"Canal {indice} ({nombre_var}): mediana={mediana}, error={error}, valor={valor}"
                         )
+                    else:
+                        self.Nfallos += 1
                 except Exception as e:
                     self.log.error(f"Error leyendo canal continuo {indice} ({nombre_var}): {e}")
+                    self.Nfallos += 1
         else:
             # Modo disparado: leer cada canal según su configuración
             for indice in range(4):
@@ -187,39 +198,55 @@ class CapturadorADS1115:
                     continue
 
                 try:
-                    # Leer según el modo
+                    # Leer según el modo, almacenando en lista 'capturas'
+                    capturas = []
+
                     if modo == 1:  # Single-ended disparado
-                        lecturas = [
-                            self._adc.read_adc(indice, gain=self.config['gain'][indice],
-                                              data_rate=self.config['rate'][indice])
-                            for _ in range(self.config['bucles'][indice])
-                        ]
+                        for _ in range(self.config['bucles'][indice]):
+                            val = self._adc.read_adc(
+                                indice,
+                                gain=self.config['gain'][indice],
+                                data_rate=self.config['rate'][indice]
+                            )
+                            if val is not None:
+                                capturas.append(val)
+
                     elif modo == 3:  # Differential disparado
                         indice_diff = 0 if indice == 0 else 3
-                        lecturas = [
-                            self._adc.read_adc_difference(indice_diff,
-                                                         gain=self.config['gain'][indice],
-                                                         data_rate=self.config['rate'][indice])
-                            for _ in range(self.config['bucles'][indice])
-                        ]
+                        for _ in range(self.config['bucles'][indice]):
+                            val = self._adc.read_adc_difference(
+                                indice_diff,
+                                gain=self.config['gain'][indice],
+                                data_rate=self.config['rate'][indice]
+                            )
+                            if val is not None:
+                                capturas.append(val)
                     else:
                         continue
 
-                    # Calcular promedio y convertir a valor físico
-                    if lecturas:
-                        promedio = sum(lecturas) / len(lecturas)
+                    # Calcular mediana y error
+                    if capturas:
+                        mediana = sorted(capturas)[len(capturas) // 2]  # Mediana
+                        error = max(capturas) - min(capturas)
+
                         valor = round(
-                            promedio * 0.000125 * self.config['res'][indice] / self.config['gain'][indice],
+                            mediana * 0.000125 * self.config['res'][indice] / self.config['gain'][indice],
                             3
                         )
                         datos[nombre_var] = valor
+
                         self.log.debug(
-                            f"Canal {indice} ({nombre_var}): modo={'disparado' if modo==1 else 'diferencial'}, "
-                            f"valor={valor}"
+                            f"Canal {indice} ({nombre_var}): mediana={mediana}, error={error}, valor={valor}"
                         )
+                    else:
+                        self.Nfallos += 1
 
                 except Exception as e:
                     self.log.error(f"Error leyendo canal {indice} ({nombre_var}): {e}")
+                    self.Nfallos += 1
+
+        # Añadir Nfallos a los datos que se guardarán en BD
+        datos['Nfallos'] = self.Nfallos
 
         if not datos:
             raise ErrorLectura("Ningún canal activo leyó correctamente", self.nombre)
