@@ -683,7 +683,6 @@ DEYE = {
         'Ibatn':               {'reg': 191, 'tipo': 'adaptar', 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Bat Neutro', 'b': 'BAT', 'adaptar': ["v = d if d < 32768 else d - 65536", "datos['Ibatn'] = round(v/100, 2)"]},
         'Fout': {'reg': 192, 'dec': 2, 'unit': 'Hz', 'nombre': 'Frecuencia en Carga', 'b': 'LOAD'},
         'Wplaca': {'reg': 187, 'tipo': 'adaptar', 'nombre': 'Potencia PV Total (Deye)', 'unit': 'W', 'b': 'PV', 'adaptar': ["datos['Wplaca'] = datos.get('PV1InputPower',0) + datos.get('PV2InputPower',0)"]},        
-        
         # === BLOQUE 2: HISTÓRICOS Y TOTALES (Monitorización) ===
         'Day_PV_Energy':      {'reg': 60,  'escritura': False, 'nombre': 'Generación Solar Neta', 'unit': 'kWh', 'dec': 1, 'b': 'PV'},
         'Total_PV_Energy_L':  {'reg': 63,  'escritura': False, 'nombre': 'Generación Solar Total L', 'unit': 'kWh', 'dec': 1, 'b': 'PV'},
@@ -705,7 +704,7 @@ DEYE = {
         'YearLoadPower':    {'reg': 87,  'dec': 1, 'unit': 'kWh', 'nombre': 'Consumo Anual', 'b': 'LOAD'},
         'HistPVPower':      {'reg': 96,  'dec': 1, 'unit': 'kWh', 'nombre': 'Suma PV Histórica', 'b': 'PV'},
         'DayPVPower':       {'reg': 108, 'dec': 1, 'unit': 'kWh', 'nombre': 'Producción PV Hoy (Reg 108)', 'b': 'PV'},
-        
+
         # === BLOQUE 3: SALUD Y SENSORES RED (Monitorización️) ===
         'RadiatorTempDC': {'reg': 90,  'offset': -1000, 'dec': 1, 'unit': 'ºC', 'nombre': 'Temp. Radiador DC', 'b': 'DIAG'},
         'IGBTTemp':       {'reg': 91,  'offset': -1000, 'dec': 1, 'unit': 'ºC', 'nombre': 'Temp. IGBT', 'b': 'DIAG'},
@@ -717,7 +716,7 @@ DEYE = {
         'W_Red_L1':        {'reg': 167, 'tipo': 'adaptar', 'adaptar': ["datos['W_Red_L1'] = d if d <= 32767 else d - 65536"], 'nombre': 'Potencia Red L1', 'unit': 'W', 'b': 'GRID'},
         'W_Red_Total':     {'reg': 169, 'tipo': 'adaptar', 'adaptar': ["datos['W_Red_Total'] = d if d <= 32767 else d - 65536"], 'nombre': 'Potencia Red Total', 'unit': 'W', 'b': 'GRID'},
         'GrideSideL2P':   {'reg': 170, 'dec': 1, 'unit': 'W', 'nombre': 'Potencia Red Fase 2', 'b': 'GRID'},
-        
+
         # === BLOQUE 4: CONFIGURACIÓN DE BATERÍA (Voltajes y Amperios️) ===
         'Batt_Mode':    {'reg': 200, 'escritura': True, 'min': 0, 'max': 1, 'nombre': 'Modo Bat (0:Plomo/1:Litio)', 'b': 'BATT_SET'},
         'Batt_Control': {'reg': 213, 'escritura': True, 'min': 0, 'max': 2, 'nombre': 'Control (0:V/1:%/2:NoBat)', 'b': 'BATT_SET'},
@@ -731,12 +730,12 @@ DEYE = {
         'I_Descarga_max': {'reg': 211, 'escritura': True, 'min': 0, 'max': 140, 'nombre': 'Amperios Descarga Máx', 'unit': 'A', 'b': 'BATT_SET'},
         #'SOH': {'reg': 220, 'escritura': False, 'nombre': 'Salud Batería', 'unit': '%', 'b': 'BAT'}, # Solo para BMS comunicado con inversor
         'Eficiencia_Carga':{'reg': 216, 'escritura': True, 'dec': 1, 'unit': '%', 'nombre': 'Eficiencia Carga Bat', 'b': 'BATT_SET'},
-        
+
         # === BLOQUE 5: SEGURIDAD DE SOC (Protección Batería ✏️) ===
         'SOC_Baja':     {'reg': 219, 'escritura': True, 'min': 10, 'max': 40, 'nombre': 'SOC Bat. Baja', 'unit': '%', 'b': 'BATT_SET'},
         'SOC_Apagado':  {'reg': 217, 'escritura': True, 'min': 5,  'max': 25, 'nombre': 'SOC Apagado (ShutDown)', 'unit': '%', 'b': 'BATT_SET'},
         'SOC_Reinicio': {'reg': 218, 'escritura': True, 'min': 20, 'max': 80, 'nombre': 'SOC Reinicio (Restart)', 'unit': '%', 'b': 'BATT_SET'},
-        
+
         # === BLOQUE 6: MODOS DE TRABAJO Y RED (Control Energía ✏️) ===
         'Work_Mode':   {'reg': 244, 'escritura': True, 'min': 0, 'max': 2, 'nombre': 'Modo (0:Sell/1:L/2:CT)', 'b': 'MODE_SET'},
         'Energy_Patt': {'reg': 243, 'escritura': True, 'min': 0, 'max': 1, 'nombre': 'Prioridad (0:Bat/1:Load)', 'b': 'MODE_SET'},
@@ -749,9 +748,9 @@ DEYE = {
         'GridMode':       {'reg': 284, 'tipo': 'adaptar', 'nombre': 'Modo Red', 'b': 'GRID', 'adaptar': [
             "m = {0:'General_Standard', 1:'UL1741&IEE1547', 2:'CPUC_RULE21', 3:'SRD-UL1741'}",
             "datos['GridMode'] = m.get(d, 'Otros')"]},
-        'F_Red_Set':       {'reg': 285, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['F_Red_Set'] = '50Hz' if d == 0 else '60Hz' if d == 1 else d"], 'nombre': 'Frecuencia Red Config', 'unit': '', 'b': 'ADV_SET'},
-        'V_Red_Alta_Set':  {'reg': 287, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['V_Red_Alta_Set'] = d / 10.0"], 'nombre': 'Prot. Voltaje Alto Red', 'unit': 'V', 'b': 'ADV_SET'},
-        'V_Red_Baja_Set':  {'reg': 288, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['V_Red_Baja_Set'] = d / 10.0"], 'nombre': 'Prot. Voltaje Bajo Red', 'unit': 'V', 'b': 'ADV_SET'},
+        'F_Red_Set':       {'reg': 285, 'dec': 2, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['F_Red_Set'] = '50Hz' if d == 0 else '60Hz' if d == 1 else d"], 'nombre': 'Frecuencia Red Config', 'unit': '', 'b': 'ADV_SET'},
+        'V_Red_Alta_Set':  {'reg': 287, 'dec': 1, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['V_Red_Alta_Set'] = d / 10.0"], 'nombre': 'Prot. Voltaje Alto Red', 'unit': 'V', 'b': 'ADV_SET'},
+        'V_Red_Baja_Set':  {'reg': 288, 'dec': 1, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['V_Red_Baja_Set'] = d / 10.0"], 'nombre': 'Prot. Voltaje Bajo Red', 'unit': 'V', 'b': 'ADV_SET'},
         'AC_Input_Source':{'reg': 197, 'tipo': 'adaptar', 'nombre': 'Fuente AC', 'b': 'ADV_SET', 'adaptar': [
             "m = {0:'Red (Grid)', 1:'Generador', 2:'Desactivado (2)'}",
             "datos['AC_Input_Source'] = m.get(d, 'N/A')"]},
@@ -769,50 +768,50 @@ DEYE = {
             "datos['Reloj_3'] = f'{d >> 8:02}:{d & 0xFF:02}m'"]},
         
         # === BLOQUE 8: DIAGNÓSTICO (Alarmas y Fallos 👁️) ACTUALIZADO ===
-        'Alarmas_W': {'reg': 101, 'tipo': 'adaptar', 'nombre': 'Avisos (Warnings)', 'b': 'DIAG', 'adaptar': [
-            "L=[]",
-            "if d&1: L.append('W01:Sobrecur.DC')",
-            "if d&2: L.append('W02:Ventilador')",
-            "if d&4: L.append('W03:FaseRed')",
-            "if d&8: L.append('W04:FalloMeter')",
-            "if d&16: L.append('W05:BatBaja')",
-            "if d&32: L.append('W06:BatAlta')",
-            "datos['Alarmas_W'] = ', '.join(L) if L else 'Normal'"]},
-        'Fallos_F1': {'reg': 103, 'tipo': 'adaptar', 'nombre': 'Fallos F01-F16', 'b': 'DIAG', 'adaptar': [
-            "L=[]",
-            "if d&64: L.append('F07:SoftStart')",
-            "if d&512: L.append('F10:PlacaAux')",
-            "if d&4096: L.append('F13:CambioModo')",
-            "if d&32768: L.append('F16:GFCI_Sensor')",
-            "datos['Fallos_F1'] = ', '.join(L) if L else 'Normal'"]},
-        'Fallos_F2': {'reg': 104, 'tipo': 'adaptar', 'nombre': 'Fallos F17-F32', 'b': 'DIAG', 'adaptar': [
-            "L=[]",
-            "if d&1: L.append('F17:BatHold')",
-            "if d&2: L.append('F18:OverCurAC')",
-            "if d&8: L.append('F20:OverCurDC')",
-            "if d&32: L.append('F22:Emergencia')",
-            "if d&64: L.append('F23:FugaAC')",
-            "if d&128: L.append('F24:Aisl.PV')",
-            "if d&4096: L.append('F29:Paralelo')",
-            "datos['Fallos_F2'] = ', '.join(L) if L else 'Normal'"]},
-        'Fallos_F3': {'reg': 105, 'tipo': 'adaptar', 'nombre': 'Fallos F33-F48', 'b': 'DIAG', 'adaptar': [
-            "L=[]",
-            "if d&4: L.append('F35:ApagonRed')",
-            "if d&16: L.append('F37:OverCurSoft')",
-            "if d&128: L.append('F40:OverCurBat')",
-            "if d&512: L.append('F42:RedBaja')",
-            "if d&32768: L.append('F48:FrecBaja')",
-            "datos['Fallos_F3'] = ', '.join(L) if L else 'Normal'"]},
-        'Fallos_F4': {'reg': 106, 'tipo': 'adaptar', 'nombre': 'Fallos F49-F64', 'b': 'DIAG', 'adaptar': [
-            "L=[]",
-            "if d&64: L.append('F55:DC_BusAlta')",
-            "if d&128: L.append('F56:BusBajo')",
-            "if d&512: L.append('F58:FalloBMS')",
-            "if d&2048: L.append('F60:FalloGen')",
-            "if d&4096: L.append('F61:BotonOFF')",
-            "if d&16384: L.append('F63:ArcoElec')",
-            "if d&32768: L.append('F64:Sobretemp')",
-            "datos['Fallos_F4'] = ', '.join(L) if L else 'Normal'"]},
+		'Alarmas_W': {'reg': 101, 'tipo': 'adaptar', 'nombre': 'Avisos (Warnings)', 'b': 'DIAG', 'adaptar': [
+			"L=[]",
+			"if d&1: L.append('W01:Sobrecur.DC')",
+			"if d&2: L.append('W02:Ventilador')",
+			"if d&4: L.append('W03:FaseRed')",
+			"if d&8: L.append('W04:FalloMeter')",
+			"if d&16: L.append('W05:BatBaja')",
+			"if d&32: L.append('W06:BatAlta')",
+			"datos['Alarmas_W'] = ', '.join(L) if L else 'Normal'"]},
+		'Fallos_F1': {'reg': 103, 'tipo': 'adaptar', 'nombre': 'Fallos F01-F16', 'b': 'DIAG', 'adaptar': [
+			"L=[]",
+			"if d&64: L.append('F07:SoftStart')",
+			"if d&512: L.append('F10:PlacaAux')",
+			"if d&4096: L.append('F13:CambioModo')",
+			"if d&32768: L.append('F16:GFCI_Sensor')",
+			"datos['Fallos_F1'] = ', '.join(L) if L else 'Normal'"]},
+		'Fallos_F2': {'reg': 104, 'tipo': 'adaptar', 'nombre': 'Fallos F17-F32', 'b': 'DIAG', 'adaptar': [
+			"L=[]",
+			"if d&1: L.append('F17:BatHold')",
+			"if d&2: L.append('F18:OverCurAC')",
+			"if d&8: L.append('F20:OverCurDC')",
+			"if d&32: L.append('F22:Emergencia')",
+			"if d&64: L.append('F23:FugaAC')",
+			"if d&128: L.append('F24:Aisl.PV')",
+			"if d&4096: L.append('F29:Paralelo')",
+			"datos['Fallos_F2'] = ', '.join(L) if L else 'Normal'"]},
+		'Fallos_F3': {'reg': 105, 'tipo': 'adaptar', 'nombre': 'Fallos F33-F48', 'b': 'DIAG', 'adaptar': [
+			"L=[]",
+			"if d&4: L.append('F35:ApagonRed')",
+			"if d&16: L.append('F37:OverCurSoft')",
+			"if d&128: L.append('F40:OverCurBat')",
+			"if d&512: L.append('F42:RedBaja')",
+			"if d&32768: L.append('F48:FrecBaja')",
+			"datos['Fallos_F3'] = ', '.join(L) if L else 'Normal'"]},
+		'Fallos_F4': {'reg': 106, 'tipo': 'adaptar', 'nombre': 'Fallos F49-F64', 'b': 'DIAG', 'adaptar': [
+			"L=[]",
+			"if d&64: L.append('F55:DC_BusAlta')",
+			"if d&128: L.append('F56:BusBajo')",
+			"if d&512: L.append('F58:FalloBMS')",
+			"if d&2048: L.append('F60:FalloGen')",
+			"if d&4096: L.append('F61:BotonOFF')",
+			"if d&16384: L.append('F63:ArcoElec')",
+			"if d&32768: L.append('F64:Sobretemp')",
+			"datos['Fallos_F4'] = ', '.join(L) if L else 'Normal'"]},
         
         # === BLOQUE 9: TABLA HORARIA (Time of Use - T1 a T6 ✏️) ===
         'T1_Hora': {'reg': 250, 'escritura': True, 'nombre': 'T1: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
@@ -848,7 +847,7 @@ DEYE = {
         
         # === BLOQUE 10: PUERTO GENERADOR / SMART LOAD ===
         'Gen_Carga_Bat':   {'reg': 231, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['Gen_Carga_Bat'] = 'SI' if d == 1 else 'NO'"], 'nombre': 'Cargar Bat desde GEN', 'unit': '', 'b': 'GEN_SET'},
-        'SmartLoad_V_OFF': {'reg': 236, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['SmartLoad_V_OFF'] = d / 100.0"], 'nombre': 'Voltaje Apagado SmartLoad', 'unit': 'V', 'b': 'GEN_SET'},
+        'SmartLoad_V_OFF': {'reg': 236, 'dec': 2, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['SmartLoad_V_OFF'] = d / 100.0"], 'nombre': 'Voltaje Apagado SmartLoad', 'unit': 'V', 'b': 'GEN_SET'},
         'Gen_Port_Mode': {'reg': 235, 'escritura': True, 'min': 0, 'max': 2,   'nombre': 'Modo Puerto Gen', 'b': 'GEN_SET'},
         # Parámetros de SMART LOAD (Salida de excedentes)
         'SL_ON_SOC':     {'reg': 239, 'escritura': True, 'min': 20, 'max': 100, 'nombre': 'SmartLoad ON (SOC)', 'unit': '%', 'b': 'INFO'},
@@ -860,7 +859,7 @@ DEYE = {
         'Gen_W_Max':     {'reg': 292, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'Gen Potencia Máx (Limit)', 'unit': 'W', 'b': 'GEN_SET'},
         'Gen_Max_Run':   {'reg': 223, 'dec': 1, 'escritura': True, 'min': 0, 'max': 24, 'nombre': 'Gen Tiempo Máx Run', 'unit': 'h', 'b': 'GEN_SET'},
         'Gen_Cooling':   {'reg': 224, 'dec': 1, 'escritura': True, 'min': 0, 'max': 24, 'nombre': 'Gen Tiempo Enfriamiento', 'unit': 'h', 'b': 'GEN_SET'},
-        
+
         # === BLOQUE 11: FUNCIONES AVANZADAS ===
         'Grid_Peak_W':   {'reg': 293, 'escritura': True, 'min': 0, 'max': 16000, 'nombre': 'Límite Potencia Red', 'unit': 'W', 'b': 'INFO'},
         'Island_Mode':   {'reg': 234, 'escritura': True, 'min': 0, 'max': 1,     'nombre': 'Modo Isla (Signal Island)', 'b': 'MODE_SET ADV_SET'},
@@ -891,28 +890,27 @@ DEYE = {
         #'Wload_L2':   {'reg': 185, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Load L2', 'b': 'LOAD'}, # En monofásico es Estado Carga Código 0/1/2
         #'Wload_L3':   {'reg': 186, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Load L3', 'b': 'LOAD'}, # En monofásico es PV1 Power
     }, 
+        # Menú de control por Telegram antes de cerrar diccionario completo DEYE {...}
+	'MENU': """🛠 <b>MENU DE CONTROL DEYE</b>
 
-    # Menú de control por Telegram 
-    'MENU': """🛠 <b>MENU DE CONTROL DEYE</b>
+		📊 <b>MONITORIZACION</b>
+		• <code>#DEYE{{n}} BLOQUE=MAIN</code> - Resumen General
+		• <code>#DEYE{{n}} BLOQUE=PV</code>   - Producción Solar
+		• <code>#DEYE{{n}} BLOQUE=BAT</code>  - Estado Batería
+		• <code>#DEYE{{n}} BLOQUE=GRID</code> - Parámetros Red
+		• <code>#DEYE{{n}} BLOQUE=LOAD</code> - Cargas y Consumo
+		• <code>#DEYE{{n}} BLOQUE=GEN</code>  - Inversor y Gen
+		⚙️ <b>CONFIGURACION</b>
+		• <code>#DEYE{{n}} BLOQUE=BATT_SET</code> - Ajustes Batería
+		• <code>#DEYE{{n}} BLOQUE=MODE_SET</code> - Modos de Trabajo
+		• <code>#DEYE{{n}} BLOQUE=TOU_SET</code>  - Horarios (TOU)
+		• <code>#DEYE{{n}} BLOQUE=GEN_SET</code>  - Puerto Gen
+		• <code>#DEYE{{n}} BLOQUE=ADV_SET</code>  - Avanzados
+		ℹ️ <b>SISTEMA</b>
+		• <code>#DEYE{{n}} BLOQUE=INFO</code> - Firmware y Reloj
+		• <code>#DEYE{{n}} BLOQUE=DIAG</code> - Historial Alarmas
 
-        📊 <b>MONITORIZACION</b>
-        • <code>#DEYE{{n}} BLOQUE=MAIN</code> - Resumen General
-        • <code>#DEYE{{n}} BLOQUE=PV</code>   - Producción Solar
-        • <code>#DEYE{{n}} BLOQUE=BAT</code>  - Estado Batería
-        • <code>#DEYE{{n}} BLOQUE=GRID</code> - Parámetros Red
-        • <code>#DEYE{{n}} BLOQUE=LOAD</code> - Cargas y Consumo
-        • <code>#DEYE{{n}} BLOQUE=GEN</code>  - Inversor y Gen
-        ⚙️ <b>CONFIGURACION</b>
-        • <code>#DEYE{{n}} BLOQUE=BATT_SET</code> - Ajustes Batería
-        • <code>#DEYE{{n}} BLOQUE=MODE_SET</code> - Modos de Trabajo
-        • <code>#DEYE{{n}} BLOQUE=TOU_SET</code>  - Horarios (TOU)
-        • <code>#DEYE{{n}} BLOQUE=GEN_SET</code>  - Puerto Gen
-        • <code>#DEYE{{n}} BLOQUE=ADV_SET</code>  - Avanzados
-        ℹ️ <b>SISTEMA</b>
-        • <code>#DEYE{{n}} BLOQUE=INFO</code> - Firmware y Reloj
-        • <code>#DEYE{{n}} BLOQUE=DIAG</code> - Historial Alarmas
-
-        💡 <i>Truco: Toca el comando para copiarlo, luego pega y envía.</i>"""
+		💡 <i>Truco: Toca el comando para copiarlo, luego pega y envía.</i>"""
 }
 # ------------FIN DEFICIÓN DICCIONARIO PARA INVERSORES DEYE----------------------
 
