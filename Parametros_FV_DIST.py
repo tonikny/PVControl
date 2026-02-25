@@ -104,7 +104,7 @@ limpieza_tablas=[
                 ['reles_grab',366],
                 ['log',30],
                 ['datos_aux',366],
-                ['datos_celdas',366],
+                ['datos_celdas_JK1',366],
                 
                 # tablas de datos de equipos...modificar segun equipamiento instalado
                 ['hibrido',366],
@@ -208,19 +208,44 @@ Icola_max_pct     = 0.03  # Límit màxim del percentatge (3% C)
 #######################################################
 ###### Parametros ADS1115  - Permite hasta 4 ADS ######
 #######################################################
-usar_ADS = [0,0] # activar o no el ADS
-nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
-direccion_ADS = [72,75]                                              # direccion I2C del ADS
+# usar_ADS = [0,0] # activar o no el ADS
+# nombre_ADS = ['ADS1','ADS4']                                         # Nombre de los ADS
+# direccion_ADS = [72,75]                                              # direccion I2C del ADS
 
-var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
+# var_ADS = [['Vbat','Aux1', 'Vplaca','Aux2'],['Ibat','','Iplaca','']] # Nombre de las variables a capturar
 
-tmuestra_ADS = [1,1]                                                 # tiempo en sg entre capturas
-rate_ADS = [[250,250,250,250],[250,0,250,0]]                     # datarate de lectura
-bucles_ADS = [[10,5,5,5], [5,0,5,0]]                                 # Numero de bucles de lectura
+# tmuestra_ADS = [1,1]                                                 # tiempo en sg entre capturas
+# rate_ADS = [[250,250,250,250],[250,0,250,0]]                     # datarate de lectura
+# bucles_ADS = [[10,5,5,5], [5,0,5,0]]                                 # Numero de bucles de lectura
 
-gain_ADS = [[2,2,2,2], [16,0,16,0]]                                # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
-modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
-res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]      # ratio lectura ADS - Lectura real
+# gain_ADS = [[2,2,2,2], [16,0,16,0]]                                # Voltios Fondo escala 1=4,096V - 2=2.048V - 16= 256mV
+# modo_ADS = [[1,1,1,1], [3,0,3,0]]                                    # 0=desactivado, 1=disparado, 2= Continuo, 3=diferencial, 4=diferencial_continuo
+# res_ADS = [[47.46,47.46,47.46,47.46],[100/0.075,0,100/0.075,0]]      # ratio lectura ADS - Lectura real
+
+ADS = {
+    'ADS1': {
+        'usar': True,
+        'direccion': 72,
+        'vars': ['Vbat','Aux1', 'Vplaca','Aux2'],
+        'tmuestra': 1,
+        'rate': [250,250,250,250],
+        'bucles': [10,5,5,5],
+        'gain': [2,2,2,2],
+        'modo': [1,1,1,1],
+        'res': [47.46,47.46,47.46,47.46]
+    },
+    'ADS4': {
+        'usar': True,
+        'direccion': 75,
+        'vars': ['Ibat', '', 'Iplaca', ''],
+        'tmuestra': 1,
+        'rate': [250,0,250,0],
+        'bucles': [5,0,5,0],
+        'gain': [16,0,16,0],
+        'modo': [3,0,3,0],
+        'res': [100/0.075,0,100/0.075,0]
+    }
+}
 
 # -----------------------------------------------
 #########################
@@ -581,6 +606,8 @@ dev_eastron = ""       # /dev/ttyUSB0" # USB
 ###### DEYE, TURBO ENERGY,...   ######
 ######################################
 
+
+### version anterior de fv_deye.py ..... usa fv_deye_anterior.py 
 usar_deye = [0,0]
 nombre_deye = ['DEYE', 'DEYE1']  #Nombre que asignamos a cada equipo  deye1 que es wifi? 
 
@@ -589,6 +616,308 @@ n_serie_dongle = [0,11111111]                # numero de serie de dongle WiFI si
 mb_slave_id = [0,1]                          # 1 para Master de conexion WiFi
 
 t_muestra_deye = [5,5]                       # Tiempo en segundos entre muestras
+
+
+### Vesion actualizada 2026
+
+DEYE = {
+    'DEYE1': {
+        'usar': 0,                     # Seleccionar 1 para usar ó 0  para no usar
+#       'dev': '192.168.X.X',          # si descomentas y se pone un valor IP tipo '192.168.X.X' del dongle wifi del inversor, se usará pysolarmanV5 será necesario el n_serie del dongle
+#       'dev': '/dev/ttyUSBX',         # si descomentas y se pone un valor tipo /dev/ttyUSBX se usará conexión RS485 por cable con libreria minimal modbus y dejar a 0 el valor n_serie
+        'n_serie': 1234567890,         # valor 0 para conexión cable ó número serie de dongle wifi si se usa la IP del mismo en parámetro 'dev'
+        'id_modbus': 1,
+        'tiempo_captura': 6,           # Tiempo entre capturas optimizadas, dejar mínimo a '6' para 6seg. con wifi ó '4' para 4seg conectado por cable RS485
+    },
+    'DEYE2': { 
+        'usar': 0, 
+        'dev': '', 
+        'n_serie': 0, 
+        'id_modbus': 2, 
+        'tiempo_captura': 6,
+    },
+
+    'COMANDOS': {
+        # === BLOQUE 0: IDENTIFICACIÓN ===
+        'Device_Type':   {'reg': 0,  'escritura': False, 'nombre': 'Tipo de Equipo', 'b': 'INFO'},
+        'Protocol_Ver':  {'reg': 2,  'escritura': False, 'nombre': 'Versión Protocolo', 'b': 'INFO'},
+        'Rated_Level':   {'reg': 8,  'escritura': False, 'nombre': 'Fase Configurada', 'b': 'INFO'},
+        'Rated_Power_L': {'reg': 16, 'escritura': False, 'nombre': 'Potencia Nominal', 'unit': '', 'b': 'INFO'},
+        'Rated_Power_H': {'reg': 17, 'escritura': False, 'nombre': 'Potencia_H', 'b': 'INFO', 'ocultar': True},
+        'Soft_Control':  {'reg': 13, 'escritura': False, 'nombre': 'Versión Control', 'b': 'INFO'},
+        'Soft_Comm':     {'reg': 14, 'escritura': False, 'nombre': 'Versión Comm', 'b': 'INFO'},
+        'sn_t1': {'reg': 3, 'tipo': 'adaptar', 'adaptar': ["datos['sn_t1'] = chr(d >> 8) + chr(d & 0xFF)"], 'b': 'INTERNO'},
+        'sn_t2': {'reg': 4, 'tipo': 'adaptar', 'adaptar': ["datos['sn_t2'] = chr(d >> 8) + chr(d & 0xFF)"], 'b': 'INTERNO'},
+        'sn_t3': {'reg': 5, 'tipo': 'adaptar', 'adaptar': ["datos['sn_t3'] = chr(d >> 8) + chr(d & 0xFF)"], 'b': 'INTERNO'},
+        'sn_t4': {'reg': 6, 'tipo': 'adaptar', 'adaptar': ["datos['sn_t4'] = chr(d >> 8) + chr(d & 0xFF)"], 'b': 'INTERNO'},
+        'Num_Serie': {'reg': 7, 'tipo': 'adaptar', 'adaptar': ["p5 = chr(d >> 8) + chr(d & 0xFF)", "datos['Num_Serie'] = datos.get('sn_t1','') + datos.get('sn_t2','') + datos.get('sn_t3','') + datos.get('sn_t4','') + p5"], 'nombre': 'Nº Serie Inversor', 'unit': '', 'b': 'INFO'},
+        'Chip_Type': {'reg': 9, 'tipo': 'adaptar', 'adaptar': ["datos['Chip_Type'] = {0:'AT32F403A', 1:'STM32F103', 2:'GD32F103', 3:'GD32F303', 33026:'GD32F303_R2'}.get(d, f'Desconocido (ID:{d})')"], 'nombre': 'Tipo de CPU', 'unit': '', 'b': 'INFO'},
+        
+        # === BLOQUE 1: DATOS OPERATIVOS (Monitorización) ===
+        'EstadoInv': {'reg': 59, 'tipo': 'adaptar', 'nombre': 'Estado Inversor', 'b': 'DIAG', 'adaptar': [
+            "m = {0:'Stand By', 1:'Self Checking', 2:'Normal', 3:'Fault'}",
+            "datos['EstadoInv'] = m.get(d, 'Desconocido')"]},
+        'Vbat':      {'reg': 183, 'dec': 2, 'unit': 'V', 'nombre': 'Voltaje Batería', 'b': 'BAT'},
+        'SOC':       {'reg': 184, 'unit': '%', 'nombre': 'SOC Batería', 'b': 'BAT MAIN'},
+        'Tbat':           {'reg': 182, 'offset': -1000, 'dec': 1, 'unit': 'ºC', 'nombre': 'Temp. Batería', 'b': 'BAT'},
+        'Ibat':      {'reg': 191, 'tipo': 'adaptar', 'dec': 2, 'unit': 'A', 'nombre': 'Amperios Bat', 'b': 'BAT', 'adaptar': [
+            "v = d if d < 32768 else d - 65536", # Lógica de signo invertido
+            "datos['Ibat'] = -round(v/100, 2)"]},
+        'Day_PV_Total_Raw':   {'reg': 108, 'escritura': False, 'nombre': 'Generación Solar Bruta', 'unit': 'kWh', 'dec': 1, 'b': 'PV'},
+        'Vplaca1':   {'reg': 109, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje PV1', 'b': 'PV'},
+        'Iplaca1':   {'reg': 110, 'dec': 1, 'unit': 'A', 'nombre': 'Corriente PV1', 'b': 'PV'},
+        'PV1InputPower': {'reg': 186, 'unit': 'W', 'nombre': 'Potencia PV1', 'b': 'PV MAIN'},
+        'Vplaca2':   {'reg': 111, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje PV2', 'b': 'PV'},
+        'Iplaca2':   {'reg': 112, 'dec': 1, 'unit': 'A', 'nombre': 'Corriente PV2', 'b': 'PV'},
+        'PV2InputPower': {'reg': 187, 'unit': 'W', 'nombre': 'Potencia PV2', 'b': 'PV MAIN'},
+        'Vred':      {'reg': 150, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Red', 'b': 'GRID'},
+        'Wred':      {'reg': 172, 'dec': 1, 'tipo': 's16', 'unit': 'W', 'nombre': 'Potencia Red', 'b': 'GRID MAIN'},
+        'Wconsumo':  {'reg': 178, 'unit': 'W', 'nombre': 'Consumo Casa', 'b': 'LOAD MAIN'},
+        'LoadVoltageL1': {'reg': 157, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Salida L1', 'b': 'LOAD'},
+        'Hz_Inv': {'reg': 193, 'dec': 2, 'unit': 'Hz', 'nombre': 'Frecuencia Inversor', 'b': 'DIAG LOAD'},
+        'Wgen':      {'reg': 166, 'unit': 'W', 'nombre': 'Potencia Generador', 'b': 'GEN'},
+        'Vgen':      {'reg': 181, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Generador', 'b': 'GEN'},
+        'Fgen':      {'reg': 196, 'dec': 2, 'unit': 'Hz', 'nombre': 'Frecuencia Generador', 'b': 'GEN'},
+        'GridSideRelayStatus': {'reg': 194, 'nombre': 'Estado Relé Red', 'b': 'GRID'},
+        'BatteryOutputPower':  {'reg': 190, 'tipo': 's16', 'unit': 'W', 'nombre': 'Potencia Bat Real', 'b': 'BAT MAIN'},
+        'Ibatn':               {'reg': 191, 'tipo': 'adaptar', 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Bat Neutro', 'b': 'BAT', 'adaptar': ["v = d if d < 32768 else d - 65536", "datos['Ibatn'] = round(v/100, 2)"]},
+        'Fout': {'reg': 192, 'dec': 2, 'unit': 'Hz', 'nombre': 'Frecuencia en Carga', 'b': 'LOAD'},
+        'Wplaca': {'reg': 187, 'tipo': 'adaptar', 'nombre': 'Potencia PV Total (Deye)', 'unit': 'W', 'b': 'PV', 'adaptar': ["datos['Wplaca'] = datos.get('PV1InputPower',0) + datos.get('PV2InputPower',0)"]},        
+        
+        # === BLOQUE 2: HISTÓRICOS Y TOTALES (Monitorización) ===
+        'Day_PV_Energy':      {'reg': 60,  'escritura': False, 'nombre': 'Generación Solar Neta', 'unit': 'kWh', 'dec': 1, 'b': 'PV'},
+        'Total_PV_Energy_L':  {'reg': 63,  'escritura': False, 'nombre': 'Generación Solar Total L', 'unit': 'kWh', 'dec': 1, 'b': 'PV'},
+        'Total_PV_Energy_H':  {'reg': 64,  'escritura': False, 'nombre': 'Generación Solar Total H', 'unit': 'kWh', 'b': 'PV', 'ocultar': True},
+        'Day_Battery_Charge': {'reg': 70,  'escritura': False, 'nombre': 'Carga Batería Hoy', 'unit': 'kWh', 'dec': 1, 'b': 'BAT'},
+        'Day_Battery_Dis':    {'reg': 71,  'escritura': False, 'nombre': 'Descarga Batería Hoy', 'unit': 'kWh', 'dec': 1, 'b': 'BAT'},
+        'TotalBatteryChargePower':    {'reg': 72, 'dec': 1, 'unit': 'kWh', 'nombre': 'Carga Bat Total Acum', 'b': 'BAT'},
+        'TotalBatteryDischargePower': {'reg': 74, 'dec': 1, 'unit': 'kWh', 'nombre': 'Descarga Bat Total Acum', 'b': 'BAT'},
+        'Day_Grid_Buy':       {'reg': 76,  'escritura': False, 'nombre': 'Compra Red Hoy', 'unit': 'kWh', 'dec': 1, 'b': 'GRID'},
+        'Day_Grid_Sell':      {'reg': 77,  'escritura': False, 'nombre': 'Exportación Red Hoy', 'unit': 'kWh', 'dec': 1, 'b': 'GRID'},
+        'TotalGridBuyPower': {'reg': 78,  'dec': 1, 'unit': 'kWh', 'nombre': 'Comprado Red Total', 'b': 'GRID'},
+        'F_Red':           {'reg': 79,  'tipo': 'adaptar', 'adaptar': ["datos['F_Red'] = d / 100.0"], 'nombre': 'Frecuencia Red', 'unit': 'Hz', 'b': 'GRID'},
+        'Day_Load_Energy':    {'reg': 81,  'escritura': False, 'nombre': 'Consumo Casa Hoy', 'unit': 'kWh', 'dec': 1, 'b': 'LOAD'},
+        'Total_Load_Energy_L':{'reg': 82,  'escritura': False, 'nombre': 'Consumo Casa Total L', 'unit': 'kWh', 'dec': 1, 'b': 'LOAD'},
+        'Total_Load_Energy_H':{'reg': 83,  'escritura': False, 'nombre': 'Consumo Casa Total H', 'unit': 'kWh', 'b': 'LOAD', 'ocultar': True},
+        'Day_Load_Total':     {'reg': 84,  'escritura': False, 'nombre': 'Consumo Casa Hoy', 'unit': 'kWh', 'dec': 1, 'b': 'LOAD'},
+        'Total_Load_Total_L': {'reg': 85,  'escritura': False, 'nombre': 'Consumo Casa Total L', 'unit': 'kWh', 'dec': 1, 'b': 'LOAD'},
+        'Total_Load_Total_H': {'reg': 86,  'escritura': False, 'nombre': 'Consumo Casa Total H', 'unit': 'kWh', 'b': 'LOAD', 'ocultar': True},
+        'YearLoadPower':    {'reg': 87,  'dec': 1, 'unit': 'kWh', 'nombre': 'Consumo Anual', 'b': 'LOAD'},
+        'HistPVPower':      {'reg': 96,  'dec': 1, 'unit': 'kWh', 'nombre': 'Suma PV Histórica', 'b': 'PV'},
+        'DayPVPower':       {'reg': 108, 'dec': 1, 'unit': 'kWh', 'nombre': 'Producción PV Hoy (Reg 108)', 'b': 'PV'},
+        
+        # === BLOQUE 3: SALUD Y SENSORES RED (Monitorización️) ===
+        'RadiatorTempDC': {'reg': 90,  'offset': -1000, 'dec': 1, 'unit': 'ºC', 'nombre': 'Temp. Radiador DC', 'b': 'DIAG'},
+        'IGBTTemp':       {'reg': 91,  'offset': -1000, 'dec': 1, 'unit': 'ºC', 'nombre': 'Temp. IGBT', 'b': 'DIAG'},
+        'Inductance1Temp':{'reg': 92,  'dec': 1, 'unit': 'ºC', 'nombre': 'Temp. Inductancia', 'b': 'DIAG'},
+        'EnvironmentTemp': {'reg': 95, 'tipo': 'adaptar', 'adaptar': ["datos['EnvironmentTemp'] = f'{d/10.0} ºC' if (d > -500 and d != 0) else 'No instalado'"], 'nombre': 'Temp. Ambiente', 'unit': '', 'b': 'DIAG'},
+        'I_Red_L1':        {'reg': 160, 'tipo': 'adaptar', 'adaptar': ["datos['I_Red_L1'] = d / 100.0"], 'nombre': 'Amperios Red L1', 'unit': 'A', 'b': 'GRID'},
+        'Ired':           {'reg': 162, 'dec': 2, 'unit': 'A', 'nombre': 'Intensidad Red L1', 'b': 'GRID'},
+        'Ired2':          {'reg': 163, 'dec': 2, 'unit': 'A', 'nombre': 'Intensidad Red L2', 'b': 'GRID'},
+        'W_Red_L1':        {'reg': 167, 'tipo': 'adaptar', 'adaptar': ["datos['W_Red_L1'] = d if d <= 32767 else d - 65536"], 'nombre': 'Potencia Red L1', 'unit': 'W', 'b': 'GRID'},
+        'W_Red_Total':     {'reg': 169, 'tipo': 'adaptar', 'adaptar': ["datos['W_Red_Total'] = d if d <= 32767 else d - 65536"], 'nombre': 'Potencia Red Total', 'unit': 'W', 'b': 'GRID'},
+        'GrideSideL2P':   {'reg': 170, 'dec': 1, 'unit': 'W', 'nombre': 'Potencia Red Fase 2', 'b': 'GRID'},
+        
+        # === BLOQUE 4: CONFIGURACIÓN DE BATERÍA (Voltajes y Amperios️) ===
+        'Batt_Mode':    {'reg': 200, 'escritura': True, 'min': 0, 'max': 1, 'nombre': 'Modo Bat (0:Plomo/1:Litio)', 'b': 'BATT_SET'},
+        'Batt_Control': {'reg': 213, 'escritura': True, 'min': 0, 'max': 2, 'nombre': 'Control (0:V/1:%/2:NoBat)', 'b': 'BATT_SET'},
+        'Vabs':  {'reg': 202, 'dec': 2, 'escritura': True, 'min': 48.0, 'max': 59.0, 'nombre': 'Voltaje Absorcion', 'unit': 'V', 'b': 'BATT_SET'},
+        'Vflot': {'reg': 203, 'dec': 2, 'escritura': True, 'min': 48.0, 'max': 58.0, 'nombre': 'Voltaje Flotacion', 'unit': 'V', 'b': 'BATT_SET'},
+        'Ah_Capacidad':    {'reg': 204, 'escritura': True, 'nombre': 'Capacidad Ah', 'unit': 'Ah', 'b': 'BATT_SET'},
+        'Vecu':  {'reg': 201, 'dec': 2, 'escritura': True, 'min': 48.0, 'max': 60.0, 'nombre': 'Voltaje Ecualizacion', 'unit': 'V', 'b': 'BATT_SET'},
+        'Tequa': {'reg': 208, 'escritura': True, 'min': 0, 'max': 20,  'nombre': 'Tiempo Ecua (x0.5h)', 'unit': 'u', 'b': 'BATT_SET'},
+        'Cequa': {'reg': 207, 'escritura': True, 'min': 0, 'max': 90,  'nombre': 'Ciclo Ecualizacion', 'unit': 'd', 'b': 'BATT_SET'},
+        'I_Carga_max':    {'reg': 210, 'escritura': True, 'min': 0, 'max': 140, 'nombre': 'Amperios Carga Máx', 'unit': 'A', 'b': 'BATT_SET'},
+        'I_Descarga_max': {'reg': 211, 'escritura': True, 'min': 0, 'max': 140, 'nombre': 'Amperios Descarga Máx', 'unit': 'A', 'b': 'BATT_SET'},
+        #'SOH': {'reg': 220, 'escritura': False, 'nombre': 'Salud Batería', 'unit': '%', 'b': 'BAT'}, # Solo para BMS comunicado con inversor
+        'Eficiencia_Carga':{'reg': 216, 'escritura': True, 'dec': 1, 'unit': '%', 'nombre': 'Eficiencia Carga Bat', 'b': 'BATT_SET'},
+        
+        # === BLOQUE 5: SEGURIDAD DE SOC (Protección Batería ✏️) ===
+        'SOC_Baja':     {'reg': 219, 'escritura': True, 'min': 10, 'max': 40, 'nombre': 'SOC Bat. Baja', 'unit': '%', 'b': 'BATT_SET'},
+        'SOC_Apagado':  {'reg': 217, 'escritura': True, 'min': 5,  'max': 25, 'nombre': 'SOC Apagado (ShutDown)', 'unit': '%', 'b': 'BATT_SET'},
+        'SOC_Reinicio': {'reg': 218, 'escritura': True, 'min': 20, 'max': 80, 'nombre': 'SOC Reinicio (Restart)', 'unit': '%', 'b': 'BATT_SET'},
+        
+        # === BLOQUE 6: MODOS DE TRABAJO Y RED (Control Energía ✏️) ===
+        'Work_Mode':   {'reg': 244, 'escritura': True, 'min': 0, 'max': 2, 'nombre': 'Modo (0:Sell/1:L/2:CT)', 'b': 'MODE_SET'},
+        'Energy_Patt': {'reg': 243, 'escritura': True, 'min': 0, 'max': 1, 'nombre': 'Prioridad (0:Bat/1:Load)', 'b': 'MODE_SET'},
+        'Solar_Sell':  {'reg': 247, 'escritura': True, 'min': 0, 'max': 1, 'nombre': 'Venta Solar (0:Off/1:On)', 'b': 'MODE_SET'},
+        'Max_Sell_W':  {'reg': 245, 'escritura': True, 'min': 0, 'max': 8000, 'nombre': 'Vatios Venta Máx', 'unit': 'W', 'b': 'MODE_SET'},
+        'Zero_Exp_W':  {'reg': 206, 'escritura': True, 'min': 0, 'max': 200,  'nombre': 'Offset Zero-Export', 'unit': 'W', 'b': 'MODE_SET'},
+        'TOU_Enable':  {'reg': 248, 'escritura': True, 'min': 0, 'max': 255, 'nombre': 'Uso Horario (255:All ON)', 'unit': 'bit', 'b': 'MODE_SET'},
+        
+        # === BLOQUE 7: ADMINISTRACIÓN SISTEMA (Monitorización 👁️) ===
+        'GridMode':       {'reg': 284, 'tipo': 'adaptar', 'nombre': 'Modo Red', 'b': 'GRID', 'adaptar': [
+            "m = {0:'General_Standard', 1:'UL1741&IEE1547', 2:'CPUC_RULE21', 3:'SRD-UL1741'}",
+            "datos['GridMode'] = m.get(d, 'Otros')"]},
+        'F_Red_Set':       {'reg': 285, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['F_Red_Set'] = '50Hz' if d == 0 else '60Hz' if d == 1 else d"], 'nombre': 'Frecuencia Red Config', 'unit': '', 'b': 'ADV_SET'},
+        'V_Red_Alta_Set':  {'reg': 287, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['V_Red_Alta_Set'] = d / 10.0"], 'nombre': 'Prot. Voltaje Alto Red', 'unit': 'V', 'b': 'ADV_SET'},
+        'V_Red_Baja_Set':  {'reg': 288, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['V_Red_Baja_Set'] = d / 10.0"], 'nombre': 'Prot. Voltaje Bajo Red', 'unit': 'V', 'b': 'ADV_SET'},
+        'AC_Input_Source':{'reg': 197, 'tipo': 'adaptar', 'nombre': 'Fuente AC', 'b': 'ADV_SET', 'adaptar': [
+            "m = {0:'Red (Grid)', 1:'Generador', 2:'Desactivado (2)'}",
+            "datos['AC_Input_Source'] = m.get(d, 'N/A')"]},
+        'GenStatusRelay': {'reg': 195, 'tipo': 'adaptar', 'nombre': 'Relé Generador', 'b': 'GEN', 'adaptar': [
+            "datos['GenStatusRelay'] = 'ON' if (d & 1) else 'OFF'"]},
+        # Reloj Inversor (Desempaquetado para Telegram y Web)
+        'Reloj_1': {'reg': 22, 'tipo': 'adaptar', 'nombre': 'Año/Mes', 'b': 'INFO', 'adaptar': [
+            "datos['Anyo'] = d >> 8", "datos['Mes'] = d & 0xFF", 
+            "datos['Reloj_1'] = f'20{d >> 8}/{d & 0xFF:02}'"]},
+        'Reloj_2': {'reg': 23, 'tipo': 'adaptar', 'nombre': 'Día/Hora', 'b': 'INFO', 'adaptar': [
+            "datos['Dia'] = d >> 8", "datos['Hora'] = d & 0xFF", 
+            "datos['Reloj_2'] = f'{d >> 8} - {d & 0xFF:02}h'"]},
+        'Reloj_3': {'reg': 24, 'tipo': 'adaptar', 'nombre': 'Min/Seg', 'b': 'INFO', 'adaptar': [
+            "datos['Minuto'] = d >> 8", "datos['Segundo'] = d & 0xFF", 
+            "datos['Reloj_3'] = f'{d >> 8:02}:{d & 0xFF:02}m'"]},
+        
+        # === BLOQUE 8: DIAGNÓSTICO (Alarmas y Fallos 👁️) ACTUALIZADO ===
+        'Alarmas_W': {'reg': 101, 'tipo': 'adaptar', 'nombre': 'Avisos (Warnings)', 'b': 'DIAG', 'adaptar': [
+            "L=[]",
+            "if d&1: L.append('W01:Sobrecur.DC')",
+            "if d&2: L.append('W02:Ventilador')",
+            "if d&4: L.append('W03:FaseRed')",
+            "if d&8: L.append('W04:FalloMeter')",
+            "if d&16: L.append('W05:BatBaja')",
+            "if d&32: L.append('W06:BatAlta')",
+            "datos['Alarmas_W'] = ', '.join(L) if L else 'Normal'"]},
+        'Fallos_F1': {'reg': 103, 'tipo': 'adaptar', 'nombre': 'Fallos F01-F16', 'b': 'DIAG', 'adaptar': [
+            "L=[]",
+            "if d&64: L.append('F07:SoftStart')",
+            "if d&512: L.append('F10:PlacaAux')",
+            "if d&4096: L.append('F13:CambioModo')",
+            "if d&32768: L.append('F16:GFCI_Sensor')",
+            "datos['Fallos_F1'] = ', '.join(L) if L else 'Normal'"]},
+        'Fallos_F2': {'reg': 104, 'tipo': 'adaptar', 'nombre': 'Fallos F17-F32', 'b': 'DIAG', 'adaptar': [
+            "L=[]",
+            "if d&1: L.append('F17:BatHold')",
+            "if d&2: L.append('F18:OverCurAC')",
+            "if d&8: L.append('F20:OverCurDC')",
+            "if d&32: L.append('F22:Emergencia')",
+            "if d&64: L.append('F23:FugaAC')",
+            "if d&128: L.append('F24:Aisl.PV')",
+            "if d&4096: L.append('F29:Paralelo')",
+            "datos['Fallos_F2'] = ', '.join(L) if L else 'Normal'"]},
+        'Fallos_F3': {'reg': 105, 'tipo': 'adaptar', 'nombre': 'Fallos F33-F48', 'b': 'DIAG', 'adaptar': [
+            "L=[]",
+            "if d&4: L.append('F35:ApagonRed')",
+            "if d&16: L.append('F37:OverCurSoft')",
+            "if d&128: L.append('F40:OverCurBat')",
+            "if d&512: L.append('F42:RedBaja')",
+            "if d&32768: L.append('F48:FrecBaja')",
+            "datos['Fallos_F3'] = ', '.join(L) if L else 'Normal'"]},
+        'Fallos_F4': {'reg': 106, 'tipo': 'adaptar', 'nombre': 'Fallos F49-F64', 'b': 'DIAG', 'adaptar': [
+            "L=[]",
+            "if d&64: L.append('F55:DC_BusAlta')",
+            "if d&128: L.append('F56:BusBajo')",
+            "if d&512: L.append('F58:FalloBMS')",
+            "if d&2048: L.append('F60:FalloGen')",
+            "if d&4096: L.append('F61:BotonOFF')",
+            "if d&16384: L.append('F63:ArcoElec')",
+            "if d&32768: L.append('F64:Sobretemp')",
+            "datos['Fallos_F4'] = ', '.join(L) if L else 'Normal'"]},
+        
+        # === BLOQUE 9: TABLA HORARIA (Time of Use - T1 a T6 ✏️) ===
+        'T1_Hora': {'reg': 250, 'escritura': True, 'nombre': 'T1: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
+        'T1_Pot':  {'reg': 256, 'escritura': True, 'min': 0, 'max': 8000, 'nombre': 'T1: Potencia Máx', 'unit': 'W', 'b': 'TOU_SET'},
+        'T1_V':    {'reg': 262, 'dec': 2, 'escritura': True, 'min': 40, 'max': 60, 'nombre': 'T1: Voltaje Obj.', 'unit': 'V', 'b': 'TOU_SET'},
+        'T1_SOC':  {'reg': 268, 'escritura': True, 'min': 5,  'max': 100, 'nombre': 'T1: SOC Objetivo', 'unit': '%', 'b': 'TOU_SET'},
+        'T1_Chg':  {'reg': 274, 'escritura': True, 'min': 0,  'max': 31,  'nombre': 'T1: Modo Carga','b': 'TOU_SET'},
+        'T2_Hora': {'reg': 251, 'escritura': True, 'nombre': 'T2: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
+        'T2_Pot':  {'reg': 257, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'T2: Potencia Máx', 'unit': 'W', 'b': 'TOU_SET'},
+        'T2_V':    {'reg': 263, 'dec': 2, 'escritura': True, 'min': 40,  'max': 60, 'nombre': 'T2: Voltaje Obj.', 'unit': 'V', 'b': 'TOU_SET'},
+        'T2_SOC':  {'reg': 269, 'escritura': True, 'min': 5,  'max': 100, 'nombre': 'T2: SOC Objetivo', 'unit': '%', 'b': 'TOU_SET'},
+        'T2_Chg':  {'reg': 275, 'escritura': True, 'min': 0,  'max': 31,  'nombre': 'T2: Modo Carga', 'b': 'TOU_SET'},
+        'T3_Hora': {'reg': 252, 'escritura': True, 'nombre': 'T3: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
+        'T3_Pot':  {'reg': 258, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'T3: Potencia Máx', 'unit': 'W', 'b': 'TOU_SET'},
+        'T3_V':    {'reg': 264, 'dec': 2, 'escritura': True, 'min': 40,  'max': 60, 'nombre': 'T3: Voltaje Obj.', 'unit': 'V', 'b': 'TOU_SET'},
+        'T3_SOC':  {'reg': 270, 'escritura': True, 'min': 5,  'max': 100, 'nombre': 'T3: SOC Objetivo', 'unit': '%', 'b': 'TOU_SET'},
+        'T3_Chg':  {'reg': 276, 'escritura': True, 'min': 0,  'max': 31,  'nombre': 'T3: Modo Carga', 'b': 'TOU_SET'},
+        'T4_Hora': {'reg': 253, 'escritura': True, 'nombre': 'T4: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
+        'T4_Pot':  {'reg': 259, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'T4: Potencia Máx', 'unit': 'W', 'b': 'TOU_SET'},
+        'T4_V':    {'reg': 265, 'dec': 2, 'escritura': True, 'min': 40,  'max': 60, 'nombre': 'T4: Voltaje Obj.', 'unit': 'V', 'b': 'TOU_SET'},
+        'T4_SOC':  {'reg': 271, 'escritura': True, 'min': 5,  'max': 100, 'nombre': 'T4: SOC Objetivo', 'unit': '%', 'b': 'TOU_SET'},
+        'T4_Chg':  {'reg': 277, 'escritura': True, 'min': 0,  'max': 31,  'nombre': 'T4: Modo Carga', 'b': 'TOU_SET'},
+        'T5_Hora': {'reg': 254, 'escritura': True, 'nombre': 'T5: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
+        'T5_Pot':  {'reg': 260, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'T5: Potencia Máx', 'unit': 'W', 'b': 'TOU_SET'},
+        'T5_V':    {'reg': 266, 'dec': 2, 'escritura': True, 'min': 40,  'max': 60, 'nombre': 'T5: Voltaje Obj.', 'unit': 'V', 'b': 'TOU_SET'},
+        'T5_SOC':  {'reg': 272, 'escritura': True, 'min': 5,  'max': 100, 'nombre': 'T5: SOC Objetivo', 'unit': '%', 'b': 'TOU_SET'},
+        'T5_Chg':  {'reg': 278, 'escritura': True, 'min': 0,  'max': 31,  'nombre': 'T5: Modo Carga', 'b': 'TOU_SET'},
+        'T6_Hora': {'reg': 255, 'escritura': True, 'nombre': 'T6: Hora Inicio', 'unit': 'H/M', 'b': 'TOU_SET'},
+        'T6_Pot':  {'reg': 261, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'T6: Potencia Máx', 'unit': 'W', 'b': 'TOU_SET'},
+        'T6_V':    {'reg': 267, 'dec': 2, 'escritura': True, 'min': 40,  'max': 60, 'nombre': 'T6: Voltaje Obj.', 'unit': 'V', 'b': 'TOU_SET'},
+        'T6_SOC':  {'reg': 273, 'escritura': True, 'min': 5,  'max': 100, 'nombre': 'T6: SOC Objetivo', 'unit': '%', 'b': 'TOU_SET'},
+        'T6_Chg':  {'reg': 279, 'escritura': True, 'min': 0,  'max': 31,  'nombre': 'T6: Modo Carga', 'b': 'TOU_SET'},
+        
+        # === BLOQUE 10: PUERTO GENERADOR / SMART LOAD ===
+        'Gen_Carga_Bat':   {'reg': 231, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['Gen_Carga_Bat'] = 'SI' if d == 1 else 'NO'"], 'nombre': 'Cargar Bat desde GEN', 'unit': '', 'b': 'GEN_SET'},
+        'SmartLoad_V_OFF': {'reg': 236, 'escritura': True, 'tipo': 'adaptar', 'adaptar': ["datos['SmartLoad_V_OFF'] = d / 100.0"], 'nombre': 'Voltaje Apagado SmartLoad', 'unit': 'V', 'b': 'GEN_SET'},
+        'Gen_Port_Mode': {'reg': 235, 'escritura': True, 'min': 0, 'max': 2,   'nombre': 'Modo Puerto Gen', 'b': 'GEN_SET'},
+        # Parámetros de SMART LOAD (Salida de excedentes)
+        'SL_ON_SOC':     {'reg': 239, 'escritura': True, 'min': 20, 'max': 100, 'nombre': 'SmartLoad ON (SOC)', 'unit': '%', 'b': 'INFO'},
+        'SL_OFF_SOC':    {'reg': 237, 'escritura': True, 'min': 10, 'max': 95,  'nombre': 'SmartLoad OFF (SOC)', 'unit': '%', 'b': 'INFO'},
+        'SL_Solar_W':    {'reg': 241, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'SL Min Solar', 'unit': 'W', 'b': 'INFO'},
+        # Parámetros de GENERADOR (Entrada de carga)
+        'Gen_Start_SOC': {'reg': 226, 'escritura': True, 'min': 5,  'max': 50,  'nombre': 'Gen Start (SOC)', 'unit': '%', 'b': 'GEN_SET'},
+        'Gen_Charge_I':  {'reg': 227, 'escritura': True, 'min': 0,  'max': 120, 'nombre': 'Amperios Carga Gen', 'unit': 'A', 'b': 'GEN_SET'},
+        'Gen_W_Max':     {'reg': 292, 'escritura': True, 'min': 0,  'max': 8000, 'nombre': 'Gen Potencia Máx (Limit)', 'unit': 'W', 'b': 'GEN_SET'},
+        'Gen_Max_Run':   {'reg': 223, 'dec': 1, 'escritura': True, 'min': 0, 'max': 24, 'nombre': 'Gen Tiempo Máx Run', 'unit': 'h', 'b': 'GEN_SET'},
+        'Gen_Cooling':   {'reg': 224, 'dec': 1, 'escritura': True, 'min': 0, 'max': 24, 'nombre': 'Gen Tiempo Enfriamiento', 'unit': 'h', 'b': 'GEN_SET'},
+        
+        # === BLOQUE 11: FUNCIONES AVANZADAS ===
+        'Grid_Peak_W':   {'reg': 293, 'escritura': True, 'min': 0, 'max': 16000, 'nombre': 'Límite Potencia Red', 'unit': 'W', 'b': 'INFO'},
+        'Island_Mode':   {'reg': 234, 'escritura': True, 'min': 0, 'max': 1,     'nombre': 'Modo Isla (Signal Island)', 'b': 'MODE_SET ADV_SET'},
+        'BMS_Protocol':    {'reg': 325, 'tipo': 'adaptar', 'adaptar': ["datos['BMS_Protocol'] = {0:'PYLON', 1:'Tianbangda', 5:'Peneng 485', 15:'Victron'}.get(d, f'Cód.{d}')"], 'nombre': 'Protocolo BMS', 'unit': '', 'b': 'INFO'},
+        'BMS_Err_Stop':  {'reg': 328, 'escritura': True, 'min': 0, 'max': 256,   'nombre': 'Parar si fallo BMS (0:N/256:S)', 'b': 'BAT DIAG'},
+
+        # =====================================================================
+        # === REGISTROS PARA MODELOS TRIFÁSICOS (L2 y L3) - SOLO CONSULTA   ===
+        # === (Nota: Algunos registros como 178, 184, 186 cambian en Trif.) ===
+        # === Se debe comprobar documento protocolo V119 en el caso de usar ===
+        # =====================================================================
+        # --- RED ELÉCTRICA (GRID) ---
+        #'Vred_L2':    {'reg': 151, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Red L2', 'b': 'GRID'},
+        #'Vred_L3':    {'reg': 152, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Red L3', 'b': 'GRID'},
+        #'Ired_L2':    {'reg': 161, 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Red L2', 'b': 'GRID'},
+        #'Ired_L3':    {'reg': 162, 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Red L3', 'b': 'GRID'},
+        #'Wred_L2':    {'reg': 168, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Red L2', 'b': 'GRID'},
+        #'Wred_L3':    {'reg': 169, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Red L3', 'b': 'GRID'},
+        # --- SALIDA CARGAS (LOAD) ---
+        #'Vload_L1':   {'reg': 173, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Load L1', 'b': 'LOAD'},
+        #'Vload_L2':   {'reg': 174, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Load L2', 'b': 'LOAD'},
+        #'Vload_L3':   {'reg': 175, 'dec': 1, 'unit': 'V', 'nombre': 'Voltaje Load L3', 'b': 'LOAD'},
+        #'Iload_L1':   {'reg': 176, 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Load L1', 'b': 'LOAD'},
+        #'Iload_L2':   {'reg': 177, 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Load L2', 'b': 'LOAD'},
+        # --- ZONA DE CONFLICTO (Solo para equipos trifásicos nativos) ---
+        #'Iload_L3':   {'reg': 178, 'dec': 2, 'unit': 'A', 'nombre': 'Corriente Load L3', 'b': 'LOAD'}, # En monofásico es Wconsumo
+        #'Wload_L1':   {'reg': 184, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Load L1', 'b': 'LOAD'}, # En monofásico es %SOC bateria
+        #'Wload_L2':   {'reg': 185, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Load L2', 'b': 'LOAD'}, # En monofásico es Estado Carga Código 0/1/2
+        #'Wload_L3':   {'reg': 186, 'dec': 0, 'unit': 'W', 'nombre': 'Potencia Load L3', 'b': 'LOAD'}, # En monofásico es PV1 Power
+    }, 
+
+    # Menú de control por Telegram 
+    'MENU': """🛠 <b>MENU DE CONTROL DEYE</b>
+
+        📊 <b>MONITORIZACION</b>
+        • <code>#DEYE{{n}} BLOQUE=MAIN</code> - Resumen General
+        • <code>#DEYE{{n}} BLOQUE=PV</code>   - Producción Solar
+        • <code>#DEYE{{n}} BLOQUE=BAT</code>  - Estado Batería
+        • <code>#DEYE{{n}} BLOQUE=GRID</code> - Parámetros Red
+        • <code>#DEYE{{n}} BLOQUE=LOAD</code> - Cargas y Consumo
+        • <code>#DEYE{{n}} BLOQUE=GEN</code>  - Inversor y Gen
+        ⚙️ <b>CONFIGURACION</b>
+        • <code>#DEYE{{n}} BLOQUE=BATT_SET</code> - Ajustes Batería
+        • <code>#DEYE{{n}} BLOQUE=MODE_SET</code> - Modos de Trabajo
+        • <code>#DEYE{{n}} BLOQUE=TOU_SET</code>  - Horarios (TOU)
+        • <code>#DEYE{{n}} BLOQUE=GEN_SET</code>  - Puerto Gen
+        • <code>#DEYE{{n}} BLOQUE=ADV_SET</code>  - Avanzados
+        ℹ️ <b>SISTEMA</b>
+        • <code>#DEYE{{n}} BLOQUE=INFO</code> - Firmware y Reloj
+        • <code>#DEYE{{n}} BLOQUE=DIAG</code> - Historial Alarmas
+
+        💡 <i>Truco: Toca el comando para copiarlo, luego pega y envía.</i>"""
+}
+# ------------FIN DEFICIÓN DICCIONARIO PARA INVERSORES DEYE----------------------
+
+
+
 
 # -----------------------------------------------
 #####################
@@ -1922,29 +2251,36 @@ acciones_mouse = [''] # lista de comandos para gestionar el mouse, teclas etc...
 #      {L_ip}             IP WAN
 
 #unicodes para categorizar reles  ....primera dupla= ('texto que no exista en reles', 'unicode por defecto')
-unicode_reles_telegram = [('ñññ###','\U0001F6A6'),('luz','\U0001F526'),('cale','\U0001F525')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
+unicode_reles_telegram = [('ñññ###','🟢'),
+                          ('luz','🔦'),
+                          ('cale','🔥'),
+                          ('Hibrido','📟'),
+                          ('Termo','🛀'),
+                          ('Acu','♨️'),
+                          ('AA','❄️'),
+                          ('fuente','☢️')] # duplas (texto, unicode) para primer simbolo de {L_reles_unicode}
 
-msg_telegram = ["\U0001F50B <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
-				"     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     \U000024CB <b>{d_['FV']['Vbat']:.1f}</b>V     \U000024BE <b>{d_['FV']['Ibat']:.1f}</b>A",
+msg_telegram = ["🔋 <b><u>Batería</u></b>: (<code>{d_['FV']['Mod_bat']}</code>)",
+				"     SOC: <b>{d_['FV']['SOC']:.1f}</b>%     Ⓥ <b>{d_['FV']['Vbat']:.1f}</b>V     Ⓘ <b>{d_['FV']['Ibat']:.1f}</b>A",
 				#"     \U0001F4CA {L_celdas}",
 
-                "\U0001F31E <b><u>Placas</u></b>:",
-                "     \U000024C5 <b>{d_['FV']['Wplaca']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vplaca']:.0f}</b>V",
+                "🌞 <b><u>Placas</u></b>:",
+                "     Ⓦ <b>{d_['FV']['Wplaca']:.0f}</b>W     Ⓘ <b>{d_['FV']['Iplaca']:.1f}</b>A     Ⓥ <b>{d_['FV']['Vplaca']:.0f}</b>V",
 
-                "\U0001F4A1 <b><u>Consumo</u></b>:",
-                "     \U000024C5 <b>{d_['FV']['Wconsumo']:.0f}</b>W     \U000024BE <b>{d_['FV']['Iplaca']-d_['FV']['Ibat']:.1f}</b>A     PWM: <b>{d_['FV']['PWM']:.0f}</b>",
+                "💡 <b><u>Consumo</u></b>:",
+                "     Ⓦ <b>{d_['FV']['Wconsumo']:.0f}</b>W     Ⓘ <b>{d_['FV']['Iplaca']-d_['FV']['Ibat']:.1f}</b>A     PWM: <b>{d_['FV']['PWM']:.0f}</b>",
                 
-                "\U00002753 <b><u>Relés</u></b>:",
+                "❓ <b><u>Relés</u></b>:",
                 "<b>{L_reles_unicode}</b>",
                 
                 #"\U0001F50C <b><u>Red</u></b>:",
                 #"     \U000024C5 <b>{d_['FV']['Wred']:.0f}</b>W     \U000024BE <b>{d_['FV']['Ired']:.1f}</b>A     \U000024CB <b>{d_['FV']['Vred']:.0f}</b>V",
 
-                "\U0001F4C6 <b><u>Diario (KWh)</u></b>:",
-                "     \U0001F31E <b>{d_['FV']['Wh_placa']/1000:.1f}</b> \U0001F50B <i>{d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}</i> = <b>{(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}</b> \U0001F4A1 <b>{(d_['FV']['Wh_consumo'])/1000:.1f}</b>",
+                "📆 <b><u>Diario (KWh)</u></b>:",
+                "     🌞 <b>{d_['FV']['Wh_placa']/1000:.1f}</b> 🔋 <i>{d_['FV']['Whp_bat']/1000:.1f}-{d_['FV']['Whn_bat']/1000:.1f}</i> = <b>{(d_['FV']['Whp_bat']-d_['FV']['Whn_bat'])/1000:.1f}</b> 💡 <b>{(d_['FV']['Wh_consumo'])/1000:.1f}</b>",
                 #"     \U0001F50C <b>{(d_['FV']['Wh_red'])/1000:.1f}</b>",
 
-                "\U0001F321 <b><u>Temperaturas (ºC)</u></b>:",
+                "🌡️ <b><u>Temperaturas (ºC)</u></b>:",
                 "     Bat: <b>{d_['FV']['Temp']}</b> / CPU: <b>{d_['TEMP']['Temp_cpu']:.1f}</b>",
 
                 "\U0001F4BB <b><u>Conexión (IP)</u></b>:",
@@ -2018,10 +2354,71 @@ Cielo_Kwh = {"Despejado":{"06-12": 0,"12-18": 0},
 #########################################################
 
 irradiacion = {
-    'url': "https://www.tutiempo.net/radiacion-solar/titulcia.html"
+    'url': "https://www.tutiempo.net/radiacion-solar/titulcia.html",
+    'factor': 20,                            # factor a multiplicar los w/m2 capturados para la FV instalada
+                                             # tipicamente entre un 10-20% de los m2 de placas
+    'id_equipos': 'SOL',                     # Nombre del registro en tabla equipos
+    'tabla_historica': 'TABLA_IRRADIACION',  # Nombre de la tabla historica
+
 }
 
+#########################################################
+############  OPEN-METEO IRRADIACION ####################
+#########################################################
+irradiacion1 = {
+    'lat': 40.0,
+    'lon': -3.6,
+    'localidad': 'Titulcia',
+    'timezone': 'Europe/Madrid',
+    
+    'id_equipos': 'SOL1',                     # Nombre del registro en tabla equipos
+    'tabla_historica': 'TABLA_IRRADIACION1',  # Nombre de la tabla historica
+    
+    'strings': [
+        {
+            'id': 'string_1',
+            'descripcion': 'Tejado principal - Sur',
+            'orientacion': 0, # valores entre -180 y 180 >>> 0:SUR, 90: OESTE , -90:ESTE
+            'inclinacion': 45,
+            'potencia_pico': 3150,
+            'eficiencia': 0.55,
+            'activo': True,
+            'tipo_panel': 'Monocristalino',
+            'fecha_instalacion': '2015-01-01',
+            'inversor': 'MPPT1 Easun'
+        },
+        {
+            'id': 'string_2',
+            'descripcion': 'Tejado principal - Sur',
+            'orientacion': 0, # valores entre -180 y 180 >>> 0:SUR, 90: OESTE , -90:ESTE
+            'inclinacion': 45,
+            'potencia_pico': 1150,
+            'eficiencia': 0.75,
+            'activo': True,
+            'tipo_panel': 'Bifaciales',
+            'fecha_instalacion': '2025-11-10',
+            'inversor': 'MPPT2 Easun'
+        },
 
+        {
+            'id': 'string_3', 
+            'descripcion': 'Tejado Coches - Suroeste 47º',
+            'orientacion': 45,
+            'inclinacion': 47,
+            'potencia_pico': 4800,
+            'eficiencia': 0.80,
+            'activo': True,
+            'tipo_panel': 'Bifaciales',
+            'fecha_instalacion': '2025-09-01',
+            'inversor': 'Anenji2'
+        },
+
+    ]
+}
+
+#########################
+###### fv_crontab #######
+#########################
 crontab = {
     # TELEGRAM
     'mensaje_telegram': {'activo': 1,
@@ -2099,6 +2496,12 @@ crontab = {
     'IRRADIACION':      {'activo': 0,
                          'comando': ['python', 'fv_irradiacion.py'],
                          'horas': ['00:30','08:03','20:12'],
+                         'periodo': 0,
+                         'log': 1 
+                        },
+    'IRRADIACION1':      {'activo': 0,
+                         'comando': ['python', 'fv_irradiacion1.py'], #openmeteo
+                         'horas': ['00:30', '08:03', '10:03', '12:03','13:03', '14:03', '15:03', '16:03','20:12'],
                          'periodo': 0,
                          'log': 1 
                         },
